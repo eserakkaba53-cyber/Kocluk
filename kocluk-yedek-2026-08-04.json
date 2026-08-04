@@ -1,0 +1,214 @@
+{
+  "students": [
+    {
+      "id": "fa0kqa2",
+      "name": "OSMAN",
+      "track": "SAY",
+      "grade": "11",
+      "dept": "",
+      "rank": "",
+      "score": "",
+      "tabanPuan": "",
+      "tabanSira": "",
+      "tabanYil": "",
+      "dip": "",
+      "obp": "",
+      "yerlesti": false,
+      "refNets": {},
+      "exams": [],
+      "tasks": [
+        {
+          "id": "pcpgyn2",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_tur",
+          "konu": "İLETİŞİM VE TEMEL ÖĞELERİ",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "zv6vjaa",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_mat",
+          "konu": "DOĞAL SAYILAR TAM SAYILAR",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "3k9firn",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_fiz",
+          "konu": "FİZİK BİLİMİNİN ÖNEMİ",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "xxf4r7l",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_kim",
+          "konu": "SİMYADA KİMYAYA",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "pjowkgj",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_tur",
+          "konu": "Paragraf",
+          "konuRef": "",
+          "q": 100,
+          "dks": 1.5,
+          "yap": 0,
+          "txt": "Sabit haftalık rutin",
+          "s": 0,
+          "rutin": true
+        },
+        {
+          "id": "unfsita",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_mat",
+          "konu": "Problem",
+          "konuRef": "",
+          "q": 100,
+          "dks": 1.5,
+          "yap": 0,
+          "txt": "Sabit haftalık rutin",
+          "s": 0,
+          "rutin": true
+        }
+      ],
+      "topics": {},
+      "startedAt": "2026-08-04",
+      "sinavTarihi": "",
+      "haftalikSaat": "",
+      "tel": "5325874992"
+    },
+    {
+      "id": "oxq5zse",
+      "name": "MAHMUT",
+      "track": "SAY",
+      "grade": "11",
+      "dept": "",
+      "rank": "",
+      "score": "",
+      "tabanPuan": "",
+      "tabanSira": "",
+      "tabanYil": "",
+      "dip": "",
+      "obp": "",
+      "yerlesti": false,
+      "refNets": {},
+      "exams": [],
+      "tasks": [
+        {
+          "id": "87se3sa",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_biy",
+          "konu": "BİYOLOJİ VE CANLILARIN ORTAK ÖZELLİKLERİ",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "snq6k9t",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_biy",
+          "konu": "CANLILARIN YAPISINDA BULUNAN TEMEL BİLEŞİKLER",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "06bi0wb",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_biy",
+          "konu": "HÜCRE",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "nus0shy",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_biy",
+          "konu": "CANLILARIN ÇEŞİTLİLİĞİ VE SINIFLANDIRILMASI",
+          "q": 30,
+          "txt": "",
+          "s": 0,
+          "yap": 0
+        },
+        {
+          "id": "k7bvj0u",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_tur",
+          "konu": "Paragraf",
+          "konuRef": "",
+          "q": 100,
+          "dks": 2,
+          "yap": 0,
+          "txt": "Sabit haftalık rutin",
+          "s": 0,
+          "rutin": true
+        },
+        {
+          "id": "y58omq8",
+          "date": "2026-08-04",
+          "type": "h",
+          "sub": "tyt_mat",
+          "konu": "Problem",
+          "konuRef": "",
+          "q": 100,
+          "dks": 2,
+          "yap": 0,
+          "txt": "Sabit haftalık rutin",
+          "s": 0,
+          "rutin": true
+        }
+      ],
+      "topics": {},
+      "startedAt": "2026-08-04",
+      "sinavTarihi": "",
+      "haftalikSaat": "",
+      "tel": "05325874992"
+    }
+  ],
+  "sel": "oxq5zse",
+  "rutin": [
+    {
+      "ad": "Paragraf",
+      "sub": "tyt_tur",
+      "adet": 100,
+      "dks": 2
+    },
+    {
+      "ad": "Problem",
+      "sub": "tyt_mat",
+      "adet": 100,
+      "dks": 2
+    }
+  ],
+  "kocTel": "05325874992",
+  "sonYedek": "2026-08-04",
+  "siteUrl": "https://eserakkaba53-cyber.github.io/Kocluk"
+}
