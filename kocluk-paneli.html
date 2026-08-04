@@ -1023,15 +1023,20 @@ function raporKodOku(st,txt){
   const P={rutin:[],odev:[],konu:[],deneme:[],not:p.not||'',log:[],kod:true,h:hk};
   (p.tasks||[]).forEach(r=>{
     const t=st.tasks.find(x=>x.id===r.i); if(!t) return;
-    if(t.rutin){ if((t.yap||0)!==r.y||t.s!==r.s){P.rutin.push({id:t.id,yap:r.y,ad:t.konu,hedef:t.q});P.log.push(`Rutin — ${t.konu}: ${r.y}/${t.q} soru`);} }
+    const geri = (t.s===1&&r.s!==1) || ((r.y||0) < (t.yap||0));
+    if(t.rutin){ if((t.yap||0)!==r.y||t.s!==r.s){
+      P.rutin.push({id:t.id,yap:r.y,ad:t.konu,hedef:t.q,geri});
+      P.log.push(`${geri?'⚠ ':''}Rutin — ${t.konu}: ${r.y}/${t.q} soru${geri?`  (panelde ${t.yap||0} yazıyordu)`:''}`);} }
     else if(t.s!==r.s||(t.yap||0)!==(r.y||0)){
-      P.odev.push({id:t.id,s:r.s,yap:r.y||0,ad:t.konu});
-      P.log.push(`Ödev — ${subName(t.sub)} / ${t.konu}: ${SL[r.s]}${r.y?` · ${r.y} soru`:''}`); }
+      P.odev.push({id:t.id,s:r.s,yap:r.y||0,ad:t.konu,geri});
+      P.log.push(`${geri?'⚠ ':''}Ödev — ${subName(t.sub)} / ${t.konu}: ${SL[r.s]}${r.y?` · ${r.y} soru`:''}${geri?`  (panelde ${SL[t.s]}${t.yap?` · ${t.yap} soru`:''} yazıyordu)`:''}`); }
   });
   for(const sk in (p.topics||{})) for(const kk in p.topics[sk]){
     const yeni=p.topics[sk][kk], eski=(st.topics[sk]||{})[kk]||0;
-    if(yeni!==eski){ P.konu.push({sub:sk,konu:kk,durum:yeni});
-      P.log.push(`Konu — ${subName(sk)} / ${kk}: ${['Görülmedi','İşleniyor','Bitti','Eksik'][yeni]}`); }
+    if(yeni!==eski){
+      const geri = (yeni===0 && eski>0);
+      P.konu.push({sub:sk,konu:kk,durum:yeni,geri});
+      P.log.push(`${geri?'⚠ ':''}Konu — ${subName(sk)} / ${kk}: ${['Görülmedi','İşleniyor','Bitti','Eksik'][yeni]}${geri?`  (panelde ${['Görülmedi','İşleniyor','Bitti','Eksik'][eski]} yazıyordu)`:''}`); }
   }
   (p.exams||[]).forEach(e=>{
     if(st.exams.some(x=>x.date===e.date&&(x.name||'')===(e.name||''))) return;
@@ -1056,7 +1061,7 @@ function durumBul(L){
   if(KLM.tamam.some(k=>L.includes(k))) return 1;
   return null;
 }
-let RAPOR_ON=null;
+let RAPOR_ON=null, GERIKORU=true;
 function raporIsle(){
   const st=cur(), txt=document.getElementById('rpText').value;
   if(!txt.trim()){alert('Öğrencinin mesajını yapıştır.');return;}
@@ -1146,14 +1151,16 @@ function raporIsle(){
 async function raporUygula(){
   const st=cur(), P=RAPOR_ON; if(!P) return;
   await anlikKopya('Rapor uygulanmadan önce — '+st.name);
-  P.rutin.forEach(r=>{const t=st.tasks.find(x=>x.id===r.id); if(!t)return;
+  const atla = !!GERIKORU;
+  P.rutin.forEach(r=>{ if(atla&&r.geri) return; const t=st.tasks.find(x=>x.id===r.id); if(!t)return;
     t.yap=r.yap; const o=t.q?t.yap/t.q:0; t.s=o>=0.9?1:o>0?2:0;});
-  P.odev.forEach(o=>{const t=st.tasks.find(x=>x.id===o.id); if(t){t.s=o.s; if(o.yap!==undefined)t.yap=o.yap;}});
-  P.konu.forEach(k=>{st.topics[k.sub]=st.topics[k.sub]||{}; st.topics[k.sub][k.konu]=k.durum!==undefined?k.durum:2;});
+  P.odev.forEach(o=>{ if(atla&&o.geri) return; const t=st.tasks.find(x=>x.id===o.id); if(t){t.s=o.s; if(o.yap!==undefined)t.yap=o.yap;}});
+  P.konu.forEach(k=>{ if(atla&&k.geri) return; st.topics[k.sub]=st.topics[k.sub]||{}; st.topics[k.sub][k.konu]=k.durum!==undefined?k.durum:2;});
   (P.deneme||[]).forEach(e=>st.exams.push({id:uid(),date:e.date,name:e.name||'',n:e.n,an:[]}));
   if(P.not){ st.notlar=st.notlar||[]; st.notlar.unshift({t:today(),m:P.not}); }
   if(P.h){ st.uygulanan=st.uygulanan||[]; st.uygulanan.unshift({h:P.h,t:today()}); st.uygulanan=st.uygulanan.slice(0,30); }
-  const n=P.rutin.length+P.odev.length+P.konu.length+(P.deneme||[]).length;
+  const gsay=[...P.rutin,...P.odev,...P.konu].filter(x=>x.geri).length;
+  const n=P.rutin.length+P.odev.length+P.konu.length+(P.deneme||[]).length-(atla?gsay:0);
   RAPOR_ON=null;
   const el=document.getElementById('rpText'); if(el) el.value='';
   save(); render();
@@ -1163,6 +1170,7 @@ async function raporUygula(){
   if(P.konu.length) nerede.push(`${P.konu.length} konu → Konular sekmesi`);
   if((P.deneme||[]).length) nerede.push(`${P.deneme.length} deneme → Denemeler sekmesi`);
   if(P.not) nerede.push('1 not → Haftalık rapor sekmesi');
+  if(atla&&gsay) nerede.push(`${gsay} geri gidiş YOK SAYILDI (panel verisi korundu)`);
   alert(n+' kayıt güncellendi.\n\n'+nerede.join('\n')+(DB.otoKapali?'':'\n\nGünlük otomatik yedek indirildi.'));
 }
 function raporKart(st){
@@ -1192,6 +1200,12 @@ function raporKart(st){
     <div style="margin-top:10px"><button class="btn" onclick="raporIsle()">Raporu oku</button>
       ${P?'<button class="btn ghost" style="margin-left:8px" onclick="RAPOR_ON=null;render()">Vazgeç</button>':''}</div>
     ${P&&P.log.length?`<div style="margin-top:16px;border-top:1px solid var(--line-soft);padding-top:14px">
+      ${(()=>{const gs=[...P.rutin||[],...P.odev||[],...P.konu||[]].filter(x=>x.geri).length;
+        return gs?`<div class="flag bad"><span class="ic">!</span><span><b>${gs} kayıtta GERİ GİDİŞ var</b> — raporda, panelde yazandan daha az ilerleme görünüyor.
+          Öğrenci verisini kaybedip eski bir paket yüklemiş olabilir.<br>
+          <label style="display:inline-flex;gap:7px;align-items:center;margin-top:8px;font-weight:600">
+            <input type="checkbox" ${GERIKORU?'checked':''} onchange="GERIKORU=this.checked;render()" style="width:auto">
+            Geri gidişleri yok say, paneldeki veriyi koru</label></span></div>`:'';})()}
       <div class="flag ok"><span class="ic">✓</span><span><b>${P.log.length} değişiklik bulundu:</b><br>${P.log.map(esc).join('<br>')}</span></div>
       <button class="btn" style="margin-top:10px" onclick="raporUygula()">Bu değişiklikleri uygula</button>
       <span class="hint" style="margin-left:12px">Yanlış okuduğu bir satır varsa Vazgeç de, elle gir.</span>
