@@ -154,7 +154,7 @@ function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DI
 const TL=['Görmedim','İşliyorum','Bitirdim','Eksiğim var'];
 
 let D=null, TAB='odev', KSUB=null;
-const TABS=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denememi gir'],['gelisim','Gelişimim'],['hedef','Hedefe uzaklık'],['rapor','Rapor gönder'],['ayar','Ayarlar']];
+const TABS=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denememi gir'],['gelisim','Gelişimim'],['hedef','Hedefe uzaklık'],['puan','Puan hesapla'],['rapor','Rapor gönder'],['ayar','Ayarlar']];
 
 /* ---------- paket yükleme ---------- */
 function hashKod(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36);}
@@ -217,7 +217,8 @@ function render(){
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
-  v.innerHTML=uy+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar})[TAB]();
+  if(!TABS.find(t=>t[0]===TAB)&&TAB!=='kilavuz') TAB='odev';
+  v.innerHTML=uy+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar})[TAB]();
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
 }
@@ -632,6 +633,7 @@ function atlasSec(kod){
   if(r[9]!=null) D.hedef.rank=r[9].toLocaleString('tr-TR');
   if(r[8]!=null) D.hedef.tabanPuan=String(r[8]).replace('.',',');
   if(r[9]!=null) D.hedef.tabanSira=r[9].toLocaleString('tr-TR');
+  D.hedef.tabanYil=String(r[5]);
   const n=r[11]||{}, gecerli=new Set(subs(D).map(x=>x[0]));
   let yaz=0;
   for(const id in n){ const v=n[id];
@@ -719,6 +721,115 @@ function vHedef(){
       </tbody></table></div>`:''}
     <div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>Burada yaptığın değişiklikler <b>rapor gönderdiğinde</b> öğretmenine iletilir. O onaylayınca onun sisteminde de güncellenir.</span></div>
   </div></div>`;
+}
+
+/* ---------- puan hesapla ---------- */
+let PN={}, PINIT=null;
+function setDip(v){
+  D.dip = v===''?'':+v;
+  D.obp = v===''?'':Math.round(+v*5*100)/100;
+  save(); render();
+}
+function setYerlesti(b){ D.yerlesti=b; save(); render(); }
+function pnAyarla(k,v){ if(v===''||v===null) delete PN[k]; else PN[k]=+v; render(); }
+/* hedef puan değişikliği — seçili bölümün taban puanıyla tutarlılık kontrolü */
+function tabanPuanı(){
+  const t=(D.hedef&&D.hedef.tabanPuan)||D.tabanPuan||'';
+  return parseFloat(String(t).replace(',','.'));
+}
+function setHedefPuanKontrollu(v){
+  const yeni=parseFloat(String(v).replace(',','.'));
+  const taban=tabanPuanı(), bolum=hedefBolum();
+  if(v==='' ){ setHedef('score',''); render(); return; }
+  if(!isFinite(yeni)){ alert('Geçerli bir sayı yaz. Örnek: 480'); render(); return; }
+  if(bolum && isFinite(taban) && yeni < taban){
+    alert(
+      'HEDEF PUAN KABUL EDİLMEDİ\n\n'+
+      'Seçtiğin bölüm: '+bolum+'\n'+
+      'Bu bölümün taban puanı: '+n1(taban)+'\n'+
+      'Yazmak istediğin hedef: '+n1(yeni)+'\n\n'+
+      'Neden kabul edilmedi: Hedef puanın, seçtiğin bölümün taban puanının altında. '+
+      'Bu puanla o bölüme yerleşilemez, dolayısıyla hedef ile bölüm birbirini tutmuyor.\n\n'+
+      'İki seçeneğin var:\n'+
+      '1) Hedef puanı en az '+Math.ceil(taban)+' yap.\n'+
+      '2) Bu puana uyan başka bir bölüm seç (Hedefe uzaklık sekmesi → Bölüm seç).\n\n'+
+      'Not: Taban puan '+((D.hedef&&D.hedef.tabanYil)||'')+' verisidir; her yıl birkaç puan oynayabilir. '+
+      'Bu yüzden hedefini tabanın biraz üstünde tutmak daha güvenlidir.'
+    );
+    render(); return;
+  }
+  setHedef('score',v);
+  if(bolum && isFinite(taban) && isFinite(yeni) && yeni - taban < 5){
+    alert('Kaydedildi ama dikkat: hedefin tabanın sadece '+n1(yeni-taban)+' puan üstünde.\nTaban puanlar her yıl oynar; birkaç puan pay bırakmak güvenli olur.');
+  }
+  render();
+}
+function vPuan(){
+  const list=subs(D);
+  if(PINIT!==D.id){ const a=son3Ort(); PN={}; list.forEach(([k])=>{ if(a.nets[k]!==undefined) PN[k]=Math.round(a.nets[k]*100)/100; }); PINIT=D.id; }
+  const r=puanHesapla(PN);
+  const hp=parseFloat(String(hedefPuan()||'').replace(',','.'));
+  const fark=isFinite(hp)?r.yer-hp:null;
+  const taban=tabanPuanı();
+  const rows=list.map(([k,nm,q])=>{
+    const kat=KTYT[k]?KTYT[k]*0.4:(KAYT[D.track]||{})[k];
+    if(!kat) return '';
+    const nv=PN[k];
+    return `<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
+      <td class="num" style="width:104px"><input type="number" step="0.25" min="${-q/4}" max="${q}" value="${nv??''}" placeholder="0"
+        oninput="pnAyarla('${k}',this.value)"></td>
+      <td class="num" style="color:var(--ink-3)">${kat.toFixed(2)}</td>
+      <td class="num" style="font-weight:600">${n1((nv||0)*kat)}</td></tr>`;
+  }).join('');
+  return `
+  <div class="card"><div class="stats">
+    <div class="stat"><div class="k">TYT puanın</div><div class="v" style="font-size:22px">${n1(r.tyt)}</div><div class="n">OBP dahil</div></div>
+    <div class="stat"><div class="k">Yerleştirme puanın</div><div class="v" style="font-size:22px;color:var(--accent)">${n1(r.yer)}</div><div class="n">${trLabel(D.track)}</div></div>
+    <div class="stat"><div class="k">Hedef puan</div><div class="v" style="font-size:22px">${isFinite(hp)?n1(hp):'—'}</div><div class="n">${esc((hedefBolum()||'').slice(0,22))||'bölüm seç'}</div></div>
+    <div class="stat"><div class="k">Fark</div><div class="v" style="font-size:22px;color:${fark===null?'inherit':fark<0?'var(--bad)':'var(--ok)'}">${fark===null?'—':(fark>0?'+':'')+n1(fark)}</div><div class="n">hedefe uzaklık</div></div>
+  </div></div>
+
+  <div class="card"><h2>Diploma notun (OBP)</h2><div class="body">
+    <div class="fr">
+      <div><label class="f">Diploma notu (100 üzerinden)</label>
+        <input type="number" step="0.01" min="0" max="100" value="${D.dip??''}" placeholder="ör. 86,40" onchange="setDip(this.value)"></div>
+      <div><label class="f">OBP (diploma × 5)</label><input type="number" value="${D.obp??''}" readonly style="background:#F1F4F8"></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13.5px">
+      <input type="checkbox" ${D.yerlesti?'checked':''} onchange="setYerlesti(this.checked)" style="width:auto">
+      Geçen yıl bir üniversiteye yerleştim</label>
+    <div class="hint">Yerleşmiş olanlarda OBP katkısı yarıya iner. Bu, bir yıl bekleyenin kaybettiği yaklaşık 30 puandır.</div>
+  </div></div>
+
+  <div class="card"><h2>Net dağılımı — dene ve gör</h2><div class="body" style="padding:0;overflow:auto">
+    <table><thead><tr><th>Ders</th><th class="num">Soru</th><th class="num">Net</th><th class="num">Katsayı</th><th class="num">Puan katkısı</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <button class="btn wide" onclick="hedefNetKaydet()">Bu dağılımı hedef net olarak kaydet</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="PINIT=null;render()">Son 3 deneme ortalamama dön</button>
+    <div class="hint" style="margin-top:8px">Netleri değiştirdikçe puan anlık hesaplanır. Hangi dersten kaç net alırsan hedefe ulaşacağını burada dene.</div>
+  </div></div>
+
+  <div class="card" style="border:2px solid var(--vurgu)"><h2 style="color:var(--vurgu)">Hedef puanı değiştir</h2><div class="body">
+    <div class="flag warn"><span class="ic">!</span><span>
+      <b>Dikkat:</b> Hedef puanı serbestçe değiştiremezsin. Yazdığın puan, seçtiğin bölümün taban puanının altındaysa
+      <b>kabul edilmez</b> — çünkü o puanla o bölüme yerleşilemez. Hedefini düşürmek istiyorsan önce
+      <b>Hedefe uzaklık</b> sekmesinden o puana uyan bir bölüm seçmelisin.</span></div>
+    <div class="fr" style="margin-top:12px">
+      <div><label class="f">Hedef puan</label>
+        <input type="text" value="${esc(hedefPuan()||'')}" placeholder="ör. 480" onchange="setHedefPuanKontrollu(this.value)"></div>
+      <div><label class="f">Seçili bölümün tabanı</label>
+        <input type="text" value="${isFinite(taban)?n1(taban):'—'}" readonly style="background:#F1F4F8"></div>
+    </div>
+    <div class="hint">Bu değişiklik rapor gönderdiğinde öğretmenine iletilir.</div>
+  </div></div>`;
+}
+function hedefNetKaydet(){
+  D.hedef=D.hedef||{}; D.hedef.refNets=D.hedef.refNets||{};
+  let c=0; subs(D).forEach(([k])=>{ if(PN[k]!==undefined){D.hedef.refNets[k]=+PN[k];c++;} });
+  save(); render();
+  alert(c+' ders için hedef net kaydedildi.\nHedefe uzaklık sekmesindeki karşılaştırma güncellendi.\nRapor gönderdiğinde öğretmenine iletilecek.');
 }
 
 /* ---------- rapor ---------- */
