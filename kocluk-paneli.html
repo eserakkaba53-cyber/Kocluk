@@ -64,6 +64,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ---- kart ---- */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:7px;margin-bottom:18px}
+.card>h2 small{display:block;text-transform:none;letter-spacing:0;font-weight:400;font-size:11.5px;color:var(--ink-3);margin-top:3px}
 .card>h2{margin:0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:13px 18px;border-bottom:1px solid var(--line-soft);font-weight:650}
 .card .body{padding:18px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -683,7 +684,7 @@ function soruKarti(st){
   const {m,top}=soruIstat(st);
   const liste=subs(st).map(([k,nm])=>({k,nm,n:m[k]||0})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
   const enCok=liste.length?liste[0].n:1;
-  return `<div class="card"><h2>Çözülen soru — ders bazında (toplam ${top.toLocaleString('tr-TR')})</h2><div class="body">
+  return `<div class="card"><h2>Çözülen soru — ders bazında (toplam ${top.toLocaleString('tr-TR')})<small>Öğrencinin beyanı. Mutlak sayıya değil, dersler arası dağılıma bak.</small></h2><div class="body">
     ${liste.length?liste.map(x=>`<div class="gap-row" style="grid-template-columns:150px 1fr 80px">
       <div class="gap-name">${x.nm}</div>
       <div class="gap-bar"><div class="gap-fill" style="width:${Math.round(x.n/enCok*100)}%"></div></div>
@@ -1223,7 +1224,7 @@ async function raporUygula(){
 }
 function raporKart(st){
   const P=RAPOR_ON;
-  return `<div class="card"><h2>Öğrenci paneli — haftalık paketi gönder</h2><div class="body">
+  return `<div class="card"><h2>1 · Paketi gönder<small>Bu haftanın ödevlerini ve konu durumlarını öğrencinin paneline yollar.</small></h2><div class="body">
     <div class="hint" style="margin:0 0 10px">Öğrenciye <b>ogrenci-paneli.html</b> dosyasını bir kez gönder. Sonra her hafta bu paketi yolla: o haftanın ödevleri, rutini ve konu durumları öğrencinin paneline yüklenir.</div>
     <button class="btn" onclick="paketWa()">Paketi WhatsApp'la gönder</button>
     <button class="btn ghost" style="margin-left:8px" onclick="paketGoster()">${DB.siteUrl?'Linki':'Kodu'} göster</button>
@@ -1242,7 +1243,7 @@ function raporKart(st){
       <button class="btn ghost mini" style="margin-top:8px" onclick="PAKET=null;render()">Gizle</button>`:''}
   </div></div>
 
-  <div class="card"><h2>Öğrenci raporunu işle</h2><div class="body">
+  <div class="card"><h2>2 · Öğrenci raporunu işle<small>Pazar akşamı gelen raporu buraya yapıştır. Önce oku, sonra uygula.</small></h2><div class="body">
     <div class="hint" style="margin:0 0 10px">WhatsApp'tan kendine gönderdiğin <b>KOCYEDEK1:</b> yedeğini de buraya yapıştırıp geri yükleyebilirsin.<br>Öğrencinin gönderdiği <b>KOCRAPOR1:</b> kodunu yapıştır — ödevler, konular ve denemeler otomatik işlenir. Kod yoksa serbest yazdığı mesajı da yapıştırabilirsin, panel anlamaya çalışır. <b>Hiçbir şey onayın olmadan değişmez.</b></div>
     <textarea id="rpText" rows="6" placeholder="KOCRAPOR1:... &#10;&#10;ya da serbest metin:&#10;Paragraf 80 yaptım, problem 100 bitti&#10;Türev yarım kaldı&#10;Kalıtım yapamadım" style="resize:vertical"></textarea>
     <div style="margin-top:10px"><button class="btn" onclick="raporIsle()">Raporu oku</button>
@@ -1270,8 +1271,8 @@ function raporKart(st){
 
 /* ================= DURUM ================= */
 let DB={students:[],sel:null};
-let TAB='durum';
-const TABS=[['durum','Durum'],['hafta','Haftalık rapor'],['deneme','Denemeler'],['odev','Ödevler'],['konu','Konular'],['puan','Puan hesapla'],['hedef','Hedef']];
+let TAB='hafta';
+const TABS=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],['konu','Konular'],['hedef','Hedef']];
 const uid=()=>Math.random().toString(36).slice(2,9);
 const cur=()=>DB.students.find(s=>s.id===DB.sel)||null;
 const n1=v=>(Math.round(v*100)/100).toFixed(2).replace(/\.00$/,'');
@@ -1363,7 +1364,8 @@ function render(){
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
-  v.innerHTML = uy + ({durum:vDurum,hafta:vHafta,deneme:vDeneme,odev:vOdev,konu:vKonu,puan:vPuan,hedef:vHedef})[TAB](st);
+  if(!TABS.find(t=>t[0]===TAB)) TAB='hafta';
+  v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef})[TAB](st);
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
 }
@@ -1377,27 +1379,6 @@ function vDurum(st){
   list.forEach(([k])=>{curTot+=(a.nets[k]||0); const t=+st.refNets[k]; if(t){tgtTot+=t;hasT=true;}});
 
   // hedef farkı çubukları
-  const bars=list.map(([k,nm,q])=>{
-    const c=a.nets[k], t=+st.refNets[k]||0;
-    if(c===undefined&&!t) return '';
-    const scale=Math.max(t,c||0,1);
-    const cw=Math.max(0,Math.min(100,(c||0)/scale*100));
-    const tw=Math.max(0,Math.min(100,t/scale*100));
-    const diff=(c===undefined||!t)?null:c-t;
-    const defw=diff!==null&&diff<0?Math.max(0,tw-cw):0;
-    return `<div class="gap-row">
-      <div class="gap-name">${nm}</div>
-      <div class="gap-bar">
-        <div class="gap-fill" style="width:${cw}%"></div>
-        ${defw?`<div class="gap-def" style="left:${cw}%;width:${defw}%"></div>`:''}
-        ${t?`<div class="gap-tick" style="left:calc(${tw}% - 1px)"></div>`:''}
-      </div>
-      <div class="gap-nums">
-        <span class="cur">${c===undefined?'—':n1(c)}</span>
-        <span class="t">/ ${t?n1(t):'—'}</span>
-        <span class="d ${diff===null?'':diff<0?'neg':'pos'}">${diff===null?'':(diff>0?'+':'')+n1(diff)}</span>
-      </div></div>`;
-  }).join('');
 
   const ex=[...st.exams].filter(e=>e.tur!=='brans').sort((a,b)=>a.date.localeCompare(b.date));
 
@@ -1432,21 +1413,16 @@ function vDurum(st){
     <div class="stat"><div class="k">Bu hafta ödev uyumu</div><div class="v">${lastW&&lastW.rate!==null?lastW.rate+'%':'—'}</div><div class="n">${lastW?lastW.done+'/'+lastW.total+' tamamlandı':'ödev yok'}</div></div>
   </div></div>
 
-  <div class="card"><h2>Hedef farkı — ders bazında</h2><div class="body">
-    ${bars||'<div class="empty">Deneme ve hedef netleri girildiğinde bu tablo dolar.</div>'}
-    <div class="hint">Dolu çubuk mevcut ortalama, dikey çizgi hedef, taralı alan açık. Sağdaki üçüncü sayı farktır.</div>
-  </div></div>
-
   <div class="grid2">
     ${grafikKarti(st,'TYT net seyri',true,'#186C68')}
     ${grafikKarti(st,trLabel(st.track)+' AYT net seyri',false,'#B5651D')}
   </div>
 
   <div class="grid2">
-    <div class="card"><h2>Uyarılar</h2><div class="body">
+    <div class="card"><h2>Uyarılar<small>Panelin otomatik teşhisleri. Haftalık görüşmeye buradan başla.</small></h2><div class="body">
       ${F.map(f=>`<div class="flag ${f[0]}"><span class="ic">${f[1]}</span><span>${f[2]}</span></div>`).join('')}
     </div></div>
-    <div class="card"><h2>Deneme özeti</h2><div class="body" style="padding:0">
+    <div class="card"><h2>Deneme özeti<small>Son 8 denemenin TYT ve AYT netleri.</small></h2><div class="body" style="padding:0">
       ${ex.length?`<table><thead><tr><th>Tarih</th><th>Deneme</th><th class="num">TYT</th><th class="num">AYT</th></tr></thead><tbody>
         ${[...ex].reverse().slice(0,8).map(e=>{const t=bolumNet(e,true),a=bolumNet(e,false);
           return `<tr><td class="num">${e.date.slice(5)}</td><td>${esc((e.name||'—').slice(0,28))}</td>
@@ -1458,7 +1434,7 @@ function vDurum(st){
 
   ${soruKarti(st)}
 
-  <div class="card"><h2>Son haftalar — ödev uyumu</h2><div class="body">
+  <div class="card"><h2>Son haftalar — ödev uyumu<small>Verilen ödevin ne kadarının yapıldığı. Uyum iki hafta üst üste %50'nin altındaysa plan çok ağır demektir.</small></h2><div class="body">
     ${ws.length?`<table><thead><tr><th>Hafta başı</th><th class="num">Verilen</th><th class="num">Yapıldı</th><th class="num">Kısmen</th><th class="num">Uyum</th></tr></thead><tbody>
       ${ws.map(w=>`<tr><td class="num">${w.wk}</td><td class="num">${w.total}</td><td class="num">${w.done}</td><td class="num">${w.part}</td>
         <td class="num" style="font-weight:600;color:${w.rate>=70?'var(--ok)':w.rate>=50?'var(--warn)':'var(--bad)'}">${w.rate}%</td></tr>`).join('')}
@@ -1634,40 +1610,13 @@ function vHafta(st){
   const wk=weekKey(today()), ws=weekStats(st,wk), hs=haftaSure(st,wk);
   const tasks=st.tasks.filter(t=>weekKey(t.date)===wk).sort((x,y)=>x.date.localeCompare(y.date));
 
-  const blokKart=(ad,liste)=>{
-    let c=0,t=0,varT=false;
-    liste.forEach(([k])=>{c+=a.nets[k]||0; const r=+st.refNets[k]; if(r){t+=r;varT=true;}});
-    const f=varT&&a.count?c-t:null;
-    return `<div class="stat"><div class="k">${ad} toplam net</div>
-      <div class="v">${a.count?n1(c):'—'}</div>
-      <div class="n">hedef ${varT?n1(t):'—'} · fark <b style="color:${f===null?'inherit':f<0?'var(--bad)':'var(--ok)'}">${f===null?'—':(f>0?'+':'')+n1(f)}</b></div></div>`;
-  };
-  const dersSatir=([k,nm])=>{
-    const c=a.nets[k], t=+st.refNets[k]||0;
-    if(c===undefined&&!t) return '';
-    const d=(c===undefined||!t)?null:c-t;
-    const seri=ex.slice().reverse().map(e=>e.n[k]?n1(net(e.n[k].d||0,e.n[k].y||0)):'·').join(' → ');
-    return `<tr><td>${nm}</td><td class="num" style="color:var(--ink-3);font-size:12px">${seri}</td>
-      <td class="num" style="font-weight:600">${c===undefined?'—':n1(c)}</td>
-      <td class="num" style="color:var(--ink-3)">${t?n1(t):'—'}</td>
-      <td class="num" style="font-weight:650;color:${d===null?'var(--ink-3)':d<0?'var(--bad)':'var(--ok)'}">${d===null?'—':(d>0?'+':'')+n1(d)}</td></tr>`;
-  };
 
   return `
   <div class="card"><div class="stats">
-    ${blokKart('TYT',bl.TYT)}
-    ${blokKart(trLabel(st.track)+' AYT',bl.AYT)}
     <div class="stat"><div class="k">Bu hafta ödev</div><div class="v">${ws.total||'—'}</div><div class="n">uyum ${ws.rate!==null?ws.rate+'%':'—'}</div></div>
+    <div class="stat"><div class="k">Devreden</div><div class="v" style="color:${devredenler(st).length?'var(--bad)':'var(--ok)'}">${devredenler(st).length}</div><div class="n">${devredenler(st).length?'geçen haftalardan':'temiz'}</div></div>
     <div class="stat"><div class="k">Haftalık hedef süre</div><div class="v" style="font-size:21px">${hs.top?sa(hs.top):'—'}</div><div class="n">${hs.top?`rutin ${sa(hs.rut)} + konu ${sa(hs.konu)}`:'ödev verilince hesaplanır'}</div></div>
-  </div></div>
-
-  <div class="card"><h2>Son ${ex.length} deneme — ders bazında hedefe uzaklık</h2><div class="body" style="padding:0">
-    ${ex.length?`<table><thead><tr><th>Ders</th><th class="num">Son ${ex.length} deneme</th><th class="num">Ortalama</th><th class="num">Hedef</th><th class="num">Fark</th></tr></thead>
-      <tbody><tr><td colspan="5" style="background:#F3F7F8;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650">TYT</td></tr>
-      ${bl.TYT.map(dersSatir).join('')}
-      <tr><td colspan="5" style="background:#F3F7F8;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650">AYT — ${trLabel(st.track)}</td></tr>
-      ${bl.AYT.map(dersSatir).join('')}
-      </tbody></table>`:'<div class="empty">Deneme girildiğinde bu tablo dolar.</div>'}
+    <div class="stat"><div class="k">Sınava kalan</div><div class="v">${haftaKalan(st)??'—'}</div><div class="n">hafta${st.sinavTarihi?' · '+st.sinavTarihi:' · Hedef sekmesinden gir'}</div></div>
   </div></div>
 
   ${raporKart(st)}
@@ -1676,7 +1625,7 @@ function vHafta(st){
 
   ${rutinKart(st)}
 
-  <div class="card"><h2>Bu haftanın ödevleri — hafta ${wk}</h2><div class="body" style="padding:0">
+  <div class="card"><h2>3 · Bu haftanın ödevleri — ${wk}<small>Yeni ödev vermek için Ödevler sekmesine geç.</small></h2><div class="body" style="padding:0">
     ${tasks.filter(t=>!t.rutin).length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Süre</th><th>Durum</th></tr></thead><tbody>
       ${tasks.filter(t=>!t.rutin).map(t=>`<tr><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td>
         <td style="color:var(--ink-3);font-size:12px">${esc((uniteOf[t.sub]||{})[t.konu]||'—')}</td>
@@ -1686,7 +1635,7 @@ function vHafta(st){
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
   </div></div>
 
-  <div class="card"><h2>Öğrenciye gönderilecek hafta notu</h2><div class="body">
+  <div class="card"><h2>4 · Öğrenciye gönderilecek hafta notu<small>Otomatik üretildi. Göndermeden önce oku ve en az bir cümle kendin ekle.</small></h2><div class="body">
     <textarea id="hfMetin" rows="16" style="font-family:var(--mono);font-size:12.5px;line-height:1.6;resize:vertical">${esc(haftaMetni(st))}</textarea>
     <div style="margin-top:10px">
       <button class="btn" onclick="waGonder()">WhatsApp'ta aç</button>
@@ -1846,6 +1795,27 @@ function vDeneme(st){
 
   ${anTekrar(st)}
 
+  ${(()=>{const a=avgNets(st,3),list=subs(st);
+    const ex3=[...st.exams].filter(e=>e.tur!=='brans').sort((x,y)=>y.date.localeCompare(x.date)).slice(0,3).reverse();
+    if(!ex3.length) return '';
+    const bl={TYT:list.filter(x=>x[0].startsWith('tyt_')),AYT:list.filter(x=>!x[0].startsWith('tyt_'))};
+    const sat=([k,nm])=>{
+      const c=a.nets[k], t=+st.refNets[k]||0;
+      if(c===undefined&&!t) return '';
+      const d=(c===undefined||!t)?null:c-t;
+      const seri=ex3.map(e=>e.n[k]?n1(net(e.n[k].d||0,e.n[k].y||0)):'·').join(' → ');
+      return `<tr><td>${nm}</td><td class="num" style="color:var(--ink-3);font-size:12px">${seri}</td>
+        <td class="num" style="font-weight:600">${c===undefined?'—':n1(c)}</td>
+        <td class="num" style="color:var(--ink-3)">${t?n1(t):'—'}</td>
+        <td class="num" style="font-weight:650;color:${d===null?'var(--ink-3)':d<0?'var(--bad)':'var(--ok)'}">${d===null?'—':(d>0?'+':'')+n1(d)}</td></tr>`;};
+    return `<div class="card"><h2>Son ${ex3.length} deneme — ders bazında<small>Seyir, ortalama ve hedefe uzaklık. Grafikler Durum sekmesinde.</small></h2>
+      <div class="body" style="padding:0;overflow:auto">
+      <table><thead><tr><th>Ders</th><th class="num">Seyir</th><th class="num">Ortalama</th><th class="num">Hedef</th><th class="num">Fark</th></tr></thead>
+      <tbody><tr><td colspan="5" style="background:#F3F7F8;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650">TYT</td></tr>
+      ${bl.TYT.map(sat).join('')}
+      <tr><td colspan="5" style="background:#F3F7F8;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650">AYT — ${trLabel(st.track)}</td></tr>
+      ${bl.AYT.map(sat).join('')}</tbody></table></div></div>`;})()}
+
   <div class="card"><h2>Yeni deneme gir</h2><div class="body">
     <div class="fr">
       <div><label class="f">Tarih</label><input type="date" id="exD" value="${today()}"></div>
@@ -1860,7 +1830,7 @@ function vDeneme(st){
     <span class="hint" style="margin-left:12px">Boş bıraktığın ders o denemeye girmez. Net otomatik hesaplanır (D − Y/4).</span></div>
   </div></div>
 
-  <div class="card"><h2>Karneden okut</h2><div class="body">
+  <div class="card"><h2>Karneden okut<small>Karnenin konu analizi tablosunu okur: netleri hesaplar, yanlış ve boş konuları çıkarır.</small></h2><div class="body">
     <div class="hint" style="margin:0 0 10px">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. Sistem karnenin <b>konu analizi tablosunu</b> okur: ders netlerini hesaplar, yanlış ve boş bıraktığı konuları çıkarır. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
     <textarea id="kzText" rows="7" placeholder="Karne metnini buraya yapıştır..." style="resize:vertical"></textarea>
     <div style="margin-top:10px"><button class="btn" onclick="applyKarne()">Karneyi oku ve formu doldur</button>
@@ -1919,7 +1889,7 @@ function vOdev(st){
   const byW={}; st.tasks.forEach(t=>{const w=weekKey(t.date);(byW[w]=byW[w]||[]).push(t);});
 
   return `
-  <div class="card"><h2>Ödev ver</h2><div class="body">
+  <div class="card"><h2>Ödev ver<small>Ders → ünite → konu seç. Parantez içindeki süreler konu anlatımı + soru çözümünü birlikte kapsar.</small></h2><div class="body">
     <div class="fr">
       <div><label class="f">Tarih</label><input type="date" id="tkD" value="${today()}"></div>
       <div><label class="f">Tür</label><select id="tkT"><option value="h" ${ODEVTUR==='h'?'selected':''}>Haftalık</option><option value="g" ${ODEVTUR==='g'?'selected':''}>Günlük</option></select></div>
@@ -1937,19 +1907,27 @@ function vOdev(st){
     <div class="fr"><div style="flex:1"><label class="f">Not (isteğe bağlı)</label>
       <input type="text" id="tkX" placeholder="ör. önce konu tekrarı, sonra orta-zor sorular"></div></div>
     <button class="btn" onclick="addTask()">Ödevi ekle</button>
+    ${(()=>{const wk=weekKey(today());
+      const bu=st.tasks.filter(t=>weekKey(t.date)===wk);
+      const konuDk=bu.filter(t=>!t.rutin&&t.konu).reduce((a,t)=>a+sureOf(t.sub,t.konu),0);
+      const rutDk=bu.filter(t=>t.rutin).reduce((a,t)=>a+(t.q||0)*(t.dks||1.5),0);
+      const devDk=devredenler(st).reduce((a,t)=>a+sureOf(t.sub,t.konu),0);
+      const hafta=(+st.haftalikSaat||0)*60;
+      const top=konuDk+rutDk+devDk;
+      const asim=hafta&&top>hafta;
+      return `<span style="margin-left:16px;font-family:var(--mono);font-size:13px;color:${asim?'var(--bad)':'var(--ink-2)'}">
+        Bu haftanın toplamı: <b>${sa(top)}</b>
+        <span style="color:var(--ink-3);font-size:11.5px">(konu ${sa(konuDk)} + rutin ${sa(rutDk)}${devDk?' + devreden '+sa(devDk):''})</span>
+        ${hafta?` · öğrencinin beyanı ${sa(hafta)}${asim?' <b>— AŞILDI</b>':''}`:''}</span>`;})()}
     <label style="display:inline-flex;gap:7px;align-items:center;margin-left:14px;font-size:13px">
       <input type="checkbox" ${OHIDE?'checked':''} onchange="toggleHide(this.checked)" style="width:auto">
       Bitmiş konuları gizle${gizli?` (${gizli} konu gizli)`:''}</label>
     <div class="hint">Konular sekmesinde <b>Bitti</b> işaretlediğin konular listeden düşer. Tekrar ödevi vermek istersen kutunun işaretini kaldır.</div>
   </div></div>
 
-  ${devredenKart(st)}
-
   ${hizliKart(st)}
 
-  ${rutinKart(st)}
-
-  <div class="card"><h2>Rutin tanımı — tüm öğrenciler için geçerli</h2><div class="body" style="padding:0">
+  <div class="card"><h2>Rutin tanımı — tüm öğrenciler için geçerli<small>Konudan bağımsız, her hafta tekrar eden iş. Buradaki değişiklik bütün öğrencileri etkiler.</small></h2><div class="body" style="padding:0">
     <table><thead><tr><th>Adı</th><th>Ders</th><th class="num">Adet</th><th style="width:230px">Konu (isteğe bağlı)</th><th class="num">Dk/soru</th><th class="num">Süre</th><th></th></tr></thead><tbody>
     ${rutinler().map((r,i)=>`<tr>
       <td><input type="text" value="${esc(r.ad)}" onchange="rutinDuzenle(${i},'ad',this.value)"></td>
@@ -2031,7 +2009,7 @@ function hizliKart(st){
       <td style="width:96px"><button class="btn mini" onclick="hizliAta('${k}',${JSON.stringify(b.konu).replace(/"/g,'&quot;')},${JSON.stringify(b.unite).replace(/"/g,'&quot;')})">ödev ver</button></td>
     </tr>`;
   }).join('');
-  return `<div class="card"><h2>Hızlı ödev ata — her dersin sıradaki konusu</h2><div class="body">
+  return `<div class="card"><h2>Hızlı ödev ata — her dersin sıradaki konusu<small>Konu listesindeki sırayla, bitmemiş ve henüz ödev verilmemiş ilk konu. Ödev verdiğinde sıradaki öne geçer.</small></h2><div class="body">
     <div class="fr">
       <div style="max-width:150px"><label class="f">Soru hedefi</label><input type="number" id="hzQ" min="0" value="30"></div>
       <div style="max-width:150px"><label class="f">Tür</label><select id="hzT"><option value="h">Haftalık</option><option value="g">Günlük</option></select></div>
@@ -2060,7 +2038,7 @@ function odevDokum(st){
   const rows=Object.values(agg).sort((a,b)=>b.kez-a.kez||b.soru-a.soru);
   if(!rows.length) return '';
   const tKez=rows.reduce((s,r)=>s+r.kez,0), tSoru=rows.reduce((s,r)=>s+r.soru,0);
-  return `<div class="card"><h2>Konu bazında ödev dökümü — ${rows.length} konu · ${tKez} ödev · ${tSoru} soru</h2>
+  return `<div class="card"><h2>Konu bazında ödev dökümü — ${rows.length} konu · ${tKez} ödev · ${tSoru} soru<small>Çok tekrar edilen ama uyumu düşük konular, öğrencinin kaçındığı konulardır.</small></h2>
     <div class="body" style="padding:0;max-height:520px;overflow:auto">
     <table><thead><tr><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Kaç kez</th><th class="num">Toplam soru</th>
       <th class="num">Yapıldı</th><th class="num">Kısmen</th><th class="num">Yapılmadı</th><th class="num">Uyum</th><th class="num">Son</th></tr></thead><tbody>
@@ -2337,7 +2315,7 @@ function yaklasmaKarti(st){
   </div>`:''}
   </div>
 
-  <div class="card"><h2>Ders ders hedefe yaklaşma</h2><div class="body">
+  <div class="card"><h2>Ders ders hedefe yaklaşma<small>Dolu çubuk son denemelerin ortalaması, dikey çizgi hedef. Sağdaki yüzde hedefin ne kadarına ulaşıldığını gösterir.</small></h2><div class="body">
     ${a.count?(list.map(bar).join('')||'<div class="empty">Hedef netleri girilmemiş.</div>'):'<div class="empty">Deneme girildiğinde bu tablo dolar.</div>'}
     <div class="hint" style="margin-top:10px">Dolu çubuk son ${a.count||3} denemenin ortalaması, dikey çizgi hedef. Sağdaki yüzde, hedefin ne kadarına ulaşıldığını gösterir.</div>
   </div></div>`;
@@ -2351,7 +2329,7 @@ function vHedef(st){
 
   ${yaklasmaKarti(st)}
 
-  <div class="card"><h2>YÖK verisinden bölüm seç</h2><div class="body">
+  <div class="card"><h2>YÖK verisinden bölüm seç<small>Seçtiğinde taban puan, sıralama, kontenjan ve ders ders hedef netler otomatik dolar.</small></h2><div class="body">
     ${!ATLAS?`<button class="btn" onclick="atlasYukle()">Bölüm veritabanını yükle</button>
       <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('atlasF').click()">Dosyadan yükle</button>
       <input type="file" id="atlasF" accept=".json" style="display:none" onchange="atlasDosyadan(event)">
@@ -2407,12 +2385,12 @@ function vHedef(st){
     </div>
     <button class="btn" onclick="saveGoal()">Hedefi kaydet</button>
     <button class="btn ghost" style="margin-left:8px" onclick="openAtlas()">YÖK Atlas ana sayfa</button>
-    <button class="btn ghost" style="margin-left:8px" onclick="openAtlasSihirbaz('lisans')">Tercih sihirbazı (${trLabel(st.track)})</button>
+
     <div class="hint">Taban puan ve başarı sırasını YÖK Atlas'tan kopyalayıp buraya yapıştır. Otomatik çekim yapılmıyor: panel internetsiz çalışsın diye dış bağlantı yok, ayrıca YÖK Atlas'ın gayriresmî erişim yolları her site güncellemesinde kırılıyor.
     <br><b>Site açılmıyorsa:</b> YÖK Atlas tercih dönemlerinde yoğunluktan sık sık erişilemez oluyor. Farklı tarayıcı/cihaz dene, mobil veriye geç ya da birkaç saat sonra tekrar dene.</div>
   </div></div>
 
-  <div class="card"><h2>Referans netler — geçen yıl bu bölüme giren öğrencinin netleri</h2><div class="body">
+  <div class="card"><h2>Referans netler — hedef netler<small>Bölüm seçtiğinde otomatik dolar. Öğrenciye göre elle de düzeltebilirsin.</small></h2><div class="body">
     <table><thead><tr><th>Ders</th><th class="num">Soru sayısı</th><th class="num">Hedef net</th></tr></thead><tbody>
       ${list.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
         <td class="num" style="width:130px"><input type="number" step="0.25" min="0" max="${q}" id="r_${k}" value="${st.refNets[k]??''}" placeholder="—"></td></tr>`).join('')}
@@ -2420,6 +2398,12 @@ function vHedef(st){
     <div style="margin-top:14px"><button class="btn" onclick="saveRef()">Referans netleri kaydet</button></div>
     <div class="hint">Bu değerleri ÖSYM/YÖK Atlas verisinden ya da hedef sıralamaya karşılık gelen net dağılımından elle gireceksin. Durum sekmesindeki tüm karşılaştırma bu satırlara dayanır.</div>
   </div></div>
+
+  <div style="margin:26px 0 10px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650;border-top:1px solid var(--line);padding-top:18px">
+    Puan hesaplayıcı
+    <div style="text-transform:none;letter-spacing:0;font-weight:400;font-size:12px;margin-top:3px">Net dağılımını değiştirerek hedef puana hangi dağılımla ulaşılacağını bul, sonra "hedef net olarak kaydet" de.</div>
+  </div>
+  ${vPuan(st)}
 
   <div class="card"><h2>Öğrenci kaydı</h2><div class="body">
     <div class="fr">
@@ -2438,11 +2422,6 @@ function openAtlas(){
   const st=cur(), q=(document.getElementById('hD')?.value||st.dept||'').trim();
   if(!q){alert('Önce bölüm adını yaz.');return;}
   window.open('https://yokatlas.yok.gov.tr/','_blank','noopener');
-}
-function openAtlasSihirbaz(t){
-  const url = t==='lisans' ? 'https://yokatlas.yok.gov.tr/tercih-sihirbazi-t4-'+({SAY:'sayisal',EA:'ea',SOZ:'sozel',DIL:'dil'}[cur().track]||'sayisal')+'.php'
-                           : 'https://yokatlas.yok.gov.tr/';
-  window.open(url,'_blank','noopener');
 }
 function saveRef(){const st=cur();subs(st).forEach(([k])=>{const v=document.getElementById('r_'+k).value;if(v==='')delete st.refNets[k];else st.refNets[k]=+v;});save();render();}
 function saveMeta(){const st=cur();st.grade=document.getElementById('hG').value.trim();st.track=document.getElementById('hT').value;save();render();}
