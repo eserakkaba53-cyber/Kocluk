@@ -158,6 +158,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
       <div id="ydDurum" style="font-size:11px;text-align:center;padding:3px 0 1px"></div>
       <button onclick="yedekDosya()">Yedek indir (.json)</button>
       <button onclick="yedekPaylas()">Yedeği WhatsApp'a gönder</button>
+      <button onclick="yedekCihazPaylas()">Telefondan paylaş</button>
       <button onclick="geriAl()">Son değişikliği geri al</button>
       <div id="linkKutu"></div>
       <button onclick="document.getElementById('imp').click()">Yedek yükle</button>
@@ -923,37 +924,45 @@ function baglantiAc(url,etiket){
   return false;
 }
 function yedekPaylas(){
+  const tel=kocNumara();
+  if(!tel){ alert('Önce kendi WhatsApp numaranı gir.\n\nHaftalık sekmesi → "Senin WhatsApp numaran" kutusu.'); TAB='hafta'; render(); return; }
+  const js=JSON.stringify(DB);
+  const ad='kocluk-yedek-'+today()+'.json';
+  const ozet=`Koçluk yedeği — ${today()}\n${DB.students.length} öğrenci · ${DB.students.reduce((a,s)=>a+(s.exams||[]).length,0)} deneme · ${DB.students.reduce((a,s)=>a+(s.tasks||[]).length,0)} ödev`;
+
+  // Bağlantı uzunluğu sınırı: tarayıcılar ~8000 karakteri aşan adresleri sessizce açmaz.
+  const denemeMesaj = ozet+`\n\nGeri yüklemek için: panelde Haftalık → "Öğrenci raporunu işle" kutusuna aşağıdaki metnin TAMAMINI yapıştır.\n\nKOCYEDEK1:`+js;
+  const denemeUrl = 'https://wa.me/'+tel+'?text='+encodeURIComponent(denemeMesaj);
+  const sigar = denemeUrl.length < 6000;
+
+  // 1) ÖNCE dosyayı indir (sığmıyorsa ek olarak gönderilecek)
+  if(!sigar) yedekDosya(true); else { DB.sonYedek=today(); save(); }
+
+  // 2) WhatsApp'ı TIKLAMA ANINDA aç — gecikme olursa tarayıcı engeller
+  const mesaj = sigar ? denemeMesaj
+    : ozet+`\n\nYedek dosyası bilgisayarıma indirildi: ${ad}\nBu mesaja ataç (📎) ikonundan ekleyip gönderiyorum.`;
+  const url='https://wa.me/'+tel+'?text='+encodeURIComponent(mesaj);
+  const acildi=baglantiAc(url,'WhatsApp — yedeği gönder');
+  render();
+
+  if(!acildi) return;
+  alert(sigar
+    ? 'WhatsApp açıldı, yedek mesajın içinde. Sadece gönder tuşuna bas.'
+    : 'Yedek bilgisayarına indirildi ve WhatsApp açıldı.\n\nYedek '+(js.length/1024).toFixed(0)+' KB olduğu için mesaja sığmadı.\nMesaja ataç ikonundan "'+ad+'" dosyasını ekleyip gönder.');
+}
+/* Telefon/tabletten dosyayı doğrudan paylaşmak için ayrı buton */
+function yedekCihazPaylas(){
+  const js=JSON.stringify(DB), ad='kocluk-yedek-'+today()+'.json';
   try{
-    const js=JSON.stringify(DB);
-    const ad='kocluk-yedek-'+today()+'.json';
-    const tel=kocNumara();
-    if(!tel){ alert('Önce kendi WhatsApp numaranı gir.\n\nHaftalık rapor sekmesi → "Senin WhatsApp numaran" kutusu.'); TAB='hafta'; render(); return; }
-
-    // 1) Telefon/tablet: gerçek dosya paylaşımı
-    try{
-      const f=new File([js],ad,{type:'application/json'});
-      if(navigator.canShare&&navigator.canShare({files:[f]})){
-        navigator.share({files:[f],title:'Koçluk yedeği',text:'Koçluk paneli yedeği — '+today()})
-          .then(()=>{DB.sonYedek=today();save();render();}).catch(()=>{});
-        return;
-      }
-    }catch(e){}
-
-    // 2) Bilgisayar
-    const ozet=`Koçluk yedeği — ${today()}\n${DB.students.length} öğrenci · ${DB.students.reduce((a,s)=>a+(s.exams||[]).length,0)} deneme · ${DB.students.reduce((a,s)=>a+(s.tasks||[]).length,0)} ödev`;
-    const kucuk = js.length < 20000;
-    const mesaj = kucuk
-      ? ozet+`\n\nGeri yüklemek için: panelde Haftalık rapor → "Öğrenci raporunu işle" kutusuna aşağıdaki metnin TAMAMINI yapıştır.\n\nKOCYEDEK1:`+js
-      : ozet+`\n\nYedek dosyası bilgisayarına indirildi: ${ad}\nBu mesaja ataç ikonundan ekleyip gönder.`;
-    const url='https://wa.me/'+tel+'?text='+encodeURIComponent(mesaj);
-    const acildi=baglantiAc(url,'WhatsApp — yedeği gönder');
-    if(!kucuk) yedekDosya(true); else { DB.sonYedek=today(); save(); }
-    render();
-    if(acildi&&kucuk) alert('WhatsApp açıldı, mesaj hazır. Sadece gönder tuşuna bas.\n(Yedek metnin içinde, dosya eklemene gerek yok.)');
-    else if(acildi) alert('Yedek indirildi ve WhatsApp açıldı. Mesaja ataçtan dosyayı ekleyip gönder.');
-  }catch(e){
-    alert('Yedek gönderilemedi.\n\nHata: '+(e&&e.message?e.message:e)+'\n\nBunu bana iletirsen düzeltirim. Bu arada "Yedek indir" ile dosyayı alabilirsin.');
-  }
+    const f=new File([js],ad,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){
+      navigator.share({files:[f],title:'Koçluk yedeği',text:'Koçluk paneli yedeği — '+today()})
+        .then(()=>{DB.sonYedek=today();save();render();})
+        .catch(e=>{ if(e&&e.name!=='AbortError') alert('Paylaşım tamamlanmadı: '+e.message); });
+      return;
+    }
+  }catch(e){}
+  alert('Bu tarayıcı dosya paylaşımını desteklemiyor.\n\n"Yedeği WhatsApp\'a gönder" butonunu kullan — dosyayı indirip WhatsApp\'ı açar.');
 }
 function yedekDosya(sessiz){
   try{
@@ -1019,11 +1028,32 @@ function paketWa(){
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
   window.open((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(bas+PAKET),'_blank','noopener');
 }
+/* Kısa (v2) rapor biçimini eski biçime çevirir.
+   v2'de konu adları sıra numarası, alan adları tek harf. */
+function raporNormalle(p){
+  if(!p||p.v!==2) return p;
+  const topics={};
+  for(const sk in (p.k||{})){
+    const duz=(KONU[sk]||[]).flatMap(u=>u[1]);
+    topics[sk]={};
+    (p.k[sk]||[]).forEach(([i,d])=>{
+      const ad = typeof i==='number' ? duz[i] : i;
+      if(ad!==undefined) topics[sk][ad]=d;
+    });
+  }
+  return {v:2,id:p.id,ad:p.ad,
+    tasks:(p.t||[]).map(a=>({i:a[0],s:a[1],y:a[2]})),
+    topics,
+    exams:(p.e||[]).map(e=>({date:e.d,name:e.a,tur:e.u,n:e.n})),
+    ekstra:(p.x||[]).map(x=>({id:x.i,date:x.d,sub:x.s,konu:x.k,q:x.q,yap:x.y,s:x.z})),
+    hedef:p.h||null, not:p.n||''};
+}
+
 /* raporun hangi öğrenciye ait olduğunu bul: önce kimlik, sonra isim */
 function raporSahibi(txt){
   const m=txt.match(/KOCRAPOR1:([A-Za-z0-9+/=]+)/);
   if(!m) return {};
-  let p; try{ p=JSON.parse(b64d(m[1])); }catch(e){ return {}; }
+  let p; try{ p=raporNormalle(JSON.parse(b64d(m[1]))); }catch(e){ return {}; }
   let hedef=DB.students.find(s=>s.id===p.id);
   if(!hedef && p.ad) hedef=DB.students.find(s=>norm(s.name)===norm(p.ad));
   return {id:p.id, ad:p.ad, hedef};
@@ -1037,6 +1067,7 @@ function raporKodOku(st,txt){
   const onceki=(st.uygulanan||[]).find(x=>x.h===hk);
   if(onceki&&!confirm(`Bu rapor daha önce işlendi (${onceki.t}). Aynı kodu yeniden uygulamak bir şey değiştirmez ama yine de bakılsın mı?`)) return null;
   let p; try{ p=JSON.parse(b64d(m[1])); }catch(e){ alert('Rapor kodu bozuk ya da eksik kopyalanmış.'); return null; }
+  p=raporNormalle(p);
   if(p.id&&p.id!==st.id&&norm(p.ad||'')!==norm(st.name)&&
      !confirm(`Bu rapor "${p.ad||'?'}" adına gönderilmiş, seçili öğrenci ise ${st.name}.\n\nYine de ${st.name}'e uygulansın mı?`)) return null;
   const P={rutin:[],odev:[],konu:[],deneme:[],ekstra:[],hedef:null,not:p.not||'',log:[],kod:true,h:hk};
@@ -1635,7 +1666,9 @@ function vHafta(st){
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
   </div></div>
 
-  <div class="card"><h2>4 · Öğrenciye gönderilecek hafta notu<small>Otomatik üretildi. Göndermeden önce oku ve en az bir cümle kendin ekle.</small></h2><div class="body">
+  ${aiKart(st)}
+
+  <div class="card"><h2>5 · Öğrenciye gönderilecek hafta notu<small>Otomatik üretildi. Göndermeden önce oku ve en az bir cümle kendin ekle.</small></h2><div class="body">
     <textarea id="hfMetin" rows="16" style="font-family:var(--mono);font-size:12.5px;line-height:1.6;resize:vertical">${esc(haftaMetni(st))}</textarea>
     <div style="margin-top:10px">
       <button class="btn" onclick="waGonder()">WhatsApp'ta aç</button>
@@ -1662,6 +1695,141 @@ function kopyala(id){
   const el=document.getElementById(id); el.select(); el.setSelectionRange(0,999999);
   try{document.execCommand('copy');alert('Metin kopyalandı.');}catch(e){alert('Kopyalanamadı, elle seçip kopyala.');}
 }
+
+/* ================= YAPAY ZEKÂ ANALİZ METNİ =================
+   Panel veriyi düzenli metne çevirir, panoya kopyalar.
+   Sen Claude'a yapıştırırsın. Anahtar yok, dış bağlantı yok. */
+let AIISIM=false;
+function aiSorular(st){
+  const S=[], a=avgNets(st,3), wk=weekKey(today());
+  // 1) ödev uyumu
+  const ws=lastWeeks(st,3).filter(w=>w.rate!==null);
+  if(ws.length>=2 && ws[0].rate<50 && ws[1].rate<50)
+    S.push('Ödev uyumu iki hafta üst üste %50 altında. Plan mı ağır, motivasyon mu düştü — hangisi olduğunu ayırt etmem için neye bakmalıyım?');
+  else if(ws.length&&ws[0].rate<50)
+    S.push('Bu hafta ödev uyumu %'+ws[0].rate+'. Tek haftalık bir dalgalanma mı, yoksa erken uyarı mı?');
+  // 2) tekrar eden konular
+  const agg={};
+  st.exams.forEach(e=>(e.an||[]).forEach(x=>{const k=x.sub+'||'+x.konu;
+    const o=agg[k]=agg[k]||{sub:x.sub,konu:x.konu,den:new Set(),y:0,b:0}; o[x.tip]+=x.adet; o.den.add(e.id);}));
+  const tek=Object.values(agg).filter(x=>x.den.size>=3).sort((x,y)=>y.den.size-x.den.size)[0];
+  if(tek){
+    const d=(st.topics[tek.sub]||{})[tek.konu];
+    S.push(`${subName(tek.sub)} / ${tek.konu} ${tek.den.size} denemede yanlış çıktı${d===2?' ama "bitti" işaretli':''}. Bu bir bilgi eksiği mi, yoksa alt yapıdaki başka bir konudan mı kaynaklanıyor?`);
+  }
+  // 3) net sabit / düşüyor
+  const ex=[...st.exams].filter(e=>e.tur!=='brans').sort((x,y)=>x.date.localeCompare(y.date));
+  if(ex.length>=3){
+    const t=e=>{let s=0;for(const k in e.n)s+=net(e.n[k].d||0,e.n[k].y||0);return s;};
+    const l3=ex.slice(-3).map(t);
+    const {top}=soruIstat(st);
+    if(Math.abs(l3[2]-l3[0])<1.5&&top>300) S.push('Toplam '+top+' soru çözülmüş ama net son 3 denemede sabit. Yöntem mi değişmeli, kaynak mı, yoksa soru seviyesi mi?');
+    else if(l3[2]<l3[0]-2) S.push('Net son 3 denemede '+n1(l3[0]-l3[2])+' düştü. Önce neye bakmalıyım?');
+  }
+  // 4) en geride ders
+  const geri=subs(st).map(([k,nm])=>{const c=a.nets[k],r=+st.refNets[k];
+    return (c!==undefined&&r)?{nm,or:c/r}:null;}).filter(Boolean).sort((x,y)=>x.or-y.or)[0];
+  const yakin=subs(st).map(([k,nm])=>{const c=a.nets[k],r=+st.refNets[k];
+    return (c!==undefined&&r&&c<r)?{nm,or:c/r}:null;}).filter(Boolean).sort((x,y)=>y.or-x.or)[0];
+  if(geri&&yakin&&geri.nm!==yakin.nm)
+    S.push(`${geri.nm} hedefin %${Math.round(geri.or*100)}'inde (en geride), ${yakin.nm} %${Math.round(yakin.or*100)}'inde (hedefe en yakın açık ders). Bu haftayı en geridekine mi ayırayım, yoksa yakın olandan hızlı kazanım mı almalıyım?`);
+  // 5) devreden
+  const dev=devredenler(st);
+  const eski=dev.filter(t=>haftaFarki(t.date)>=3);
+  if(eski.length) S.push(eski.length+' ödev 3 haftadan uzun süredir devrediyor. Bunları silip yeniden mi kurmalıyım, yoksa küçültüp mü devam etmeliyim?');
+  if(!S.length) S.push('Bu öğrencide belirgin bir uyarı sinyali yok. Verilerde gözden kaçırdığım bir örüntü görüyor musun? Önümüzdeki hafta neye öncelik vermeliyim?');
+  return S.slice(0,3);
+}
+function aiMetin(st){
+  const ad = AIISIM ? st.name : `${st.grade}. sınıf ${trLabel(st.track)} öğrencisi`;
+  const L=[], a=avgNets(st,3), list=subs(st);
+  L.push('YKS KOÇLUK — ÖĞRENCİ ANALİZİ');
+  L.push('Tarih: '+today());
+  L.push('Öğrenci: '+ad+(st.sinavTarihi?` · sınava ${haftaKalan(st)} hafta`:''));
+  L.push('');
+  // hedef
+  const hp=parseFloat(String(st.score||'').replace(',','.'));
+  const su=a.count?hesapla(st.track,a.nets,+st.obp||0,!!st.yerlesti):null;
+  L.push('— HEDEF —');
+  L.push('Bölüm: '+(st.dept||'belirlenmemiş')+(st.tabanSira?` (taban sıra ${st.tabanSira}, ${st.tabanYil||''})`:''));
+  if(su&&isFinite(hp)) L.push(`Puan: şu an ${n1(su.yerPuan)} · hedef ${n1(hp)} · fark ${n1(su.yerPuan-hp)}`);
+  let cN=0,hN=0; list.forEach(([k])=>{cN+=a.nets[k]||0; hN+=+st.refNets[k]||0;});
+  if(hN) L.push(`Net: şu an ${n1(cN)} · hedef ${n1(hN)} · fark ${n1(cN-hN)}`);
+  L.push('');
+  // deneme seyri
+  const ex=[...st.exams].filter(e=>e.tur!=='brans').sort((x,y)=>x.date.localeCompare(y.date)).slice(-5);
+  L.push('— DENEME SEYRİ (son '+ex.length+') —');
+  if(ex.length){
+    const t=e=>{let s=0;for(const k in e.n)s+=net(e.n[k].d||0,e.n[k].y||0);return s;};
+    L.push('Toplam net: '+ex.map(e=>e.date.slice(5)+' '+n1(t(e))).join('  →  '));
+    L.push('');
+    L.push('Ders bazında (son 3 ortalaması / hedef / fark):');
+    list.forEach(([k,nm])=>{const c=a.nets[k],r=+st.refNets[k]||0;
+      if(c===undefined&&!r) return;
+      const seri=ex.slice(-3).map(e=>e.n[k]?n1(net(e.n[k].d||0,e.n[k].y||0)):'·').join(' → ');
+      L.push(`  ${nm}: ${c===undefined?'—':n1(c)} / ${r?n1(r):'—'} / ${(c!==undefined&&r)?n1(c-r):'—'}   [seyir: ${seri}]`);});
+  } else L.push('Henüz deneme yok.');
+  L.push('');
+  // yanlis konular
+  const agg={};
+  st.exams.forEach(e=>(e.an||[]).forEach(x=>{const k=x.sub+'||'+x.konu;
+    const o=agg[k]=agg[k]||{sub:x.sub,konu:x.konu,unite:x.unite,den:new Set(),y:0,b:0};
+    o[x.tip]+=x.adet; o.den.add(e.id);}));
+  const hepsi=Object.values(agg).sort((x,y)=>y.den.size-x.den.size||y.y-x.y);
+  L.push('— DENEMELERDE YANLIŞ/BOŞ KONULAR —');
+  if(hepsi.length){
+    const tek=hepsi.filter(x=>x.den.size>=2);
+    if(tek.length){ L.push('Birden fazla denemede tekrar edenler:');
+      tek.slice(0,12).forEach(x=>L.push(`  ${subName(x.sub)} / ${x.konu} — ${x.den.size} denemede (${x.y} yanlış, ${x.b} boş)${(st.topics[x.sub]||{})[x.konu]===2?' [öğrenci "bitti" işaretlemiş]':''}`)); L.push(''); }
+    L.push('Tek denemede çıkanlar:');
+    hepsi.filter(x=>x.den.size===1).slice(0,15).forEach(x=>L.push(`  ${subName(x.sub)} / ${x.konu} (${x.y}Y ${x.b}B)`));
+  } else L.push('Konu dökümü girilmemiş.');
+  L.push('');
+  // konu durumu
+  L.push('— KONU İLERLEMESİ —');
+  list.forEach(([k,nm])=>{const s=topicStats(st,k);
+    const eks=[]; for(const t in (st.topics[k]||{})) if(st.topics[k][t]===3) eks.push(t);
+    L.push(`  ${nm}: %${s.total?Math.round(s.done/s.total*100):0} bitti (${s.done}/${s.total})${eks.length?' · eksik işaretli: '+eks.slice(0,4).join(', '):''}`);});
+  L.push('');
+  // odev
+  const wk=weekKey(today()), ws=weekStats(st,wk), dev=devredenler(st);
+  L.push('— ÖDEV DURUMU —');
+  L.push('Son haftalar uyum: '+(lastWeeks(st,4).map(w=>w.wk.slice(5)+' %'+(w.rate??'—')).join('  ·  ')||'veri yok'));
+  const bu=st.tasks.filter(t=>weekKey(t.date)===wk);
+  L.push('Bu hafta verilen: '+(bu.length?bu.map(t=>`${subName(t.sub)}/${t.konu}${t.q?` (${t.q} soru)`:''} — ${SL[t.s]}`).join(' | '):'yok'));
+  if(dev.length) L.push('Devreden: '+dev.map(t=>`${subName(t.sub)}/${t.konu} (${haftaFarki(t.date)} hafta, ${SL[t.s]})`).join(' | '));
+  const {m,top}=soruIstat(st);
+  L.push('Çözülen soru (toplam '+top+'): '+(Object.keys(m).length?subs(st).filter(([k])=>m[k]).map(([k,nm])=>nm+' '+m[k]).join(' · '):'veri yok'));
+  L.push('');
+  L.push('— SORULARIM —');
+  aiSorular(st).forEach((s,i)=>L.push((i+1)+'. '+s));
+  L.push('');
+  L.push('Not: Net değerleri doğru − yanlış/4 ile hesaplandı. Puan yaklaşık ham puan modelidir (±10-15 puan sapabilir). Süre ve hedef netleri panel tahminidir.');
+  return L.join('\n');
+}
+function aiKopyala(){
+  const st=cur(), t=aiMetin(st);
+  const ta=document.createElement('textarea'); ta.value=t;
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); alert('Analiz metni kopyalandı ('+t.length+' karakter).\n\nClaude\'da bu öğrenci için açtığın sohbete yapıştır.'); }
+  catch(e){ alert('Kopyalanamadı. Aşağıdaki kutudan elle seç.'); }
+  document.body.removeChild(ta);
+}
+function aiKart(st){
+  return `<div class="card"><h2>4 · Yapay zekâ analizi hazırla<small>Panel verisini düzenli bir metne çevirir. Claude'a yapıştırıp yorum alırsın. Dış bağlantı yok, veri kendiliğinden hiçbir yere gitmez.</small></h2><div class="body">
+    <label style="display:inline-flex;gap:8px;align-items:center;font-size:13px;margin-bottom:10px">
+      <input type="checkbox" ${AIISIM?'checked':''} onchange="AIISIM=this.checked;render()" style="width:auto">
+      Öğrencinin adı metne yazılsın</label>
+    <div class="hint" style="margin:0 0 10px">Kapalıyken "11. sınıf Sayısal öğrencisi" yazar. Mahremiyet için kapalı bırakman önerilir.</div>
+    <button class="btn" onclick="aiKopyala()">Analiz metnini kopyala</button>
+    <button class="btn ghost" style="margin-left:8px" onclick="AIGOSTER=!AIGOSTER;render()">${AIGOSTER?'Gizle':'Metni göster'}</button>
+    ${AIGOSTER?`<textarea rows="16" style="margin-top:12px;font-family:var(--mono);font-size:11.5px;line-height:1.55">${esc(aiMetin(st))}</textarea>`:''}
+    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
+      <b>Her öğrenci için ayrı sohbet aç.</b> Sohbeti "Koçluk — ${AIISIM?esc(st.name):'öğrenci adı'}" diye adlandır ve her hafta aynı sohbete yapıştır.
+      Böylece geçmiş haftaları da görerek yorum yapılır: "türev üçüncü kez çıkıyor, ikinci haftada da konuşmuştuk" gibi.</span></div>
+  </div></div>`;
+}
+let AIGOSTER=false;
 
 /* kural tabanlı hafta notu */
 function haftaMetni(st){
@@ -2070,6 +2238,56 @@ function cycleTask(id){const t=cur().tasks.find(x=>x.id===id); t.s=(t.s+1)%4; sa
 function delTask(id){const st=cur(); st.tasks=st.tasks.filter(t=>t.id!==id); save(); render();}
 function bulkWeek(w,s){const st=cur(); st.tasks.forEach(t=>{if(weekKey(t.date)===w)t.s=s;}); save(); render();}
 
+/* ---------- SÜRE AYARLARI (tüm öğrenciler için ortak) ---------- */
+function sureOzet(){
+  const o=DB.sureler||{}; let n=0; const ders={};
+  for(const k in o){ const c=Object.keys(o[k]).length; if(c){ders[k]=c;n+=c;} }
+  return {n,ders};
+}
+function sureDisaAktar(){
+  const js=JSON.stringify({v:1,tip:'kocluk-sureler',tarih:today(),sureler:DB.sureler||{}},null,2);
+  const b=new Blob([js],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='kocluk-sureler-'+today()+'.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function sureIceAktar(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      const s=d.sureler||d;
+      if(typeof s!=='object') throw new Error('biçim uygun değil');
+      let n=0; for(const k in s) n+=Object.keys(s[k]).length;
+      if(!confirm(`${n} konu için süre ayarı bulundu.\n\nMevcut süre ayarların bununla DEĞİŞTİRİLECEK.\nÖğrenci verilerine dokunulmaz.\n\nDevam?`)) return;
+      DB.sureler=s; save(); render();
+      alert(n+' süre ayarı yüklendi. Bir sonraki pakette öğrencilerine de gidecek.');
+    }catch(e){ alert('Dosya okunamadı: '+e.message); }
+  };
+  r.readAsText(f); ev.target.value='';
+}
+function sureSifirla(){
+  const {n}=sureOzet();
+  if(!n){alert('Zaten hiç elle ayar yok.');return;}
+  if(!confirm(n+' elle yaptığın süre ayarı silinecek, panel varsayılanlara dönecek. Emin misin?')) return;
+  DB.sureler={}; save(); render();
+}
+function sureKart(){
+  const {n,ders}=sureOzet();
+  return `<div class="card"><h2>Süre ayarları — tüm öğrenciler için ortak<small>Bir konunun süresini değiştirdiğinde bütün öğrencilerinde geçerli olur ve bir sonraki pakette onların paneline de gider. Panel sürümü güncellense de ayarların silinmez.</small></h2><div class="body">
+    ${n?`<div class="flag ok"><span class="ic">✓</span><span><b>${n} konuda elle ayar var.</b>
+      ${Object.keys(ders).map(k=>subName(k)+' ('+ders[k]+')').join(' · ')}</span></div>`
+     :`<div class="flag warn"><span class="ic">i</span><span>Henüz elle ayar yok; tüm konular panel varsayılanlarını kullanıyor. Aşağıdaki listeden bir konunun dakikasını değiştirdiğinde burada görünecek.</span></div>`}
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost mini" onclick="sureDisaAktar()">Süre tablosunu indir</button>
+      <button class="btn ghost mini" onclick="document.getElementById('sureF').click()">Süre tablosu yükle</button>
+      <input type="file" id="sureF" accept=".json" style="display:none" onchange="sureIceAktar(event)">
+      <button class="btn danger mini" onclick="sureSifirla()">Varsayılanlara dön</button>
+    </div>
+    <div class="hint" style="margin-top:8px">İndirdiğin dosyayı başka bir bilgisayarda ya da öğretmen arkadaşında yükleyebilirsin. Öğrenci verisi içermez, sadece süre tablosu.</div>
+  </div></div>`;
+}
+
 /* ---------- KONULAR ---------- */
 let KSUB=null;
 function vKonu(st){
@@ -2090,7 +2308,9 @@ function vKonu(st){
     <div class="hint">Süre tahminleri planlama başlangıcıdır, ölçüm değil. İşleniyor işaretli konular yarım, eksik işaretliler %70 süreyle sayılır. Her konunun süresini aşağıdan kendine göre düzeltebilirsin — düzeltmeler tüm öğrenciler için geçerlidir.</div>
   </div></div>
 
-  <div class="card"><h2>Konu ilerlemesi — genel</h2><div class="body" style="padding:0">
+  ${sureKart()}
+
+  <div class="card"><h2>Konu ilerlemesi — genel<small>Bir derse tıklayınca aşağıda o dersin konuları açılır.</small></h2><div class="body" style="padding:0">
     <table><thead><tr><th>Ders</th><th class="num">Toplam</th><th class="num">Bitti</th><th class="num">İşleniyor</th><th class="num">Eksik</th><th class="num">Tamamlanma</th><th class="num">Kalan süre</th></tr></thead><tbody>
     ${stats.map(s=>`<tr style="cursor:pointer" onclick="KSUB='${s.k}';render()"><td>${s.nm}</td>
       <td class="num">${s.total}</td><td class="num">${s.done}</td><td class="num">${s.prog}</td>

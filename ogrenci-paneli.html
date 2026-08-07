@@ -833,12 +833,45 @@ function hedefNetKaydet(){
 }
 
 /* ---------- rapor ---------- */
+/* Konu adlarını sıra numarasına çevirir — iki panelde KONU ağacı özdeş olduğu için güvenli.
+   "CANLILARIN YAPISINDA BULUNAN TEMEL BİLEŞİKLER" (44 karakter) yerine 12 yazılır. */
+function konuIndeksle(topics){
+  const out={};
+  for(const sk in topics){
+    const duz=(KONU[sk]||[]).flatMap(u=>u[1]);
+    const liste=[];
+    for(const t in topics[sk]){
+      const i=duz.indexOf(t);
+      if(i>=0) liste.push([i,topics[sk][t]]);
+      else liste.push([t,topics[sk][t]]);      // listede yoksa adıyla gider
+    }
+    if(liste.length) out[sk]=liste;
+  }
+  return out;
+}
 function raporKodu(){
-  const p={v:1,id:D.id,ad:D.ad,
-    tasks:D.tasks.map(t=>({i:t.id,s:t.s,y:t.yap||0})),
-    topics:D.topics, exams:D.exams, ekstra:D.ekstra||[], hedef:D.hedef||null,
-    not:(document.getElementById('rNot')?.value||'').slice(0,500)};
+  // daha önce gönderilmiş deneme ve çalışmalar tekrar yollanmaz — rapor zamanla şişmez
+  const yeniEx=(D.exams||[]).filter(e=>!e.g);
+  const yeniEk=(D.ekstra||[]).filter(x=>!x.g);
+  const p={v:2,id:D.id,ad:D.ad,
+    t:D.tasks.map(x=>[x.id,x.s,x.yap||0]),
+    k:konuIndeksle(D.topics||{}),
+    e:yeniEx.map(e=>({d:e.date,a:e.name||'',u:e.tur||'tyt',n:e.n})),
+    x:yeniEk.map(x=>({i:x.id,d:x.date,s:x.sub,k:x.konu,q:x.q||0,y:x.yap||0,z:x.s||1})),
+    h:D.hedef||null,
+    n:(document.getElementById('rNot')?.value||'').slice(0,500)};
   return 'KOCRAPOR1:'+b64e(JSON.stringify(p));
+}
+function gonderildiIsaretle(){
+  (D.exams||[]).forEach(e=>e.g=1);
+  (D.ekstra||[]).forEach(x=>x.g=1);
+  D.sonRapor=today(); save();
+}
+function tumunuYenidenGonder(){
+  if(!confirm('Bütün denemelerin ve kendi çalışmaların bir sonraki raporda yeniden gönderilecek.\n\nÖğretmenin bir şeyi alamadıysa bunu kullan. Devam?')) return;
+  (D.exams||[]).forEach(e=>delete e.g);
+  (D.ekstra||[]).forEach(x=>delete x.g);
+  save(); render();
 }
 function vRapor(){
   const bit=D.tasks.filter(t=>t.s===1).length, yar=D.tasks.filter(t=>t.s===2).length, yok=D.tasks.filter(t=>t.s===3).length;
@@ -864,14 +897,17 @@ function vRapor(){
   <div class="card"><h2>Raporu gönder</h2><div class="body">
     <button class="btn wide" onclick="waGonder()">Öğretmenime WhatsApp'tan gönder</button>
     <button class="btn ghost wide" style="margin-top:10px" onclick="kopyala()">Kodu kopyala</button>
-    <div class="hint" style="margin-top:10px">Kod uzun görünür, normaldir. Tamamını gönder, ortasından kesme.</div>
+    <div class="hint" style="margin-top:10px">Kod uzun görünür, normaldir. Tamamını gönder, ortasından kesme.
+      ${D.sonRapor?`<br>Son gönderim: <b>${esc(D.sonRapor)}</b>. Daha önce gönderdiğin denemeler tekrar yollanmaz, kod kısa kalır.`:''}</div>
+    <button class="btn ghost wide" style="margin-top:10px" onclick="tumunuYenidenGonder()">Her şeyi baştan gönder</button>
+    <div class="hint">Öğretmenin bir denemeni ya da çalışmanı alamadıysa bunu kullan.</div>
     <div class="big" id="kodKutu" style="margin-top:10px">${esc(raporLink())}</div>
   </div></div>`;
 }
 function kopyala(){
   const ta=document.createElement('textarea'); ta.value=raporLink();
   document.body.appendChild(ta); ta.select();
-  try{document.execCommand('copy');alert('Kod kopyalandı. Öğretmenine WhatsApp\'tan yapıştır.');}
+  try{document.execCommand('copy');gonderildiIsaretle();render();alert('Kod kopyalandı. Öğretmenine WhatsApp\'tan yapıştır.');}
   catch(e){alert('Kopyalanamadı. Aşağıdaki kutudan elle seçip kopyala.');}
   document.body.removeChild(ta);
 }
@@ -886,6 +922,7 @@ function waGonder(){
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
   const url=(tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(bas+k);
   window.open(url,'_blank','noopener');
+  gonderildiIsaretle(); render();
 }
 
 /* ---------- kılavuz ---------- */
