@@ -157,6 +157,22 @@ let D=null, TAB='odev', KSUB=null;
 const TABS=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denememi gir'],['gelisim','Gelişimim'],['hedef','Hedefe uzaklık'],['puan','Puan hesapla'],['rapor','Rapor gönder'],['ayar','Ayarlar']];
 
 /* ---------- paket yükleme ---------- */
+function paketNormalle(p){
+  if(!p||p.v!==2) return p;
+  const topics={};
+  for(const sk in (p.k||{})){
+    const duz=(KONU[sk]||[]).flatMap(u=>u[1]); topics[sk]={};
+    (p.k[sk]||[]).forEach(([i,d])=>{ const ad=typeof i==='number'?duz[i]:i; if(ad!==undefined) topics[sk][ad]=d; });
+  }
+  // koçtan gelen denemeler: net biçiminde, "gönderildi" işaretli (geri yollanmaz)
+  const exams=(p.e||[]).map(a=>({id:'k'+a[0]+a[1],date:a[0],name:a[1],tur:a[2],
+    n:Object.fromEntries(Object.entries(a[3]).map(([k,v])=>[k,{net:v}])), g:1, koc:1}));
+  // tamamlanmış geçmiş ödevler
+  const arsiv=(p.g||[]).map(a=>{const duz=(KONU[a[1]]||[]).flatMap(u=>u[1]);
+    return {id:'a'+a[0]+a[1]+a[2],date:a[0],sub:a[1],konu:typeof a[2]==='number'?duz[a[2]]:a[2],
+      yap:a[3],q:a[4],s:1,ark:1,txt:''};});
+  return {...p, topics, exams, arsiv};
+}
 function hashKod(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36);}
 function paketYukle(metin){
   const t=(metin!==undefined?metin:(document.getElementById('pkText')?.value||'')).trim();
@@ -165,13 +181,17 @@ function paketYukle(metin){
   const hk=hashKod(m[1]);
   if(D&&D.sonPaket===hk){ alert('Bu paketi zaten yüklemiştin ('+(D.sonPaketT||'')+'). Yeni bir şey eklenmedi.'); TAB='odev'; render(); return; }
   try{
-    const p=JSON.parse(b64d(m[1]));
+    const p=paketNormalle(JSON.parse(b64d(m[1])));
     if(D&&D.id===p.id&&!p.zorla){ // güncelleme: kendi işaretlerini koru, ödevleri tazele
       D.tasks=p.tasks; D.ad=p.ad; D.track=p.track; D.grade=p.grade;
       D.dept=p.dept; D.rank=p.rank; D.sinav=p.sinav; D.tel=p.tel; D.kocTel=p.kocTel||D.kocTel; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
+      D.tabanPuan=p.tabanPuan||D.tabanPuan; D.tabanSira=p.tabanSira||D.tabanSira; D.tabanYil=p.tabanYil||D.tabanYil;
+      birlestir(p);
     }else{
-      D={id:p.id,ad:p.ad,track:p.track,grade:p.grade,dept:p.dept,rank:p.rank,sinav:p.sinav,tel:p.tel,kocTel:p.kocTel||'',sureler:p.sureler||{},score:p.score||'',refNets:p.refNets||{},obp:p.obp||'',yerlesti:!!p.yerlesti,ekstra:[],hedef:null,
+      D={id:p.id,ad:p.ad,track:p.track,grade:p.grade,dept:p.dept,rank:p.rank,sinav:p.sinav,tel:p.tel,kocTel:p.kocTel||'',sureler:p.sureler||{},score:p.score||'',refNets:p.refNets||{},obp:p.obp||'',yerlesti:!!p.yerlesti,
+         tabanPuan:p.tabanPuan||'',tabanSira:p.tabanSira||'',tabanYil:p.tabanYil||'',ekstra:[],hedef:null,
          tasks:p.tasks||[],topics:p.topics||{},exams:[],not:''};
+      birlestir(p);
     }
     if(p.zorla&&D) D.kurtarma=today();
     D.sonPaket=hk; D.sonPaketT=today(); D.url=p.url||D.url||''; D.kocTel=p.kocTel||D.kocTel||''; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
@@ -179,6 +199,18 @@ function paketYukle(metin){
     alert(p.zorla ? 'Kurtarma paketi yüklendi. Konu durumların öğretmenindeki son kayda göre geri getirildi.'
                   : 'Paket yüklendi. '+(D.tasks.length)+' ödev var.');
   }catch(e){alert('Kod okunamadı, eksik kopyalanmış olabilir. Tamamını yeniden yapıştır.');}
+}
+function birlestir(p){
+  // koçtan gelen deneme geçmişi — mükerrer eklenmez
+  D.exams=D.exams||[];
+  (p.exams||[]).forEach(e=>{
+    if(D.exams.some(x=>x.date===e.date&&(x.name||'')===(e.name||''))) return;
+    D.exams.push(e);
+  });
+  D.exams.sort((a,b)=>a.date.localeCompare(b.date));
+  // tamamlanmış geçmiş ödevler — arşiv olarak
+  D.tasks=D.tasks||[];
+  (p.arsiv||[]).forEach(t=>{ if(!D.tasks.some(x=>x.id===t.id)) D.tasks.push(t); });
 }
 function haftaKalan(){ if(!D.sinav) return null; const d=(new Date(D.sinav)-new Date())/86400000; return d>0?Math.floor(d/7):0; }
 
@@ -459,7 +491,7 @@ function vDeneme(){
       return `<tr><td class="num" style="color:var(--ink-3);font-size:12px">${e.date}</td>
       <td><b>${esc(e.name||'—')}</b><div style="font-size:11px;color:var(--ink-3)">${TURAD[e.tur||'tyt']}</div></td>
       <td class="num" style="font-weight:650">${n1(t)} net</td>
-      <td style="width:56px"><button class="btn ghost mini" onclick="denemeSil('${e.id}')">sil</button></td></tr>`;}).join('')}
+      <td style="width:56px">${e.koc?'':`<button class="btn ghost mini" onclick="denemeSil('${e.id}')">sil</button>`}</td></tr>`;}).join('')}
     </tbody></table></div></div>`:''}`;
 }
 
@@ -485,7 +517,8 @@ function soruKarti(){
 }
 
 /* ---------- gelişimim: TYT / AYT grafikleri ---------- */
-function toplamNet(e){let t=0;for(const s in e.n)t+=net(e.n[s].d||0,e.n[s].y||0);return t;}
+function netOf(e,k){const v=e.n[k]; if(!v) return null; return v.net!==undefined?v.net:net(v.d||0,v.y||0);}
+function toplamNet(e){let t=0;for(const s in e.n){const v=netOf(e,s); if(v!==null)t+=v;}return t;}
 function cizgi(veri,renk,tavan){
   // veri: [{x:'05-12', y:53.75, ad:'3D TYT-4'}]
   if(veri.length<1) return '<div class="empty">Henüz deneme yok.</div>';
@@ -511,7 +544,7 @@ function dersTrend(exs,liste){
   const son=exs.slice(-3);
   return `<table><thead><tr><th>Ders</th><th class="num">Son denemeler</th><th class="num">Ortalama</th></tr></thead><tbody>
   ${liste.map(([k,nm,q])=>{
-    const dizi=son.map(e=>e.n[k]?net(e.n[k].d||0,e.n[k].y||0):null);
+    const dizi=son.map(e=>netOf(e,k));
     if(dizi.every(v=>v===null)) return '';
     const dolu=dizi.filter(v=>v!==null);
     const ort=dolu.reduce((a,b)=>a+b,0)/dolu.length;
@@ -854,7 +887,7 @@ function raporKodu(){
   const yeniEx=(D.exams||[]).filter(e=>!e.g);
   const yeniEk=(D.ekstra||[]).filter(x=>!x.g);
   const p={v:2,id:D.id,ad:D.ad,
-    t:D.tasks.map(x=>[x.id,x.s,x.yap||0]),
+    t:D.tasks.filter(x=>!x.ark).map(x=>[x.id,x.s,x.yap||0]),
     k:konuIndeksle(D.topics||{}),
     e:yeniEx.map(e=>({d:e.date,a:e.name||'',u:e.tur||'tyt',n:e.n})),
     x:yeniEk.map(x=>({i:x.id,d:x.date,s:x.sub,k:x.konu,q:x.q||0,y:x.yap||0,z:x.s||1})),
