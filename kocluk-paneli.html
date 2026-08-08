@@ -158,7 +158,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
       <div id="ydDurum" style="font-size:11px;text-align:center;padding:3px 0 1px"></div>
       <button onclick="yedekDosya()">Yedek indir (.json)</button>
       <button onclick="yedekPaylas()">Yedeği WhatsApp'a gönder</button>
-      <button onclick="yedekCihazPaylas()">Telefondan paylaş</button>
+      <button onclick="yedekCihazPaylas()">Dosyayı doğrudan paylaş</button>
       <button onclick="geriAl()">Son değişikliği geri al</button>
       <div id="linkKutu"></div>
       <button onclick="document.getElementById('imp').click()">Yedek yükle</button>
@@ -940,7 +940,7 @@ function yedekPaylas(){
 
   // 2) WhatsApp'ı TIKLAMA ANINDA aç — gecikme olursa tarayıcı engeller
   const mesaj = sigar ? denemeMesaj
-    : ozet+`\n\nYedek dosyası bilgisayarıma indirildi: ${ad}\nBu mesaja ataç (📎) ikonundan ekleyip gönderiyorum.`;
+    : ozet+`\n\nYedek dosyası: ${ad}`;
   const url='https://wa.me/'+tel+'?text='+encodeURIComponent(mesaj);
   const acildi=baglantiAc(url,'WhatsApp — yedeği gönder');
   render();
@@ -948,21 +948,29 @@ function yedekPaylas(){
   if(!acildi) return;
   alert(sigar
     ? 'WhatsApp açıldı, yedek mesajın içinde. Sadece gönder tuşuna bas.'
-    : 'Yedek bilgisayarına indirildi ve WhatsApp açıldı.\n\nYedek '+(js.length/1024).toFixed(0)+' KB olduğu için mesaja sığmadı.\nMesaja ataç ikonundan "'+ad+'" dosyasını ekleyip gönder.');
+    : 'Yedek indirildi ve WhatsApp açıldı.\n\nYedek '+(js.length/1024).toFixed(0)+' KB — mesaj metnine sığmıyor, dosya olarak göndermelisin.\n\nEN HIZLI YOL: İndirilenler klasöründeki "'+ad+'" dosyasını farenle tutup WhatsApp penceresinin üstüne BIRAK. Ataçla uğraşmana gerek yok.\n\n(Telefondan yaparsan "Dosyayı doğrudan paylaş" butonu tek adımda halleder.)');
 }
 /* Telefon/tabletten dosyayı doğrudan paylaşmak için ayrı buton */
+function dosyaPaylasimVarMi(){
+  try{ const f=new File(['x'],'t.json',{type:'application/json'});
+    return !!(navigator.canShare&&navigator.canShare({files:[f]})); }catch(e){ return false; }
+}
 function yedekCihazPaylas(){
   const js=JSON.stringify(DB), ad='kocluk-yedek-'+today()+'.json';
+  if(!dosyaPaylasimVarMi()){
+    alert('Bu tarayıcı dosyayı doğrudan WhatsApp\'a veremiyor.\n\n'+
+      'Web sayfaları güvenlik gereği kendiliğinden dosya eki gönderemez; bu bir panel eksiği değil, tarayıcı kuralıdır.\n\n'+
+      'İki çözüm:\n'+
+      '1) TELEFONDAN: Paneli telefonunda aç, bu butona bas. Paylaş menüsünde WhatsApp çıkar, dosya doğrudan gider.\n'+
+      '2) BİLGİSAYARDAN: "Yedeği WhatsApp\'a gönder" ile indirilen dosyayı, açılan WhatsApp penceresine SÜRÜKLEYİP BIRAK. Tek hareket.');
+    return;
+  }
   try{
     const f=new File([js],ad,{type:'application/json'});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){
-      navigator.share({files:[f],title:'Koçluk yedeği',text:'Koçluk paneli yedeği — '+today()})
-        .then(()=>{DB.sonYedek=today();save();render();})
-        .catch(e=>{ if(e&&e.name!=='AbortError') alert('Paylaşım tamamlanmadı: '+e.message); });
-      return;
-    }
-  }catch(e){}
-  alert('Bu tarayıcı dosya paylaşımını desteklemiyor.\n\n"Yedeği WhatsApp\'a gönder" butonunu kullan — dosyayı indirip WhatsApp\'ı açar.');
+    navigator.share({files:[f],title:'Koçluk yedeği',text:'Koçluk paneli yedeği — '+today()})
+      .then(()=>{DB.sonYedek=today();save();render();})
+      .catch(e=>{ if(e&&e.name!=='AbortError') alert('Paylaşım tamamlanmadı: '+(e.message||e.name)+'\n\nBunun yerine "Yedeği WhatsApp\'a gönder" butonunu kullan.'); });
+  }catch(e){ alert('Paylaşım başlatılamadı: '+e.message); }
 }
 function yedekDosya(sessiz){
   try{
@@ -1002,16 +1010,44 @@ function kurtarmaWa(){
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
   window.open((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(bas+kod),'_blank','noopener');
 }
-function paketUret(st,zorla){
+function konuIndeksle(topics){
+  const out={};
+  for(const sk in topics){
+    const duz=(KONU[sk]||[]).flatMap(u=>u[1]); const l=[];
+    for(const t in topics[sk]){ const i=duz.indexOf(t); l.push([i>=0?i:t, topics[sk][t]]); }
+    if(l.length) out[sk]=l;
+  }
+  return out;
+}
+/* Paket: öğrencinin tüm kaydı. Konu adları indeks, denemeler net olarak sıkıştırılır.
+   Link 7000 karakteri aşarsa geçmiş kademeli kısaltılır — link her zaman açılır. */
+function paketUret(st,zorla,limitEx,limitGor){
   const wk=weekKey(today());
-  const p={v:1,id:st.id,ad:st.name,track:st.track,grade:st.grade,dept:st.dept,rank:st.rank,
-    sinav:st.sinavTarihi||'',tel:st.tel||'',kocTel:DB.kocTel||'',url:DB.siteUrl||'',topics:st.topics,sureler:DB.sureler||{},zorla:!!zorla,
+  const eX = limitEx===undefined?12:limitEx;
+  const eG = limitGor===undefined?30:limitGor;
+  const denemeler=[...st.exams].sort((a,b)=>a.date.localeCompare(b.date)).slice(-eX)
+    .map(e=>{const n={}; for(const k in e.n) n[k]=Math.round(net(e.n[k].d||0,e.n[k].y||0)*100)/100;
+      return [e.date, (e.name||'').slice(0,26), e.tur||'tyt', n];});
+  const gorevler=st.tasks.filter(t=>!t.rutin&&t.konu&&t.s===1&&weekKey(t.date)<wk)
+    .sort((a,b)=>a.date.localeCompare(b.date)).slice(-eG)
+    .map(t=>{const duz=(KONU[t.sub]||[]).flatMap(u=>u[1]); const i=duz.indexOf(t.konu);
+      return [t.date, t.sub, i>=0?i:t.konu, t.yap||0, t.q||0];});
+  const p={v:2,id:st.id,ad:st.name,track:st.track,grade:st.grade,dept:st.dept,rank:st.rank,
+    sinav:st.sinavTarihi||'',tel:st.tel||'',kocTel:DB.kocTel||'',url:DB.siteUrl||'',
+    k:konuIndeksle(st.topics||{}), sureler:DB.sureler||{}, zorla:!!zorla,
     score:st.score||'',refNets:st.refNets||{},tabanPuan:st.tabanPuan||'',tabanSira:st.tabanSira||'',
-    dip:st.dip||'',obp:st.obp||'',yerlesti:!!st.yerlesti,
-    tasks:st.tasks.filter(t=>weekKey(t.date)===wk || (!t.rutin&&t.konu&&t.s!==1&&weekKey(t.date)<wk)).map(t=>({id:t.id,date:t.date,sub:t.sub,konu:t.konu,
-      q:t.q||0,txt:t.txt||'',rutin:!!t.rutin,dks:t.dks,yap:t.yap||0,s:t.s}))};
+    tabanYil:st.tabanYil||'',hsaat:st.haftalikSaat||'',dip:st.dip||'',obp:st.obp||'',yerlesti:!!st.yerlesti,
+    e:denemeler, g:gorevler,
+    tasks:st.tasks.filter(t=>weekKey(t.date)===wk || (!t.rutin&&t.konu&&t.s!==1&&weekKey(t.date)<wk))
+      .map(t=>({id:t.id,date:t.date,sub:t.sub,konu:t.konu,q:t.q||0,txt:t.txt||'',rutin:!!t.rutin,dks:t.dks,yap:t.yap||0,s:t.s}))};
   const kod='KOCPAKET1:'+b64e(JSON.stringify(p));
-  return DB.siteUrl ? DB.siteUrl.replace(/\/?$/,'/')+'ogrenci-paneli.html#'+encodeURIComponent(kod) : kod;
+  const link = DB.siteUrl ? DB.siteUrl.replace(/\/?$/,'/')+'ogrenci-paneli.html#'+encodeURIComponent(kod) : kod;
+  // güvenlik: link çok uzunsa geçmişi kısalt ve tekrar dene
+  if(DB.siteUrl && link.length>7000){
+    if(eG>0) return paketUret(st,zorla,eX,Math.max(0,eG-10));
+    if(eX>4) return paketUret(st,zorla,eX-4,0);
+  }
+  return link;
 }
 function setSite(v){ DB.siteUrl=v.trim(); PAKET=null; save(); render(); }
 function setKocTel(v){ DB.kocTel=v.trim(); PAKET=null; save(); render(); }
