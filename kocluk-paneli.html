@@ -995,6 +995,75 @@ function yedekDurum(){
 }
 
 /* ================= ÖĞRENCİ PANELİ İLE ALIŞVERİŞ ================= */
+/* ================= SIKIŞTIRMA =================
+   LZW (12 bit). WhatsApp uzun linkleri sonuna kadar tıklanabilir yapmıyor;
+   paket ve rapor kodları bu yüzden sıkıştırılıp kısaltılır. */
+/* LZW — sabit 12 bit kod, sözlük dolunca sıfırlanır. Senkron, kütüphanesiz. */
+var LZW_MAX=4096;
+function _enc(s){
+  var d={}, next=256, w='', codes=[], i;
+  for(i=0;i<256;i++) d[String.fromCharCode(i)]=i;
+  for(i=0;i<s.length;i++){
+    var c=s[i], wc=w+c;
+    if(d[wc]!==undefined){ w=wc; }
+    else{
+      codes.push(d[w]);
+      if(next<LZW_MAX){ d[wc]=next++; }
+      else{ d={}; for(var j=0;j<256;j++) d[String.fromCharCode(j)]=j; next=256; }
+      w=c;
+    }
+  }
+  if(w!=='') codes.push(d[w]);
+  return codes;
+}
+function _dec(codes){
+  var d=[], next=256, i;
+  for(i=0;i<256;i++) d[i]=String.fromCharCode(i);
+  var w=d[codes[0]], out=w;
+  for(i=1;i<codes.length;i++){
+    var k=codes[i], entry = d[k]!==undefined ? d[k] : w+w.charAt(0);
+    out+=entry;
+    if(next<LZW_MAX){ d[next++]=w+entry.charAt(0); }
+    else{ d=[]; for(var j=0;j<256;j++) d[j]=String.fromCharCode(j); next=256; }
+    w=entry;
+  }
+  return out;
+}
+/* 12 bitlik kodları bayta paketle: 2 kod = 3 bayt */
+function _pack(codes){
+  var n=codes.length, b=new Uint8Array(3+Math.ceil(n*3/2));
+  b[0]=(n>>16)&255; b[1]=(n>>8)&255; b[2]=n&255;
+  var p=3;
+  for(var i=0;i<n;i+=2){
+    var a=codes[i], c=(i+1<n)?codes[i+1]:0;
+    b[p++]=a>>4; b[p++]=((a&15)<<4)|(c>>8); b[p++]=c&255;
+  }
+  return b;
+}
+function _unpack(b){
+  var n=(b[0]<<16)|(b[1]<<8)|b[2], codes=[], p=3;
+  while(codes.length<n){
+    var x=b[p++], y=b[p++], z=b[p++];
+    codes.push((x<<4)|(y>>4));
+    if(codes.length<n) codes.push(((y&15)<<8)|z);
+  }
+  return codes;
+}
+function sikistir(str){
+  var utf=unescape(encodeURIComponent(str));
+  var b=_pack(_enc(utf)), bin='';
+  for(var i=0;i<b.length;i+=8192) bin+=String.fromCharCode.apply(null,b.subarray(i,i+8192));
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function ac(b64){
+  var s=b64.replace(/-/g,'+').replace(/_/g,'/');
+  var bin=atob(s+'==='.slice((s.length+3)%4));
+  var b=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i);
+  return decodeURIComponent(escape(_dec(_unpack(b))));
+}
+
+
 function b64e(s){const b=new TextEncoder().encode(s);let o='';for(let i=0;i<b.length;i+=8192)o+=String.fromCharCode(...b.subarray(i,i+8192));return btoa(o);}
 function b64d(s){return new TextDecoder().decode(Uint8Array.from(atob(s),c=>c.charCodeAt(0)));}
 function hashKod(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36);}
@@ -1010,14 +1079,56 @@ function kurtarmaWa(){
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
   window.open((tel?`https://wa.me/${tel}`:'https://wa.me/')+'?text='+encodeURIComponent(bas+kod),'_blank','noopener');
 }
+function paketIcerik(st){
+  const wk=weekKey(today());
+  const t=st.tasks.filter(x=>weekKey(x.date)>=wk || (!x.rutin&&x.konu&&x.s!==1&&weekKey(x.date)<wk));
+  return {odev:t.length, rutin:t.filter(x=>x.rutin).length, konu:t.filter(x=>!x.rutin).length,
+    deneme:Math.min(12,(st.exams||[]).length),
+    isaret:Object.keys(st.topics||{}).reduce((a,k)=>a+Object.keys(st.topics[k]).length,0)};
+}
 function konuIndeksle(topics){
+  // Ardışık konu numaralarını aralık olarak yazar: "0-40,45,47" gibi.
   const out={};
   for(const sk in topics){
-    const duz=(KONU[sk]||[]).flatMap(u=>u[1]); const l=[];
-    for(const t in topics[sk]){ const i=duz.indexOf(t); l.push([i>=0?i:t, topics[sk][t]]); }
-    if(l.length) out[sk]=l;
+    const duz=(KONU[sk]||[]).flatMap(u=>u[1]);
+    const grup={}, adli=[];
+    for(const t in topics[sk]){
+      const d=topics[sk][t], i=duz.indexOf(t);
+      if(i>=0){ (grup[d]=grup[d]||[]).push(i); } else adli.push([t,d]);
+    }
+    const par={};
+    for(const d in grup){
+      const a=grup[d].sort((x,y)=>x-y), pr=[];
+      let bas=a[0], on=a[0];
+      for(let j=1;j<=a.length;j++){
+        if(a[j]===on+1){ on=a[j]; continue; }
+        pr.push(bas===on?String(bas):bas+'-'+on);
+        bas=a[j]; on=a[j];
+      }
+      par[d]=pr.join(',');
+    }
+    if(Object.keys(par).length||adli.length) out[sk]={r:par,a:adli};
   }
   return out;
+}
+function konuAcik(k){
+  const topics={};
+  for(const sk in (k||{})){
+    const duz=(KONU[sk]||[]).flatMap(u=>u[1]); topics[sk]={};
+    const blok=k[sk];
+    if(Array.isArray(blok)){ // eski biçim
+      blok.forEach(([i,d])=>{ const ad=typeof i==='number'?duz[i]:i; if(ad!==undefined) topics[sk][ad]=d; });
+      continue;
+    }
+    for(const d in (blok.r||{})){
+      String(blok.r[d]).split(',').filter(Boolean).forEach(par=>{
+        const [a,b]=par.split('-').map(Number);
+        for(let i=a;i<=(isNaN(b)?a:b);i++){ if(duz[i]!==undefined) topics[sk][duz[i]]=+d; }
+      });
+    }
+    (blok.a||[]).forEach(([ad,d])=>topics[sk][ad]=d);
+  }
+  return topics;
 }
 /* Paket: öğrencinin tüm kaydı. Konu adları indeks, denemeler net olarak sıkıştırılır.
    Link 7000 karakteri aşarsa geçmiş kademeli kısaltılır — link her zaman açılır. */
@@ -1025,11 +1136,13 @@ function paketUret(st,zorla,limitEx,limitGor){
   const wk=weekKey(today());
   const eX = limitEx===undefined?12:limitEx;
   const eG = limitGor===undefined?30:limitGor;
-  const denemeler=[...st.exams].sort((a,b)=>a.date.localeCompare(b.date)).slice(-eX)
+  const denemeler=(eX>0?[...st.exams].sort((a,b)=>a.date.localeCompare(b.date)).slice(-eX):[])
     .map(e=>{const n={}; for(const k in e.n) n[k]=Math.round(net(e.n[k].d||0,e.n[k].y||0)*100)/100;
       return [e.date, (e.name||'').slice(0,26), e.tur||'tyt', n];});
-  const gorevler=st.tasks.filter(t=>!t.rutin&&t.konu&&t.s===1&&weekKey(t.date)<wk)
-    .sort((a,b)=>a.date.localeCompare(b.date)).slice(-eG)
+  const gorevlerHam=st.tasks.filter(t=>!t.rutin&&t.konu&&t.s===1&&weekKey(t.date)<wk)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  const gorevler2 = eG>0 ? gorevlerHam.slice(-eG) : [];
+  const gorevler = gorevler2
     .map(t=>{const duz=(KONU[t.sub]||[]).flatMap(u=>u[1]); const i=duz.indexOf(t.konu);
       return [t.date, t.sub, i>=0?i:t.konu, t.yap||0, t.q||0];});
   const p={v:2,id:st.id,ad:st.name,track:st.track,grade:st.grade,dept:st.dept,rank:st.rank,
@@ -1038,27 +1151,34 @@ function paketUret(st,zorla,limitEx,limitGor){
     score:st.score||'',refNets:st.refNets||{},tabanPuan:st.tabanPuan||'',tabanSira:st.tabanSira||'',
     tabanYil:st.tabanYil||'',hsaat:st.haftalikSaat||'',dip:st.dip||'',obp:st.obp||'',yerlesti:!!st.yerlesti,
     e:denemeler, g:gorevler,
-    tasks:st.tasks.filter(t=>weekKey(t.date)===wk || (!t.rutin&&t.konu&&t.s!==1&&weekKey(t.date)<wk))
+    tasks:st.tasks.filter(t=>weekKey(t.date)>=wk || (!t.rutin&&t.konu&&t.s!==1&&weekKey(t.date)<wk))
       .map(t=>({id:t.id,date:t.date,sub:t.sub,konu:t.konu,q:t.q||0,txt:t.txt||'',rutin:!!t.rutin,dks:t.dks,yap:t.yap||0,s:t.s}))};
-  const kod='KOCPAKET1:'+b64e(JSON.stringify(p));
+  const js=JSON.stringify(p);
+  const sik='KOCPAKET2:'+sikistir(js), duz='KOCPAKET1:'+b64e(js);
+  const kod = sik.length<duz.length ? sik : duz;
   const link = DB.siteUrl ? DB.siteUrl.replace(/\/?$/,'/')+'ogrenci-paneli.html#'+encodeURIComponent(kod) : kod;
-  // güvenlik: link çok uzunsa geçmişi kısalt ve tekrar dene
-  if(DB.siteUrl && link.length>7000){
+  // WhatsApp uzun linkleri sonuna kadar tıklanabilir yapmıyor: 2000 karakteri aşarsa geçmişi kısalt
+  if(link.length>2000){
     if(eG>0) return paketUret(st,zorla,eX,Math.max(0,eG-10));
-    if(eX>4) return paketUret(st,zorla,eX-4,0);
+    if(eX>0) return paketUret(st,zorla,Math.max(0,eX-4),0);
   }
   return link;
 }
 function setSite(v){ DB.siteUrl=v.trim(); PAKET=null; save(); render(); }
 function setKocTel(v){ DB.kocTel=v.trim(); PAKET=null; save(); render(); }
 function paketGoster(){
-  const st=cur(), kod=paketUret(st);
+  const st=cur(); PAKET=null; const kod=paketUret(st);
   const el=document.getElementById('pkKutu'); if(el) el.textContent=kod;
   PAKET=kod; render();
 }
 let PAKET=null;
 function paketWa(){
-  const st=cur(); if(!PAKET) PAKET=paketUret(st);
+  const st=cur();
+  PAKET=paketUret(st);            // her seferinde yeniden üret — eski paket gönderilmesin
+  const kontrol=paketIcerik(st);
+  if(!kontrol.odev){
+    if(!confirm(`UYARI: Bu pakette hiç ödev yok.\n\nÖğrenciye boş bir liste gidecek.\n\nOlası sebepler:\n· Bu hafta henüz ödev vermedin (Ödevler sekmesi)\n· Verdiğin ödevlerin hepsi "Yapıldı" işaretli\n\nYine de gönderilsin mi?`)) { TAB='odev'; render(); return; }
+  }
   const bas=`${st.name} — bu haftanın paketi (${today()})\nÇalışma panelinde "Paketi yükle" kısmına yapıştır:\n\n`;
   let tel=String(st.tel||'').replace(/\D/g,'');
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
@@ -1068,15 +1188,7 @@ function paketWa(){
    v2'de konu adları sıra numarası, alan adları tek harf. */
 function raporNormalle(p){
   if(!p||p.v!==2) return p;
-  const topics={};
-  for(const sk in (p.k||{})){
-    const duz=(KONU[sk]||[]).flatMap(u=>u[1]);
-    topics[sk]={};
-    (p.k[sk]||[]).forEach(([i,d])=>{
-      const ad = typeof i==='number' ? duz[i] : i;
-      if(ad!==undefined) topics[sk][ad]=d;
-    });
-  }
+  const topics=konuAcik(p.k||{});
   return {v:2,id:p.id,ad:p.ad,
     tasks:(p.t||[]).map(a=>({i:a[0],s:a[1],y:a[2]})),
     topics,
@@ -1086,10 +1198,16 @@ function raporNormalle(p){
 }
 
 /* raporun hangi öğrenciye ait olduğunu bul: önce kimlik, sonra isim */
+function raporCoz(txt){
+  let m=txt.match(/KOCRAPOR2:([A-Za-z0-9_\-]+)/);
+  if(m) return JSON.parse(ac(m[1]));
+  m=txt.match(/KOCRAPOR1:([A-Za-z0-9+/=]+)/);
+  if(m) return JSON.parse(b64d(m[1]));
+  return null;
+}
+function raporVarMi(txt){ return /KOCRAPOR[12]:/.test(txt); }
 function raporSahibi(txt){
-  const m=txt.match(/KOCRAPOR1:([A-Za-z0-9+/=]+)/);
-  if(!m) return {};
-  let p; try{ p=raporNormalle(JSON.parse(b64d(m[1]))); }catch(e){ return {}; }
+  let p; try{ p=raporCoz(txt); if(!p) return {}; p=raporNormalle(p); }catch(e){ return {}; }
   let hedef=DB.students.find(s=>s.id===p.id);
   if(!hedef && p.ad) hedef=DB.students.find(s=>norm(s.name)===norm(p.ad));
   return {id:p.id, ad:p.ad, hedef};
@@ -1097,13 +1215,13 @@ function raporSahibi(txt){
 
 /* yapılandırılmış rapor kodunu oku */
 function raporKodOku(st,txt){
-  const m=txt.match(/KOCRAPOR1:([A-Za-z0-9+/=]+)/);
+  const m=txt.match(/KOCRAPOR[12]:([A-Za-z0-9+/=_\-]+)/);
   if(!m) return null;
   const hk=hashKod(m[1]);
   const onceki=(st.uygulanan||[]).find(x=>x.h===hk);
   if(onceki&&!confirm(`Bu rapor daha önce işlendi (${onceki.t}). Aynı kodu yeniden uygulamak bir şey değiştirmez ama yine de bakılsın mı?`)) return null;
-  let p; try{ p=JSON.parse(b64d(m[1])); }catch(e){ alert('Rapor kodu bozuk ya da eksik kopyalanmış.'); return null; }
-  p=raporNormalle(p);
+  let p; try{ p=raporNormalle(raporCoz(txt)); }catch(e){ alert('Rapor kodu bozuk ya da eksik kopyalanmış. Mesajın tamamını seçip yapıştır.'); return null; }
+  if(!p){ alert('Rapor kodu okunamadı.'); return null; }
   if(p.id&&p.id!==st.id&&norm(p.ad||'')!==norm(st.name)&&
      !confirm(`Bu rapor "${p.ad||'?'}" adına gönderilmiş, seçili öğrenci ise ${st.name}.\n\nYine de ${st.name}'e uygulansın mı?`)) return null;
   const P={rutin:[],odev:[],konu:[],deneme:[],ekstra:[],hedef:null,not:p.not||'',log:[],kod:true,h:hk};
@@ -1178,7 +1296,7 @@ function raporIsle(){
     alert('Yedek geri yüklendi. '+d.students.length+' öğrenci.');
     return;
   }
-  if(txt.includes('KOCRAPOR1:')){
+  if(raporVarMi(txt)){
     const sahip=raporSahibi(txt);
     if(sahip.hedef && sahip.hedef.id!==st.id){
       DB.sel=sahip.hedef.id; save();
@@ -1293,6 +1411,10 @@ function raporKart(st){
   const P=RAPOR_ON;
   return `<div class="card"><h2>1 · Paketi gönder<small>Bu haftanın ödevlerini ve konu durumlarını öğrencinin paneline yollar.</small></h2><div class="body">
     <div class="hint" style="margin:0 0 10px">Öğrenciye <b>ogrenci-paneli.html</b> dosyasını bir kez gönder. Sonra her hafta bu paketi yolla: o haftanın ödevleri, rutini ve konu durumları öğrencinin paneline yüklenir.</div>
+    ${(()=>{const c=paketIcerik(st);
+      return `<div class="flag ${c.odev?'ok':'bad'}" style="margin-bottom:10px"><span class="ic">${c.odev?'✓':'!'}</span><span>
+        <b>Bu pakette gidecekler:</b> ${c.konu} konu ödevi · ${c.rutin} rutin · ${c.deneme} deneme · ${c.isaret} konu işareti
+        ${c.odev?'':'<br><b>Hiç ödev yok!</b> Önce Ödevler sekmesinden ödev ver.'}</span></div>`;})()}
     <button class="btn" onclick="paketWa()">Paketi WhatsApp'la gönder</button>
     <button class="btn ghost" style="margin-left:8px" onclick="paketGoster()">${DB.siteUrl?'Linki':'Kodu'} göster</button>
     <button class="btn ghost" style="margin-left:8px" onclick="kurtarmaWa()">Kurtarma paketi gönder</button>
@@ -2720,9 +2842,9 @@ function kaynakUyarisi(){
   if(d&&d.students) DB=d;
   if(!DB.sel&&DB.students[0]) DB.sel=DB.students[0].id;
   const hs=decodeURIComponent(location.hash.slice(1)||'');
-  if(hs.includes('KOCRAPOR1:')){
+  if(/KOCRAPOR[12]:/.test(hs)){
     history.replaceState(null,'',location.pathname+location.search);
-    const m=hs.match(/KOCRAPOR1:([A-Za-z0-9+/=]+)/);
+    const m=hs.match(/KOCRAPOR[12]:([A-Za-z0-9+/=_\-]+)/);
     const bul=raporSahibi(hs);
     if(bul.hedef) DB.sel=bul.hedef.id;
     else if(bul.ad) setTimeout(()=>alert(`Bu rapor "${bul.ad}" adına gönderilmiş ama panelinde bu isimde bir öğrenci yok.\n\nÖnce öğrenciyi ekle, sonra raporu yeniden yapıştır.`),300);
