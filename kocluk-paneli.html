@@ -995,6 +995,50 @@ function yedekDurum(){
 }
 
 /* ================= ÖĞRENCİ PANELİ İLE ALIŞVERİŞ ================= */
+/* ================= KÖPRÜ (Apps Script posta kutusu) =================
+   Uzun paket/rapor kodları Google'a yazılır, WhatsApp'a kısa anahtar gider.
+   Link ~120 karaktere iner; hiçbir uygulamada kesilmez.
+   Köprü yoksa sistem eskisi gibi uzun link üretir — hiçbir işlev kaybolmaz. */
+let KOPRUDURUM='';
+function kopruKimlik(){
+  const u=DB.kopru||'';
+  const m=u.match(/\/macros\/s\/([A-Za-z0-9_\-]+)\//);
+  return m?m[1]:'';
+}
+function kopruAdres(kimlik){
+  return 'https://script.google.com/macros/s/'+(kimlik||kopruKimlik())+'/exec';
+}
+function yeniAnahtar(){
+  return (Date.now().toString(36)+Math.random().toString(36).slice(2,5)).toUpperCase();
+}
+async function kopruYaz(veri){
+  const k=kopruKimlik(); if(!k) throw new Error('Köprü adresi tanımlı değil');
+  const anahtar=yeniAnahtar();
+  const r=await fetch(kopruAdres(k)+'?koy='+anahtar,{
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:veri});
+  const j=await r.json();
+  if(!j||!j.ok) throw new Error('Köprü yazamadı');
+  return anahtar;
+}
+async function kopruOku(kimlik,anahtar){
+  const r=await fetch(kopruAdres(kimlik)+'?al='+encodeURIComponent(anahtar),{cache:'no-store'});
+  const j=await r.json();
+  if(!j||!j.bulundu) throw new Error('Anahtar bulunamadı ya da süresi dolmuş');
+  return j.veri;
+}
+function setKopru(v){ DB.kopru=v.trim(); KOPRUDURUM=''; PAKET=null; PAKETKISA=null; save(); render(); }
+async function kopruTest(){
+  KOPRUDURUM='Deneniyor...'; render();
+  try{
+    if(!kopruKimlik()) throw new Error('Adres "…/macros/s/…/exec" biçiminde olmalı');
+    const a=await kopruYaz('deneme-'+Date.now());
+    const v=await kopruOku(kopruKimlik(),a);
+    KOPRUDURUM = v.startsWith('deneme-') ? 'OK|Köprü çalışıyor. Artık kısa link gönderebilirsin.'
+                                         : 'HATA|Yazıldı ama geri okunamadı.';
+  }catch(e){ KOPRUDURUM='HATA|'+e.message; }
+  render();
+}
+
 /* ================= SIKIŞTIRMA =================
    LZW (12 bit). WhatsApp uzun linkleri sonuna kadar tıklanabilir yapmıyor;
    paket ve rapor kodları bu yüzden sıkıştırılıp kısaltılır. */
@@ -1146,7 +1190,7 @@ function paketUret(st,zorla,limitEx,limitGor){
     .map(t=>{const duz=(KONU[t.sub]||[]).flatMap(u=>u[1]); const i=duz.indexOf(t.konu);
       return [t.date, t.sub, i>=0?i:t.konu, t.yap||0, t.q||0];});
   const p={v:2,id:st.id,ad:st.name,track:st.track,grade:st.grade,dept:st.dept,rank:st.rank,
-    sinav:st.sinavTarihi||'',tel:st.tel||'',kocTel:DB.kocTel||'',url:DB.siteUrl||'',
+    sinav:st.sinavTarihi||'',tel:st.tel||'',kocTel:DB.kocTel||'',url:DB.siteUrl||'',kopru:kopruKimlik(),
     k:konuIndeksle(st.topics||{}), sureler:DB.sureler||{}, zorla:!!zorla,
     score:st.score||'',refNets:st.refNets||{},tabanPuan:st.tabanPuan||'',tabanSira:st.tabanSira||'',
     tabanYil:st.tabanYil||'',hsaat:st.haftalikSaat||'',dip:st.dip||'',obp:st.obp||'',yerlesti:!!st.yerlesti,
@@ -1166,15 +1210,29 @@ function paketUret(st,zorla,limitEx,limitGor){
 }
 function setSite(v){ DB.siteUrl=v.trim(); PAKET=null; save(); render(); }
 function setKocTel(v){ DB.kocTel=v.trim(); PAKET=null; save(); render(); }
+async function kisaLinkHazirla(){
+  const st=cur();
+  if(!kopruKimlik()){ alert('Önce köprü adresini gir ve test et.'); return; }
+  PAKETHAZIR=false; KOPRUDURUM='Paket yükleniyor...'; render();
+  try{
+    const uzun=paketUret(st,false);
+    const kod=(uzun.split('#')[1]?decodeURIComponent(uzun.split('#')[1]):uzun);
+    const anahtar=await kopruYaz(kod);
+    const taban=(DB.siteUrl||'').replace(/\/?$/,'/');
+    PAKETKISA=taban+'ogrenci-paneli.html#KM:'+kopruKimlik()+'.'+anahtar;
+    PAKETHAZIR=true; KOPRUDURUM='OK|Kısa link hazır: '+PAKETKISA.length+' karakter';
+  }catch(e){ PAKETKISA=null; KOPRUDURUM='HATA|'+e.message; }
+  render();
+}
 function paketGoster(){
   const st=cur(); PAKET=null; const kod=paketUret(st);
   const el=document.getElementById('pkKutu'); if(el) el.textContent=kod;
   PAKET=kod; render();
 }
-let PAKET=null;
+let PAKET=null, PAKETKISA=null, PAKETHAZIR=false;
 function paketWa(){
   const st=cur();
-  PAKET=paketUret(st);            // her seferinde yeniden üret — eski paket gönderilmesin
+  PAKET = (PAKETHAZIR&&PAKETKISA) ? PAKETKISA : paketUret(st);
   const kontrol=paketIcerik(st);
   if(!kontrol.odev){
     if(!confirm(`UYARI: Bu pakette hiç ödev yok.\n\nÖğrenciye boş bir liste gidecek.\n\nOlası sebepler:\n· Bu hafta henüz ödev vermedin (Ödevler sekmesi)\n· Verdiğin ödevlerin hepsi "Yapıldı" işaretli\n\nYine de gönderilsin mi?`)) { TAB='odev'; render(); return; }
@@ -1205,7 +1263,18 @@ function raporCoz(txt){
   if(m) return JSON.parse(b64d(m[1]));
   return null;
 }
-function raporVarMi(txt){ return /KOCRAPOR[12]:/.test(txt); }
+function raporVarMi(txt){ return /KOCRAPOR[12]:/.test(txt)||/KOCM:[A-Za-z0-9_\-]+\.[A-Za-z0-9]+/.test(txt); }
+async function kisaKoduAc(){
+  const el=document.getElementById('rpText'); if(!el) return false;
+  const m=el.value.match(/KOCM:([A-Za-z0-9_\-]+)\.([A-Za-z0-9]+)/);
+  if(!m) return false;
+  KOPRUDURUM='Rapor indiriliyor...'; render();
+  try{
+    const v=await kopruOku(m[1],m[2]);
+    el.value=v; KOPRUDURUM='OK|Rapor indirildi ('+v.length+' karakter).'; render();
+    return true;
+  }catch(e){ KOPRUDURUM='HATA|Rapor indirilemedi: '+e.message; render(); return false; }
+}
 function raporSahibi(txt){
   let p; try{ p=raporCoz(txt); if(!p) return {}; p=raporNormalle(p); }catch(e){ return {}; }
   let hedef=DB.students.find(s=>s.id===p.id);
@@ -1283,9 +1352,15 @@ function durumBul(L){
   return null;
 }
 let RAPOR_ON=null, GERIKORU=true;
-function raporIsle(){
-  const st=cur(), txt=document.getElementById('rpText').value;
+async function raporIsle(){
+  const st=cur();
+  let txt=document.getElementById('rpText').value;
   if(!txt.trim()){alert('Öğrencinin mesajını yapıştır.');return;}
+  if(/KOCM:[A-Za-z0-9_\-]+\.[A-Za-z0-9]+/.test(txt)){
+    const oldu=await kisaKoduAc();
+    if(!oldu) return;
+    txt=document.getElementById('rpText').value;
+  }
   if(txt.includes('KOCYEDEK1:')){
     const i=txt.indexOf('KOCYEDEK1:')+10;
     let d; try{ d=JSON.parse(txt.slice(i).trim()); }catch(e){ alert('Yedek metni bozuk ya da eksik kopyalanmış. WhatsApp mesajının tamamını seçip yapıştır.'); return; }
@@ -1415,7 +1490,8 @@ function raporKart(st){
       return `<div class="flag ${c.odev?'ok':'bad'}" style="margin-bottom:10px"><span class="ic">${c.odev?'✓':'!'}</span><span>
         <b>Bu pakette gidecekler:</b> ${c.konu} konu ödevi · ${c.rutin} rutin · ${c.deneme} deneme · ${c.isaret} konu işareti
         ${c.odev?'':'<br><b>Hiç ödev yok!</b> Önce Ödevler sekmesinden ödev ver.'}</span></div>`;})()}
-    <button class="btn" onclick="paketWa()">Paketi WhatsApp'la gönder</button>
+    ${kopruKimlik()?`<button class="btn ghost" onclick="kisaLinkHazirla()">${PAKETHAZIR?'✓ Kısa link hazır':'1) Kısa link hazırla'}</button> `:''}
+    <button class="btn" onclick="paketWa()">${PAKETHAZIR?'2) ':''}Paketi WhatsApp'la gönder</button>
     <button class="btn ghost" style="margin-left:8px" onclick="paketGoster()">${DB.siteUrl?'Linki':'Kodu'} göster</button>
     <button class="btn ghost" style="margin-left:8px" onclick="kurtarmaWa()">Kurtarma paketi gönder</button>
     <div class="fr" style="margin-top:14px">
@@ -1425,6 +1501,17 @@ function raporKart(st){
       <div><label class="f">Senin WhatsApp numaran</label>
       <input type="text" value="${esc(DB.kocTel||'')}" placeholder="05XX XXX XX XX"
         onchange="setKocTel(this.value)"></div></div>
+    <div class="fr">
+      <div style="flex:1"><label class="f">Köprü adresi — kısa link için (isteğe bağlı)</label>
+      <input type="text" id="kopruKutu" value="${esc(DB.kopru||'')}" placeholder="https://script.google.com/macros/s/.../exec"
+        onchange="setKopru(this.value)"></div>
+      <div style="flex:none;align-self:flex-end"><button class="btn ghost" onclick="kopruTest()">Köprüyü test et</button></div>
+    </div>
+    ${KOPRUDURUM?`<div class="flag ${KOPRUDURUM.startsWith('OK|')?'ok':KOPRUDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-bottom:8px">
+      <span class="ic">${KOPRUDURUM.startsWith('OK|')?'✓':KOPRUDURUM.startsWith('HATA|')?'!':'·'}</span><span>${esc(KOPRUDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
+    <div class="hint" style="margin-bottom:8px">${kopruKimlik()
+      ? 'Köprü tanımlı. <b>Kısa link hazırla</b> dersen paket Google\'a yazılır, WhatsApp\'a ~120 karakterlik bir link gider — hiçbir uygulamada kesilmez.'
+      : 'Köprü tanımlı değil; uzun link gönderiliyor. Bazı telefonlarda WhatsApp uzun linki yarıda keser. Kurulum için <b>kocluk-kopru.gs</b> dosyasına bak.'}</div>
     <div class="hint" style="margin-bottom:8px">Numaran pakete gömülür; öğrenci "Rapor gönder" dediğinde mesaj doğrudan sana açılır.
     <br><b>Kurtarma paketi:</b> öğrencinin verisi silinirse bunu gönder — sende duran konu durumları onun paneline geri yazılır.</div>
     <div class="hint">Adres boşsa uzun bir kod gönderilir, öğrenci yapıştırır. İki dosyayı GitHub Pages ya da Netlify'a koyup adresi buraya yazarsan <b>gönderdiğin şey tıklanabilir linke dönüşür</b> — öğrenci tıklar, paket kendiliğinden yüklenir. Kod adresin # işaretinden sonrasında durur ve <b>hiçbir zaman sunucuya gitmez</b>; veri yine sadece cihazlarda kalır.</div>
@@ -1434,7 +1521,7 @@ function raporKart(st){
 
   <div class="card"><h2>2 · Öğrenci raporunu işle<small>Pazar akşamı gelen raporu buraya yapıştır. Önce oku, sonra uygula.</small></h2><div class="body">
     <div class="hint" style="margin:0 0 10px">WhatsApp'tan kendine gönderdiğin <b>KOCYEDEK1:</b> yedeğini de buraya yapıştırıp geri yükleyebilirsin.<br>Öğrencinin gönderdiği <b>KOCRAPOR1:</b> kodunu yapıştır — ödevler, konular ve denemeler otomatik işlenir. Kod yoksa serbest yazdığı mesajı da yapıştırabilirsin, panel anlamaya çalışır. <b>Hiçbir şey onayın olmadan değişmez.</b></div>
-    <textarea id="rpText" rows="6" placeholder="KOCRAPOR1:... &#10;&#10;ya da serbest metin:&#10;Paragraf 80 yaptım, problem 100 bitti&#10;Türev yarım kaldı&#10;Kalıtım yapamadım" style="resize:vertical"></textarea>
+    <textarea id="rpText" rows="6" placeholder="KOCM:... (kısa kod)&#10;KOCRAPOR2:... (uzun kod)&#10;&#10;ya da serbest metin:&#10;Paragraf 80 yaptım, problem 100 bitti&#10;Türev yarım kaldı&#10;Kalıtım yapamadım" style="resize:vertical"></textarea>
     <div style="margin-top:10px"><button class="btn" onclick="raporIsle()">Raporu oku</button>
       ${P?'<button class="btn ghost" style="margin-left:8px" onclick="RAPOR_ON=null;render()">Vazgeç</button>':''}</div>
     ${P&&P.log.length?`<div style="margin-top:16px;border-top:1px solid var(--line-soft);padding-top:14px">

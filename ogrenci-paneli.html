@@ -103,6 +103,24 @@ async function save(){ const s=JSON.stringify(D); MEM=D;
   try{ localStorage.setItem(KEY,s); }catch(e){}
 }
 /* ================= KODLAMA ================= */
+/* ================= KÖPRÜ (Apps Script posta kutusu) ================= */
+function kopruAdres(kimlik){ return 'https://script.google.com/macros/s/'+kimlik+'/exec'; }
+function yeniAnahtar(){ return (Date.now().toString(36)+Math.random().toString(36).slice(2,5)).toUpperCase(); }
+async function kopruOku(kimlik,anahtar){
+  const r=await fetch(kopruAdres(kimlik)+'?al='+encodeURIComponent(anahtar),{cache:'no-store'});
+  const j=await r.json();
+  if(!j||!j.bulundu) throw new Error('Kod bulunamadı ya da süresi dolmuş');
+  return j.veri;
+}
+async function kopruYaz(kimlik,veri){
+  const anahtar=yeniAnahtar();
+  const r=await fetch(kopruAdres(kimlik)+'?koy='+anahtar,{
+    method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:veri});
+  const j=await r.json();
+  if(!j||!j.ok) throw new Error('Gönderilemedi');
+  return anahtar;
+}
+
 /* ================= SIKIŞTIRMA =================
    LZW (12 bit). WhatsApp uzun linkleri sonuna kadar tıklanabilir yapmıyor;
    paket ve rapor kodları bu yüzden sıkıştırılıp kısaltılır. */
@@ -250,17 +268,18 @@ function paketYukle(metin){
     const p=paketNormalle(JSON.parse(sikma?ac(m[1]):b64d(m[1])));
     if(D&&D.id===p.id&&!p.zorla){ // güncelleme: kendi işaretlerini koru, ödevleri tazele
       D.tasks=p.tasks; D.ad=p.ad; D.track=p.track; D.grade=p.grade;
-      D.dept=p.dept; D.rank=p.rank; D.sinav=p.sinav; D.tel=p.tel; D.kocTel=p.kocTel||D.kocTel; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
+      D.dept=p.dept; D.rank=p.rank; D.sinav=p.sinav; D.tel=p.tel; D.kocTel=p.kocTel||D.kocTel; D.kopru=p.kopru||D.kopru||''; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
       D.tabanPuan=p.tabanPuan||D.tabanPuan; D.tabanSira=p.tabanSira||D.tabanSira; D.tabanYil=p.tabanYil||D.tabanYil;
       birlestir(p);
     }else{
-      D={id:p.id,ad:p.ad,track:p.track,grade:p.grade,dept:p.dept,rank:p.rank,sinav:p.sinav,tel:p.tel,kocTel:p.kocTel||'',sureler:p.sureler||{},score:p.score||'',refNets:p.refNets||{},obp:p.obp||'',yerlesti:!!p.yerlesti,
+      D={id:p.id,ad:p.ad,track:p.track,grade:p.grade,dept:p.dept,rank:p.rank,sinav:p.sinav,tel:p.tel,kocTel:p.kocTel||'',kopru:p.kopru||'',sureler:p.sureler||{},score:p.score||'',refNets:p.refNets||{},obp:p.obp||'',yerlesti:!!p.yerlesti,
          tabanPuan:p.tabanPuan||'',tabanSira:p.tabanSira||'',tabanYil:p.tabanYil||'',ekstra:[],hedef:null,
          tasks:p.tasks||[],topics:p.topics||{},exams:[],not:''};
       birlestir(p);
     }
     if(p.zorla&&D) D.kurtarma=today();
-    D.sonPaket=hk; D.sonPaketT=today(); D.url=p.url||D.url||''; D.kocTel=p.kocTel||D.kocTel||''; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
+    if(D&&D.kopru&&D.kopru.includes('/macros/s/')){ const mm=D.kopru.match(/\/macros\/s\/([A-Za-z0-9_\-]+)\//); if(mm) D.kopru=mm[1]; }
+    D.sonPaket=hk; D.sonPaketT=today(); D.url=p.url||D.url||''; D.kocTel=p.kocTel||D.kocTel||''; D.kopru=p.kopru||D.kopru||''; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
     save(); TAB='odev'; render();
     alert(p.zorla ? 'Kurtarma paketi yüklendi. Konu durumların öğretmenindeki son kayda göre geri getirildi.'
                   : 'Paket yüklendi. '+(D.tasks.length)+' ödev var.');
@@ -1026,7 +1045,10 @@ function vRapor(){
   </div></div>
 
   <div class="card"><h2>Raporu gönder</h2><div class="body">
-    <button class="btn wide" onclick="waGonder()">Öğretmenime WhatsApp'tan gönder</button>
+    ${D.kopru?`<button class="btn ghost wide" style="margin-bottom:8px" onclick="kisaKodHazirla()">${RHAZIR?'✓ Kısa kod hazır':'1) Kısa kod hazırla (önerilir)'}</button>`:''}
+    ${RDURUM?`<div class="flag ${RDURUM.startsWith('OK|')?'ok':RDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-bottom:8px">
+      <span class="ic">${RDURUM.startsWith('OK|')?'✓':RDURUM.startsWith('HATA|')?'!':'·'}</span><span>${esc(RDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
+    <button class="btn wide" onclick="waGonder()">${RHAZIR?'2) ':''}Öğretmenime WhatsApp'tan gönder</button>
     <button class="btn ghost wide" style="margin-top:10px" onclick="kopyala()">Kodu kopyala</button>
     <div class="hint" style="margin-top:10px">Kod uzun görünür, normaldir. Tamamını gönder, ortasından kesme.
       ${D.sonRapor?`<br>Son gönderim: <b>${esc(D.sonRapor)}</b>. Daha önce gönderdiğin denemeler tekrar yollanmaz, kod kısa kalır.`:''}</div>
@@ -1042,7 +1064,20 @@ function kopyala(){
   catch(e){alert('Kopyalanamadı. Aşağıdaki kutudan elle seçip kopyala.');}
   document.body.removeChild(ta);
 }
+let RKISA=null, RHAZIR=false, RDURUM='';
+async function kisaKodHazirla(){
+  if(!D.kopru){ alert('Öğretmenin köprü kurmamış. Uzun kodu gönderebilirsin, o da çalışır.'); return; }
+  RHAZIR=false; RDURUM='Hazırlanıyor...'; render();
+  try{
+    const anahtar=await kopruYaz(D.kopru, raporKodu());
+    RKISA='KOCM:'+D.kopru+'.'+anahtar;
+    RHAZIR=true; RDURUM='OK|Kısa kod hazır ('+RKISA.length+' karakter). Şimdi gönder.';
+    gonderildiIsaretle();
+  }catch(e){ RKISA=null; RDURUM='HATA|'+e.message; }
+  render();
+}
 function raporLink(){
+  if(RHAZIR&&RKISA) return RKISA;
   const k=raporKodu();
   return D.url ? D.url.replace(/\/?$/,'/')+'kocluk-paneli.html#'+encodeURIComponent(k) : k;
 }
@@ -1207,6 +1242,22 @@ function kaynakUyarisi(){
   const d=await load(); if(d&&d.id) D=d;
   render();
   const hs=decodeURIComponent(location.hash.slice(1)||'');
+  const km=hs.match(/^KM:([A-Za-z0-9_\-]+)\.([A-Za-z0-9]+)$/);
+  if(km){
+    const v=document.getElementById('view');
+    if(v) v.innerHTML='<div class="card"><div class="empty">Ödevlerin indiriliyor...</div></div>';
+    try{
+      const kod=await kopruOku(km[1],km[2]);
+      history.replaceState(null,'',location.pathname+location.search);
+      paketYukle(kod);
+    }catch(e){
+      if(v) v.innerHTML=`<div class="card"><div class="body"><div class="flag bad"><span class="ic">!</span><span>
+        <b>Ödevler indirilemedi.</b> ${esc(e.message)}<br><br>
+        İnternete bağlı olduğundan emin ol ve linke yeniden tıkla.
+        Sorun sürerse öğretmeninden yeni link iste.</span></div></div></div>`;
+    }
+    return;
+  }
   if(/KOCPAKET[12]:/.test(hs)){
     history.replaceState(null,'',location.pathname+location.search);
     paketYukle(hs);
