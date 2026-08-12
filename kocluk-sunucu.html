@@ -1186,7 +1186,7 @@ async function sunucudanOku(){
       sinavTarihi:o.sinav_tarihi||'', dip:o.diploma_notu==null?'':o.diploma_notu,
       obp:o.obp==null?'':o.obp, yerlesti:!!o.yerlesti,
       haftalikSaat:o.haftalik_saat==null?'':o.haftalik_saat,
-      refNets:o.hedef_netler||{}, authId:o.auth_id||null,
+      refNets:o.hedef_netler||{}, authId:o.auth_id||null, davetKodu:o.davet_kodu||null,
       tasks:[], exams:[], topics:{}, notlar:[], uygulanan:[]
     };
     yeni.students.push(st);
@@ -1234,7 +1234,8 @@ async function ogrenciYaz(st){
     obp:st.obp===''||st.obp==null?null:Number(st.obp),
     yerlesti:!!st.yerlesti,
     haftalik_saat:st.haftalikSaat===''||st.haftalikSaat==null?null:parseInt(st.haftalikSaat,10),
-    hedef_netler:st.refNets||{}, arsivlendi:false
+    hedef_netler:st.refNets||{}, arsivlendi:false,
+    davet_kodu: st.davetKodu||null
   }], 'id');
 
   /* ödevler */
@@ -2249,6 +2250,8 @@ function vHafta(st){
 
   ${raporKart(st)}
 
+  ${davetKart(st)}
+
   ${devredenKart(st)}
 
   ${rutinKart(st)}
@@ -3254,6 +3257,77 @@ function importData(ev){
     DB=d; DB.sel=DB.students[0]?.id||null; save(); render();
   }catch(e){alert('Dosya okunamadı: '+e.message);}};
   r.readAsText(f); ev.target.value='';
+}
+
+/* ---------- ÖĞRENCİ HESABI YÖNETİMİ ---------- */
+let DAVETDURUM='';
+function kodUret(){
+  const harf='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';  // karışan harfler yok (I,O,0,1)
+  let s=''; for(let i=0;i<6;i++) s+=harf[Math.floor(Math.random()*harf.length)];
+  return s;
+}
+async function davetUret(){
+  const st=cur(); if(!st) return;
+  DAVETDURUM='Kod üretiliyor...'; render();
+  try{
+    const kod=kodUret();
+    await sbGuncelle('ogrenciler','?id=eq.'+st.id, { davet_kodu:kod, auth_id:null });
+    st.davetKodu=kod; st.authId=null;
+    DAVETDURUM=''; render();
+  }catch(e){ DAVETDURUM='HATA|'+(e.message||e); render(); }
+}
+async function davetKopar(){
+  const st=cur(); if(!st) return;
+  if(!confirm(`${st.name} adlı öğrencinin hesap bağlantısı kesilecek ve yeni bir kod üretilecek.\n\nÖğrenci hesabını kaybettiyse ya da yeni bir hesapla girecekse bunu kullan.\n\nVerilerine dokunulmaz. Devam?`)) return;
+  try{
+    const kod=kodUret();
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/ogrenci_coz',{method:'POST',body:{ogr:st.id,yeni_kod:kod}}));
+    if(!r||!r.ok) throw new Error((r&&r.hata)||'Olmadı');
+    st.davetKodu=kod; st.authId=null; DAVETDURUM=''; render();
+    alert('Bağlantı kesildi. Yeni kod: '+kod);
+  }catch(e){ alert('Olmadı: '+(e.message||e)); }
+}
+async function sifreSifirla(){
+  const st=cur(); if(!st) return;
+  const mail=(st.eposta||'').trim();
+  if(!mail){ alert('Önce öğrencinin e-posta adresini gir (Hedef sekmesi → Öğrenci kaydı).'); return; }
+  if(!confirm(mail+' adresine şifre sıfırlama bağlantısı gönderilecek. Devam?')) return;
+  try{
+    await sbCagri('/auth/v1/recover',{method:'POST',body:{email:mail}});
+    alert('Gönderildi. Öğrenci e-postasındaki bağlantıya tıklayıp yeni şifre belirleyecek.');
+  }catch(e){ alert('Gönderilemedi: '+(e.message||e)); }
+}
+function davetKart(st){
+  const link=(DB.siteUrl||'').replace(/\/?$/,'/')+'ogrenci-sunucu.html';
+  const bagli=!!st.authId;
+  return `<div class="card"><h2>Öğrenci hesabı<small>Öğrenci kendi hesabıyla girer; ödevleri ve raporu kendiliğinden akar. WhatsApp paketi artık gerekmez.</small></h2><div class="body">
+    ${bagli?`<div class="flag ok"><span class="ic">✓</span><span><b>${esc(st.name)} hesabına bağlı.</b>
+        ${st.eposta?'E-posta: <b>'+esc(st.eposta)+'</b>':'E-posta kayıtlı değil.'}<br>
+        Ödevleri, denemeleri ve konu durumları anlık olarak buraya işleniyor.</span></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost mini" onclick="sifreSifirla()">Şifre sıfırlama gönder</button>
+        <button class="btn danger mini" onclick="davetKopar()">Bağlantıyı kes / yeni kod ver</button>
+      </div>`
+    :st.davetKodu?`<div class="flag ok"><span class="ic">✓</span><span><b>Davet kodu hazır.</b> Öğrenciye şunu gönder:</span></div>
+      <div style="margin-top:10px;background:#F3F7F8;border:1px solid var(--line-soft);border-radius:8px;padding:14px;text-align:center">
+        <div style="font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:5px;color:var(--accent)">${esc(st.davetKodu)}</div>
+        <div style="font-size:12px;color:var(--ink-3);margin-top:6px">${esc(link)}</div>
+      </div>
+      <button class="btn wide" style="margin-top:10px" onclick="davetWa()">Daveti WhatsApp'la gönder</button>
+      <button class="btn ghost wide" style="margin-top:8px" onclick="davetUret()">Yeni kod üret</button>
+      <div class="hint" style="margin-top:8px">Öğrenci bu adrese girer, hesap açar, kodu yazar. Kod bir kez kullanılır.</div>`
+    :`<div class="hint" style="margin-bottom:10px">${esc(st.name)} için henüz hesap açılmamış. Kod üret, öğrenciye gönder.</div>
+      <button class="btn wide" onclick="davetUret()">Davet kodu üret</button>`}
+    ${DAVETDURUM?`<div class="flag ${DAVETDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-top:10px"><span class="ic">·</span><span>${esc(DAVETDURUM.replace('HATA|',''))}</span></div>`:''}
+  </div></div>`;
+}
+function davetWa(){
+  const st=cur(); if(!st||!st.davetKodu) return;
+  const link=(DB.siteUrl||'').replace(/\/?$/,'/')+'ogrenci-sunucu.html';
+  const mesaj=`${st.name}, çalışma panelin hazır.\n\n1) Şu adrese gir:\n${link}\n\n2) "Hesabım yok — oluştur" de, e-posta ve şifre belirle\n\n3) Sana sorduğu kodu yaz:\n\n${st.davetKodu}\n\nBundan sonra ödevlerin doğrudan panelinde görünecek; WhatsApp'tan kod göndermene gerek kalmayacak.`;
+  let tel=String(st.tel||'').replace(/\D/g,'');
+  if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
+  baglantiAc((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),'WhatsApp — davet');
 }
 
 /* ---------- SUNUCU: giriş ve kurulum ekranı ---------- */
