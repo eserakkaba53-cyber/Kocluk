@@ -3311,20 +3311,30 @@ function davetKart(st){
     :st.davetKodu?`<div class="flag ok"><span class="ic">✓</span><span><b>Davet kodu hazır.</b> Öğrenciye şunu gönder:</span></div>
       <div style="margin-top:10px;background:#F3F7F8;border:1px solid var(--line-soft);border-radius:8px;padding:14px;text-align:center">
         <div style="font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:5px;color:var(--accent)">${esc(st.davetKodu)}</div>
-        <div style="font-size:12px;color:var(--ink-3);margin-top:6px">${esc(link)}</div>
+        <div style="font-size:11.5px;color:var(--ink-3);margin-top:8px;word-break:break-all;font-family:var(--mono)">${esc(davetLinki(st))}</div>
       </div>
+      <div class="flag ok" style="margin-top:10px"><span class="ic">i</span><span>
+        Bu bağlantı sunucu bilgilerini de taşır. Öğrenci tıklar, <b>sadece e-posta ve şifre</b> belirler — kod yazmasına bile gerek kalmaz.</span></div>
       <button class="btn wide" style="margin-top:10px" onclick="davetWa()">Daveti WhatsApp'la gönder</button>
       <button class="btn ghost wide" style="margin-top:8px" onclick="davetUret()">Yeni kod üret</button>
-      <div class="hint" style="margin-top:8px">Öğrenci bu adrese girer, hesap açar, kodu yazar. Kod bir kez kullanılır.</div>`
+      <div class="hint" style="margin-top:8px">Kod bir kez kullanılır. Bağlantı açılmazsa öğrenci panele girip kodu elle de yazabilir.</div>`
     :`<div class="hint" style="margin-bottom:10px">${esc(st.name)} için henüz hesap açılmamış. Kod üret, öğrenciye gönder.</div>
       <button class="btn wide" onclick="davetUret()">Davet kodu üret</button>`}
     ${DAVETDURUM?`<div class="flag ${DAVETDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-top:10px"><span class="ic">·</span><span>${esc(DAVETDURUM.replace('HATA|',''))}</span></div>`:''}
   </div></div>`;
 }
+function davetLinki(st){
+  const taban=(DB.siteUrl||'').replace(/\/?$/,'/')+'ogrenci-sunucu.html';
+  if(!st.davetKodu) return taban;
+  // sunucu adresi, anahtar ve davet kodu linkin içinde gider — öğrenci hiçbir ayar yapmaz
+  const paket=b64e(JSON.stringify({u:SB.url,k:SB.key,d:st.davetKodu}))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return taban+'#KUR:'+paket;
+}
 function davetWa(){
   const st=cur(); if(!st||!st.davetKodu) return;
-  const link=(DB.siteUrl||'').replace(/\/?$/,'/')+'ogrenci-sunucu.html';
-  const mesaj=`${st.name}, çalışma panelin hazır.\n\n1) Şu adrese gir:\n${link}\n\n2) "Hesabım yok — oluştur" de, e-posta ve şifre belirle\n\n3) Sana sorduğu kodu yaz:\n\n${st.davetKodu}\n\nBundan sonra ödevlerin doğrudan panelinde görünecek; WhatsApp'tan kod göndermene gerek kalmayacak.`;
+  const link=davetLinki(st);
+  const mesaj=`${st.name}, çalışma panelin hazır.\n\nAşağıdaki bağlantıya tıkla, e-posta ve şifre belirle. Hepsi bu kadar.\n\n${link}\n\nBundan sonra ödevlerin doğrudan panelinde görünecek; WhatsApp'tan kod göndermeye gerek kalmayacak.\n\n(Bağlantı açılmazsa: ${(DB.siteUrl||'').replace(/\/?$/,'/')}ogrenci-sunucu.html adresine gir ve kodu elle yaz: ${st.davetKodu})`;
   let tel=String(st.tel||'').replace(/\D/g,'');
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
   baglantiAc((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),'WhatsApp — davet');

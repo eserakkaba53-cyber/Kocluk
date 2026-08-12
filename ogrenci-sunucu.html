@@ -1496,8 +1496,32 @@ function yedekYukle(ev){
   r.readAsText(f); ev.target.value='';
 }
 
+/* ---------- DAVET LİNKİNDEN KURULUM ---------- */
+function davettenKur(hs){
+  const m=hs.match(/^KUR:([A-Za-z0-9_\-]+)$/);
+  if(!m) return false;
+  try{
+    const s=m[1].replace(/-/g,'+').replace(/_/g,'/');
+    const p=JSON.parse(b64d(s+'==='.slice((s.length+3)%4)));
+    if(!p.u||!p.k) return false;
+    SB.url=p.u; SB.key=p.k; sbSakla();
+    BEKLEYENKOD=(p.d||'').toUpperCase();
+    return true;
+  }catch(e){ return false; }
+}
+/* giriş/kayıt sonrası: bekleyen kod varsa kendiliğinden bağlan */
+async function otoBaglan(){
+  if(!BEKLEYENKOD) return false;
+  try{
+    const r=await ogrBaglan(BEKLEYENKOD);
+    if(r&&r.ok){ BEKLEYENKOD=''; return true; }
+    GHATA=(r&&r.hata)||'Kod kabul edilmedi'; BEKLEYENKOD='';
+  }catch(e){ GHATA=e.message||String(e); BEKLEYENKOD=''; }
+  return false;
+}
+
 /* ---------- SUNUCU: giriş / kod / kurulum ---------- */
-let GMOD='giris', GHATA='', GBEKLE=false, SYAZ='', SKUYRUK=null;
+let GMOD='giris', GHATA='', GBEKLE=false, SYAZ='', SKUYRUK=null, BEKLEYENKOD='';
 function sbAyarla(a,v){ SB[a]=v.trim(); sbSakla(); render(); }
 async function gTest(){
   GHATA='';
@@ -1535,6 +1559,7 @@ async function gKodGir(){
   GBEKLE=false; render();
 }
 async function sunucuAc(){
+  if(BEKLEYENKOD) await otoBaglan();
   const d=await ogrSunucudanOku();
   if(!d){ GMOD='kod'; GHATA=''; render(); return; }
   D=d; try{ localStorage.setItem(KEY,JSON.stringify(D)); }catch(e){}
@@ -1562,8 +1587,11 @@ async function sbCikisYap(){
 function girisEkrani(){
   const kurulu=sbKurulu(), iyi=GHATA.startsWith('OK|');
   const hata=GHATA?`<div class="flag ${iyi?'ok':'bad'}" style="margin-top:12px"><span class="ic">${iyi?'✓':'!'}</span><span>${esc(GHATA.replace(/^OK\|/,''))}</span></div>`:'';
-  if(!kurulu) return `<div class="card"><h2>Kurulum</h2><div class="body">
-    <div class="hint" style="margin-bottom:10px">Öğretmeninin verdiği iki bilgiyi yaz. Bunları bir kez girersin.</div>
+  if(!kurulu) return `<div class="card"><h2>Bağlantı bilgileri gerekli</h2><div class="body">
+    <div class="flag warn"><span class="ic">!</span><span>
+      <b>Öğretmeninin gönderdiği bağlantıya tıklayarak gelmen gerekiyor.</b><br>
+      O bağlantı gerekli ayarları kendiliğinden yapar. WhatsApp'taki mesajı bul ve linke tıkla.</span></div>
+    <div class="hint" style="margin:12px 0 10px">Bağlantı çalışmıyorsa öğretmeninden şu iki bilgiyi iste:</div>
     <div class="fr"><div style="flex:1"><label class="f">Sunucu adresi</label>
       <input type="text" value="${esc(SB.url)}" placeholder="https://xxxxx.supabase.co" onchange="sbAyarla('url',this.value)"></div></div>
     <div class="fr"><div style="flex:1"><label class="f">Anahtar</label>
@@ -1578,7 +1606,11 @@ function girisEkrani(){
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gKodGir()">${GBEKLE?'Bekle...':'Bağlan'}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>${hata}
   </div></div>`;
-  return `<div class="card"><h2>${GMOD==='kayit'?'Hesap oluştur':'Giriş yap'}<small>Ödevlerin ve gelişimin öğretmeninin sisteminde saklanır.</small></h2><div class="body">
+  return `<div class="card"><h2>${GMOD==='kayit'?'Hesap oluştur':'Giriş yap'}<small>${
+    BEKLEYENKOD?'Öğretmenin seni davet etti. E-posta ve şifre belirle, gerisi kendiliğinden olacak.'
+               :'Ödevlerin ve gelişimin öğretmeninin sisteminde saklanır.'}</small></h2><div class="body">
+    ${BEKLEYENKOD?`<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
+      Davet bağlantın tanındı. Sadece bir e-posta ve şifre belirlemen yeterli.</span></div>`:''}
     <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
       <input type="text" id="gMail" placeholder="ornek@eposta.com"></div></div>
     <div class="fr"><div style="flex:1"><label class="f">Şifre</label>
@@ -1605,6 +1637,14 @@ function kaynakUyarisi(){
 /* ---------- açılış ---------- */
 (async()=>{
   sbYukle();
+  const hs0=decodeURIComponent(location.hash.slice(1)||'');
+  if(hs0.indexOf('KUR:')===0 && davettenKur(hs0)){
+    history.replaceState(null,'',location.pathname+location.search);
+    if(sbOturum()){
+      try{ await otoBaglan(); const dd=await ogrSunucudanOku(); if(dd){D=dd;render();return;} }catch(e){}
+    }
+    GMOD='kayit'; render(); return;
+  }
   if(sbOturum()){
     try{ const dd=await ogrSunucudanOku();
       if(dd){ D=dd; render(); return; }
