@@ -556,6 +556,14 @@ function haftaKalan(){ if(!D.sinav) return null; const d=(new Date(D.sinav)-new 
 /* ---------- görünüm ---------- */
 function render(){
   const v=document.getElementById('view');
+  // SUNUCU MODU: oturum yoksa ya da kayda bağlı değilse giriş ekranı
+  if(sbKurulu() && (!sbOturum() || !OGRID)){
+    document.getElementById('hAd').textContent='Çalışma Panelim';
+    document.getElementById('hMeta').textContent='';
+    document.getElementById('tabs').innerHTML='';
+    v.innerHTML=girisEkrani();
+    return;
+  }
   if(!D&&KILAVUZ_TEK){
     document.getElementById('hAd').textContent='Kullanım Kılavuzu';
     document.getElementById('hMeta').textContent='';
