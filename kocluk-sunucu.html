@@ -156,6 +156,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
     <div class="rail-bot">
       <button onclick="addStudent()">+ Öğrenci ekle</button>
       <div id="sbDurum" style="font-size:11px;text-align:center;padding:4px 0 2px;font-family:var(--mono)"></div>
+      <div id="lisansRozet" style="font-size:10.5px;text-align:center;padding:0 0 4px;font-family:var(--mono)"></div>
       ${sbOturum()?`<button onclick="yereldenAktar()">Yerel veriyi sunucuya aktar</button>
       <button onclick="sbCikisYap()">Çıkış yap</button>`:''}
       <div id="ydDurum" style="font-size:11px;text-align:center;padding:3px 0 1px"></div>
@@ -1969,6 +1970,8 @@ function render(){
       }).join('')
     : '<div style="padding:20px 16px;color:#7E939F;font-size:12.5px">Henüz öğrenci yok. Aşağıdan ekle.</div>';
 
+  const lr=document.getElementById('lisansRozet');
+  if(lr) lr.innerHTML = sbOturum()?lisansRozeti():'';
   const ks=document.getElementById('kaynakSatir');
   if(ks){const k=kaynakBilgi();
     ks.textContent = k.tip==='dosya' ? '⚠ bilgisayar dosyası' : k.metin;
@@ -2249,6 +2252,8 @@ function vHafta(st){
   </div></div>
 
   ${raporKart(st)}
+
+  ${lisansUyarisi()}
 
   ${davetKart(st)}
 
@@ -3147,6 +3152,8 @@ function vHedef(st){
   return `
   ${hedefeUzaklik(st)}
 
+  ${lisansUyarisi()}
+
   ${yaklasmaKarti(st)}
 
   <div class="card"><h2>YÖK verisinden bölüm seç<small>Seçtiğinde taban puan, sıralama, kontenjan ve ders ders hedef netler otomatik dolar.</small></h2><div class="body">
@@ -3225,6 +3232,8 @@ function vHedef(st){
   </div>
   ${vPuan(st)}
 
+  ${hesapKarti()}
+
   <div class="card"><h2>Öğrenci kaydı</h2><div class="body">
     <div class="fr">
       <div><label class="f">Sınıf</label><input type="text" id="hG" value="${esc(st.grade)}"></div>
@@ -3257,6 +3266,99 @@ function importData(ev){
     DB=d; DB.sel=DB.students[0]?.id||null; save(); render();
   }catch(e){alert('Dosya okunamadı: '+e.message);}};
   r.readAsText(f); ev.target.value='';
+}
+
+/* ---------- LİSANS VE CİHAZ ---------- */
+let LISANS=null, CIHAZLAR=[], CIHAZHATA='';
+function cihazParmakIzi(){
+  // Tarayıcı + ekran + saat dilimi karışımı. Kimlik değil, cihaz ayırt edici.
+  const p=[navigator.userAgent, navigator.language, screen.width+'x'+screen.height,
+           screen.colorDepth, new Date().getTimezoneOffset(),
+           navigator.hardwareConcurrency||0, navigator.platform||''].join('|');
+  let h1=5381, h2=52711;
+  for(let i=0;i<p.length;i++){ const c=p.charCodeAt(i); h1=((h1<<5)+h1+c)|0; h2=((h2<<5)+h2^c)|0; }
+  return (h1>>>0).toString(36)+'-'+(h2>>>0).toString(36);
+}
+function cihazAdi(){
+  const u=navigator.userAgent;
+  const s = /Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone/iPad':
+            /Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':/Linux/i.test(u)?'Linux':'Cihaz';
+  const t = /Edg\//.test(u)?'Edge':/Chrome/.test(u)?'Chrome':/Firefox/.test(u)?'Firefox':/Safari/.test(u)?'Safari':'';
+  return (s+(t?' · '+t:'')).slice(0,40);
+}
+async function lisansOku(){
+  try{ LISANS=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/lisans_durum',{method:'POST',body:{}})); }
+  catch(e){ LISANS=null; }
+}
+async function cihazlariOku(){
+  try{ CIHAZLAR=await sbSorgu('cihazlar','?kullanici=eq.'+SB.uid+'&select=*&order=son_giris.desc'); }
+  catch(e){ CIHAZLAR=[]; }
+}
+async function cihazKaydet(){
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/cihaz_kayit',
+      {method:'POST',body:{parmak:cihazParmakIzi(),cihaz_ad:cihazAdi()}}));
+    CIHAZHATA = (r&&r.ok) ? '' : ((r&&r.hata)||'Cihaz kaydedilemedi');
+    return !!(r&&r.ok);
+  }catch(e){ CIHAZHATA=''; return true; }   // sunucu eski sürümse engelleme
+}
+async function cihazSil(cid){
+  if(!confirm('Bu cihazın kaydı silinecek. O cihazdan tekrar girilirse yeniden sayılır. Devam?')) return;
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/cihaz_sil',{method:'POST',body:{cid:cid}}));
+    await cihazlariOku(); await lisansOku(); render();
+  }catch(e){ alert('Silinemedi: '+(e.message||e)); }
+}
+function lisansRozeti(){
+  if(!LISANS) return '';
+  if(LISANS.suresiz) return '<span style="color:#7FD1A8">süresiz</span>';
+  const g=LISANS.kalan_gun;
+  if(!LISANS.gecerli) return '<span style="color:#F0A79C">süre doldu</span>';
+  if(g<=7) return '<span style="color:#E8C77A">'+g+' gün kaldı</span>';
+  return '<span style="color:#6E8E9B">'+g+' gün</span>';
+}
+function lisansUyarisi(){
+  if(!LISANS) return '';
+  if(!LISANS.gecerli) return `<div class="card" style="border:2px solid var(--bad);background:#FDF4F3"><div class="body">
+    <div class="flag bad"><span class="ic">!</span><span>
+      <b>Kullanım süren doldu.</b> ${LISANS.lisans_bitis?('Lisans bitişi: '+esc(LISANS.lisans_bitis)):('Deneme bitişi: '+esc(LISANS.deneme_bitis||'—'))}<br>
+      Verilerin duruyor ve okunabiliyor, ancak <b>yeni kayıt yapılamıyor</b>: ödev veremez, rapor işleyemezsin.
+      Öğrencilerin de panellerine yazamaz.<br><br>
+      Süreni uzatmak için sistemi sana veren kişiyle iletişime geç.</span></div>
+  </div></div>`;
+  if(!LISANS.suresiz && LISANS.kalan_gun<=7) return `<div class="card" style="border-color:var(--warn)"><div class="body">
+    <div class="flag warn"><span class="ic">!</span><span><b>Kullanım sürenin bitmesine ${LISANS.kalan_gun} gün kaldı.</b>
+      Süre dolduğunda veriler durur ama yeni kayıt yapılamaz.</span></div></div></div>`;
+  return '';
+}
+function hesapKarti(){
+  const bu=cihazParmakIzi();
+  return `<div class="card"><h2>Hesap ve lisans<small>Giriş bilgilerin, kullanım süren ve bağlı cihazların.</small></h2><div class="body">
+    <div class="stats" style="margin:-18px -18px 16px;border-bottom:1px solid var(--line-soft)">
+      <div class="stat"><div class="k">Hesap</div><div class="v" style="font-size:15px">${esc(SB.mail||'—')}</div><div class="n">${esc(DB.kocAd||'')}</div></div>
+      <div class="stat"><div class="k">Durum</div><div class="v" style="font-size:15px;color:${LISANS&&LISANS.gecerli?'var(--ok)':'var(--bad)'}">${LISANS?(LISANS.gecerli?'Aktif':'Süre doldu'):'—'}</div>
+        <div class="n">${LISANS?(LISANS.suresiz?'süresiz':(LISANS.lisans_bitis?'lisans '+LISANS.lisans_bitis:'deneme '+(LISANS.deneme_bitis||'—'))):''}</div></div>
+      <div class="stat"><div class="k">Kalan</div><div class="v" style="font-size:20px">${LISANS?(LISANS.suresiz?'∞':LISANS.kalan_gun):'—'}</div><div class="n">gün</div></div>
+      <div class="stat"><div class="k">Cihaz</div><div class="v" style="font-size:20px">${LISANS?LISANS.cihaz_sayisi+'/'+LISANS.cihaz_limiti:'—'}</div><div class="n">kayıtlı</div></div>
+    </div>
+    ${CIHAZHATA?`<div class="flag bad"><span class="ic">!</span><span>${esc(CIHAZHATA)}</span></div>`:''}
+    ${CIHAZLAR.length?`<table><thead><tr><th>Cihaz</th><th>Son giriş</th><th></th></tr></thead><tbody>
+      ${CIHAZLAR.map(c=>`<tr><td>${esc(c.ad||'Cihaz')}${c.parmak_izi===bu?' <span class="pill s1" style="font-size:10px">şu an buradasın</span>':''}</td>
+        <td class="num" style="color:var(--ink-3);font-size:12px">${(c.son_giris||'').slice(0,16).replace('T',' ')}</td>
+        <td style="width:56px">${c.parmak_izi===bu?'':`<button class="btn ghost mini" onclick="cihazSil('${c.id}')">sil</button>`}</td></tr>`).join('')}
+    </tbody></table>`:'<div class="empty">Cihaz kaydı yok.</div>'}
+    <div class="hint" style="margin-top:10px">Yeni bir bilgisayardan girmek istersen önce kullanmadığın bir cihazı sil. Şu an kullandığın cihaz silinemez.</div>
+    <button class="btn ghost wide" style="margin-top:12px" onclick="sifremiDegistir()">Şifremi değiştir</button>
+  </div></div>`;
+}
+async function sifremiDegistir(){
+  const y=prompt('Yeni şifre (en az 8 karakter):');
+  if(!y) return;
+  if(y.length<8){ alert('Şifre en az 8 karakter olmalı.'); return; }
+  try{
+    await sbGuvenli(()=>sbCagri('/auth/v1/user',{method:'PUT',body:{password:y}}));
+    alert('Şifren değiştirildi.');
+  }catch(e){ alert('Değiştirilemedi: '+(e.message||e)); }
 }
 
 /* ---------- ÖĞRENCİ HESABI YÖNETİMİ ---------- */
@@ -3372,6 +3474,10 @@ async function girisYap(){
   GIRISBEKLE=false; render();
 }
 async function sunucudanYukle(){
+  await lisansOku();
+  const izin=await cihazKaydet();
+  if(!izin){ GIRISHATA=CIHAZHATA; sbCikis(); render(); return; }
+  await cihazlariOku();
   const d=await sunucudanOku();
   DB=Object.assign({students:[],sel:null},d);
   if(!DB.rutin||!DB.rutin.length) DB.rutin=RUTIN_VAR;
