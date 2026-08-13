@@ -157,16 +157,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
       <button onclick="addStudent()">+ Öğrenci ekle</button>
       <div id="sbDurum" style="font-size:11px;text-align:center;padding:4px 0 2px;font-family:var(--mono)"></div>
       <div id="lisansRozet" style="font-size:10.5px;text-align:center;padding:0 0 4px;font-family:var(--mono)"></div>
-      ${sbOturum()?`<button onclick="yereldenAktar()">Yerel veriyi sunucuya aktar</button>
-      <button onclick="sbCikisYap()">Çıkış yap</button>`:''}
-      <div id="ydDurum" style="font-size:11px;text-align:center;padding:3px 0 1px"></div>
-      <button onclick="yedekDosya()">Yedek indir (.json)</button>
-      <button onclick="yedekPaylas()">Yedeği WhatsApp'a gönder</button>
-      <button onclick="yedekCihazPaylas()">Dosyayı doğrudan paylaş</button>
-      <button onclick="geriAl()">Son değişikliği geri al</button>
-      <div id="linkKutu"></div>
-      <button onclick="document.getElementById('imp').click()">Yedek yükle</button>
-      <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+      <div id="railEk"></div>
     </div>
   </aside>
   <main class="main">
@@ -923,85 +914,14 @@ async function kopyaListesi(){
   try{ const s=localStorage.getItem(SNAP); if(s) return JSON.parse(s); }catch(e){}
   return [];
 }
-async function geriAl(){
-  const l=await kopyaListesi();
-  if(!l.length){alert('Geri alınacak bir kopya yok.');return;}
-  const k=l[0];
-  if(!confirm(`Panel şu ana geri döndürülecek:\n${k.t.slice(0,16).replace('T',' ')} — ${k.e}\n\nBu andan sonra yaptığın değişiklikler kaybolur. Devam?`)) return;
-  DB=JSON.parse(k.d); save(); render(); alert('Önceki hale dönüldü.');
-}
 function kocNumara(){
   let t=String(DB.kocTel||'').replace(/\D/g,'');
   if(t.startsWith('0')) t='90'+t.slice(1); else if(t.length===10&&t.startsWith('5')) t='90'+t;
   return t;
 }
-/* Yedeği WhatsApp'a gönder.
-   Telefon/tablet: dosyayı doğrudan paylaşım menüsüne verir.
-   Bilgisayar: yedek küçükse metin olarak mesaja gömer (geri yüklenebilir),
-   büyükse dosyayı indirir ve WhatsApp'ı hazır mesajla açar. */
-/* Bağlantıyı aç: window.open engellenirse <a> tıklaması dener, o da olmazsa
-   ekranda tıklanabilir bağlantı gösterir. */
-let SONLINK=null;
-function baglantiAc(url,etiket){
-  try{ const w=window.open(url,'_blank','noopener'); if(w) return true; }catch(e){}
-  try{
-    const a=document.createElement('a');
-    a.href=url; a.target='_blank'; a.rel='noopener';
-    a.style.display='none'; document.body.appendChild(a); a.click(); a.remove();
-    return true;
-  }catch(e){}
-  SONLINK={url,etiket}; render();
-  return false;
-}
-function yedekPaylas(){
-  const tel=kocNumara();
-  if(!tel){ alert('Önce kendi WhatsApp numaranı gir.\n\nHaftalık sekmesi → "Senin WhatsApp numaran" kutusu.'); TAB='hafta'; render(); return; }
-  const js=JSON.stringify(DB);
-  const ad='kocluk-yedek-'+today()+'.json';
-  const ozet=`Koçluk yedeği — ${today()}\n${DB.students.length} öğrenci · ${DB.students.reduce((a,s)=>a+(s.exams||[]).length,0)} deneme · ${DB.students.reduce((a,s)=>a+(s.tasks||[]).length,0)} ödev`;
-
-  // Bağlantı uzunluğu sınırı: tarayıcılar ~8000 karakteri aşan adresleri sessizce açmaz.
-  const denemeMesaj = ozet+`\n\nGeri yüklemek için: panelde Haftalık → "Öğrenci raporunu işle" kutusuna aşağıdaki metnin TAMAMINI yapıştır.\n\nKOCYEDEK1:`+js;
-  const denemeUrl = 'https://wa.me/'+tel+'?text='+encodeURIComponent(denemeMesaj);
-  const sigar = denemeUrl.length < 6000;
-
-  // 1) ÖNCE dosyayı indir (sığmıyorsa ek olarak gönderilecek)
-  if(!sigar) yedekDosya(true); else { DB.sonYedek=today(); save(); }
-
-  // 2) WhatsApp'ı TIKLAMA ANINDA aç — gecikme olursa tarayıcı engeller
-  const mesaj = sigar ? denemeMesaj
-    : ozet+`\n\nYedek dosyası: ${ad}`;
-  const url='https://wa.me/'+tel+'?text='+encodeURIComponent(mesaj);
-  const acildi=baglantiAc(url,'WhatsApp — yedeği gönder');
-  render();
-
-  if(!acildi) return;
-  alert(sigar
-    ? 'WhatsApp açıldı, yedek mesajın içinde. Sadece gönder tuşuna bas.'
-    : 'Yedek indirildi ve WhatsApp açıldı.\n\nYedek '+(js.length/1024).toFixed(0)+' KB — mesaj metnine sığmıyor, dosya olarak göndermelisin.\n\nEN HIZLI YOL: İndirilenler klasöründeki "'+ad+'" dosyasını farenle tutup WhatsApp penceresinin üstüne BIRAK. Ataçla uğraşmana gerek yok.\n\n(Telefondan yaparsan "Dosyayı doğrudan paylaş" butonu tek adımda halleder.)');
-}
 /* Telefon/tabletten dosyayı doğrudan paylaşmak için ayrı buton */
-function dosyaPaylasimVarMi(){
-  try{ const f=new File(['x'],'t.json',{type:'application/json'});
-    return !!(navigator.canShare&&navigator.canShare({files:[f]})); }catch(e){ return false; }
-}
-function yedekCihazPaylas(){
-  const js=JSON.stringify(DB), ad='kocluk-yedek-'+today()+'.json';
-  if(!dosyaPaylasimVarMi()){
-    alert('Bu tarayıcı dosyayı doğrudan WhatsApp\'a veremiyor.\n\n'+
-      'Web sayfaları güvenlik gereği kendiliğinden dosya eki gönderemez; bu bir panel eksiği değil, tarayıcı kuralıdır.\n\n'+
-      'İki çözüm:\n'+
-      '1) TELEFONDAN: Paneli telefonunda aç, bu butona bas. Paylaş menüsünde WhatsApp çıkar, dosya doğrudan gider.\n'+
-      '2) BİLGİSAYARDAN: "Yedeği WhatsApp\'a gönder" ile indirilen dosyayı, açılan WhatsApp penceresine SÜRÜKLEYİP BIRAK. Tek hareket.');
-    return;
-  }
-  try{
-    const f=new File([js],ad,{type:'application/json'});
-    navigator.share({files:[f],title:'Koçluk yedeği',text:'Koçluk paneli yedeği — '+today()})
-      .then(()=>{DB.sonYedek=today();save();render();})
-      .catch(e=>{ if(e&&e.name!=='AbortError') alert('Paylaşım tamamlanmadı: '+(e.message||e.name)+'\n\nBunun yerine "Yedeği WhatsApp\'a gönder" butonunu kullan.'); });
-  }catch(e){ alert('Paylaşım başlatılamadı: '+e.message); }
-}
+/* Sunucu sürümünde yedek zorunlu değil; bu buton veriyi arşivlemek
+   ya da başka bir sisteme taşımak isteyenler için durur. */
 function yedekDosya(sessiz){
   try{
     const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
@@ -1011,11 +931,7 @@ function yedekDosya(sessiz){
     if(!sessiz) alert('Yedek indirildi.');
   }catch(e){ if(!sessiz) alert('Yedek indirilemedi: '+e.message); }
 }
-function otoYedek(){
-  if(DB.otoKapali) return;
-  if(DB.sonYedek===today()) return;     // günde bir kez yeter
-  yedekDosya(true);
-}
+function otoYedek(){ /* sunucu sürümünde gereksiz — veri zaten sunucuda */ }
 function yedekDurum(){
   if(!DB.sonYedek) return {renk:'var(--bad)',metin:'Hiç yedek alınmadı'};
   const g=Math.round((new Date(today())-new Date(DB.sonYedek))/86400000);
@@ -1033,11 +949,26 @@ function yedekDurum(){
    SB.key  : anon public anahtar (Settings › API › anon public)
    SB.tok  : oturum jetonu       (girişte alınır, tarayıcıda saklanır)
 ==================================================================== */
-var SB = { url:'', key:'', tok:'', ref:'', uid:'', mail:'', sonHata:'' };
+/* ══════════════════════════════════════════════════════════════
+   SUNUCU BİLGİLERİ — bunları BİR KEZ doldur, sonra dokunma.
+   Supabase › Settings › API sayfasından alınır.
+   Bu iki değer gizli değildir; panele gömülmesi normaldir.
+   Güvenliği veritabanındaki erişim kuralları sağlar.
+   service_role anahtarını ASLA buraya yazma.
+   ══════════════════════════════════════════════════════════════ */
+const SUNUCU = {
+  url: 'https://hdcxmunvkxkffnsewfgp.supabase.co',
+  key: ''      // ←←← anon public anahtarını buraya yapıştır
+};
+
+var SB = { url:SUNUCU.url, key:SUNUCU.key, tok:'', ref:'', uid:'', mail:'', sonHata:'' };
 var SBKEY = 'kocluk_sb_oturum';
 
 function sbYukle(){
   try{ var s=localStorage.getItem(SBKEY); if(s) SB=Object.assign(SB,JSON.parse(s)); }catch(e){}
+  // gömülü sunucu bilgisi varsa her zaman o geçerlidir
+  if(SUNUCU.url) SB.url=SUNUCU.url;
+  if(SUNUCU.key) SB.key=SUNUCU.key;
 }
 function sbSakla(){
   try{ localStorage.setItem(SBKEY,JSON.stringify(SB)); }catch(e){}
@@ -1892,7 +1823,7 @@ function raporKart(st){
 /* ================= DURUM ================= */
 let DB={students:[],sel:null};
 let TAB='hafta';
-const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],['konu','Konular'],['hedef','Hedef']];
+const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],['konu','Konular'],['hedef','Hedef'],['ogrenci','Öğrenci bilgileri'],['hesap','Hesap']];
 function TABSAL(){ return (LISANS&&LISANS.yonetici)?TABS_TEMEL.concat([['yonetim','Yönetim']]):TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
 const cur=()=>DB.students.find(s=>s.id===DB.sel)||null;
@@ -2052,6 +1983,11 @@ function render(){
       }).join('')
     : '<div style="padding:20px 16px;color:#7E939F;font-size:12.5px">Henüz öğrenci yok. Aşağıdan ekle.</div>';
 
+  const re=document.getElementById('railEk');
+  if(re) re.innerHTML = sbOturum()
+    ? `<button onclick="yedekDosya()">Verilerimi indir (.json)</button>
+       <button onclick="sbCikisYap()">Çıkış yap</button>`
+    : `<button onclick="yereldenAktar()">Yerel veriyi sunucuya aktar</button>`;
   const lr=document.getElementById('lisansRozet');
   if(lr) lr.innerHTML = sbOturum()?lisansRozeti():'';
   const ks=document.getElementById('kaynakSatir');
@@ -2098,7 +2034,7 @@ function render(){
       if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
     return;
   }
-  v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef})[TAB](st);
+  v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef,ogrenci:vOgrenciBilgi,hesap:vHesap})[TAB](st);
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
 }
@@ -2355,10 +2291,6 @@ function vHafta(st){
   ${raporKart(st)}
 
   ${lisansUyarisi()}
-
-  ${onaysizUyari()}
-
-  ${davetKart(st)}
 
   ${devredenKart(st)}
 
@@ -3250,14 +3182,176 @@ function yaklasmaKarti(st){
 }
 
 /* ---------- HEDEF ---------- */
+function vOgrenciBilgi(st){
+  return `
+  ${onaysizUyari()}
+
+  ${onayKarti(st)}
+
+  <div class="card"><h2>Öğrenci kaydı</h2><div class="body">
+    <div class="fr">
+      <div><label class="f">Sınıf</label><input type="text" id="hG" value="${esc(st.grade)}"></div>
+      <div><label class="f">Alan</label><select id="hT">${['SAY','EA','SOZ','DIL'].map(t=>`<option value="${t}" ${st.track===t?'selected':''}>${trLabel(t)}</option>`).join('')}</select></div>
+    </div>
+    <button class="btn ghost" onclick="saveMeta()">Güncelle</button>
+    <button class="btn danger" style="margin-left:8px" onclick="delStudent()">Öğrenciyi sil</button>
+  </div></div>
+  ${davetKart(st)}
+
+  <div class="card" style="border-color:var(--bad)"><h2>Öğrenciyi sil<small>Bu işlem geri alınamaz. Ödevleri, denemeleri ve konu kayıtları da silinir.</small></h2><div class="body">
+    <div class="flag warn"><span class="ic">!</span><span>
+      Öğrenci ayrıldıysa <b>silmek yerine düşünmen gereken bir şey var:</b> KVKK'ya göre gerekmeyen
+      veriyi saklamamalısın, ama koçluk geçmişi de bir kayıttır.
+      Önce <b>Verilerimi indir</b> ile arşivle, sonra sil.</span></div>
+    <button class="btn danger wide" style="margin-top:12px" onclick="delStudent()">${esc(st.name)} kaydını kalıcı olarak sil</button>
+  </div></div>`;
+}
+
+/* ---------- KVKK BELGELERİ (yazdırılabilir) ---------- */
+function kvkkYazdir(tip){
+  const ad = DB.kocAd || SB.mail || '[AD SOYAD]';
+  const tel = DB.kocTel || '[TELEFON]';
+  const mail = SB.mail || '[E-POSTA]';
+  const stil = `<style>
+    @page{margin:22mm 18mm}
+    body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:11.5pt;line-height:1.6;color:#111;max-width:720px;margin:0 auto;padding:20px}
+    h1{font-size:15pt;margin:0 0 4px} h2{font-size:12.5pt;margin:22px 0 8px;padding-bottom:4px;border-bottom:1px solid #ccc}
+    .ust{border:1px solid #ccc;border-radius:6px;padding:12px 16px;margin-bottom:20px;background:#f7f7f7}
+    .kucuk{font-size:10pt;color:#555} ul{margin:6px 0 6px 18px;padding:0} li{margin:3px 0}
+    .kutu{border:1px solid #333;border-radius:5px;padding:14px 16px;margin:14px 0}
+    .satir{margin:14px 0;border-bottom:1px dotted #666;height:22px}
+    .onay{margin:10px 0;padding-left:26px;text-indent:-26px}
+    .imza{margin-top:34px;display:flex;gap:40px}
+    .imza div{flex:1;border-top:1px solid #333;padding-top:6px;font-size:10pt}
+    @media print{.yazdir{display:none}}
+    .yazdir{position:fixed;top:12px;right:12px;background:#2E4A7D;color:#fff;border:0;padding:10px 18px;border-radius:6px;font-size:14px;cursor:pointer}
+  </style>`;
+
+  const aydinlatma = `
+  <h1>Kişisel Verilerin İşlenmesi Hakkında Aydınlatma Metni</h1>
+  <div class="kucuk">Biyoser Koçluk Sistemi</div>
+  <div class="ust">
+    <b>Veri Sorumlusu:</b> ${esc(ad)}<br>
+    <b>İletişim:</b> ${esc(mail)} · ${esc(tel)}
+  </div>
+
+  <h2>Hangi verileri işliyoruz</h2>
+  <ul>
+    <li><b>Kimlik:</b> ad, soyad, sınıf</li>
+    <li><b>İletişim:</b> öğrenci telefonu, e-posta; veli adı ve telefonu</li>
+    <li><b>Eğitim verisi:</b> deneme sonuçları, çözülen soru sayıları, konu tamamlama durumu, ödev takibi, hedef bölüm</li>
+  </ul>
+
+  <h2>Hangi amaçla</h2>
+  <ul>
+    <li>Bireysel çalışma programı hazırlamak</li>
+    <li>Deneme sonuçlarını analiz edip eksik konuları belirlemek</li>
+    <li>Haftalık ödev vermek ve takip etmek</li>
+    <li>Öğrenci ve veliyle ilerleme hakkında iletişim kurmak</li>
+  </ul>
+
+  <h2>Hukuki sebep</h2>
+  <p>KVKK m.5/2-c uyarınca sözleşmenin ifası için zorunlu olması; 18 yaş altı öğrenciler bakımından
+  KVKK m.5/1 uyarınca velinin açık rızası.</p>
+
+  <h2>Kimlerle paylaşılıyor</h2>
+  <p>Öğrencinin kendisi ve velisi ile. Teknik altyapı sağlayıcısı Supabase Inc.
+  (sunucular Frankfurt / Almanya). Bunun dışında hiçbir üçüncü kişiyle paylaşılmaz,
+  satılmaz, reklam amacıyla kullanılmaz.</p>
+
+  <h2>Yurt dışına aktarım</h2>
+  <p>Veriler Almanya'daki sunucularda saklanmaktadır. Bu aktarım KVKK m.9 kapsamında
+  açık rızanıza dayanmaktadır.</p>
+
+  <h2>Saklama süresi</h2>
+  <p>Koçluk ilişkisi süresince ve sona ermesinden itibaren en fazla 1 yıl. Sürenin sonunda veriler silinir.</p>
+
+  <h2>Haklarınız (KVKK m.11)</h2>
+  <ul>
+    <li>Verilerinizin işlenip işlenmediğini öğrenme, bilgi talep etme</li>
+    <li>Amacına uygun kullanılıp kullanılmadığını öğrenme</li>
+    <li>Eksik veya yanlış işlenmişse düzeltilmesini isteme</li>
+    <li>Silinmesini veya yok edilmesini isteme</li>
+    <li>Otomatik analiz sonucu aleyhinize çıkan sonuca itiraz etme</li>
+    <li>Zarara uğramanız hâlinde tazminat talep etme</li>
+  </ul>
+  <p>Bu haklarınızı kullanmak için <b>${esc(mail)}</b> adresine yazabilirsiniz.
+  Talepleriniz en geç 30 gün içinde sonuçlandırılır.</p>`;
+
+  const riza = `
+  <h1>Veli Açık Rıza Beyanı</h1>
+  <div class="kucuk">Biyoser Koçluk Sistemi · Veri Sorumlusu: ${esc(ad)}</div>
+
+  <div class="kutu">
+    <div>Öğrenci adı soyadı<div class="satir"></div></div>
+    <div>Veli adı soyadı<div class="satir"></div></div>
+    <div>Veli telefonu<div class="satir"></div></div>
+    <div>Veli e-postası<div class="satir"></div></div>
+  </div>
+
+  <p>Yukarıda adı geçen öğrencinin velisi sıfatıyla:</p>
+
+  <div class="onay">☐ &nbsp; ${esc(ad)} tarafından hazırlanan <b>Aydınlatma Metni'ni</b> okudum ve anladım.</div>
+  <div class="onay">☐ &nbsp; Çocuğuma ait kimlik, iletişim ve eğitim verilerinin koçluk hizmeti kapsamında
+    işlenmesine <b>açık rıza</b> veriyorum.</div>
+  <div class="onay">☐ &nbsp; Bu verilerin Almanya'daki sunucularda saklanmasına, yani
+    <b>yurt dışına aktarılmasına</b> açık rıza veriyorum.</div>
+  <div class="onay">☐ &nbsp; Rızamı dilediğim zaman <b>${esc(mail)}</b> adresine yazarak
+    geri çekebileceğimi biliyorum.</div>
+
+  <p class="kucuk">Rızanın geri çekilmesi hâlinde çocuğuma ait veriler silinir ve koçluk hizmeti sona erer.</p>
+
+  <div class="imza">
+    <div>Tarih</div>
+    <div>Veli adı soyadı ve imzası</div>
+  </div>`;
+
+  const govde = tip==='aydinlatma' ? aydinlatma
+              : tip==='riza'       ? riza
+              : aydinlatma + '<div style="page-break-before:always"></div>' + riza;
+
+  const w=window.open('','_blank');
+  if(!w){ alert('Tarayıcı yeni sekmeyi engelledi. Adres çubuğunun sağındaki simgeden izin ver.'); return; }
+  w.document.write('<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Biyoser — KVKK belgesi</title>'
+    +stil+'</head><body><button class="yazdir" onclick="window.print()">Yazdır / PDF kaydet</button>'+govde+'</body></html>');
+  w.document.close();
+}
+
+/* ---------- HESAP SEKMESİ ---------- */
+function vHesap(st){
+  return `
+  ${lisansUyarisi()}
+
+  ${hesapKarti()}
+
+  <div class="card"><h2>KVKK belgeleri<small>Öğrenci kaydı açmadan önce velilerden imzalı onay alman gerekir. Belgeler burada.</small></h2><div class="body">
+    <div class="flag warn"><span class="ic">!</span><span>
+      <b>18 yaş altı her öğrenci için velinin yazılı onayı zorunludur.</b>
+      Panel onay kaydını tutar ama imzalı kâğıdı sen saklarsın.</span></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="kvkkYazdir('aydinlatma')">Aydınlatma metni</button>
+      <button class="btn" onclick="kvkkYazdir('riza')">Veli onay formu</button>
+      <button class="btn ghost" onclick="kvkkYazdir('hepsi')">İkisini birlikte</button>
+    </div>
+    <div class="hint" style="margin-top:10px">Açılan sayfayı yazdır ya da PDF olarak kaydet.
+      Aydınlatma metnini veliye ver, onay formunu imzalat ve sakla.</div>
+    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
+      Metinlerdeki iletişim bilgileri <b>senin hesap bilgilerinden</b> otomatik doldurulur.
+      Adın ya da telefonun eksikse önce yukarıdan tamamla.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Verilerim<small>Sunucuda saklanıyor; yedek almana gerek yok. Bu buton arşivlemek ya da taşımak içindir.</small></h2><div class="body">
+    <button class="btn ghost wide" onclick="yedekDosya()">Tüm verilerimi indir (.json)</button>
+    <div class="hint" style="margin-top:8px">Bir öğrenciyi silmeden önce indirmen önerilir.</div>
+  </div></div>`;
+}
+
 function vHedef(st){
   const list=subs(st);
   return `
   ${hedefeUzaklik(st)}
 
   ${lisansUyarisi()}
-
-  ${yaklasmaKarti(st)}
 
   <div class="card"><h2>YÖK verisinden bölüm seç<small>Seçtiğinde taban puan, sıralama, kontenjan ve ders ders hedef netler otomatik dolar.</small></h2><div class="body">
     ${!ATLAS?`<button class="btn" onclick="atlasYukle()">Bölüm veritabanını yükle</button>
@@ -3335,18 +3429,7 @@ function vHedef(st){
   </div>
   ${vPuan(st)}
 
-  ${onayKarti(st)}
-
-  ${hesapKarti()}
-
-  <div class="card"><h2>Öğrenci kaydı</h2><div class="body">
-    <div class="fr">
-      <div><label class="f">Sınıf</label><input type="text" id="hG" value="${esc(st.grade)}"></div>
-      <div><label class="f">Alan</label><select id="hT">${['SAY','EA','SOZ','DIL'].map(t=>`<option value="${t}" ${st.track===t?'selected':''}>${trLabel(t)}</option>`).join('')}</select></div>
-    </div>
-    <button class="btn ghost" onclick="saveMeta()">Güncelle</button>
-    <button class="btn danger" style="margin-left:8px" onclick="delStudent()">Öğrenciyi sil</button>
-  </div></div>`;
+`;
 }
 function saveGoal(){const st=cur();st.dept=document.getElementById('hD').value.trim();st.rank=document.getElementById('hR').value.trim();st.score=document.getElementById('hS').value.trim();
   st.tabanPuan=document.getElementById('hTP').value.trim();st.tabanSira=document.getElementById('hTS').value.trim();st.tabanYil=document.getElementById('hTY').value.trim();
@@ -3362,16 +3445,6 @@ function saveMeta(){const st=cur();st.grade=document.getElementById('hG').value.
 
 /* ---------- YEDEK ---------- */
 
-function importData(ev){
-  const f=ev.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{try{const d=JSON.parse(r.result);
-    if(!d.students){alert('Bu dosya bir koçluk yedeği değil.');return;}
-    if(!confirm('Mevcut veriler bu yedekle değiştirilecek. Devam?'))return;
-    DB=d; DB.sel=DB.students[0]?.id||null; save(); render();
-  }catch(e){alert('Dosya okunamadı: '+e.message);}};
-  r.readAsText(f); ev.target.value='';
-}
 
 /* ---------- YÖNETİCİ EKRANI ---------- */
 let KOCLAR=[], YONDURUM='', YONSEC=null;
@@ -3446,7 +3519,7 @@ function vYonetici(){
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
     <button class="btn ghost" onclick="koclariOku()">Listeyi yenile</button>
-    <div class="hint" style="margin-top:8px">Yeni kayıt olan koçlar 30 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
+    <div class="hint" style="margin-top:8px">Yeni kayıt olan koçlar 7 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
   </div></div>
 
   <div class="card"><h2>Paketler ve fiyatlar</h2><div class="body" style="padding:0">
@@ -3835,7 +3908,7 @@ function kaynakUyarisi(){
     <div class="body"><div class="flag bad"><span class="ic">!</span><span>
       <b>${k.metin}</b><br>${k.detay}<br><br>
       Doğru adres: <b>${esc(DB.siteUrl||'https://eserakkaba53-cyber.github.io/Kocluk')}/kocluk-paneli.html</b><br>
-      Buradaki verileri taşımak için: sol alttan <b>Yedek indir</b> → internet adresinden aç → <b>Yedek yükle</b>.
+      Doğru adresten açtığında verilerin sunucudan gelir; bir şey taşımana gerek yoktur.
     </span></div></div></div>`;
 }
 
