@@ -1188,6 +1188,8 @@ async function sunucudanOku(){
       obp:o.obp==null?'':o.obp, yerlesti:!!o.yerlesti,
       haftalikSaat:o.haftalik_saat==null?'':o.haftalik_saat,
       refNets:o.hedef_netler||{}, authId:o.auth_id||null, davetKodu:o.davet_kodu||null,
+      resit:!!o.resit, veliAd:o.veli_ad||'', veliTel:o.veli_telefon||'',
+      veliOnay:o.veli_onay||null, veliOnayNotu:o.veli_onay_notu||'',
       tasks:[], exams:[], topics:{}, notlar:[], uygulanan:[]
     };
     yeni.students.push(st);
@@ -1236,7 +1238,9 @@ async function ogrenciYaz(st){
     yerlesti:!!st.yerlesti,
     haftalik_saat:st.haftalikSaat===''||st.haftalikSaat==null?null:parseInt(st.haftalikSaat,10),
     hedef_netler:st.refNets||{}, arsivlendi:false,
-    davet_kodu: st.davetKodu||null
+    davet_kodu: st.davetKodu||null,
+    resit: !!st.resit, veli_ad: st.veliAd||'', veli_telefon: st.veliTel||'',
+    veli_onay: st.veliOnay||null, veli_onay_notu: st.veliOnayNotu||''
   }], 'id');
 
   /* ödevler */
@@ -1888,7 +1892,8 @@ function raporKart(st){
 /* ================= DURUM ================= */
 let DB={students:[],sel:null};
 let TAB='hafta';
-const TABS=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],['konu','Konular'],['hedef','Hedef']];
+const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],['konu','Konular'],['hedef','Hedef']];
+function TABSAL(){ return (LISANS&&LISANS.yonetici)?TABS_TEMEL.concat([['yonetim','Yönetim']]):TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
 const cur=()=>DB.students.find(s=>s.id===DB.sel)||null;
 const n1=v=>(Math.round(v*100)/100).toFixed(2).replace(/\.00$/,'');
@@ -1898,14 +1903,91 @@ function weekKey(ds){const d=new Date(ds+'T00:00');const day=(d.getDay()+6)%7;d.
 function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'}[t]||t;}
 
 /* ================= ÖĞRENCİ ================= */
+let YENIOGR=null;
 function addStudent(){
-  const name=prompt('Öğrencinin adı soyadı:'); if(!name) return;
-  const tr=(prompt('Alan? SAY / EA / SOZ / DIL','SAY')||'SAY').toUpperCase();
-  const g=prompt('Kaçıncı sınıf? (9/10/11/12/Mezun)','11')||'11';
-  DB.students.push({id:uid(),name:name.trim(),track:S[tr]?tr:'SAY',grade:g,
+  if(LISANS && !LISANS.kota_var){
+    alert(`ÖĞRENCİ SINIRINA ULAŞTIN\n\nPaketin: ${LISANS.paket_adi} (${LISANS.ogrenci_limiti} öğrenci)\nMevcut: ${LISANS.ogrenci_sayisi}\n\nYeni öğrenci eklemek için:\n· Ayrılan bir öğrenciyi arşivle, ya da\n· Paketini yükselt\n\nKoç 10 · Sınıf 40 · Okul 200 öğrenci`);
+    return;
+  }
+  YENIOGR={ad:'',track:'SAY',grade:'11',tel:'',eposta:'',resit:false,veliAd:'',veliTel:'',onay:false,not:''};
+  render();
+}
+function yoAlan(a,v){ if(!YENIOGR) return; YENIOGR[a]= (a==='resit'||a==='onay') ? !!v : v; render(); }
+function yoIptal(){ YENIOGR=null; render(); }
+function yoKaydet(){
+  const y=YENIOGR; if(!y) return;
+  const ad=(y.ad||'').trim();
+  if(ad.length<3){ alert('Öğrencinin adını yaz.'); return; }
+  if(!y.onay){ alert('Onay kutusu işaretlenmeden öğrenci eklenemez.'); return; }
+  if(!y.resit){
+    if((y.veliAd||'').trim().length<3){ alert('Velinin adı soyadı gerekli.'); return; }
+    if(String(y.veliTel||'').replace(/\D/g,'').length<10){ alert('Velinin telefon numarası eksik.'); return; }
+  }
+  DB.students.push({id:uid(),name:ad,track:S[y.track]?y.track:'SAY',grade:y.grade||'11',
+    tel:y.tel||'', eposta:y.eposta||'',
+    resit:!!y.resit, veliAd:y.resit?'':(y.veliAd||'').trim(), veliTel:y.resit?'':(y.veliTel||'').trim(),
+    veliOnay:new Date().toISOString(), veliOnayNotu:(y.not||'').trim(),
     dept:'',rank:'',score:'',tabanPuan:'',tabanSira:'',tabanYil:'',dip:'',obp:'',yerlesti:false,
     refNets:{},exams:[],tasks:[],topics:{},startedAt:today()});
-  DB.sel=DB.students[DB.students.length-1].id; TAB='hedef'; save(); render();
+  DB.sel=DB.students[DB.students.length-1].id;
+  YENIOGR=null; TAB='hedef'; save(); render();
+}
+function yeniOgrenciEkrani(){
+  const y=YENIOGR;
+  return `<div style="max-width:640px;margin:20px auto">
+    <div class="card"><h2>Yeni öğrenci<small>Kayıt açmadan önce veri sorumluluğu adımını tamamla.</small></h2><div class="body">
+      <div class="fr">
+        <div style="flex:2"><label class="f">Adı soyadı</label>
+          <input type="text" id="yo_ad" value="${esc(y.ad)}" onchange="yoAlan('ad',this.value)" placeholder="Berat Eroğlu"></div>
+        <div><label class="f">Alan</label><select onchange="yoAlan('track',this.value)">
+          ${['SAY','EA','SOZ','DIL'].map(t=>`<option value="${t}" ${t===y.track?'selected':''}>${trLabel(t)}</option>`).join('')}</select></div>
+        <div><label class="f">Sınıf</label><select onchange="yoAlan('grade',this.value)">
+          ${['9','10','11','12','Mezun'].map(t=>`<option value="${t}" ${t===y.grade?'selected':''}>${t}</option>`).join('')}</select></div>
+      </div>
+      <div class="fr">
+        <div><label class="f">Öğrenci telefonu</label>
+          <input type="text" value="${esc(y.tel)}" onchange="yoAlan('tel',this.value)" placeholder="05XX XXX XX XX"></div>
+        <div><label class="f">Öğrenci e-postası</label>
+          <input type="text" value="${esc(y.eposta)}" onchange="yoAlan('eposta',this.value)" placeholder="isteğe bağlı"></div>
+      </div>
+
+      <div style="border-top:1px solid var(--line);margin:18px 0 0;padding-top:16px">
+        <div style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650;margin-bottom:10px">Veri sorumluluğu</div>
+        <label style="display:flex;gap:9px;align-items:flex-start;font-size:14px;margin-bottom:12px">
+          <input type="checkbox" ${y.resit?'checked':''} onchange="yoAlan('resit',this.checked)" style="width:auto;margin-top:3px">
+          <span>Öğrenci <b>18 yaşını doldurdu</b> — kendi rızasını verebilir</span></label>
+
+        ${!y.resit?`<div class="flag warn"><span class="ic">!</span><span>
+            18 yaş altı öğrenciler için <b>velinin yazılı onayı zorunludur</b>.
+            Onay formunu imzalatmadan kayıt açma — <b>kvkk-metinleri.txt</b> dosyasında hazır form var.</span></div>
+          <div class="fr" style="margin-top:12px">
+            <div><label class="f">Veli adı soyadı</label>
+              <input type="text" value="${esc(y.veliAd)}" onchange="yoAlan('veliAd',this.value)" placeholder="Ayşe Eroğlu"></div>
+            <div><label class="f">Veli telefonu</label>
+              <input type="text" value="${esc(y.veliTel)}" onchange="yoAlan('veliTel',this.value)" placeholder="05XX XXX XX XX"></div>
+          </div>`:`<div class="flag ok"><span class="ic">✓</span><span>
+            Reşit öğrenci. Aydınlatma metnini öğrencinin kendisine vermen ve rızasını alman yeterli.</span></div>`}
+
+        <div class="fr" style="margin-top:10px"><div style="flex:1">
+          <label class="f">Onay notu (isteğe bağlı)</label>
+          <input type="text" value="${esc(y.not)}" onchange="yoAlan('not',this.value)"
+            placeholder="ör. 13.08.2026 tarihli imzalı form elimde"></div></div>
+
+        <label style="display:flex;gap:9px;align-items:flex-start;font-size:14px;margin-top:14px;
+          background:${y.onay?'var(--ok-bg)':'#F8EEDA'};padding:12px;border-radius:7px">
+          <input type="checkbox" ${y.onay?'checked':''} onchange="yoAlan('onay',this.checked)" style="width:auto;margin-top:3px">
+          <span><b>${y.resit?'Öğrencinin':'Velinin'} açık rızasını aldım.</b>
+            Aydınlatma metnini ilettim, ${y.resit?'öğrenci':'veli'} kişisel verilerin işlenmesine onay verdi.
+            ${y.resit?'':'İmzalı form bende saklı.'}</span></label>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn" onclick="yoKaydet()">Öğrenciyi ekle</button>
+        <button class="btn ghost" onclick="yoIptal()">Vazgeç</button>
+      </div>
+      <div class="hint" style="margin-top:10px">Onay tarihi kaydedilir. Bu kayıt, bir denetimde uyumunu gösteren belgedir.</div>
+    </div></div>
+  </div>`;
 }
 function delStudent(){
   const st=cur(); if(!st) return;
@@ -1987,16 +2069,35 @@ function render(){
   document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()} · BAŞLANGIÇ ${st.startedAt}`:'';
   document.getElementById('stGoal').innerHTML = st&&st.dept
     ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${st.rank||'—'} · puan ${st.score||'—'}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
-  document.getElementById('tabs').innerHTML = st
-    ? TABS.map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('') : '';
+  document.getElementById('tabs').innerHTML = (st || (LISANS&&LISANS.yonetici))
+    ? TABSAL().map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('') : '';
 
   const v=document.getElementById('view');
-  if(!st){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
+  // KVKK sorumluluk onayı alınmadan panel açılmaz
+  if(LISANS && !LISANS.kvkk_onay){
+    document.getElementById('railList').innerHTML='';
+    document.getElementById('tabs').innerHTML='';
+    document.getElementById('stName').textContent='Koçluk Paneli';
+    document.getElementById('stMeta').textContent='';
+    v.innerHTML=kvkkEkrani(); rayDurum(); return;
+  }
+  if(YENIOGR){ v.innerHTML=yeniOgrenciEkrani(); 
+    if(_aid){ const _el=document.getElementById(_aid);
+      if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+    return; }
+  if(!st && TAB!=='yonetim'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
-  if(!TABS.find(t=>t[0]===TAB)) TAB='hafta';
+  if(!TABSAL().find(t=>t[0]===TAB)) TAB='hafta';
+  if(TAB==='yonetim'){
+    if(!KOCLAR.length && !YONDURUM){ YONDURUM='Yükleniyor...'; setTimeout(koclariOku,10); }
+    v.innerHTML=kaynakUyarisi()+vYonetici();
+    if(_aid){ const _el=document.getElementById(_aid);
+      if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+    return;
+  }
   v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef})[TAB](st);
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
@@ -2254,6 +2355,8 @@ function vHafta(st){
   ${raporKart(st)}
 
   ${lisansUyarisi()}
+
+  ${onaysizUyari()}
 
   ${davetKart(st)}
 
@@ -3232,6 +3335,8 @@ function vHedef(st){
   </div>
   ${vPuan(st)}
 
+  ${onayKarti(st)}
+
   ${hesapKarti()}
 
   <div class="card"><h2>Öğrenci kaydı</h2><div class="body">
@@ -3266,6 +3371,127 @@ function importData(ev){
     DB=d; DB.sel=DB.students[0]?.id||null; save(); render();
   }catch(e){alert('Dosya okunamadı: '+e.message);}};
   r.readAsText(f); ev.target.value='';
+}
+
+/* ---------- YÖNETİCİ EKRANI ---------- */
+let KOCLAR=[], YONDURUM='', YONSEC=null;
+const PAKETLER=[['deneme','Deneme (2 öğrenci)'],['koc','Koç Paketi (10) · 1.000 TL/yıl'],
+  ['sinif','Sınıf Paketi (40) · 3.000 TL/yıl'],['okul','Okul Paketi (200) · 10.000 TL/yıl'],['ozel','Özel (sınırsız)']];
+async function koclariOku(){
+  try{ KOCLAR=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/koc_listesi',{method:'POST',body:{}}))||[]; }
+  catch(e){ KOCLAR=[]; YONDURUM='HATA|'+(e.message||e); }
+  render();
+}
+async function kocKaydet(id){
+  const paket=document.getElementById('yp_'+id).value;
+  const bitis=document.getElementById('yb_'+id).value||null;
+  const aktif=document.getElementById('ya_'+id).checked;
+  const cihaz=+document.getElementById('yc_'+id).value||2;
+  const notlar=document.getElementById('yn_'+id).value||'';
+  YONDURUM='Kaydediliyor...'; render();
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/koc_guncelle',{method:'POST',
+      body:{hedef:id,y_paket:paket,y_bitis:bitis,y_aktif:aktif,y_cihaz:cihaz,y_notlar:notlar}}));
+    if(!r||!r.ok) throw new Error((r&&r.hata)||'Olmadı');
+    YONDURUM='OK|Kaydedildi.'; await koclariOku(); await lisansOku();
+  }catch(e){ YONDURUM='HATA|'+(e.message||e); render(); }
+}
+function yilEkle(id){
+  const el=document.getElementById('yb_'+id);
+  const t=new Date(); t.setFullYear(t.getFullYear()+1);
+  el.value=t.toISOString().slice(0,10);
+}
+function vYonetici(){
+  const bugun=new Date().toISOString().slice(0,10);
+  const toplam=KOCLAR.length;
+  const aktifSay=KOCLAR.filter(k=>k.gecerli).length;
+  const gelir=KOCLAR.filter(k=>k.gecerli&&k.paket!=='deneme'&&k.paket!=='ozel')
+    .reduce((a,k)=>a+({koc:1000,sinif:3000,okul:10000}[k.paket]||0),0);
+  const ogrToplam=KOCLAR.reduce((a,k)=>a+(k.ogrenci||0),0);
+  return `
+  <div class="card"><div class="stats">
+    <div class="stat"><div class="k">Koç</div><div class="v">${toplam}</div><div class="n">${aktifSay} aktif</div></div>
+    <div class="stat"><div class="k">Öğrenci</div><div class="v">${ogrToplam}</div><div class="n">tüm sistemde</div></div>
+    <div class="stat"><div class="k">Yıllık gelir</div><div class="v" style="font-size:20px">${gelir.toLocaleString('tr-TR')} TL</div><div class="n">aktif lisanslar</div></div>
+    <div class="stat"><div class="k">Yakında bitecek</div><div class="v" style="color:${KOCLAR.filter(k=>k.gecerli&&k.lisans_bitis&&k.lisans_bitis<=new Date(Date.now()+30*864e5).toISOString().slice(0,10)).length?'var(--warn)':'inherit'}">${KOCLAR.filter(k=>k.gecerli&&k.lisans_bitis&&k.lisans_bitis<=new Date(Date.now()+30*864e5).toISOString().slice(0,10)).length}</div><div class="n">30 gün içinde</div></div>
+  </div></div>
+
+  ${YONDURUM?`<div class="flag ${YONDURUM.startsWith('OK|')?'ok':YONDURUM.startsWith('HATA|')?'bad':'warn'}"><span class="ic">·</span><span>${esc(YONDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
+
+  <div class="card"><h2>Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2>
+  <div class="body" style="padding:0;overflow:auto">
+    <table><thead><tr><th>Koç</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th><th>Durum</th><th></th></tr></thead><tbody>
+    ${KOCLAR.map(k=>{
+      const dolu=k.ogrenci>=k.limit;
+      const bit=k.lisans_bitis||k.deneme_bitis||'';
+      const yakin=k.gecerli&&bit&&bit<=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
+      return `<tr>
+        <td><b>${esc(k.ad||'—')}</b>${k.id===SB.uid?' <span class="pill s1" style="font-size:10px">sen</span>':''}
+          <div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(k.eposta||'')}</div>
+          ${k.kurum?`<div style="font-size:11px;color:var(--ink-3)">${esc(k.kurum)}</div>`:''}
+          <div style="font-size:10.5px;color:${k.kvkk_onay?'var(--ok)':'var(--warn)'}">${k.kvkk_onay?'KVKK onaylı':'KVKK onayı yok'}</div></td>
+        <td><select id="yp_${k.id}" style="min-width:150px">${PAKETLER.map(([v,a])=>`<option value="${v}" ${v===k.paket?'selected':''}>${a}</option>`).join('')}</select></td>
+        <td class="num" style="font-weight:650;color:${dolu?'var(--bad)':'var(--ink)'}">${k.ogrenci}/${k.limit}</td>
+        <td><input type="date" id="yb_${k.id}" value="${k.lisans_bitis||''}" style="width:140px">
+          <button class="btn ghost mini" style="margin-top:4px" onclick="yilEkle('${k.id}')">+1 yıl</button>
+          ${bit?`<div style="font-size:10.5px;color:${yakin?'var(--warn)':'var(--ink-3)'};margin-top:2px">${k.lisans_bitis?'lisans':'deneme'} ${bit}</div>`:''}</td>
+        <td class="num"><input type="number" id="yc_${k.id}" min="1" max="20" value="${k.cihaz_limiti||2}" style="width:64px"></td>
+        <td><label style="display:flex;gap:6px;align-items:center;font-size:12.5px">
+          <input type="checkbox" id="ya_${k.id}" ${k.aktif?'checked':''} style="width:auto">aktif</label>
+          <div style="font-size:11px;color:${k.gecerli?'var(--ok)':'var(--bad)'};margin-top:3px">${k.gecerli?'çalışıyor':'durdu'}</div></td>
+        <td style="width:96px"><input type="text" id="yn_${k.id}" value="${esc(k.notlar||'')}" placeholder="not" style="width:88px;font-size:12px">
+          <button class="btn mini" style="margin-top:4px" onclick="kocKaydet('${k.id}')">kaydet</button></td>
+      </tr>`;}).join('')}
+    </tbody></table>
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <button class="btn ghost" onclick="koclariOku()">Listeyi yenile</button>
+    <div class="hint" style="margin-top:8px">Yeni kayıt olan koçlar 30 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
+  </div></div>
+
+  <div class="card"><h2>Paketler ve fiyatlar</h2><div class="body" style="padding:0">
+    <table><thead><tr><th>Paket</th><th class="num">Öğrenci</th><th class="num">Yıllık</th><th class="num">Öğrenci başı</th></tr></thead><tbody>
+      <tr><td>Deneme</td><td class="num">2</td><td class="num">—</td><td class="num">30 gün</td></tr>
+      <tr><td><b>Koç Paketi</b></td><td class="num">10</td><td class="num">1.000 TL</td><td class="num">100 TL</td></tr>
+      <tr><td><b>Sınıf Paketi</b></td><td class="num">40</td><td class="num">3.000 TL</td><td class="num">75 TL</td></tr>
+      <tr><td><b>Okul Paketi</b></td><td class="num">200</td><td class="num">10.000 TL</td><td class="num">50 TL</td></tr>
+    </tbody></table>
+  </div></div>`;
+}
+
+/* ---------- KVKK ONAY EKRANI ---------- */
+async function kvkkOnayla(){
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/kvkk_onayla',{method:'POST',body:{}}));
+    await lisansOku(); render();
+  }catch(e){ alert('Kaydedilemedi: '+(e.message||e)); }
+}
+function kvkkEkrani(){
+  return `<div style="max-width:680px;margin:26px auto">
+    <div class="card"><h2>Başlamadan önce — veri sorumluluğu</h2><div class="body">
+      <p style="margin:0 0 14px">Bu sistemde <b>öğrenci verisi</b> tutuyorsun: ad, e-posta, deneme sonuçları, çalışma
+      kayıtları. Öğrencilerin çoğu 18 yaşından küçük olacağı için bu veriler KVKK'da en yüksek koruma
+      kategorisindedir.</p>
+
+      <div class="flag warn"><span class="ic">!</span><span><b>Veri sorumlusu sensin.</b> Kendi öğrencilerinin
+      verisinden hukuken sen sorumlusun. Sistem sana araç sağlar; yükümlülüğü üstlenmez.</span></div>
+
+      <p style="margin:14px 0 8px"><b>Yapman gerekenler:</b></p>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Her öğrencinin <b>velisinden yazılı onay</b> al (18 yaş altı için zorunlu)</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Öğrenciye ve veliye <b>aydınlatma metnini</b> ver</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Öğrenci ayrılınca verisini <b>sil ya da arşivle</b></span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Veri sızıntısı olursa <b>72 saat içinde</b> KVKK Kurumu'na bildir</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Belirli bir ölçeği aşarsan <b>VERBİS kaydı</b> gerekebilir</span></div>
+
+      <div class="flag ok" style="margin-top:14px"><span class="ic">i</span><span>
+        Hazır aydınlatma ve veli onay metinleri <b>kvkk-metinleri.txt</b> dosyasında.
+        Bunlar taslaktır; <b>kendi durumuna göre bir avukata kontrol ettirmelisin.</b></span></div>
+
+      <p style="margin:16px 0 0;font-size:13px;color:var(--ink-2)">Sistemi kullanmaya devam ederek bu
+      sorumlulukları okuduğunu ve üstlendiğini kabul etmiş olursun.</p>
+      <button class="btn wide" style="margin-top:14px" onclick="kvkkOnayla()">Okudum, sorumluluğu kabul ediyorum</button>
+    </div></div>
+  </div>`;
 }
 
 /* ---------- LİSANS VE CİHAZ ---------- */
@@ -3311,11 +3537,13 @@ async function cihazSil(cid){
 }
 function lisansRozeti(){
   if(!LISANS) return '';
-  if(LISANS.suresiz) return '<span style="color:#7FD1A8">süresiz</span>';
+  const pk=LISANS.paket_adi?'<div style="color:#6E8E9B">'+esc(LISANS.paket_adi)+' · '+LISANS.ogrenci_sayisi+'/'+LISANS.ogrenci_limiti+'</div>':'';
   const g=LISANS.kalan_gun;
-  if(!LISANS.gecerli) return '<span style="color:#F0A79C">süre doldu</span>';
-  if(g<=7) return '<span style="color:#E8C77A">'+g+' gün kaldı</span>';
-  return '<span style="color:#6E8E9B">'+g+' gün</span>';
+  const s = !LISANS.gecerli ? '<span style="color:#F0A79C">süre doldu</span>'
+    : LISANS.suresiz ? '<span style="color:#7FD1A8">süresiz</span>'
+    : g<=7 ? '<span style="color:#E8C77A">'+g+' gün kaldı</span>'
+    : '<span style="color:#6E8E9B">'+g+' gün</span>';
+  return s+pk;
 }
 function lisansUyarisi(){
   if(!LISANS) return '';
@@ -3331,6 +3559,47 @@ function lisansUyarisi(){
       Süre dolduğunda veriler durur ama yeni kayıt yapılamaz.</span></div></div></div>`;
   return '';
 }
+function onayKarti(st){
+  const tam = st.veliOnay && (st.resit || ((st.veliAd||'').trim().length>=3 && String(st.veliTel||'').replace(/\D/g,'').length>=10));
+  return `<div class="card" style="${tam?'':'border:2px solid var(--bad)'}"><h2>${tam?'Veri sorumluluğu':'⚠ Veli onayı eksik'}<small>${
+    tam?'Bu kayıt için onay alınmış. Denetimde gösterilecek belge budur.'
+       :'Bu öğrenci onay kaydı tamamlanmadan eklenmiş. Sunucu yeni değişiklikleri reddedecektir.'}</small></h2><div class="body">
+    ${tam?`<div class="flag ok"><span class="ic">✓</span><span>
+        <b>${st.resit?'Öğrencinin kendi rızası':'Veli onayı'} alınmış</b> · ${esc(String(st.veliOnay).slice(0,10))}
+        ${st.resit?'':`<br>Veli: <b>${esc(st.veliAd)}</b> · ${esc(st.veliTel)}`}
+        ${st.veliOnayNotu?`<br><span style="color:var(--ink-2)">${esc(st.veliOnayNotu)}</span>`:''}</span></div>`
+      :`<div class="flag bad"><span class="ic">!</span><span>
+        Bu öğrenci için ${st.resit?'rıza':'veli onayı'} kaydı yok. Aşağıdaki alanları doldurup kaydet;
+        aksi hâlde bu öğrencide değişiklik yapamazsın.</span></div>`}
+    <div class="fr" style="margin-top:12px">
+      <div><label class="f">18 yaşını doldurdu mu</label>
+        <select onchange="cur().resit=(this.value==='1'); if(cur().resit){cur().veliAd='';cur().veliTel='';} if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); save();render()">
+          <option value="0" ${st.resit?'':'selected'}>Hayır — veli onayı gerekli</option>
+          <option value="1" ${st.resit?'selected':''}>Evet — kendi rızası yeterli</option></select></div>
+      ${st.resit?'':`
+      <div><label class="f">Veli adı soyadı</label>
+        <input type="text" value="${esc(st.veliAd||'')}" onchange="cur().veliAd=this.value; if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); save();render()"></div>
+      <div><label class="f">Veli telefonu</label>
+        <input type="text" value="${esc(st.veliTel||'')}" onchange="cur().veliTel=this.value; if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); save();render()"></div>`}
+    </div>
+    <div class="fr"><div style="flex:1"><label class="f">Onay notu</label>
+      <input type="text" value="${esc(st.veliOnayNotu||'')}" placeholder="ör. 13.08.2026 tarihli imzalı form elimde"
+        onchange="cur().veliOnayNotu=this.value; save();render()"></div></div>
+    <div class="hint">Onay tarihi: ${st.veliOnay?esc(String(st.veliOnay).slice(0,10)):'—'}
+      ${tam?'':' · Alanları doldurunca tarih kendiliğinden yazılır.'}</div>
+  </div></div>`;
+}
+function onaysizUyari(){
+  const eksik=(DB.students||[]).filter(s=>!(s.veliOnay && (s.resit || ((s.veliAd||'').trim().length>=3 && String(s.veliTel||'').replace(/\D/g,'').length>=10))));
+  if(!eksik.length) return '';
+  return `<div class="card" style="border:2px solid var(--bad);background:#FDF4F3"><div class="body">
+    <div class="flag bad"><span class="ic">!</span><span>
+      <b>${eksik.length} öğrencinin onay kaydı eksik:</b> ${eksik.map(s=>esc(s.name)).join(', ')}<br>
+      Bu öğrencilerde değişiklik yapamazsın. Her birini seçip <b>Hedef</b> sekmesindeki
+      "Veli onayı" kartını doldur.<br><br>
+      <b>Neden:</b> 18 yaş altı öğrenci verisi işlemek için velinin açık rızası yasal zorunluluktur.</span></div>
+  </div></div>`;
+}
 function hesapKarti(){
   const bu=cihazParmakIzi();
   return `<div class="card"><h2>Hesap ve lisans<small>Giriş bilgilerin, kullanım süren ve bağlı cihazların.</small></h2><div class="body">
@@ -3341,6 +3610,9 @@ function hesapKarti(){
       <div class="stat"><div class="k">Kalan</div><div class="v" style="font-size:20px">${LISANS?(LISANS.suresiz?'∞':LISANS.kalan_gun):'—'}</div><div class="n">gün</div></div>
       <div class="stat"><div class="k">Cihaz</div><div class="v" style="font-size:20px">${LISANS?LISANS.cihaz_sayisi+'/'+LISANS.cihaz_limiti:'—'}</div><div class="n">kayıtlı</div></div>
     </div>
+    ${LISANS?`<div class="flag ${LISANS.kota_var?'ok':'warn'}" style="margin-bottom:12px"><span class="ic">${LISANS.kota_var?'✓':'!'}</span><span>
+      <b>${esc(LISANS.paket_adi)}</b> · ${LISANS.ogrenci_sayisi}/${LISANS.ogrenci_limiti} öğrenci
+      ${LISANS.kota_var?'':' — <b>sınıra ulaştın.</b> Yeni öğrenci için paket yükseltmelisin.'}</span></div>`:''}
     ${CIHAZHATA?`<div class="flag bad"><span class="ic">!</span><span>${esc(CIHAZHATA)}</span></div>`:''}
     ${CIHAZLAR.length?`<table><thead><tr><th>Cihaz</th><th>Son giriş</th><th></th></tr></thead><tbody>
       ${CIHAZLAR.map(c=>`<tr><td>${esc(c.ad||'Cihaz')}${c.parmak_izi===bu?' <span class="pill s1" style="font-size:10px">şu an buradasın</span>':''}</td>
