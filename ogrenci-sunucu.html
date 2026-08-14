@@ -1536,6 +1536,33 @@ async function gTest(){
   try{ await sbTest(); GHATA='OK|Sunucuya ulaşıldı.'; }catch(e){ GHATA='Bağlantı olmadı: '+(e.message||e); }
   render();
 }
+async function gSifreUnuttum(){
+  const m=(document.getElementById('gMail')?.value||'').trim();
+  if(!m){ GHATA='Önce e-posta adresini yaz, sonra bu bağlantıya bas.'; render(); return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){ GHATA='Geçerli bir e-posta adresi yaz.'; render(); return; }
+  GBEKLE=true; GHATA=''; render();
+  try{
+    await sbCagri('/auth/v1/recover',{method:'POST',
+      body:{ email:m, options:{ redirectTo: location.origin+location.pathname } }});
+    GHATA='OK|'+m+' adresine sıfırlama bağlantısı gönderildi.\nGelen kutunu ve gereksiz/spam klasörünü kontrol et.';
+  }catch(e){
+    GHATA = /rate|limit|too many/i.test(e.message||'')
+      ? 'Çok fazla deneme yapıldı. Birkaç dakika bekle.'
+      : 'Gönderilemedi. Öğretmeninden yardım iste.';
+  }
+  GBEKLE=false; render();
+}
+async function gYeniSifre(){
+  const a=document.getElementById('nS1').value, b=document.getElementById('nS2').value;
+  if(a.length<8){ GHATA='Şifre en az 8 karakter olmalı.'; render(); return; }
+  if(a!==b){ GHATA='İki şifre aynı değil.'; render(); return; }
+  GBEKLE=true; GHATA=''; render();
+  try{
+    await sbCagri('/auth/v1/user',{method:'PUT',body:{password:a}});
+    GMOD='giris'; GHATA='OK|Şifren değiştirildi. Yeni şifrenle giriş yap.'; sbCikis();
+  }catch(e){ GHATA='Değiştirilemedi: '+(e.message||e); }
+  GBEKLE=false; render();
+}
 async function gGiris(){
   const m=document.getElementById('gMail').value.trim(), s=document.getElementById('gSifre').value;
   if(!m||!s){ GHATA='E-posta ve şifre gerekli.'; render(); return; }
@@ -1594,7 +1621,7 @@ async function sbCikisYap(){
 }
 function girisEkrani(){
   const kurulu=sbKurulu(), iyi=GHATA.startsWith('OK|');
-  const hata=GHATA?`<div class="flag ${iyi?'ok':'bad'}" style="margin-top:12px"><span class="ic">${iyi?'✓':'!'}</span><span>${esc(GHATA.replace(/^OK\|/,''))}</span></div>`:'';
+  const hata=GHATA?`<div class="flag ${iyi?'ok':'bad'}" style="margin-top:12px"><span class="ic">${iyi?'✓':'!'}</span><span>${esc(GHATA.replace(/^OK\|/,'')).replace(/\n/g,'<br>')}</span></div>`:'';
   if(!kurulu) return `<div class="card"><h2>Bağlantı bilgileri gerekli</h2><div class="body">
     <div class="flag warn"><span class="ic">!</span><span>
       <b>Öğretmeninin gönderdiği bağlantıya tıklayarak gelmen gerekiyor.</b><br>
@@ -1605,6 +1632,13 @@ function girisEkrani(){
     <div class="fr"><div style="flex:1"><label class="f">Anahtar</label>
       <input type="text" value="${esc(SB.key)}" placeholder="eyJhbGciOi..." onchange="sbAyarla('key',this.value)"></div></div>
     <button class="btn wide" onclick="gTest()">Bağlantıyı dene</button>${hata}
+  </div></div>`;
+  if(GMOD==='yenisifre') return `<div class="card"><h2>Yeni şifre belirle</h2><div class="body">
+    <div class="fr"><div style="flex:1"><label class="f">Yeni şifre</label>
+      <input type="password" id="nS1" placeholder="en az 8 karakter"></div></div>
+    <div class="fr"><div style="flex:1"><label class="f">Yeni şifre (tekrar)</label>
+      <input type="password" id="nS2" placeholder="aynısını yaz" onkeydown="if(event.key==='Enter')gYeniSifre()"></div></div>
+    <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gYeniSifre()">${GBEKLE?'Bekle...':'Şifreyi kaydet'}</button>${hata}
   </div></div>`;
   if(GMOD==='kod') return `<div class="card"><h2>Öğretmeninin kodu</h2><div class="body">
     <div class="hint" style="margin-bottom:10px">Hesabın açıldı. Şimdi öğretmeninin verdiği <b>6 haneli kodu</b> yaz — böylece ödevlerin gelmeye başlar.</div>
@@ -1627,7 +1661,9 @@ function girisEkrani(){
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gGiris()">${GBEKLE?'Bekle...':(GMOD==='kayit'?'Hesabı oluştur':'Giriş yap')}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="GMOD='${GMOD==='kayit'?'giris':'kayit'}';GHATA='';render()">
       ${GMOD==='kayit'?'Zaten hesabım var':'Hesabım yok — oluştur'}</button>${hata}
-    <div class="hint" style="margin-top:10px">Şifreni unutursan öğretmenine söyle, sıfırlama bağlantısı gönderir.</div>
+    ${GMOD==='giris'?`<div style="text-align:center;margin-top:12px">
+      <a href="#" onclick="gSifreUnuttum();return false" style="color:var(--accent);font-size:13.5px;text-decoration:underline">Şifremi unuttum</a>
+      <div class="hint" style="margin-top:4px">Önce e-postanı yaz, sonra buna bas.</div></div>`:''}
   </div></div>`;
 }
 
@@ -1645,6 +1681,14 @@ function kaynakUyarisi(){
 /* ---------- açılış ---------- */
 (async()=>{
   sbYukle();
+  const hh=location.hash||'';
+  if(hh.indexOf('type=recovery')>=0){
+    const pr=new URLSearchParams(hh.replace(/^#/,''));
+    const at=pr.get('access_token'), rt=pr.get('refresh_token');
+    if(at){ SB.tok=at; SB.ref=rt||''; sbSakla();
+      history.replaceState(null,'',location.pathname+location.search);
+      GMOD='yenisifre'; render(); return; }
+  }
   const hs0=decodeURIComponent(location.hash.slice(1)||'');
   if(hs0.indexOf('KUR:')===0 && davettenKur(hs0)){
     history.replaceState(null,'',location.pathname+location.search);
