@@ -3858,22 +3858,18 @@ function girisEkrani(){
   const kurulu=sbKurulu();
   const h=GIRISHATA, iyi=h.startsWith('OK|');
   return `<div style="max-width:460px;margin:36px auto">
-    <div class="card" style="border-color:var(--accent)"><div class="body" style="padding:14px 16px">
-      <div style="font-size:12.5px;color:var(--ink-2)">
-        <b>Bu, panelin sunucu sürümüdür.</b> Eski panelin (<span style="font-family:var(--mono)">kocluk-paneli.html</span>)
-        ve oradaki verilerin olduğu gibi duruyor; bu sayfa onlara dokunmaz.
-        İstediğin an eski panele dönebilirsin.</div>
-    </div></div>
-    <div class="card"><h2>${kurulu?(GIRISMOD==='kayit'?'Koç hesabı oluştur':'Koç girişi'):'Sunucu kurulumu'}<small>${
+    <div class="card"><h2>${kurulu?(GIRISMOD==='kayit'?'Koç hesabı oluştur':'Koç girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
       kurulu?'Verilerin sunucuda saklanır; her cihazdan aynı veriye ulaşırsın.'
-            :'Supabase › Settings › API sayfasındaki iki bilgiyi buraya yaz.'}</small></h2><div class="body">
+            :'Panel dosyasına anahtar yazılmamış. Geçici olarak buradan girebilirsin.'}</small></h2><div class="body">
       ${!kurulu?`
-        <div class="fr"><div style="flex:1"><label class="f">Project URL</label>
+        <div class="flag warn"><span class="ic">!</span><span>
+          <b>Bu ekranı koçlar görmemeli.</b> Panel dosyasındaki <span style="font-family:var(--mono)">SUNUCU</span>
+          bloğuna anahtar yazıldığında bu bölüm kendiliğinden kaybolur ve herkes doğrudan giriş ekranını görür.</span></div>
+        <div class="fr" style="margin-top:12px"><div style="flex:1"><label class="f">Sunucu adresi</label>
           <input type="text" value="${esc(SB.url)}" placeholder="https://xxxxx.supabase.co" onchange="sbAyarla('url',this.value)"></div></div>
-        <div class="fr"><div style="flex:1"><label class="f">anon public anahtar</label>
+        <div class="fr"><div style="flex:1"><label class="f">Anahtar</label>
           <input type="text" value="${esc(SB.key)}" placeholder="eyJhbGciOi..." onchange="sbAyarla('key',this.value)"></div></div>
         <button class="btn wide" onclick="sbBaglantiTest()">Bağlantıyı dene</button>
-        <div class="hint" style="margin-top:10px"><b>service_role</b> anahtarını buraya YAZMA — o yönetici anahtarıdır, kimseyle paylaşılmaz.</div>
       `:`
         ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">Adın</label>
           <input type="text" id="gAd" placeholder="Eser Akkaba"></div></div>`:''}
