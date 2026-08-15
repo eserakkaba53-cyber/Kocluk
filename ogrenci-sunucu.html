@@ -498,7 +498,13 @@ function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DI
 const TL=['Görmedim','İşliyorum','Bitirdim','Eksiğim var'];
 
 let D=null, TAB='odev', KSUB=null;
-const TABS=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denememi gir'],['gelisim','Gelişimim'],['hedef','Hedefe uzaklık'],['puan','Puan hesapla'],['rapor','Rapor gönder'],['ayar','Ayarlar']];
+const TABS_HEPSI=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denememi gir'],['gelisim','Gelişimim'],['hedef','Hedefe uzaklık'],['puan','Puan hesapla'],['rapor','Rapor gönder'],['ayar','Ayarlar']];
+/* Sunucu modunda ödevler ve denemeler kendiliğinden iletilir; rapor göndermeye gerek yoktur.
+   Sekme yalnızca GİZLENİR — kodu duruyor, sunucu bağlantısı kesilirse yedek yol açılır. */
+function TABLIST(){
+  const sunucuda = (typeof sbOturum==='function') && sbOturum() && OGRID;
+  return sunucuda ? TABS_HEPSI.filter(t=>t[0]!=='rapor') : TABS_HEPSI;
+}
 
 /* ---------- paket yükleme ---------- */
 function paketNormalle(p){
@@ -594,12 +600,12 @@ function render(){
   const hk=haftaKalan();
   document.getElementById('hMeta').textContent=
     [D.grade+'. SINIF', D.dept?D.dept.toUpperCase():null, hk!==null?'SINAVA '+hk+' HAFTA':null].filter(Boolean).join(' · ');
-  document.getElementById('tabs').innerHTML=TABS.map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('');
+  document.getElementById('tabs').innerHTML=TABLIST().map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('');
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
-  if(!TABS.find(t=>t[0]===TAB)&&TAB!=='kilavuz') TAB='odev';
+  if(!TABLIST().find(t=>t[0]===TAB)&&TAB!=='kilavuz') TAB='odev';
   v.innerHTML=uy+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar})[TAB]();
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
@@ -1405,7 +1411,9 @@ function vKilavuz(){
     ${kAdim(1,'Pazartesi: paketi yükle','Öğretmenin sana bir link ya da uzun bir kod gönderir. Linke tıklarsın, panel açılır ve o haftanın ödevleri yüklenir. Kod gönderdiyse <b>Ayarlar → Yeni paket yükle</b> kısmına yapıştırırsın.')}
     ${kAdim(2,'Hafta boyunca: işaretle','Bir ödevi bitirdiğinde <b>Ödevlerim</b> sekmesinden işaretle. Hafta sonuna bırakma; unutursun ve rapor eksik gider.')}
     ${kAdim(3,'Deneme çözdüğünde: gir','<b>Denememi gir</b> sekmesinden doğru ve yanlış sayılarını yaz. Net otomatik hesaplanır.')}
-    ${kAdim(4,'Pazar akşamı: raporu gönder','<b>Rapor gönder</b> sekmesine gel, öğretmenine bir not yaz ve butona bas. WhatsApp açılır, gönder tuşuna basarsın. Bu kadar.')}
+    ${(sbOturum()&&OGRID)
+      ? kAdim(4,'Rapor göndermene gerek yok','İşaretlediğin her ödev, girdiğin her deneme <b>anında öğretmenine ulaşıyor</b>. Söylemek istediğin bir şey varsa <b>Ayarlar</b> sekmesindeki not kutusunu kullan.')
+      : kAdim(4,'Pazar akşamı: raporu gönder','<b>Rapor gönder</b> sekmesine gel, öğretmenine bir not yaz ve butona bas. WhatsApp açılır, gönder tuşuna basarsın. Bu kadar.')}
   </div></div>
 
   <div class="card"><h2>Ödevlerim sekmesi</h2><div class="body">
@@ -1471,6 +1479,13 @@ function vAyar(){
   <div class="card"><h2>Kullanım kılavuzu</h2><div class="body">
     <button class="btn ghost wide" onclick="TAB='kilavuz';render()">Kılavuzu aç</button>
   </div></div>
+
+  ${(sbOturum()&&OGRID)?`<div class="card"><h2>Öğretmenime not<small>Bir sorun, bir soru ya da söylemek istediğin bir şey varsa buraya yaz.</small></h2><div class="body">
+    <div class="fr"><div style="flex:1">
+      <textarea id="rNot" rows="3" placeholder="Örn. Türevde zincir kuralını anlamadım, tekrar anlatır mısınız?"></textarea></div></div>
+    <button class="btn wide" onclick="notGonder()">Notu gönder</button>
+    <div class="hint" style="margin-top:8px">Ödevlerin ve denemelerin zaten kendiliğinden iletiliyor; ayrıca rapor göndermene gerek yok.</div>
+  </div></div>`:''}
 
   ${sbOturum()?`<div class="card"><h2>Hesabım</h2><div class="body">
     <div class="hint" style="margin-bottom:10px">Giriş: <b>${esc(SB.mail||'')}</b>${D.kocAd?` · Öğretmenin: <b>${esc(D.kocAd)}</b>`:''}</div>
@@ -1628,13 +1643,22 @@ async function gGiris(){
     } else await sbGiris(m,s);
     await sunucuAc();
   }catch(e){
-    GHATA = /Invalid login/i.test(e.message)?'E-posta ya da şifre yanlış.'
-      : /already registered|already exists/i.test(e.message)
-        ? 'Bu e-posta ile zaten bir hesap var.\n\nDaha önce kayıt olduysan "Zaten hesabım var" deyip giriş yap. Şifreni unuttuysan "Şifremi unuttum" bağlantısını kullan.'
-      : /signups? (are )?disabled/i.test(e.message)
+    const ham=(e&&e.message)?String(e.message):String(e);
+    GHATA =
+        /invalid login/i.test(ham) ? 'E-posta ya da şifre yanlış.'
+      : /already registered|already exists|user_already/i.test(ham)
+        ? 'Bu e-posta ile zaten bir hesap var.\n\nDaha önce kayıt olduysan "Zaten hesabım var" deyip giriş yap.\nŞifreni unuttuysan "Şifremi unuttum" bağlantısını kullan.'
+      : /signups?[ _](are[ _])?(not[ _]allowed|disabled)|signup_disabled/i.test(ham)
         ? 'Yeni kayıtlar şu an kapalı. Öğretmenine haber ver.'
-      : /rate|too many/i.test(e.message) ? 'Çok fazla deneme yapıldı. Birkaç dakika bekle.'
-      : (e.message||String(e));
+      : /over_email_send_rate|email[ _]rate[ _]limit|only request this after/i.test(ham)
+        ? 'Sunucunun e-posta sınırına takıldı.\n\nHesabın YİNE DE açılmış olabilir: "Zaten hesabım var" deyip aynı e-posta ve şifreyle giriş yapmayı dene.\n\nOlmazsa birkaç dakika sonra tekrar dene.'
+      : /over_request_rate|too many requests|429/i.test(ham)
+        ? 'Çok hızlı denendi. Yarım dakika bekleyip tekrar dene.'
+      : /password/i.test(ham) && /short|least|weak/i.test(ham)
+        ? 'Şifre çok kısa ya da zayıf. En az 8 karakter, harf ve rakam karışık olsun.'
+      : /database error|unexpected_failure/i.test(ham)
+        ? 'Sunucu kaydı oluşturamadı. Öğretmenine haber ver.\n\nTeknik ayrıntı: '+ham
+      : ham + '\n\n(Bu mesajı öğretmenine iletebilirsin.)';
   }
   GBEKLE=false; render();
 }
