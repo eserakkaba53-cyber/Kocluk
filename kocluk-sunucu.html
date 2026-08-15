@@ -3894,6 +3894,16 @@ async function girisYap(){
   const m=document.getElementById('gMail').value.trim();
   const s=document.getElementById('gSifre').value;
   if(!m||!s){ GIRISHATA='E-posta ve şifre gerekli.'; render(); return; }
+  if(GIRISMOD==='kayit'){
+    const m2=(document.getElementById('gMail2')?.value||'').trim();
+    if(m.toLowerCase()!==m2.toLowerCase()){
+      GIRISHATA='İki e-posta aynı değil. Yazdığını kontrol et — şifreni unutursan sıfırlama bağlantısı bu adrese gidecek.';
+      render(); return;
+    }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(m)){ GIRISHATA='E-posta adresi geçerli görünmüyor.'; render(); return; }
+    const s2=(document.getElementById('gSifre2')?.value||'');
+    if(s!==s2){ GIRISHATA='İki şifre aynı değil.'; render(); return; }
+  }
   GIRISBEKLE=true; GIRISHATA=''; render();
   try{
     if(GIRISMOD==='kayit'){
@@ -3996,9 +4006,17 @@ function girisEkrani(){
           <input type="text" id="gAd" placeholder="Eser Akkaba"></div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
           <input type="text" id="gMail" placeholder="ornek@eposta.com"></div></div>
+        ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">E-postanı tekrar yaz</label>
+          <input type="text" id="gMail2" placeholder="aynısını yaz" autocomplete="off"
+            onpaste="event.preventDefault();alert('Yapıştırma kapalı — yazım hatasını yakalamak için elle yazman gerekiyor.')"></div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">Şifre</label>
           <input type="password" id="gSifre" placeholder="${GIRISMOD==='kayit'?'en az 8 karakter':'••••••••'}"
             onkeydown="if(event.key==='Enter')girisYap()"></div></div>
+        ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">Şifreni tekrar yaz</label>
+          <input type="password" id="gSifre2" placeholder="aynısını yaz"
+            onkeydown="if(event.key==='Enter')girisYap()"></div></div>
+          <div class="hint" style="margin:-4px 0 12px">E-postanı iki kez soruyoruz çünkü
+            <b>şifreni unutursan sıfırlama bağlantısı oraya gidecek.</b></div>`:''}
         <button class="btn wide" ${GIRISBEKLE?'disabled':''} onclick="girisYap()">
           ${GIRISBEKLE?'Bekle...':(GIRISMOD==='kayit'?'Hesabı oluştur':'Giriş yap')}</button>
         <button class="btn ghost wide" style="margin-top:8px" onclick="GIRISMOD='${GIRISMOD==='kayit'?'giris':'kayit'}';GIRISHATA='';render()">

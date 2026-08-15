@@ -1598,13 +1598,33 @@ async function gYeniSifre(){
 async function gGiris(){
   const m=document.getElementById('gMail').value.trim(), s=document.getElementById('gSifre').value;
   if(!m||!s){ GHATA='E-posta ve şifre gerekli.'; render(); return; }
+  if(GMOD==='kayit'){
+    const m2=(document.getElementById('gMail2')?.value||'').trim();
+    if(m.toLowerCase()!==m2.toLowerCase()){
+      GHATA='İki e-posta aynı değil. Yazdığını kontrol et — şifreni unutursan bu adrese gerek duyacaksın.';
+      render(); return;
+    }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(m)){ GHATA='E-posta adresi geçerli görünmüyor.'; render(); return; }
+    const s2=(document.getElementById('gSifre2')?.value||'');
+    if(s!==s2){ GHATA='İki şifre aynı değil.'; render(); return; }
+    if(!BEKLEYENKOD){
+      const kod=(document.getElementById('gKodK')?.value||'').trim();
+      if(!kod){ GHATA='Öğretmeninin verdiği 6 haneli kodu yaz.'; render(); return; }
+      BEKLEYENKOD=kod.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    }
+  }
   GBEKLE=true; GHATA=''; render();
   try{
     if(GMOD==='kayit'){
       if(s.length<8) throw new Error('Şifre en az 8 karakter olmalı');
       const r=await sbCagri('/auth/v1/signup',{method:'POST',body:{email:m,password:s,data:{rol:'ogrenci'}}});
       if(r&&r.access_token) sbOturumKur(r);
-      else { GBEKLE=false; GHATA='OK|Hesap açıldı. E-postana gelen bağlantıya tıkla, sonra giriş yap.'; GMOD='giris'; render(); return; }
+      else {
+        // e-posta doğrulaması açıksa oturum gelmez
+        GBEKLE=false;
+        GHATA='OK|Hesabın açıldı. E-postana gelen bağlantıya tıkla, sonra buradan giriş yap.';
+        GMOD='giris'; render(); return;
+      }
     } else await sbGiris(m,s);
     await sunucuAc();
   }catch(e){
@@ -1693,17 +1713,34 @@ function girisEkrani(){
     <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="teshisAl()">Sorun mu var? Kontrol et</button>${hata}
   </div></div>`;
-  return `<div class="card"><h2>${GMOD==='kayit'?'Hesap oluştur':'Giriş yap'}<small>${
-    BEKLEYENKOD?'Öğretmenin seni davet etti. E-posta ve şifre belirle, gerisi kendiliğinden olacak.'
-               :'Ödevlerin ve gelişimin öğretmeninin sisteminde saklanır.'}</small></h2><div class="body">
-    ${BEKLEYENKOD?`<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
-      Davet bağlantın tanındı. Sadece bir e-posta ve şifre belirlemen yeterli.</span></div>`:''}
+  return `<div class="card"><h2>${GMOD==='kayit'?'Hesabını oluştur':'Giriş yap'}<small>${
+    GMOD==='kayit'
+      ? (BEKLEYENKOD?'Bilgilerini gir, panelin hemen açılsın.':'Öğretmeninin verdiği kodu da hazır bulundur.')
+      :'Ödevlerin ve gelişimin öğretmeninin sisteminde saklanır.'}</small></h2><div class="body">
+    ${GMOD==='kayit'&&BEKLEYENKOD?`<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
+      <b>Davet bağlantın tanındı.</b> Kod yazmana gerek yok — e-posta ve şifre belirle, panelin açılsın.</span></div>`:''}
+    ${GMOD==='kayit'&&!BEKLEYENKOD?`<div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>
+      Öğretmeninin gönderdiği <b>bağlantıya tıklayarak</b> gelirsen kod otomatik dolar.
+      Elle geldiysen 6 haneli kodu aşağıya yazman gerekiyor.</span></div>`:''}
+    ${GMOD==='kayit'?`<div class="hint" style="margin-bottom:12px">
+      E-postanı iki kez soruyoruz çünkü <b>şifreni unutursan sıfırlama bağlantısı oraya gidecek.</b>
+      Yanlış yazarsan geri alamayız.</div>`:''}
     <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
       <input type="text" id="gMail" placeholder="ornek@eposta.com"></div></div>
+    ${GMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">E-postanı tekrar yaz</label>
+      <input type="text" id="gMail2" placeholder="aynısını yaz" autocomplete="off"
+        onpaste="event.preventDefault();alert('Yapıştırma kapalı — yazım hatasını yakalamak için elle yazman gerekiyor.')"></div></div>`:''}
     <div class="fr"><div style="flex:1"><label class="f">Şifre</label>
       <input type="password" id="gSifre" placeholder="${GMOD==='kayit'?'en az 8 karakter':'••••••••'}"
         onkeydown="if(event.key==='Enter')gGiris()"></div></div>
-    <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gGiris()">${GBEKLE?'Bekle...':(GMOD==='kayit'?'Hesabı oluştur':'Giriş yap')}</button>
+    ${GMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">Şifreni tekrar yaz</label>
+      <input type="password" id="gSifre2" placeholder="aynısını yaz"
+        onkeydown="if(event.key==='Enter')gGiris()"></div></div>
+      ${!BEKLEYENKOD?`<div class="fr"><div style="flex:1"><label class="f">Öğretmeninin verdiği kod</label>
+        <input type="text" id="gKodK" placeholder="ABC123" autocomplete="off"
+          style="text-transform:uppercase;font-family:var(--mono);font-size:17px;letter-spacing:2px;text-align:center"
+          onkeydown="if(event.key==='Enter')gGiris()"></div></div>`:''}`:''}
+    <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gGiris()">${GBEKLE?'Bekle...':(GMOD==='kayit'?'Hesabı oluştur ve panelimi aç':'Giriş yap')}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="GMOD='${GMOD==='kayit'?'giris':'kayit'}';GHATA='';render()">
       ${GMOD==='kayit'?'Zaten hesabım var':'Hesabım yok — oluştur'}</button>${hata}
     ${GMOD==='giris'?`<div style="text-align:center;margin-top:12px">
