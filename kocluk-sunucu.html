@@ -175,6 +175,8 @@ input[type=number]{font-family:var(--mono);text-align:right}
   </main>
 </div>
 
+<!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
+<script src="sunucu.js"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -972,10 +974,9 @@ function yedekDurum(){
    Güvenliği veritabanındaki erişim kuralları sağlar.
    service_role anahtarını ASLA buraya yazma.
    ══════════════════════════════════════════════════════════════ */
-const SUNUCU = {
-  url: 'https://hdcxmunvkxkffnsewfgp.supabase.co',
-  key: ''      // ←←← anon public anahtarını buraya yapıştır
-};
+const SUNUCU = (window.SUNUCU_AYAR && window.SUNUCU_AYAR.key)
+  ? window.SUNUCU_AYAR
+  : { url:'https://hdcxmunvkxkffnsewfgp.supabase.co', key:'' };
 
 var SB = { url:SUNUCU.url, key:SUNUCU.key, tok:'', ref:'', uid:'', mail:'', sonHata:'' };
 var SBKEY = 'kocluk_sb_oturum';
