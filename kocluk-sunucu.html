@@ -181,7 +181,16 @@ input[type=number]{font-family:var(--mono);text-align:right}
    Gerçek yedek her zaman .json dosyasıdır. Haftada bir indir. */
 const KEY='kocluk_v1_sunucu';
 /* Panelin tüm verisi. Sunucudan yüklenir; buradaki değerler yalnızca ilk çizim içindir. */
-let DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:[]};   // eski panel 'kocluk_v1' kullanır; ikisi birbirine karışmaz
+let DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:[]};
+/* Panellerin bulunduğu klasör. Ayar gerektirmez; panelin kendi adresinden türetilir.
+   Örn. .../Kocluk/kocluk-sunucu.html  →  .../Kocluk/ */
+function tabanAdres(){
+  if(location.protocol==='http:'||location.protocol==='https:'){
+    return location.origin + location.pathname.replace(/[^/]*$/,'');
+  }
+  return (DB.siteUrl||'').replace(/\/?$/,'/');   // dosyadan açıldıysa yedek
+}
+function ogrenciPaneliAdresi(){ return tabanAdres()+'ogrenci-sunucu.html'; }   // eski panel 'kocluk_v1' kullanır; ikisi birbirine karışmaz
 const ESKIKEY='kocluk_v1';
 let MEM=null;
 async function load(){
@@ -810,7 +819,7 @@ function atlasAdaylari(){
   const kok=location.origin+location.pathname.replace(/[^/]*$/,'');
   const liste=a.map(x=>kok+x);
   // ayrıca ayarlardaki site adresi
-  if(DB.siteUrl){ const s=DB.siteUrl.replace(/\/?$/,'/'); a.forEach(x=>liste.push(s+x)); }
+  const s=tabanAdres(); if(s) a.forEach(x=>liste.push(s+x));
   return [...new Set(liste)];
 }
 async function atlasYukle(){
@@ -961,7 +970,7 @@ function yedekDurum(){
    ══════════════════════════════════════════════════════════════ */
 const SUNUCU = {
   url: 'https://hdcxmunvkxkffnsewfgp.supabase.co',
-  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkY3htdW52a3hrZmZuc2V3ZmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzA4MDMsImV4cCI6MjEwMjEwNjgwM30.SypEvxn5QXwyLtKdMorumeFhv1_ED-EPwghwjdMSYNw'      // ←←← anon public anahtarını buraya yapıştır
+  key: ''      // ←←← anon public anahtarını buraya yapıştır
 };
 
 var SB = { url:SUNUCU.url, key:SUNUCU.key, tok:'', ref:'', uid:'', mail:'', sonHata:'' };
@@ -1216,7 +1225,7 @@ async function kocYaz(){
   await sbGuncelle('koclar', '?id=eq.'+SB.uid, {
     ad: DB.kocAd || '',
     telefon: DB.kocTel || '',
-    site_url: DB.siteUrl || '',
+    site_url: DB.siteUrl || tabanAdres() || '',
     ayarlar: { sureler: DB.sureler||{}, rutin: DB.rutin||[], kopru: DB.kopru||'', sonYedek: DB.sonYedek||null }
   });
 }
@@ -1415,7 +1424,7 @@ function paketUret(st,zorla,limitEx,limitGor){
     .map(t=>{const duz=(KONU[t.sub]||[]).flatMap(u=>u[1]); const i=duz.indexOf(t.konu);
       return [t.date, t.sub, i>=0?i:t.konu, t.yap||0, t.q||0];});
   const p={v:2,id:st.id,ad:st.name,track:st.track,grade:st.grade,dept:st.dept,rank:st.rank,
-    sinav:st.sinavTarihi||'',tel:st.tel||'',kocTel:DB.kocTel||'',url:DB.siteUrl||'',kopru:kopruKimlik(),
+    sinav:st.sinavTarihi||'',tel:st.tel||'',kocTel:DB.kocTel||'',url:tabanAdres(),kopru:kopruKimlik(),
     k:konuIndeksle(st.topics||{}), sureler:DB.sureler||{}, zorla:!!zorla,
     score:st.score||'',refNets:st.refNets||{},tabanPuan:st.tabanPuan||'',tabanSira:st.tabanSira||'',
     tabanYil:st.tabanYil||'',hsaat:st.haftalikSaat||'',dip:st.dip||'',obp:st.obp||'',yerlesti:!!st.yerlesti,
@@ -1425,7 +1434,7 @@ function paketUret(st,zorla,limitEx,limitGor){
   const js=JSON.stringify(p);
   const sik='KOCPAKET2:'+sikistir(js), duz='KOCPAKET1:'+b64e(js);
   const kod = sik.length<duz.length ? sik : duz;
-  const link = DB.siteUrl ? DB.siteUrl.replace(/\/?$/,'/')+'ogrenci-paneli.html#'+encodeURIComponent(kod) : kod;
+  const link = tabanAdres() ? tabanAdres()+'ogrenci-sunucu.html#'+encodeURIComponent(kod) : kod;
   // WhatsApp uzun linkleri sonuna kadar tıklanabilir yapmıyor: 2000 karakteri aşarsa geçmişi kısalt
   if(link.length>2000){
     if(eG>0) return paketUret(st,zorla,eX,Math.max(0,eG-10));
@@ -2396,9 +2405,16 @@ function vDeneme(st){
 
   <div class="card"><h2>Karneden okut<small>Karnenin konu analizi tablosunu okur: netleri hesaplar, yanlış ve boş konuları çıkarır.</small></h2><div class="body">
     <div class="hint" style="margin:0 0 10px">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. Sistem karnenin <b>konu analizi tablosunu</b> okur: ders netlerini hesaplar, yanlış ve boş bıraktığı konuları çıkarır. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
+    <div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>
+      <b>Karne, metni seçilebilen bir PDF olmalı.</b> Fotoğraf ya da taranmış görüntüden okuma yapılamaz.
+      Denemek için: PDF'i aç, bir kelimenin üstüne çift tıkla — <b>seçiliyorsa</b> okunur, seçilmiyorsa görüntüdür.<br>
+      Yayınevinin öğrenci panelinden indirilen PDF genelde seçilebilir olur; WhatsApp'tan gelen ekran görüntüsü olmaz.</span></div>
     <textarea id="kzText" rows="7" placeholder="Karne metnini buraya yapıştır..." style="resize:vertical"></textarea>
     <div style="margin-top:10px"><button class="btn" onclick="applyKarne()">Karneyi oku ve formu doldur</button>
-      <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('kzText').value='';document.getElementById('kzOut').innerHTML=''">Temizle</button></div>
+      <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('kzText').value='';document.getElementById('kzOut').innerHTML=''">Temizle</button>
+      <button class="btn ghost" style="margin-left:8px" onclick="karneTalep()">Karne okunmadı — destek iste</button></div>
+    <div class="hint" style="margin-top:8px">Karne düzgün okunmadıysa <b>destek iste</b> butonuna bas.
+      Karneyi bize gönder, o yayınevinin düzeni sisteme tanıtılsın — bir sonraki güncellemede okunur hale gelir.</div>
     <div id="kzOut" style="margin-top:14px"></div>
   </div></div>
 
@@ -3138,7 +3154,7 @@ function vHedef(st){
         <b>1. Dosya adını kontrol et.</b> Depoda dosya <b>tam olarak "atlas.json"</b> olmalı.
         Dosyayı iki kez indirdiysen tarayıcı adına <b>(1)</b> eklemiş olabilir: <i>atlas (1).json</i>.
         Depoda böyle görünüyorsa dosyanın üstüne tıkla → kalem ikonu → adı <b>atlas.json</b> yap → Commit.<br><br>
-        <b>2. Şununla test et:</b> <a href="${esc((DB.siteUrl||'').replace(/\/?$/,'/'))}atlas.json" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">atlas.json açılıyor mu</a> —
+        <b>2. Şununla test et:</b> <a href="${esc(tabanAdres())}atlas.json" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">atlas.json açılıyor mu</a> —
         sayfa dolu metin gösteriyorsa dosya yerinde, 404 diyorsa yüklenmemiş ya da adı farklı.<br><br>
         <b>3. Hemen çalışsın istiyorsan:</b> yukarıdaki <b>Dosyadan yükle</b> butonuna bas, bilgisayarındaki dosyayı seç. İsmi ne olursa olsun çalışır, tarayıcı saklar.</span></div>`
         :ATLASDURUM?`<div class="flag warn" style="margin-top:10px"><span class="ic">i</span><span>${esc(ATLASDURUM)}</span></div>`:''}`
@@ -3272,6 +3288,17 @@ function baglantiAc(url,etiket){
     document.body.appendChild(a); a.click(); a.remove(); SONLINK=null; return true;
   }catch(e){}
   SONLINK={url,etiket}; render(); return false;
+}
+
+function karneTalep(){
+  const st=cur();
+  const mesaj=`Merhaba, karne okuma desteği rica ediyorum.\n\n`+
+    `Sistem yüklediğim karneyi düzgün okuyamadı.\n\n`+
+    `Koç: ${DB.kocAd||''}\nHesap: ${SB.mail||''}\n`+
+    `Öğrenci: ${st?st.name:'—'}\n\n`+
+    `Karnenin PDF dosyasını bu mesajın ardından gönderiyorum.\n`+
+    `(Metni seçilebilen PDF — fotoğraf değil.)`;
+  baglantiAc('https://wa.me/'+SATIS_TEL+'?text='+encodeURIComponent(mesaj),'WhatsApp — karne desteği');
 }
 
 /* ---------- ABONELİK / PAKETLER ---------- */
@@ -3667,7 +3694,7 @@ async function sifreSifirla(){
   }catch(e){ alert('Gönderilemedi: '+(e.message||e)); }
 }
 function davetKart(st){
-  const link=(DB.siteUrl||'').replace(/\/?$/,'/')+'ogrenci-sunucu.html';
+  const link=ogrenciPaneliAdresi();
   const bagli=!!st.authId;
   return `<div class="card"><h2>Öğrenci hesabı<small>Öğrenci kendi hesabıyla girer; ödevleri ve raporu kendiliğinden akar. WhatsApp paketi artık gerekmez.</small></h2><div class="body">
     ${bagli?`<div class="flag ok"><span class="ic">✓</span><span><b>${esc(st.name)} hesabına bağlı.</b>
@@ -3693,7 +3720,7 @@ function davetKart(st){
   </div></div>`;
 }
 function davetLinki(st){
-  const taban=(DB.siteUrl||'').replace(/\/?$/,'/')+'ogrenci-sunucu.html';
+  const taban=ogrenciPaneliAdresi();
   if(!st.davetKodu) return taban;
   // sunucu adresi, anahtar ve davet kodu linkin içinde gider — öğrenci hiçbir ayar yapmaz
   const paket=b64e(JSON.stringify({u:SB.url,k:SB.key,d:st.davetKodu}))
@@ -3703,7 +3730,7 @@ function davetLinki(st){
 function davetWa(){
   const st=cur(); if(!st||!st.davetKodu) return;
   const link=davetLinki(st);
-  const mesaj=`${st.name}, çalışma panelin hazır.\n\nAşağıdaki bağlantıya tıkla, e-posta ve şifre belirle. Hepsi bu kadar.\n\n${link}\n\nBundan sonra ödevlerin doğrudan panelinde görünecek; WhatsApp'tan kod göndermeye gerek kalmayacak.\n\n(Bağlantı açılmazsa: ${(DB.siteUrl||'').replace(/\/?$/,'/')}ogrenci-sunucu.html adresine gir ve kodu elle yaz: ${st.davetKodu})`;
+  const mesaj=`${st.name}, çalışma panelin hazır.\n\nAşağıdaki bağlantıya tıkla, e-posta ve şifre belirle. Hepsi bu kadar.\n\n${link}\n\nBundan sonra ödevlerin doğrudan panelinde görünecek; WhatsApp'tan kod göndermeye gerek kalmayacak.\n\n(Bağlantı açılmazsa: ${ogrenciPaneliAdresi()} adresine gir ve kodu elle yaz: ${st.davetKodu})`;
   let tel=String(st.tel||'').replace(/\D/g,'');
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
   baglantiAc((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),'WhatsApp — davet');
@@ -3712,11 +3739,23 @@ function davetWa(){
 /* ---------- SUNUCU: giriş ve kurulum ekranı ---------- */
 let GIRISMOD='giris', GIRISHATA='', GIRISBEKLE=false, AKTARDURUM='';
 function sbAyarla(alan,v){ SB[alan]=v.trim(); SB.sonHata=''; sbSakla(); render(); }
+let KURULUMKOD='';
 async function sbBaglantiTest(){
-  GIRISHATA='';
-  try{ await sbTest(); GIRISHATA='OK|Sunucuya ulaşıldı. Şimdi giriş yap ya da hesap oluştur.'; }
+  GIRISHATA=''; KURULUMKOD='';
+  try{
+    await sbTest();
+    KURULUMKOD="const SUNUCU = {\n  url: '"+SB.url.replace(/\/+$/,'')+"',\n  key: '"+SB.key+"'\n};";
+    GIRISHATA='OK|Sunucuya ulaşıldı. Artık giriş yapabilirsin.';
+  }
   catch(e){ GIRISHATA='Bağlantı olmadı: '+(e.message||e); }
   render();
+}
+function kurulumKopyala(){
+  const ta=document.createElement('textarea'); ta.value=KURULUMKOD;
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); alert('Kopyalandı.\n\nŞimdi GitHub\'da kocluk-sunucu.html dosyasını aç, kalem ikonuna bas,\nCtrl+F ile "const SUNUCU" ara, o üç satırı bununla değiştir, Commit changes de.\n\nBundan sonra bu ekran bir daha çıkmayacak.'); }
+  catch(e){ alert('Kopyalanamadı, aşağıdaki kutudan elle seç.'); }
+  document.body.removeChild(ta);
 }
 async function sifreUnuttum(){
   const m=(document.getElementById('gMail')?.value||'').trim();
@@ -3831,6 +3870,15 @@ function girisEkrani(){
         <div class="fr"><div style="flex:1"><label class="f">Anahtar</label>
           <input type="text" value="${esc(SB.key)}" placeholder="eyJhbGciOi..." onchange="sbAyarla('key',this.value)"></div></div>
         <button class="btn wide" onclick="sbBaglantiTest()">Bağlantıyı dene</button>
+        ${KURULUMKOD?`<div class="flag ok" style="margin-top:14px"><span class="ic">✓</span><span>
+            <b>Bağlantı çalışıyor.</b> Bu ekranın bir daha çıkmaması için aşağıdaki üç satırı
+            panel dosyasına yapıştır — bir kez yaparsın, tüm koçlar için geçerli olur.</span></div>
+          <div style="margin-top:10px;background:#F3F7F8;border:1px solid var(--line-soft);border-radius:6px;
+               padding:12px;font-family:var(--mono);font-size:11.5px;white-space:pre;overflow:auto">${esc(KURULUMKOD)}</div>
+          <button class="btn wide" style="margin-top:8px" onclick="kurulumKopyala()">Bu satırları kopyala</button>
+          <div class="hint" style="margin-top:8px">
+            GitHub → <b>kocluk-sunucu.html</b> → kalem ikonu → <b>Ctrl+F</b> ile <span style="font-family:var(--mono)">const SUNUCU</span> ara
+            → o üç satırı bununla değiştir → <b>Commit changes</b>.</div>`:''}
       `:`
         ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">Adın</label>
           <input type="text" id="gAd" placeholder="Eser Akkaba"></div></div>`:''}
