@@ -1762,7 +1762,7 @@ function render(){
   document.getElementById('railList').innerHTML = _liste.length
     ? _liste.map(s=>{
         const a=avgNets(s,3);let tot=0;for(const k in a.nets)tot+=a.nets[k];
-        return `<button class="st-item ${s.id===DB.sel?'on':''}" onclick="DB.sel='${s.id}';${s.ornek?'':'save();'}render()"
+        return `<button class="st-item ${s.id===DB.sel?'on':''}" onclick="YENIOGR=null;DB.sel='${s.id}';${s.ornek?'':'save();'}render()"
           ${s.ornek?'style="opacity:.62"':''}>
           <div class="nm">${esc(s.name)}${s.ornek?' <span style="font-size:9.5px;letter-spacing:.06em;background:rgba(255,255,255,.16);padding:1px 5px;border-radius:3px;vertical-align:2px">ÖRNEK</span>':''}</div>
           <div class="sub">${s.grade}. sınıf · ${trLabel(s.track)} · ort ${a.count?n1(tot):'—'}</div></button>`;
@@ -1824,17 +1824,24 @@ function render(){
     document.getElementById('stMeta').textContent='';
     v.innerHTML=kvkkEkrani(); rayDurum(); return;
   }
+  // Yeni öğrenci formu: öğrenci seçili olmasa da açılmalı
+  if(YENIOGR){
+    const _a0=document.activeElement, _i0=_a0&&_a0.id;
+    let _s0=null,_e0=null;
+    try{ if(_a0&&('selectionStart' in _a0)){_s0=_a0.selectionStart;_e0=_a0.selectionEnd;} }catch(x){}
+    document.getElementById('tabs').innerHTML='';
+    document.getElementById('stName').textContent='Yeni öğrenci';
+    document.getElementById('stMeta').textContent='';
+    v.innerHTML=yeniOgrenciEkrani();
+    if(_i0){ const _e1=document.getElementById(_i0);
+      if(_e1){ try{ _e1.focus({preventScroll:true}); if(_s0!==null&&('setSelectionRange' in _e1)) _e1.setSelectionRange(_s0,_e0); }catch(x){} } }
+    return;
+  }
   if(!st && TAB!=='yonetim'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
-  if(YENIOGR){
-    v.innerHTML=yeniOgrenciEkrani();
-    if(_aid){ const _el=document.getElementById(_aid);
-      if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
-    return;
-  }
   if(!TABSAL().find(t=>t[0]===TAB)) TAB='hafta';
   if(TAB==='yonetim'){
     if(!KOCLAR.length && !YONDURUM){ YONDURUM='Yükleniyor...'; setTimeout(koclariOku,10); }
