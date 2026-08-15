@@ -1583,7 +1583,7 @@ function yoKaydet(){
     dept:'',rank:'',score:'',tabanPuan:'',tabanSira:'',tabanYil:'',dip:'',obp:'',yerlesti:false,
     refNets:{},exams:[],tasks:[],topics:{},startedAt:today()});
   DB.sel=DB.students[DB.students.length-1].id;
-  YENIOGR=null; TAB='hedef'; save(); render();
+  YENIOGR=null; TAB='ogrenci'; save(); render();
 }
 function yeniOgrenciEkrani(){
   const y=YENIOGR;
@@ -2962,6 +2962,8 @@ function vOgrenciBilgi(st){
   return `
   ${ornekUyari(st)}
 
+  ${davetKart(st)}
+
   ${onaysizUyari()}
 
   ${onayKarti(st)}
@@ -2974,8 +2976,6 @@ function vOgrenciBilgi(st){
     <button class="btn ghost" onclick="saveMeta()">Güncelle</button>
     <button class="btn danger" style="margin-left:8px" onclick="delStudent()">Öğrenciyi sil</button>
   </div></div>
-  ${davetKart(st)}
-
   <div class="card" style="border-color:var(--bad)"><h2>Öğrenciyi sil<small>Bu işlem geri alınamaz. Ödevleri, denemeleri ve konu kayıtları da silinir.</small></h2><div class="body">
     <div class="flag warn"><span class="ic">!</span><span>
       Öğrenci ayrıldıysa <b>silmek yerine düşünmen gereken bir şey var:</b> KVKK'ya göre gerekmeyen
@@ -3422,24 +3422,42 @@ function yilEkle(id){
 }
 function vYonetici(){
   const bugun=new Date().toISOString().slice(0,10);
+  const otuzGun=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
   const toplam=KOCLAR.length;
-  const aktifSay=KOCLAR.filter(k=>k.gecerli).length;
-  const gelir=KOCLAR.filter(k=>k.gecerli&&k.paket!=='deneme'&&k.paket!=='ozel')
-    .reduce((a,k)=>a+({koc:1000,sinif:3000,okul:10000}[k.paket]||0),0);
+  const ucretli=KOCLAR.filter(k=>k.ucretli||(k.lisans_bitis&&k.lisans_bitis>=bugun));
+  const denemede=KOCLAR.filter(k=>!k.lisans_bitis&&k.deneme_bitis&&k.deneme_bitis>=bugun);
+  const dolan=KOCLAR.filter(k=>!k.gecerli);
+  const bugunAktif=KOCLAR.filter(k=>k.bugun_aktif||(k.son_giris||'').slice(0,10)===bugun);
+  const yakinda=KOCLAR.filter(k=>k.gecerli&&k.lisans_bitis&&k.lisans_bitis<=otuzGun);
+  const gelir=ucretli.reduce((a,k)=>a+({koc:1000,sinif:3000,okul:10000}[k.paket]||0),0);
   const ogrToplam=KOCLAR.reduce((a,k)=>a+(k.ogrenci||0),0);
+  const gun=(t)=>{ if(!t) return '—'; const f=Math.floor((Date.now()-new Date(t))/864e5);
+    return f===0?'bugün':f===1?'dün':f+' gün önce'; };
   return `
   <div class="card"><div class="stats">
-    <div class="stat"><div class="k">Koç</div><div class="v">${toplam}</div><div class="n">${aktifSay} aktif</div></div>
-    <div class="stat"><div class="k">Öğrenci</div><div class="v">${ogrToplam}</div><div class="n">tüm sistemde</div></div>
-    <div class="stat"><div class="k">Yıllık gelir</div><div class="v" style="font-size:20px">${gelir.toLocaleString('tr-TR')} TL</div><div class="n">aktif lisanslar</div></div>
-    <div class="stat"><div class="k">Yakında bitecek</div><div class="v" style="color:${KOCLAR.filter(k=>k.gecerli&&k.lisans_bitis&&k.lisans_bitis<=new Date(Date.now()+30*864e5).toISOString().slice(0,10)).length?'var(--warn)':'inherit'}">${KOCLAR.filter(k=>k.gecerli&&k.lisans_bitis&&k.lisans_bitis<=new Date(Date.now()+30*864e5).toISOString().slice(0,10)).length}</div><div class="n">30 gün içinde</div></div>
+    <div class="stat"><div class="k">Ücretli abone</div><div class="v" style="color:var(--ok)">${ucretli.length}</div>
+      <div class="n">${gelir.toLocaleString('tr-TR')} TL / yıl</div></div>
+    <div class="stat"><div class="k">Denemede</div><div class="v" style="color:var(--warn)">${denemede.length}</div>
+      <div class="n">süresi sürüyor</div></div>
+    <div class="stat"><div class="k">Süresi dolan</div><div class="v" style="color:${dolan.length?'var(--bad)':'inherit'}">${dolan.length}</div>
+      <div class="n">kazanılabilir</div></div>
+    <div class="stat"><div class="k">Bugün giriş yapan</div><div class="v" style="color:var(--accent)">${bugunAktif.length}</div>
+      <div class="n">${toplam} koçtan</div></div>
+  </div>
+  <div class="stats" style="border-top:1px solid var(--line-soft)">
+    <div class="stat"><div class="k">Toplam koç</div><div class="v">${toplam}</div><div class="n">kayıtlı hesap</div></div>
+    <div class="stat"><div class="k">Toplam öğrenci</div><div class="v">${ogrToplam}</div><div class="n">tüm sistemde</div></div>
+    <div class="stat"><div class="k">Yakında bitecek</div><div class="v" style="color:${yakinda.length?'var(--warn)':'inherit'}">${yakinda.length}</div>
+      <div class="n">30 gün içinde</div></div>
+    <div class="stat"><div class="k">Dönüşüm</div><div class="v">${toplam?Math.round(ucretli.length/toplam*100):0}%</div>
+      <div class="n">denemeden ücretliye</div></div>
   </div></div>
 
   ${YONDURUM?`<div class="flag ${YONDURUM.startsWith('OK|')?'ok':YONDURUM.startsWith('HATA|')?'bad':'warn'}"><span class="ic">·</span><span>${esc(YONDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
 
   <div class="card"><h2>Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2>
   <div class="body" style="padding:0;overflow:auto">
-    <table><thead><tr><th>Koç</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th><th>Durum</th><th></th></tr></thead><tbody>
+    <table><thead><tr><th>Koç</th><th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th><th>Son giriş</th><th>Durum</th><th></th></tr></thead><tbody>
     ${KOCLAR.map(k=>{
       const dolu=k.ogrenci>=k.limit;
       const bit=k.lisans_bitis||k.deneme_bitis||'';
@@ -3449,12 +3467,18 @@ function vYonetici(){
           <div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(k.eposta||'')}</div>
           ${k.kurum?`<div style="font-size:11px;color:var(--ink-3)">${esc(k.kurum)}</div>`:''}
           <div style="font-size:10.5px;color:${k.kvkk_onay?'var(--ok)':'var(--warn)'}">${k.kvkk_onay?'KVKK onaylı':'KVKK onayı yok'}</div></td>
+        <td>${(k.ucretli||(k.lisans_bitis&&k.lisans_bitis>=bugun))
+              ? '<span class="pill s1" style="font-size:10.5px">ücretli</span>'
+              : (!k.lisans_bitis&&k.deneme_bitis&&k.deneme_bitis>=bugun)
+                ? '<span class="pill s2" style="font-size:10.5px">deneme</span>'
+                : '<span class="pill s3" style="font-size:10.5px">süresi doldu</span>'}</td>
         <td><select id="yp_${k.id}" style="min-width:150px">${PAKETLER.map(([v,a])=>`<option value="${v}" ${v===k.paket?'selected':''}>${a}</option>`).join('')}</select></td>
         <td class="num" style="font-weight:650;color:${dolu?'var(--bad)':'var(--ink)'}">${k.ogrenci}/${k.limit}</td>
         <td><input type="date" id="yb_${k.id}" value="${k.lisans_bitis||''}" style="width:140px">
           <button class="btn ghost mini" style="margin-top:4px" onclick="yilEkle('${k.id}')">+1 yıl</button>
           ${bit?`<div style="font-size:10.5px;color:${yakin?'var(--warn)':'var(--ink-3)'};margin-top:2px">${k.lisans_bitis?'lisans':'deneme'} ${bit}</div>`:''}</td>
         <td class="num"><input type="number" id="yc_${k.id}" min="1" max="20" value="${k.cihaz_limiti||2}" style="width:64px"></td>
+        <td style="font-size:12px;color:${(k.son_giris||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'}">${gun(k.son_giris)}</td>
         <td><label style="display:flex;gap:6px;align-items:center;font-size:12.5px">
           <input type="checkbox" id="ya_${k.id}" ${k.aktif?'checked':''} style="width:auto">aktif</label>
           <div style="font-size:11px;color:${k.gecerli?'var(--ok)':'var(--bad)'};margin-top:3px">${k.gecerli?'çalışıyor':'durdu'}</div></td>
