@@ -239,11 +239,11 @@ async function save(){
 
 /* ================= DERSLER ================= */
 const S={
-  TYT:[['tyt_tur','TYT Türkçe',40],['tyt_mat','TYT Matematik',40],['tyt_fiz','TYT Fizik',7],
+  TYT:[['tyt_tur','TYT Türkçe',40],['tyt_mat','TYT Matematik',30],['tyt_geo','TYT Geometri',10],['tyt_fiz','TYT Fizik',7],
        ['tyt_kim','TYT Kimya',7],['tyt_biy','TYT Biyoloji',6],['tyt_tar','TYT Tarih',5],
        ['tyt_cog','TYT Coğrafya',5],['tyt_fel','TYT Felsefe',5],['tyt_din','TYT Din',5]],
-  SAY:[['ayt_mat','AYT Matematik',40],['ayt_fiz','AYT Fizik',14],['ayt_kim','AYT Kimya',13],['ayt_biy','AYT Biyoloji',13]],
-  EA :[['ayt_mat','AYT Matematik',40],['ayt_edb','AYT Edebiyat',24],['ayt_tar1','AYT Tarih-1',10],['ayt_cog1','AYT Coğrafya-1',6]],
+  SAY:[['ayt_mat','AYT Matematik',30],['ayt_geo','AYT Geometri',10],['ayt_fiz','AYT Fizik',14],['ayt_kim','AYT Kimya',13],['ayt_biy','AYT Biyoloji',13]],
+  EA :[['ayt_mat','AYT Matematik',30],['ayt_geo','AYT Geometri',10],['ayt_edb','AYT Edebiyat',24],['ayt_tar1','AYT Tarih-1',10],['ayt_cog1','AYT Coğrafya-1',6]],
   SOZ:[['ayt_edb','AYT Edebiyat',24],['ayt_tar1','AYT Tarih-1',10],['ayt_cog1','AYT Coğrafya-1',6],
        ['ayt_tar2','AYT Tarih-2',11],['ayt_cog2','AYT Coğrafya-2',11],['ayt_fel','AYT Felsefe Grubu',12],['ayt_din','AYT Din',6]],
   DIL:[['ydt','YDT Yabancı Dil',80]]
@@ -255,8 +255,22 @@ const subQ=k=>{for(const g in S)for(const s of S[g])if(s[0]===k)return s[2];retu
 /* ================= KONULAR =================
    Kaynak: kullanicinin yukledigi YKS konu listesi (unite -> konu).
    Yapi: KONU[dersKodu] = [[uniteAdi,[konu,...]],...]  */
+/* Geometri, matematikten AYRI bir ders olarak izlenir.
+   Puan hesabında matematiğe dahil edilir (TYT 40 soru = 30 mat + 10 geo). */
+const GEO_TASI={ tyt_mat:['ÜÇGENLER','DÖRTGENLER VE ÇOKGENLER','KATI CİSİMLER'],
+                 ayt_mat:['ÇEMBERLER','DOĞRUNUN ANALİTİK İNCELENMESİ','DÖNÜŞÜMLER','ÇEMBERİN ANALİTİK İNCELENMESİ'] };
 const KONU={"tyt_tur":[["İLETİŞİM DİL VE KÜLTÜR",["İLETİŞİM VE TEMEL ÖĞELERİ","DİLİN İŞLEVLERİ","DİL KÜLTÜR İLİŞKİSİ VE DİLLERİN FARKLILAŞMASI"]],["SÖZCÜKTE VE SÖZ ÖBEĞİNDE ANLAM",["ANLAMLARI BAKIMINDAN SÖZCÜKLER","SÖZCÜKLER ARASI ANLAM İLİŞKİLERİ","KALIPLAŞMIŞ SÖZCÜK GRUPLARI VE ANLAM DEĞİŞMELERİ"]],["CÜMLEDE ANLAM",["CÜMLEDE ANLATIM","CÜMLEDE ANLAM İLİŞKİLERİ"]],["PARAGRAF BİLGİSİ",["ANLATIM ÖZELLİKLERİ","PARAGRAFTA ANLAM","PARAGRAFTA YAPI"]],["SES BİLGİSİ YAZIM BİLGİSİ NOKTALAMA İŞARETLERİ",["SES BİLGİSİ","YAZIM BİLGİSİ","NOKTALAMA İŞARETLERİ"]],["SÖZCÜK YAPISI",["SÖZCÜK YAPISI","İSİM AD","SIFAT ÖNAD","ZAMİR ADIL","ZARF BELİRTEÇ","EDAT BAĞLAÇ ÜNLEM","EYLEM FİİL"]],["CÜMLENİN ÖĞELERİ",["CÜMLENİN ÖĞELERİ"]],["CÜMLE TÜRLERİ",["CÜMLE TÜRLERİ"]],["ANLATIM BOZUKLUĞU",["ANLAMA DAYALI ANLATIM BOZUKLUĞU","DİL BİLGİNE DAYALI ANLATIM BOZUKLUĞU"]]],"tyt_mat":[["TEMEL KAVRAMLAR",["DOĞAL SAYILAR TAM SAYILAR","TEK ÇİFT SAYILAR","ARDIŞIK SAYILAR"]],["BÖLME-BÖLÜNEBİLME",["BÖLME","BÖLÜNEBİLME"]],["FAKTÖRİYEL ASAL SAYILAR ASAL ÇARPANLAR",["ASAL SAYILAR ASAL ÇARPANLAR","FAKTÖRİYEL İŞLEMLER"]],["EBOB EKOK",["EBOB","EKOK"]],["RASYONEL ONDALIK SAYILAR",["RASYONEL SAYILAR","ONDALIK SAYILAR"]],["BASİT EŞİTSİZLİKLER MUTLAK DEĞER",["BASİT EŞİTSİZLİKLER","MUTLAK DEĞER"]],["ÜSLÜ İFADELER",["ÜSLÜ İFADELER VE ÖZELLİKLERİ","ÜSLÜ DENKLEMLER VE EŞİTSİZLİKLER"]],["KÖKLÜ SAYILAR",["KÖKLÜ İFADELER VE ÖZELLİKLERİ KÖKLÜ DENKLEMLER"]],["ÇARPANLARA AYIRMA",["ORTAK ÇARPAN PARANTEZİ VE GRUPLANDIRMA","ÖZDEŞLİKLER YARDIMIYLA ÇARPANLARA AYIRMA","ax2+bx+c ÜÇ TERİMLİSİ VE TERİM EKLEYİP ÇIKARMA"]],["ORAN ORANTI",["ORAN ORANTI ÖZELLİKLERİ","ORANTI ÇEŞİTLERİ","ORTALAMALAR VE ORANTI PROBLEMLERİ"]],["DENKLEMLER VE DENKLEM SİSTEMLERİ",["DENKLEMLER VE DENKLEM SİSTEMLERİ"]],["PROBLEMLER",["SAYI KESİR PROBLEMLERİ","YAŞ PROBLEMLERİ","YÜZDE PROBLEMLERİ","FAİZ VE KARIŞIM PROBLEMLERİ","HAREKET PROBLEMLERİ","İŞÇİ HAVUZ PROBLEMLERİ","GRAFİK PROBLEMLERİ"]],["MANTIK",["ÖNERMELER VE BİLEŞİK ÖNERMELER","AÇIK ÖNERMELER"]],["KÜMELER",["KÜME İŞLEMLERİ","KÜME PROBLEMLERİ","KARTEZYEN ÇARPIMI"]],["FONKSİYONLAR",["FONKSİYON KAVRAMI VE FONKSİYON ÇEŞİTLERİ","TERS FONKSİYONEL BİLEŞKE FONKSİYON"]],["2.DERECEDEN DENKLEMLER VE KARMAŞIK SAYILAR",["2.DERECEDEN DENKLEMLER","2.DERECEDEN DENKLEMLERDE KÖK KATSAYI BAĞINTILARI","KARMAŞİIK SAYILAR"]],["POLİNOMLAR",["POLİNOM TERİMİ VE İŞLEMLER","POLİNOMLARDA KALAN BULMA VE PROBLEMLERİ"]],["PERMUTASYON KOMBİNASYON OLASILIK VE İSTATİSTİK",["SAYMA KURALLARI VE PERMUTASYON","KOMBİNASYON VE BİNOM AÇILIMI","OLASILIK","İSTATİSTİK"]],["ÜÇGENLER",["AÇILAR ÜÇGENDE AÇILAR","ÜÇGENLERİ EŞİTLİĞİ VE ÖZEL ÜÇGENLER","ÜÇGENDE AÇI KENAR BAĞINTILARI","ÜÇGENLERİN BENZERLİĞİ","ÜÇGENİN YARDIMCI ELEMANLARI (AÇIORTAY KENAR ORTAY YÜKSEKLİK)","ÜÇGENİN ALANI"]],["DÖRTGENLER VE ÇOKGENLER",["ÇOKGEN DÜZGÜN ÇOKGEN","DÖRTGENLER DELTOİD","YAMUK","PARALELKENAR","EŞKENAR DÖRTGEN","DİKDÖRTGEN","KARE"]],["KATI CİSİMLER",["DİK PRİZMALAR","DİK DAİRESEL SİLİNDİR","DİK PİRAMİTLER","DİK DAİRESEL KONT","KÜRE"]]],"tyt_fiz":[["FİZİK BİLİMİNE GİRİŞ",["FİZİK BİLİMİNİN ÖNEMİ","FİZİĞİN UYGULAMA ALANLARI","FİZİKSEL NİCELİKLERİN SINIFLANDIRILMASI","BİLİM ARAŞTIRMA MERKEZLERİ"]],["MADDE VE ÖZELLİKLERİ",["MADDE VE ÖZKÜTLE","DAYANIKLILIK","YAPIŞMA VE BİRBİRİNİ TUTMA"]],["HAREKET VE KUVVET",["HAREKET","KUVVET","NEWTON'IN HAREKET YASALARI","SÜRTÜNME KUVVETİ"]],["ENERJİ",["İŞ, ENERJİ VE GÜÇ","MEKANİK ENERJİ","ENERJİNİN KORUNUMU VE ENERJİ DÖNÜŞÜMLERİ","VERİM","ENERJİ KAYNAKLARI"]],["ISI VE SICAKLIK",["ISI VE SICAKLIK","HÂL DEĞİŞİMİ","ISIL DENGE","ENERJİ İLETİM YOLLARI VE ENERJİ İLETİM HIZI","GENLEŞME"]],["ELEKTROSTATİK",["ELEKTRİK YÜKLERİ"]],["ELEKTRİK VE MANYETİZMA",["ELEKTRİK AKIMI, POTANSİYEL FARKI VE DİRENÇ","ELEKTRİK DEVRELERİ","MIKNATIS VE MANYETİK ALAN","AKIM VE MANYETİK ALAN"]],["BASINÇ VE KALDIRMA KUVVETİ",["BASINÇ","KALDIRMA KUVVETİ"]],["DALGALAR",["DALGALAR","YAY DALGASI","SU DALGASI","SES DALGASI","DEPREM DALGASI"]],["OPTİK",["AYDINLANMA","GÖLGE","YANSIMA","DÜZLEM AYNA","KÜRESEL AYNALAR","KIRILMA","MERCEKLER","PRİZMALAR","RENK"]]],"tyt_kim":[["KİMYA BİLİMİ",["SİMYADA KİMYAYA","KİMYA DİSİPLİNLERİ VE KİMYACILARIN ÇALIŞMA ALANLARI","KİMYANIN SEMBOLİK DİLİ","KİMYA UYGULAMASINDA İŞ SAĞLIĞI VE GÜVENLİĞİ"]],["ATOM VE PERİYODİK SİSTEM",["ATOM MODELLERİ","ATOMUN YAPISI","PERİYODİK SİSTEM"]],["KİMYASAL TÜRLER ARASI ETKİLEŞİMLER",["KİMYASAL TÜR","KİMYASAL TÜRLER ARASI ETKİLEŞİMLERİN SINIFLANDIRILMASI","GÜÇLÜ ETKİLEŞİMLER","ZAYIF ETKİLEŞİMLER","FİZİKSEL VE KİMYASAL DEĞİŞİMLER"]],["MADDENİN HALLERİ",["MADDENİN FİZİKSEL HALLERİ","KATILAR","SIVILAR","GAZLAR","PLAZMA"]],["DOĞA VE KİMYA",["SU VE HAYAT","ÇEVRE KİMYASI"]],["KİMYANIN TEMEL KANUNLARI VE KİMYASAL HESAPLAMALAR",["KİMYANIN TEMEL KANUNLARI","MOL KAVRAMI","KİMYASAL TEPKİMELER VE DENKLEMLER","KİMYASAL TEPKİMELERDE HESAPLAMALAR"]],["KARIŞIMLAR",["HOMOJEN VE HETEROJEN KARIŞIMLAR","AYIRMA VE SAFLAŞTIRMA TEKNİKLERİ"]],["ASİTLER BAZLAR VE TUZLAR",["ASİTLER VE BAZLAR","ASİTLERİN VE BAZLARIN TEPKİMELERİ","HAYATIMIZDA ASİTLER VE BAZLAR","TUZLAR"]],["KİMYA HER YERDE",["YAYGIN GÜNLÜK HAYAT KİMYASALLARI","GIDALAR"]]],"tyt_biy":[["YAŞAM BİLİMİ BİYOLOJİ",["BİYOLOJİ VE CANLILARIN ORTAK ÖZELLİKLERİ","CANLILARIN YAPISINDA BULUNAN TEMEL BİLEŞİKLER"]],["HÜCRE",["HÜCRE"]],["CANLILAR DÜNYASI",["CANLILARIN ÇEŞİTLİLİĞİ VE SINIFLANDIRILMASI","CANLI ALEMLERİ VE ÖZELLİKLERİ"]],["HÜCRE BÖLÜNMELERİ",["MİTOZ VE ŞEYSİZ ÜREME","MAYOZ VE EŞEYLİ ÜREME"]],["KALITIMIN GENEL İLKELERİ",["KALITIM VE BİYOLOJİK ÇEŞİTLİLİK"]],["EKOSİSTEM EKOLOJİSİ VE GÜNCEL ÇEVRE SORUNLARI",["EKOSİSTEM EKOLOJİSİ","GÜNCEL ÇEVRE SORUNLARI VE İNSAN","DOĞAL KAYNAKLAR VE BİYOLOJİK ÇEŞİTLİLİĞİN KORUNMASI"]]],"tyt_tar":[["TARİH BİLİMİ",["TARİH BİLİMİNE GİRİŞ TARİHSEL OLAYLARIN ÖZELLİKLERİ VE DEĞERLENDİRİLMESİ","TARİHİ BİLGİLERİN DEĞİŞEBİLİRLİĞİ TARİH YAZICILIĞI VE TARİHİN DİĞER BİLİMLERLE İLİŞKİSİ"]],["UYGARLIĞIN DOĞUŞU VE İLK UYGARLIKLAR",["ÇAĞ KAVRAMI MEZOPOTAMYA MISIR İRAN UYGARLIKLARI","ORTA ASYA UZAK DOĞU DOĞU AKDENİZ ANADOLU YUNAN ROMA UYGARLIKLARI"]],["İLK TÜRK DEVLETLERİ",["ORTA ASYA'DA İLK TÜRK DEVLETLERİ","DİĞER TÜRK DEVLETLERİ İLK TÜRK DEVLETLERİNDE KÜLTÜR VE UYGARLIK"]],["İSLAM TARİHİ VE UYGARLIĞI",["İSLAMİYETİN DOĞUŞU YAYILIŞI VE DÖRT HALİFE DÖNEMİ","EMEVİLER ABBASİLER VE TÜRK İSLAM BİLGİNLERİ"]],["TÜRK İSLAM DEVLETLERİ",["TÜRKLERİN İSLAMİYETİ BENİMSEMESİ VE İLK TÜRK İSLAM DEVLETLERİ","BÜYÜK SELÇUKLU DEVLETİ VE DİĞER TÜRK İSLAM DEVLETLERİ"]],["TÜRKİYE TARİHİ",["ANADOLU'DAKİ İLK TÜRK BEYLİKLERİ TÜRKİYE SELÇUKLU DEVLETİ","TÜRKİYE SELÇUKLU KÜLTÜR UYGARLIĞI HAÇLI SEFERLERİ"]],["BEYLİKTEN DEVLETE",["BEYLİĞİN BÜYÜME SEBEPLERİ VE İLK OSMANLI PADİŞAHLARI","İSKAN POLİTİKASI VE DİĞER KURULUŞ DÖNEMİ PADİŞAHLARI"]],["DÜNYA GÜCÜ OSMANLI DEVLETİ (1453 1600)",["15 VE 16.YY OSMANLI DIŞ SİYASETİNDEN MEYDANA GELEN GELİŞMELER","YENİ ÇAĞDA AVRUPADAKİ GELİŞMELER"]],["OSMANLI KÜLTÜR VE MEDENİYETİ",["OSMANLI DEVLETİ'NDE DEVLET YÖNETİMİ ORDU VE TOPRAK SİSTEMİ","OSMANLI DEVLETİ'NDE SOSYAL YAPI EKONOMİ EĞİTİM HUKUK BİLİM TEKNOLOJİ KÜLTÜR SANAT"]],["ARAYIŞ YILLARI (17.YY OSMANLI DEVLETİ",["DURAKLAMANIN NEDENLERİ İÇ YAPIDAKİ DEĞİŞİM VE İÇ İSYANLAR","OSMANLI DIŞ SİYASETİ ISLAHATLAR AVRUPA VE OSMANLI'DA BİLİM KÜLTÜR"]],["18.YY OSMANLI DEVLETİ (DEĞİŞİM VE DİPLOMASİ)",["1700 1768 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ","1768 1799 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ"]],["YAKIN ÇAĞ'DA AVRUPADAKİ GELİŞMELER",["YAKIN ÇAĞ AVRUPA'DAKİ GELİŞMELER"]],["EN UZUN YÜZYIL (19.YY)",["II.MAHMUT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER","TANZİMAT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER","II.ABDÜLHAMİT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER 19.YY OSMANLI'DA KÜLTÜREL GELİŞMELER"]],["20.YY BAŞLARINDA OSMANLI DEVLETİ",["II.MEŞRUTİYET'İN İLANI TRABLUSGARP VE BALKAN SAVAŞLARI","I.DÜNYA ŞAVAŞI"]],["MONDROS MÜTAREKESİ İŞGALLER VE CEMİYETLER",["MONDROS ATEŞKES ANTLAŞMASI VE İŞGALLER","KUVAYI MİLLİYE VE CEMİYETLER"]],["GENELGELER VE KONGRELER DÖNEMİ",["HAVZA GENELGESİ AMASYA GENELGESİ ERZURUM KONGRESİ","SİVAS KONGRESİ AMASYA GÖRÜŞMESİ SON OSMANLI MEBUSAN MECLİSİ'NİN AÇILMASI"]],["TBMM'NİN AÇILMASI",["TBMM'NİN AÇILMASI"]],["KURTULUŞ SAVAŞI'NDA CEPHELER",["DOĞU GÜNEY CEPHELERİ VE BATI CEPHESİNDE I.İNÖNÜ SAVAŞI","BATI CEPHESİ SAVAŞLARI VE ANADOLU'NUN KURTULUŞU","KURTULUŞ SAVAŞI'NIN SONUÇLARI"]],["TÜRK İNKILABI",["SİYASİ ALANDAKİ İNKILAPLAR"]],["ATATÜRKÇÜLÜK VE ATATÜRK İLKELERİ",["ATATÜRKÇÜ DÜŞÜNCE SİSTEMİ CUMHURİYETÇİLİK MİLLİYETÇİLİK","HALKÇILIK LAİKLİK DEVLETÇİLİK İNKILAPÇILIK MİLLİ GÜÇ UNSURLARI"]],["ATATÜRK DÖNEMİ TÜRK DIŞ POLİTİKASI",["1923 1932 YILLARI ARASI TÜRK DIŞ POLİTİKASI","1932 1939 YILLARI ARASI TÜRK DIŞ POLİTİKASI"]]],"tyt_cog":[["DOĞA VE İNSAN",["COĞRAFYA VE İNSAN DOĞA ETKİLEŞİMİ","DOĞADAKİ EKSTREM OLAYLAR VE ETKİLERİ","DOĞAL VE BEŞERİ SONUÇLARIN ETKİLEŞİMİ VE DOĞAL SİSTEMLERDEKİ OLASI DEĞİŞİMLER"]],["COĞRAFİ KONUM VE ETKİLERİ, HARİTALAR",["PARALEL, MERİDYEN VE ENLEM ETKİLERİ","BOYLAM, YEREL SAAT, ULUSAL SAAT","COĞRAFİ REHBERİM, HARİTALAR","HARİTALARDA YER ŞEKİLLERİNİN GÖSTERİLMESİ","HARİTALARDAN YARARLANMA"]],["DÜNYA'NIN ŞEKLİ VE HAREKETLERİ",["DÜNYA'NIN ŞEKLİ VE GÜNLÜK HAREKET","YILLIK HAREKET VE SONUÇLARI"]],["İKLİM BİLGİSİ",["ATMOSFER VE SICAKLIK","BASINÇ VE RÜZGARLAR","NEMLİLİK VE YAĞIŞ","DÜNYA'NIN İKLİM ZENGİNLİĞİ","TÜRKİYE'NİN İKLİM ELEMANLARI VE ÇEŞİTLİLİĞİ"]],["YER'İN ŞEKİLLENMESİ",["YER'İN YAPISI, OLUŞUM SÜRECİ VE İÇ KUVVETLER","GÜNEŞ'TEN GELEN GÜÇ, DIŞ KUVVETLER","TÜRKİYENİN YER ŞEKİLLERİ"]],["DOĞADAKİ ÜÇ UNSUR",["SU KAYNAKLARI","TOĞRAĞIN ÖYKÜSÜ","YERYÜZÜNÜN ÖRTÜSÜ BİTKİLER","TÜRKİYE'Nİ TOPRAK, SU, BİTKİ VARLIĞI"]],["BEŞERİ YAPI",["BEŞERİ COĞRAFYA VE BEŞERİ FAALİYETLER","NÜFUS KAVRAMLARI VE NÜFUSUN DAĞILIŞI","NÜFUS PİRAMİTLERİ","GÖÇLERİN NEDENLERİ, SONUÇLARI VE ÇEŞİTLERİ","TÜRKİYE'DE NÜFUS VE GÖÇLER","EKONOMİK FAALİYET TÜRLERİNİN SINIFLANDIRILMASI","EKONOMİK FAALİYET TÜRLERİ"]],["MEKANSAL SENTEZ TÜRKİYE",["ANADOLU'DA KURULAN UYGARLIKLAR, TÜRKİYE'NİN ARAZİ KULLANIMI","TÜRKİYE EKONOMİSİNİN SEKTÖREL DAĞILMI, EKONOMİ POLİTİKALARI","TÜRKİYE'DE TARIM","TÜRKİYE'DE HAYVANCILIK","TÜRKİYE'DE MADENLER VE ENERJİ KAYNAKLARI","TÜRKİYE'DE SANATİ","TÜRKİYE'DE TİCARET","TÜRKİYE'DE ULAŞIM","TÜRKİYE'DE TURİZM","TÜRKİYE'DE DOĞAL AFET","TÜRKİYE'DE BÖLGELERİN OLUŞTURULMASI VE BÖLGESEL KALKINMA PROJELERİ","GEÇMİŞTEN GELECEĞE TÜRKİYE'NİN JEOPOLİTİĞİ VE TÜRKİYE'NİN ÇEVRESİNDE BÖLGESEL SORUNLAR"]]],"tyt_fel":[["Felsefeyi Tanıma",["Felsefeyi Tanıma"]],["Felsefeyle Düşünme",["Felsefeyle Düşünme"]],["Felsefenin Temel Konuları ve Problemleri",["Bilgi Felsefesi","Varlık Felsefesi","Ahlak Felsefesi","Sanat Felsefesi","Din Felsefesi","Siyaset Felsefesi","Bilim Felsefesi"]],["Felsefi Okuma ve Yazma",["Felsefi Okuma ve Yazma"]],["Psikoloji",["Psikoloji bilimini tanıma","Psikolojinin temel süreçleri","Öğrenme, bellek ve güdülenme","Ruh sağlığının temelleri"]],["Sosyoloji",["Sosyolojiye giriş","Birey ve toplum","Toplumsal yapı ve kurumlar","Toplumsal değişme ve gelişme"]],["Mantık",["Mantığa giriş","Klasik mantık","Mantık ve dil","Sembolik mantık"]]],"tyt_din":[["DİN VE AHLAK",["Bilgi ve İnanç","Din ve İslam","İslam ve İbadet","Gençlik ve Değerler","Gönül Coğrafyamız","Allah İnsan İlişkisi","Hz. Muhammed ve Gençlik","Din ve Hayat","Ahlaki Tutum ve Davranışlar","İslam Düşüncesinde İtikadi, Siyasi ve Fıkhi Yorumlar","Dünya ve Ahiret","Kurana Göre Hz. Muhammed","Kuranda Bazı Kavramlar","İnançla İlgili Meseleler","Yahudilik ve Hıristiyanlık","İslam ve Bilim","Anadolu’da İslam","İslam Düşüncesinde Tasavvufi Yorumlar","Güncel Dinî Meseleler","Hint ve Çin Dinleri"]]],"ayt_mat":[["FONKSİYON GRAFİKLERİ",["FONKSİYON GRAFİKLERİ VE DÖNÜŞÜM","İKİNCİ DERECEDEN FONKSİYONLAR VE GRAFİKLERİ (PARABOL)"]],["DENKLEM VE EŞİTSİZLİK SİSTEMLERİ",["İKİNCİ DERECEDEN İKİ BİLİNMEYENLİ DENKLEM SİSTEMLERİ","İKİNCİ DERECEDEN BİR BİLİNMEYENLİ EŞİTSİZLİKLER","İKİNCİ DERECEDEN BİR BİLİNMEYENLİ ESİTSİZLİK SİSTEMLERİ"]],["OLASILIK",["KOŞULLU VE DENEYSEL OLASILIK"]],["LOGARİTMA",["ÜSTEL VE LOGARİTMA FONKSİYONLARI","LOGARİTMİK DENKLEM VE EŞİTLİKLER"]],["DİZİLER",["DİZİ ÇEŞİTLERİ","ARİTMETİK VE GEOMETRİK DİZİLERİN ÖZELLİKLERİ"]],["TRİGONOMETRİ",["TRİGONOMETRİK FONKSİYONLAR","İKİ AÇININ ÖLÇÜLERİ TOPLAMININ VE VE FARKININ TRİGONOMETRİK DEĞERLERİ","TRİGONOMETRİK DENKLEMLER"]],["LİMİT VE SÜREKLİLİK",["LİMİT","SÜREKLİLİK"]],["TÜREV",["TÜREV KAVRAMI VE TÜREV ALMA KURALLARI","TEĞET VE NORMAL DENKLEMLERİ","BİR FONKSİYONUN ARTAN AZALAN ARALIKLARI VE EKSTRAMUM NOKTALARI","FONKSİYON GRAFİKLERİ VE DÖNÜŞÜM"]],["İNTEGRAL",["BELİRSİZ İNTEGRAL","İNTEGRAL ALMA YÖNTEMİ","BELİRLİ İNTEGRAL","BELİRLİ İNTEGRALİN UYGULAMALARI"]],["ÇEMBERLER",["ÇEMBERİN TEMEL ELEMANLARI","ÇEMBERLERDE AÇILAR","ÇEMBERDE TEĞET","DAİRENİN ÇEVRESİ VE ALANI"]],["DOĞRUNUN ANALİTİK İNCELENMESİ",["SAYI DOĞRUSU VEANALİTİK DÜZLEM","DOĞRU PARÇASINI BELLİ ORANDA BÖLEN NOKTANIN KOORDİNATLARI","DOĞRUNUN DENKLEMLERİ","DÜZLEMDE İKİ DOĞRUNUN BİRBİRİNE GÖRE DURUMLARI NOKTANIN DOĞRUYA OLAN UZAKLIĞI","DENKLEMİ VERİLEN BİR DOĞRUNUN GRAFİĞİ VE DOĞRUNUN DÜZLEMDE AYIRDIĞI BÖLGELER"]],["DÖNÜŞÜMLER",["ÖTELEME YANSIMA VE DÖNME DÖNÜŞÜMLERİ NOKTANIN NOKTAYA EKSENLERE ÖZEL DOĞRULARA VE HERHANGİ BİR DOĞRUYA GÖRE YANSIMASI","BİR DOĞRUNUN BAŞKA BİR DOĞRUYA VE BİR NOKTAYA GÖRE YANSIMASI","BİR NOKTANIN BAŞLANGIÇ NOKTASI ETRAFINDA DÖNDÜRÜLMESİ"]],["ÇEMBERİN ANALİTİK İNCELENMESİ",["ÇEMBERİN DENKLEMLERİ","DENKLEMLERİ VERİLEN DOĞRU İLE ÇEMBERİN BİRBİRİNE GÖRE DURUMLARI","ÇEMBERİN ÜZERİNDEKİ BİR NOKTADAN ÇİZİLEN TEĞET VE NORMALİN DENKLEMİ"]]],"ayt_fiz":[["KUVVET VE HAREKET",["VEKTÖRLER","BAĞIL HAREKET","NEWTON'IN HAREKET YASALARI","BİR BOYUTTA SABİT İVMELİ HAREKET","İKİ BOYUTTA HAREKET","ENERJİ VE HAREKET","İTME VE ÇİZGİSEL MOMENTUM","TORK","DENGE VE DENGE ŞARTLARI","BASİT MAKİNELER"]],["ELEKTRİK VE MANYETİZMA",["ELEKTRİKSEL KUVVET VE ELEKTRİK ALAN","ELEKTRİKSEL POTANSİYEL","DÜZGÜN ELEKTRİK ALAN VE SIĞA","MANYETİZMA VE ELEKTROMANYETİK İNDÜKLENME","ALTERNATİF AKIM","TRANSFORMATÖRLER"]],["ÇEMBERSEL HAREKET",["DÜZGÜN ÇEMBERSEL HAREKET","DÖNEREK ÖTELEME HAREKETİ","AÇISAL MOMENTUM","KÜTLE ÇEKİM KUVVETİ","KEPLER KANUNLARI"]],["BASİT HARMONİK HAREKET",["BASİT HARMONİK HAREKET"]],["DALGA MEKANİĞİ",["DALGALARDA KIRINIM, GİRİŞİM VE DOPPLER OLAYI","ELEKTROMANYETİK DALGALAR"]],["ATOM FİZİĞİNE GİRİŞ VE RADYOAKTİVİTE",["ATOM KAVRAMININ TARİHSEL GELİŞİMİ","BÜYÜK PATLAMA VE EVRENİN OLUŞUMU","RADYOAKTİVİTE"]],["MODERN FİZİK",["ÖZEL GÖRELİLİK","KUANTUM FİZİĞİNE GİRİŞ","FOTOELEKTRİK OLAYI","COMPTON SAÇILMASI VE DE BROGLİE DALGA BOYU"]],["MODERS FİZİĞİN TEKNOLOJİDEKİ UYGULAMALARI",["GÖRÜNTÜLEME TEKNOLOJİLERİ","YARI İLETKEN TEKNOLOJİSİ","SÜPER İLETKENLER","NANOTEKNOLOJİ","LASER IŞINLARI"]]],"ayt_kim":[["MODERN ATOM TEORİSİ",["ATOMUN KUANTUM MODELİ","PERİYODİK SİSTEM VE ELEKTRON DİZİLİMLERİ","PERİYODİK ÖZELLİKLER","ELEMENTLERİ TANIYALIM","YÜKSELTGENME BASAMAKLARI"]],["GAZLAR",["GAZLARIN ÖZELLİKLERİ VE GAZ YASALARI","İDEAL GAZ YASASI","GAZLARDA KİNETİK TEORİ","GAZ KARIŞIMLARI","GERÇEK GAZLAR"]],["SIVI ÇÖZELTİLER VE ÇÖZÜNÜRLÜK",["ÇÖZÜCÜ ÇÖZÜNEN ETKİLEŞİMLERİ","DERİŞİM BİRİMLERİ","KOLİGATİF ÖZELLİKLER","ÇÖZÜNÜRLÜK","ÇÖZÜNÜRLÜĞE ETKİ EDEN FAKTÖRLER"]],["KİMYASAL TEPKİMELERDE ENERJİ",["TEPKİMELERDE ISI DEĞİŞİMİ","OLUŞUM ENTALPİSİ","BAĞ ENERJİLERİ","TEPKİME ISILARININ TOPLANABİLİRLİĞİ"]],["KİMYASAL TEPKİMELERDE HIZ",["TEPKİME HIZLARI","TEPKİME HIZINI ETKİLEYEN FAKTÖRLER"]],["KİMYASAL TEPKİMELERDE DENGE",["KİMYASAL DENGE","DENGEYİ ETKİLEYEN FAKTÖRLER","SULU ÇÖZELTİ DENGELERİ"]],["KİMYA VE ELEKTRİK",["İNDİRGENME YÜKSELTGENME TEPKİMELERİNDE ELEKTRİK AKIMI","ELEKTROTLAR VE ELEKTROKİMYASAL HÜCRESEL","ELEKTROT POTANSİYELLERİ","KİMYASALLARDAN ELEKTRİK ÜRETİMİ","ELEKTROLİZ","KOROZYON"]],["KARBON KİMYASINA GİRİŞ",["ANORGANİK VE ORGANİK BİLEŞİKLER","BASİT FORMÜL VE MOLEKÜL FORMÜLÜ","DOĞADA KARBON","LEWİS FORMÜLLERİ","HİBRİTLEŞME MOLEKÜL GEOMETRİLERİ"]],["ORGANİK BİLEŞİKLER",["HİDROKARBONLAR","FONKSİYONEL GRUPLAR","ALKOLLER","ETERLER","KARBONİL BİLEŞİKLER","KARBONSİLİK ASİTLER","ESTERLER"]],["ENERJİ KAYNAKLARI VE BİLİMSEL GELİŞMELER",["FOSİL YAKITLAR","ALTERNATİF ENERJİ KAYNAKLARI","SÜRDÜRÜLEBİLİRLİK","NANOTEKNOLOJİ"]]],"ayt_biy":[["İNSAN FİZYOLOJİSİ",["DENETLEYİCİ VE DÜZENLEYİCİ SİSTEM DUYU ORGANLARI","DESTEK VE HAREKET SİSTEMİ","SİNDİRİM SİTEMİ","DOLAŞIM SİSTEMLERİ","SOLUNUM SİSTEMİ","ÜRİNER SİSTEM","ÜREME SİSTEMİ VE EMBRİYONİK GELİŞİM"]],["KOMÜNİTE VE POPÜLASYON EKOLOJİSİ",["KOMÜNİTE EKOLOJİSİ","POPÜLASYON EKOLOJİSİ"]],["GENDEN PROTEİNE",["NÜKLEİK ASİTLERİN KEŞFİ VE ÖNEMİ","GENETİK ŞİFRE VE PROTEİN SENTEZİ"]],["CANLILARDA ENERJİ DÖNÜŞÜMLERİ",["CANLILIK VE ENERJİ","FOTOSENTEZ","KEMOSENTEZ","HÜCRESEL SOLUNUM"]],["BİTKİ BİYOLOJİSİ",["BİTKİLERİN YAPISI","BİTKİLERDE MADDE TAŞINMASI","BİTKİLERDE EŞEYLİ ÜREME"]],["CANLILAR VE ÇEVRE",["CANLILAR VE ÇEVRE"]]],"ayt_edb":[["Anlam ve Anlatım",["Sözcükte ve söz öbeğinde anlam","Cümlede anlam","Paragrafta anlam ve yapı","Anlatım biçimleri ve düşünceyi geliştirme yolları"]],["Şiir Bilgisi",["Şiirde ahenk: ölçü, uyak, redif","Şiirde yapı ve tema","Nazım biçimleri ve türleri","Söz sanatları"]],["İslamiyet Öncesi Türk Edebiyatı",["Sözlü edebiyat: koşuk, sagu, sav, destan","Yazılı edebiyat: Göktürk ve Uygur metinleri"]],["Geçiş Dönemi Eserleri",["Kutadgu Bilig ve Divanü Lügati't-Türk","Atabetü'l-Hakayık ve Divan-ı Hikmet"]],["Halk Edebiyatı",["Anonim halk edebiyatı","Âşık tarzı halk edebiyatı","Dinî-tasavvufi halk edebiyatı"]],["Divan Edebiyatı",["Divan şiiri nazım biçimleri","Divan edebiyatı nesir türleri","Divan edebiyatı sanatçıları"]],["Tanzimat Edebiyatı",["Tanzimat I. dönem","Tanzimat II. dönem"]],["Servet-i Fünun ve Fecr-i Ati",["Servet-i Fünun şiiri ve romanı","Fecr-i Ati topluluğu"]],["Millî Edebiyat",["Millî Edebiyat şiiri","Millî Edebiyat roman ve hikâyesi","Bağımsız sanatçılar"]],["Cumhuriyet Dönemi Şiiri",["Öz şiir anlayışı","Toplumcu gerçekçi şiir","Garip ve İkinci Yeni","1980 sonrası şiir"]],["Cumhuriyet Dönemi Roman ve Hikâye",["Toplumcu gerçekçi roman","Bireyin iç dünyasını esas alan roman","Modernist ve postmodernist roman","Cumhuriyet dönemi hikâyesi"]],["Tiyatro ve Öğretici Metinler",["Cumhuriyet dönemi tiyatrosu","Deneme, makale, fıkra, eleştiri","Anı, günlük, biyografi, gezi yazısı"]],["Dünya Edebiyatı ve Akımlar",["Batı edebiyatı akımları","Dünya edebiyatından seçme yazarlar"]]],"ayt_tar1":[["TARİH BİLİMİ",["TARİH BİLİMİNE GİRİŞ TARİHSEL OLAYLARIN ÖZELLİKLERİ VE DEĞERLENDİRİLMESİ","TARİHİ BİLGİLERİN DEĞİŞEBİLİRLİĞİ TARİH YAZICILIĞI VE TARİHİN DİĞER BİLİMLERLE İLİŞKİSİ"]],["UYGARLIĞIN DOĞUŞU VE İLK UYGARLIKLAR",["ÇAĞ KAVRAMI MEZOPOTAMYA MISIR İRAN UYGARLIKLARI","ORTA ASYA UZAK DOĞU DOĞU AKDENİZ ANADOLU YUNAN ROMA UYGARLIKLARI"]],["İLK TÜRK DEVLETLERİ",["ORTA ASYA'DA İLK TÜRK DEVLETLERİ","DİĞER TÜRK DEVLETLERİ İLK TÜRK DEVLETLERİNDE KÜLTÜR VE UYGARLIK"]],["İSLAM TARİHİ VE UYGARLIĞI",["İSLAMİYETİN DOĞUŞU YAYILIŞI VE DÖRT HALİFE DÖNEMİ","EMEVİLER ABBASİLER VE TÜRK İSLAM BİLGİNLERİ"]],["TÜRK İSLAM DEVLETLERİ",["TÜRKLERİN İSLAMİYETİ BENİMSEMESİ VE İLK TÜRK İSLAM DEVLETLERİ","BÜYÜK SELÇUKLU DEVLETİ VE DİĞER TÜRK İSLAM DEVLETLERİ"]],["TÜRKİYE TARİHİ",["ANADOLU'DAKİ İLK TÜRK BEYLİKLERİ TÜRKİYE SELÇUKLU DEVLETİ","TÜRKİYE SELÇUKLU KÜLTÜR UYGARLIĞI HAÇLI SEFERLERİ"]],["BEYLİKTEN DEVLETE",["BEYLİĞİN BÜYÜME SEBEPLERİ VE İLK OSMANLI PADİŞAHLARI","İSKAN POLİTİKASI VE DİĞER KURULUŞ DÖNEMİ PADİŞAHLARI"]],["DÜNYA GÜCÜ OSMANLI DEVLETİ (1453 1600)",["15 VE 16.YY OSMANLI DIŞ SİYASETİNDEN MEYDANA GELEN GELİŞMELER","YENİ ÇAĞDA AVRUPADAKİ GELİŞMELER"]],["OSMANLI KÜLTÜR VE MEDENİYETİ",["OSMANLI DEVLETİ'NDE DEVLET YÖNETİMİ ORDU VE TOPRAK SİSTEMİ","OSMANLI DEVLETİ'NDE SOSYAL YAPI EKONOMİ EĞİTİM HUKUK BİLİM TEKNOLOJİ KÜLTÜR SANAT"]],["ARAYIŞ YILLARI (17.YY OSMANLI DEVLETİ",["DURAKLAMANIN NEDENLERİ İÇ YAPIDAKİ DEĞİŞİM VE İÇ İSYANLAR","OSMANLI DIŞ SİYASETİ ISLAHATLAR AVRUPA VE OSMANLI'DA BİLİM KÜLTÜR"]],["18.YY OSMANLI DEVLETİ (DEĞİŞİM VE DİPLOMASİ)",["1700 1768 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ","1768 1799 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ"]],["YAKIN ÇAĞ'DA AVRUPADAKİ GELİŞMELER",["YAKIN ÇAĞ AVRUPA'DAKİ GELİŞMELER"]],["EN UZUN YÜZYIL (19.YY)",["II.MAHMUT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER","TANZİMAT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER","II.ABDÜLHAMİT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER 19.YY OSMANLI'DA KÜLTÜREL GELİŞMELER"]],["20.YY BAŞLARINDA OSMANLI DEVLETİ",["II.MEŞRUTİYET'İN İLANI TRABLUSGARP VE BALKAN SAVAŞLARI","I.DÜNYA ŞAVAŞI"]],["MONDROS MÜTAREKESİ İŞGALLER VE CEMİYETLER",["MONDROS ATEŞKES ANTLAŞMASI VE İŞGALLER","KUVAYI MİLLİYE VE CEMİYETLER"]],["GENELGELER VE KONGRELER DÖNEMİ",["HAVZA GENELGESİ AMASYA GENELGESİ ERZURUM KONGRESİ","SİVAS KONGRESİ AMASYA GÖRÜŞMESİ SON OSMANLI MEBUSAN MECLİSİ'NİN AÇILMASI"]],["TBMM'NİN AÇILMASI",["TBMM'NİN AÇILMASI"]],["KURTULUŞ SAVAŞI'NDA CEPHELER",["DOĞU GÜNEY CEPHELERİ VE BATI CEPHESİNDE I.İNÖNÜ SAVAŞI","BATI CEPHESİ SAVAŞLARI VE ANADOLU'NUN KURTULUŞU","KURTULUŞ SAVAŞI'NIN SONUÇLARI"]],["TÜRK İNKILABI",["SİYASİ ALANDAKİ İNKILAPLAR"]],["ATATÜRKÇÜLÜK VE ATATÜRK İLKELERİ",["ATATÜRKÇÜ DÜŞÜNCE SİSTEMİ CUMHURİYETÇİLİK MİLLİYETÇİLİK","HALKÇILIK LAİKLİK DEVLETÇİLİK İNKILAPÇILIK MİLLİ GÜÇ UNSURLARI"]],["ATATÜRK DÖNEMİ TÜRK DIŞ POLİTİKASI",["1923 1932 YILLARI ARASI TÜRK DIŞ POLİTİKASI","1932 1939 YILLARI ARASI TÜRK DIŞ POLİTİKASI"]]],"ayt_tar2":[["İKİ KÜRESEL SAVAŞ ARASINDA DÜNYA",["I.DÜNYA SAVAŞI SSCB'NİN KURULMASI VE ORTA ASYA'DAKİ TÜRK DEVLETLERİ VE TOPLULUKLARI","I.DÜNYA SAVAŞI SONRASINDA ORTA DOĞU JAPONYA'NIN YÜKSELİŞİ 1929 EKONOMİK BUNALIM İKİ SAVAŞ ARASI DÖNEMDE AVRUPA VE DÜNYA"]],["II.DÜNYA SAVAŞI",["YENİ BİR SAVAŞA DOĞRU SAVAŞ YILLARI","BARIŞA DOĞRU SAVAŞIN ETKİLERİ SAVAŞ YILLARINDA TÜRKİYE"]],["SOĞUK SAVAŞ DÖNEMİ (II.DÜNYA ŞAVAŞI SONRASI DÜNYA)",["BLOKLARIN KURULUŞU PAYLAŞILAMAYAN ORTA DOĞU","UZAK DOĞU'DA ÇATIŞMA ASYA VE AFRİKA'NIN KURULUŞU SOĞUK SAVAŞ DÖNEMİNDE TÜRKİYE VE DÜNYA"]],["YUMUŞAMA DÖNEM VE SONRASI",["ULUSLARARASI İLİŞKİLERDE DEĞİŞİM YUMUŞAMA DÖNEMİ ÇATIŞMALARI BARIŞ İÇİNDE BİR ARADA YAŞAMA ARAP İSRAİL SAVAŞLARI PETROLÜN SİYESETE ETKİSİ İRAN IRAK SAVAŞI","YUMUŞAMA DÖNEMİNDE DÜNYA TÜRK DIŞ POLİTİKASI TÜRKİYE'DE BUNALIMLI YILLAR"]],["KÜRESELLEŞEN DÜNYA (21.YY EŞİĞİNDE TÜRKİYE VE DÜNYA)",["SSCB'DE DEĞİŞİM VE SONUÇLARI ASYA'DA YENİDEN YAPILANMA DOĞU BLOKUNDAN SONRA AVRUPA, TÜRKİYE VE AVRUPA BİRLİĞİ, YENİ OLUŞUM SÜRECİNDE BALKANLAR","ORTA DOĞU VE AFGANİSTAN'DAKİ GELİŞMELER, DÜNYADAKİ GELİŞMELER, DEĞİŞEN DÜNYA VE TÜRK DIŞ POLİTİKASI, 1980 SONRASI TÜKİYE, KÜRESEL SORUNLAR"]]],"ayt_cog1":[["BİYOÇEŞİTLİLK EKOSİSTEM VE MADDE DÖNGÜSÜ",["BİYOÇEŞİTLİLİK","ENERJİ AKIŞI VE MADDE DÖNGÜLERİ","EKOSİSTEMLERİM İŞLEYİŞLERİ"]],["NÜFUS POLİTİKALARI, İLK UYGARLIKLAR ŞEHİRLERİN FONKSİYONLARI, ÜLKELERİN GELİŞME FARKLILIKLARI VE ÜLKELER ARASI ETKİLEŞİM",["ÜLKELERİN NÜFUS POLİTİKALARI","İLK MEDENİYETLER","ŞEHİRLER ETKİ ALANLARI","KÜLTÜR BÖLGELERİNİN OLUŞUMU VE TÜRK KÜLTÜRÜ","KÜRESAEL TİCARETİN ÜÇ ÖNEMLİ ELEMANI, HAM MADDE, ÜRETİM, PAZAR","JAPONYA, İNGİLTERE, HOLLANDA, HİNDİSTAN, FRANSA, İTALYA","ÜLKELER NEDEN FARKLI GELİŞMİŞLERDİR, ALMANYA, NİJERYA, RUSYA, GAC, ÇİN","KÜRESEL VE BÖLGESEL ÖRGÜTLER SICAK ÇATIŞMA BÖLGELERİ"]]],"ayt_cog2":[["BÖLGE KAVRAMI, DÜNYAYI BİRBİRİNE BAĞLAYAN YOLLAR, DÜNYANIN HIZLA GELİŞEN ENDÜSTRİSİ TURİZM",["ORTAK PAYDA, BÖLGE","DÜNYAYI BİRBİRİNE BAĞLAYAN AĞLAR, ULAŞIM","DÜNYA'NIN HIZLI GELİŞİM ENDÜSTRİSİ, TURİZM"]],["ÇEVRE VE TOPLUM",["İNSAN VE ÇEVRE","DOĞAL AFETLER VE TOPLUM","DOĞAL KAYNAKLAR VE ÇEVRE","ÇEVRE SORUNLARI VE ATIKLAR","ÇEVRE SORUNLARININ ÖNLENMESİ ÇEVRESEL ÖRGÜTLER"]]],"ayt_fel":[["Felsefeyi Tanıma",["Felsefeyi Tanıma"]],["Felsefeyle Düşünme",["Felsefeyle Düşünme"]],["Felsefenin Temel Konuları ve Problemleri",["Bilgi Felsefesi","Varlık Felsefesi","Ahlak Felsefesi","Sanat Felsefesi","Din Felsefesi","Siyaset Felsefesi","Bilim Felsefesi"]],["Felsefi Okuma ve Yazma",["Felsefi Okuma ve Yazma"]],["MÖ 6. Yüzyıl-MS 2. Yüzyıl Felsefesi",["MÖ 6. Yüzyıl-MS 2. Yüzyıl Felsefesi"]],["MS 2. Yüzyıl-MS 15. Yüzyıl Felsefesi",["Hristiyan Felsefesi","İslam Felsefesi"]],["15. Yüzyıl-17. Yüzyıl Felsefesi",["15. Yüzyıl-17. Yüzyıl Felsefesi"]],["18. Yüzyıl-19. Yüzyıl Felsefesi",["18. Yüzyıl-19. Yüzyıl Felsefesi"]],["20. Yüzyıl Felsefesi",["20. Yüzyıl Felsefesi"]],["Psikoloji",["Psikoloji bilimini tanıma","Psikolojinin temel süreçleri","Öğrenme, bellek ve güdülenme","Ruh sağlığının temelleri"]],["Sosyoloji",["Sosyolojiye giriş","Birey ve toplum","Toplumsal yapı ve kurumlar","Toplumsal değişme ve gelişme"]],["Mantık",["Mantığa giriş","Klasik mantık","Mantık ve dil","Sembolik mantık"]]],"ayt_din":[["DİN VE AHLAK",["Bilgi ve İnanç","Din ve İslam","İslam ve İbadet","Gençlik ve Değerler","Gönül Coğrafyamız","Allah İnsan İlişkisi","Hz. Muhammed ve Gençlik","Din ve Hayat","Ahlaki Tutum ve Davranışlar","İslam Düşüncesinde İtikadi, Siyasi ve Fıkhi Yorumlar","Dünya ve Ahiret","Kurana Göre Hz. Muhammed","Kuranda Bazı Kavramlar","İnançla İlgili Meseleler","Yahudilik ve Hıristiyanlık","İslam ve Bilim","Anadolu’da İslam","İslam Düşüncesinde Tasavvufi Yorumlar","Güncel Dinî Meseleler","Hint ve Çin Dinleri"]]],"ydt":[["Kelime ve Yapı",["Vocabulary","Phrasal verbs","Word formation"]],["Dil Bilgisi",["Tenses","Modals","Passive voice","Noun clauses","Adjective clauses","Adverbial clauses","Conditionals","Prepositions","Conjunctions"]],["Soru Tipleri",["Cloze test","Cümle tamamlama","Çeviri: TR-EN / EN-TR","Paragraf soruları","Diyalog tamamlama","Anlamca en yakın cümle","Paragraf tamamlama","Akışı bozan cümle"]]]};
 /* geriye donuk duz liste */
+/* Geometri ünitelerini kendi derslerine taşı */
+(function(){
+  KONU.tyt_geo=[]; KONU.ayt_geo=[];
+  for(const kaynak in GEO_TASI){
+    const hedef = kaynak==='tyt_mat' ? 'tyt_geo' : 'ayt_geo';
+    const kal=[];
+    KONU[kaynak].forEach(u=>{ (GEO_TASI[kaynak].indexOf(u[0])>=0 ? KONU[hedef] : kal).push(u); });
+    KONU[kaynak]=kal;
+  }
+})();
 const T={}; for(const k in KONU) T[k]=KONU[k].flatMap(u=>u[1]);
 const uniteOf={}; for(const k in KONU){uniteOf[k]={};KONU[k].forEach(([u,ks])=>ks.forEach(t=>uniteOf[k][t]=u));}
 
@@ -264,10 +278,10 @@ const uniteOf={}; for(const k in KONU){uniteOf[k]={};KONU[k].forEach(([u,ks])=>k
    Yaklaşık ham puan yöntemi. ÖSYM gerçek puanı standart puana (o yılın
    ortalama + standart sapması) dayanır; bu hesap deneme kitapçıklarının
    kullandığı ham puan modelidir. Sapma tipik olarak ±10-15 puandır. */
-const KTYT={tyt_tur:3.3,tyt_mat:3.3,tyt_fiz:3.4,tyt_kim:3.4,tyt_biy:3.4,tyt_tar:3.4,tyt_cog:3.4,tyt_fel:3.4,tyt_din:3.4};
+const KTYT={tyt_tur:3.3,tyt_mat:3.3,tyt_geo:3.3,tyt_fiz:3.4,tyt_kim:3.4,tyt_biy:3.4,tyt_tar:3.4,tyt_cog:3.4,tyt_fel:3.4,tyt_din:3.4};
 const KAYT={
-  SAY:{ayt_mat:3.0,ayt_fiz:2.85,ayt_kim:3.07,ayt_biy:3.07},
-  EA :{ayt_mat:3.0,ayt_edb:3.0,ayt_tar1:2.8,ayt_cog1:3.33},
+  SAY:{ayt_mat:3.0,ayt_geo:3.0,ayt_fiz:2.85,ayt_kim:3.07,ayt_biy:3.07},
+  EA :{ayt_mat:3.0,ayt_geo:3.0,ayt_edb:3.0,ayt_tar1:2.8,ayt_cog1:3.33},
   SOZ:{ayt_edb:3.0,ayt_tar1:2.8,ayt_cog1:3.33,ayt_tar2:2.91,ayt_cog2:2.91,ayt_fel:3.0,ayt_din:3.33},
   DIL:{ydt:3.0}
 };
@@ -318,32 +332,245 @@ function solveLine(nums,q){
   }
   return best;
 }
-function parseKarne(text,st){
-  const list=subs(st), out={}, log=[];
-  let sec=null;
-  text.split(/[\r\n]+/).forEach(raw=>{
-    const L=norm(raw);
-    if(!L) return;
-    if(/\bayt\b/.test(L)) sec='AYT';
-    else if(/\btyt\b/.test(L)) sec='TYT';
-    // ders eşleştir: en uzun eşleşen takma ad kazanır
-    let hit=null,hitLen=0;
-    list.forEach(([k,nm,q])=>{
-      const isTyt=k.startsWith('tyt_');
-      if(sec==='TYT'&&!isTyt) return;
-      if(sec==='AYT'&&isTyt) return;
-      (ALIAS[k]||[]).forEach(a=>{
-        if(L.includes(a)&&a.length>hitLen){hit=[k,nm,q];hitLen=a.length;}
-      });
-    });
-    if(!hit||out[hit[0]]) return;
-    const nums=(raw.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(s=>parseFloat(s.replace(',','.')));
-    if(nums.length<3) return;
-    const r=solveLine(nums,hit[2]);
-    if(r){ out[hit[0]]={d:r.D,y:r.Y}; log.push(`${hit[1]}: ${r.D} doğru / ${r.Y} yanlış → ${n1(r.D-r.Y/4)} net`); }
-  });
-  return {out,log};
+/* ================= KARNE AYRIŞTIRICI (v3) =================
+   İki karne ailesini birlikte okur:
+     A) Satır tabanlı  — "TYT Türkçe 40 31 5 4 29,75 % 74"
+     B) Sütun tabanlı  — başlıkta dersler, altta SORU/DOĞRU/YANLIŞ/BOŞ/NET satırları
+   Her okumayı NET İLE DOĞRULAR: |(D − Y/4) − beyan edilen net| < 0,02
+   Doğrulanamayan satır kabul edilmez; yanlış okuma yerine boş bırakılır.
+============================================================ */
+
+/* --- ders adı → panel kodu (uzun eşleşme kazanır) --- */
+const KARNE_DERS=[
+  ['tyt turkce','tyt_tur'],['turkce','tyt_tur'],
+  ['tyt matematik','tyt_mat_top'],['t. mat','tyt_mat_top'],['t.mat','tyt_mat_top'],['temel matematik','tyt_mat_top'],
+  ['matematik-1','tyt_mat'],['matematik-2','ayt_mat'],['mat-1','tyt_mat'],['mat-2','ayt_mat'],
+  ['ayt matematik','ayt_mat_top'],
+  ['geometri-1','tyt_geo'],['geometri-2','ayt_geo'],['geo-1','tyt_geo'],['geo-2','ayt_geo'],['geometri','tyt_geo'],
+  ['tyt fen','tyt_fen_top'],['fen bilimleri','tyt_fen_top'],['fen bil','tyt_fen_top'],
+  ['tyt sosyal','tyt_sos_top'],['sosyal bilimler','tyt_sos_top'],['sosyal bil','tyt_sos_top'],
+  ['fizik-1','tyt_fiz'],['fizik-2','ayt_fiz'],['fiz-1','tyt_fiz'],['fiz-2','ayt_fiz'],['fizik','tyt_fiz'],
+  ['kimya-1','tyt_kim'],['kimya-2','ayt_kim'],['kim-1','tyt_kim'],['kim-2','ayt_kim'],['kimya','tyt_kim'],
+  ['biyoloji-1','tyt_biy'],['biyoloji-2','ayt_biy'],['biy-1','tyt_biy'],['biy-2','ayt_biy'],['biyoloji','tyt_biy'],
+  ['tarih-1','tyt_tar'],['tarih-2','ayt_tar1'],['tarih-3','ayt_tar2'],
+  ['tar-1','tyt_tar'],['tar-2','ayt_tar1'],['tar-3','ayt_tar2'],['tarih','tyt_tar'],
+  ['cografya-1','tyt_cog'],['cografya-2','ayt_cog1'],['cografya-3','ayt_cog2'],
+  ['cog-1','tyt_cog'],['cog-2','ayt_cog1'],['cog-3','ayt_cog2'],['cografya','tyt_cog'],
+  ['din kul. ve ahl. bil','tyt_din'],['din kul','tyt_din'],['din-1','tyt_din'],['din-2','ayt_din'],['din kul.','tyt_din'],
+  ['felsefe (secmeli)','__atla'],['felsefe grubu','tyt_fel'],['fel-1','tyt_fel'],['fel-2','ayt_fel'],['felsefe','tyt_fel'],
+  ['t.d. edebiyati','ayt_edb'],['turk dili ve edebiyati','ayt_edb'],['edebiyat','ayt_edb'],['edeb','ayt_edb'],
+  ['yabanci dil','ydt'],['ingilizce','ydt'],['y. dil','ydt'],
+  ['toplam','__atla'],['genel','__atla'],['puan','__atla']
+].sort((a,b)=>b[0].length-a[0].length);
+
+function kDersBul(satir){
+  const b=kDersleriBul(satir);
+  return b.length?b[0].kod:null;
 }
+/* Bir satırda BİRDEN FAZLA ders olabilir:
+   "TYT Türkçe 40 31 5 4 29,75 % 74   Matematik-1 30 8 2 20 7,50 % 25"
+   Hepsini yerleriyle döndürür; her ders kendi parçasındaki sayılarla çözülür. */
+function kDersleriBul(satir){
+  const L=norm(satir);
+  const bulunan=[];
+  for(const [ad,kod] of KARNE_DERS){
+    let i=0;
+    while((i=L.indexOf(ad,i))>=0){
+      const onceki = i===0 ? ' ' : L[i-1];
+      const sonraki = L[i+ad.length]||' ';
+      const bas=i, son=i+ad.length;
+      i=son;
+      if(/[a-z0-9çğıöşü]/.test(onceki)) continue;          // kelime ortası
+      if(/[a-zçğıöşü]/.test(sonraki)) continue;            // daha uzun bir adın parçası
+      if(bulunan.some(x=>bas<x.son && son>x.bas)) continue; // daha uzun eşleşmeyle çakışıyor
+      bulunan.push({kod, bas, son});
+    }
+  }
+  return bulunan.sort((a,b)=>a.bas-b.bas);
+}
+
+/* Sayı dizisinden (D,Y) çöz — beyan edilen net ile doğrula.
+   Kanıt gücü: SDYB-net(4) > SDY-net(3) > SDYB(2) > DY-net(1) */
+function kNetCoz(nums, soru){
+  const yak=(a,b)=>Math.abs(a-b)<0.02;
+  let en=null;
+  const koy=(d,y,g,p)=>{ if(!en||p>en.p) en={d,y,g,p}; };
+  // 1) [S,D,Y,B,Net] / [S,D,Y,Net]
+  for(let i=0;i+2<nums.length;i++){
+    const S=nums[i], D=nums[i+1], Y=nums[i+2];
+    if(!Number.isInteger(S)||!Number.isInteger(D)||!Number.isInteger(Y)) continue;
+    if(S<=0||S>200||D<0||Y<0||D+Y>S) continue;
+    if(soru && S!==soru) continue;          // soru sayısı biliniyorsa birebir tutmalı
+    const B=nums[i+3], N=nums[i+4];
+    if(Number.isInteger(B)&&B>=0&&D+Y+B===S&&yak(N,D-Y/4)) koy(D,Y,'SDYB-net',4);
+    else if(yak(B,D-Y/4)) koy(D,Y,'SDY-net',3);
+    else if(Number.isInteger(B)&&B>=0&&D+Y+B===S) koy(D,Y,'SDYB',2);
+  }
+  // 2) [D,Y,Net] — soru sayısı satırda yok. Sıfır satırları kabul edilmez.
+  if(!en) for(let i=0;i+2<nums.length;i++){
+    const D=nums[i], Y=nums[i+1], N=nums[i+2];
+    if(!Number.isInteger(D)||!Number.isInteger(Y)||D<0||Y<0) continue;
+    if(D+Y===0) continue;                   // "Türkçe 0 0 0 0" gibi başlık satırlarını ele
+    if(soru && D+Y>soru) continue;
+    if(yak(N,D-Y/4)) koy(D,Y,'DY-net',1);
+  }
+  return en;
+}
+
+/* ---------- A) SATIR TABANLI ---------- */
+function karneSatirlardan(text, list){
+  const out={}, kanit={}, puan={};
+  const soruSay={}; list.forEach(([k,,q])=>soruSay[k]=q);
+  soruSay.tyt_mat_top=40; soruSay.ayt_mat_top=40; soruSay.tyt_fen_top=20; soruSay.tyt_sos_top=20;
+  text.split(/[\r\n]+/).forEach(raw=>{
+    const bul=kDersleriBul(raw);
+    if(!bul.length) return;
+    bul.forEach((b,j)=>{
+      if(b.kod==='__atla') return;
+      // bu dersin parçası: kendi adından sonraki ders adına kadar
+      const son = j+1<bul.length ? bul[j+1].bas : raw.length;
+      const parca = raw.slice(b.son, son);
+      const nums=(parca.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(s=>parseFloat(s.replace(',','.')));
+      if(nums.length<3) return;
+      const r=kNetCoz(nums, soruSay[b.kod]);
+      if(!r) return;
+      const eski=puan[b.kod];
+      if(eski!==undefined && eski>=r.p) return;
+      out[b.kod]={d:r.d,y:r.y}; kanit[b.kod]=r.g; puan[b.kod]=r.p;
+    });
+  });
+  return {out,kanit};
+}
+
+/* ---------- B) SÜTUN TABANLI (AKBİM, İlk Adım) ---------- */
+function karneSutunlardan(text){
+  const sat=text.split(/[\r\n]+/);
+  const out={};
+  // başlık: ders adlarını sırayla içeren satır
+  let bas=-1, kodlar=null;
+  for(let i=0;i<sat.length;i++){
+    const L=norm(sat[i]);
+    if(!/turkce/.test(L)) continue;
+    const parca=sat[i].split(/\s{1,}/).filter(Boolean);
+    const k=parca.map(p=>kDersBul(p));
+    const dolu=k.filter(x=>x&&x!=='__atla');
+    if(dolu.length>=3){ bas=i; kodlar=k; break; }
+  }
+  if(bas<0) return {out,kanit:{}};
+  // sonraki 12 satırda DOĞRU / YANLIŞ / NET satırlarını ara
+  let D=null,Y=null,N=null;
+  for(let i=bas;i<Math.min(sat.length,bas+14);i++){
+    const L=norm(sat[i]);
+    const nums=(sat[i].match(/-?\d+(?:[.,]\d+)?/g)||[]).map(s=>parseFloat(s.replace(',','.')));
+    if(/dogru/.test(L)&&!D) D=nums;
+    else if(/yanlis/.test(L)&&!Y) Y=nums;
+    else if(/^net\b/.test(L)&&!N) N=nums;
+  }
+  if(!D||!Y||!N) return {out,kanit:{}};
+  const kanit={};
+  const gecerli=kodlar.filter(x=>x&&x!=='__atla');
+  // hizalama: ders sayısı ile sayı sayısı uyuşmalı
+  const n=Math.min(gecerli.length, D.length, Y.length, N.length);
+  for(let j=0;j<n;j++){
+    const kod=gecerli[j];
+    if(out[kod]) continue;
+    if(Math.abs(N[j]-(D[j]-Y[j]/4))<0.02){ out[kod]={d:D[j],y:Y[j]}; kanit[kod]='sutun'; }
+  }
+  return {out,kanit};
+}
+
+/* ---------- C) SABİT SÜTUN DÜZENLERİ (İlk Adım gibi) ----------
+   "S.Sayısı 40 5 5 5 5 40 7 7 6 20 20 120" satırı düzeni ele verir. */
+const SUTUN_DUZEN=[
+  { soru:[40,5,5,5,5,40,7,7,6,20,20,120],
+    ders:['tyt_tur','tyt_tar','tyt_cog','tyt_fel','tyt_din','tyt_mat_top','tyt_fiz','tyt_kim','tyt_biy',null,null,null] },
+  { soru:[40,20,40,20],
+    ders:['tyt_tur',null,'tyt_mat_top',null] }
+];
+function karneSabitDuzen(text){
+  const sat=text.split(/[\r\n]+/);
+  const out={}, kanit={};
+  const sayilar=s=>(s.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(',','.')));
+  let S=null,D=null,Y=null,N=null;
+  for(let i=0;i<sat.length;i++){
+    const L=norm(sat[i]);
+    const T=L.trim(), sy=sayilar(sat[i]);
+    if(sy.length<2) continue;                      // sayı içermeyen satır etiket değildir
+    if(!S && /^(s\.?\s?sayisi|soru sayisi)/.test(T)) S=sy.filter(x=>Number.isInteger(x));
+    else if(!D && /^dogru( cevap)?\b/.test(T)) D=sy;
+    else if(!Y && /^yanlis( cevap)?\b/.test(T)) Y=sy;
+    else if(!N && /^net\b/.test(T)) N=sy;
+  }
+  if(!S||!D||!Y||!N) return {out,kanit};
+  const duzen=SUTUN_DUZEN.find(z=>z.soru.length===S.length && z.soru.every((v,j)=>v===S[j]));
+  if(!duzen) return {out,kanit};
+  const n=Math.min(duzen.ders.length,D.length,Y.length,N.length);
+  for(let j=0;j<n;j++){
+    const kod=duzen.ders[j]; if(!kod) continue;
+    if(Math.abs(N[j]-(D[j]-Y[j]/4))<0.02) { out[kod]={d:D[j],y:Y[j]}; kanit[kod]='sabit sütun'; }
+  }
+  return {out,kanit};
+}
+
+/* ---------- D) KONU TABLOSUNDAN TOPLAM ----------
+   Bazı karnelerde (AKBİM) özet tablo ders ders vermez; konu analizi tablosunun
+   satırları toplanarak doğru/yanlış çıkarılır. */
+function karneKonudanToplam(text, st){
+  const out={}, kanit={};
+  let kt=null;
+  try{ kt=parseKonuTablo(text, st); }catch(e){ return {out,kanit}; }
+  if(!kt) return {out,kanit};
+  for(const kod in kt){
+    const v=kt[kod];
+    if(!v || !v.konu || !v.konu.length) continue;
+    let d=0,y=0,ss=0;
+    v.konu.forEach(k=>{ ss+=(k.ss||0); d+=(k.d||0); y+=(k.y||0); });
+    if(!ss) continue;
+    out[kod]={d,y}; kanit[kod]='konu tablosundan toplandı';
+  }
+  return {out,kanit};
+}
+
+/* ---------- BİRLEŞTİR ---------- */
+function parseKarne(text, st){
+  const list=subs(st);
+  const A=karneSatirlardan(text, list);
+  let out=A.out, kanit=A.kanit;
+  const zayif=k=>kanit[k]==='DY-net';
+  const ekle=(kaynak)=>{ for(const k in kaynak.out){
+    if(out[k]===undefined || zayif(k)){ out[k]=kaynak.out[k]; kanit[k]=kaynak.kanit[k]; } } };
+  if(Object.keys(out).length<10) ekle(karneSabitDuzen(text));
+  if(Object.keys(out).length<10) ekle(karneSutunlardan(text));
+  if(Object.keys(out).length<10) ekle(karneKonudanToplam(text, st));
+  // toplam satırlarını çöz: TYT Matematik = Matematik-1 + Geometri
+  if(out.tyt_mat_top){
+    if(!out.tyt_mat && !out.tyt_geo){ out.tyt_mat=out.tyt_mat_top; kanit.tyt_mat=(kanit.tyt_mat_top||'')+' (geometri dahil)'; }
+    else if(out.tyt_mat && !out.tyt_geo){
+      const g={d:out.tyt_mat_top.d-out.tyt_mat.d, y:out.tyt_mat_top.y-out.tyt_mat.y};
+      if(g.d>=0&&g.y>=0&&(g.d||g.y)){ out.tyt_geo=g; kanit.tyt_geo='toplamdan çıkarıldı'; }
+    }
+    delete out.tyt_mat_top;
+  }
+  if(out.ayt_mat_top){
+    if(!out.ayt_mat && !out.ayt_geo){ out.ayt_mat=out.ayt_mat_top; kanit.ayt_mat=(kanit.ayt_mat_top||'')+' (geometri dahil)'; }
+    else if(out.ayt_mat && !out.ayt_geo){
+      const g={d:out.ayt_mat_top.d-out.ayt_mat.d, y:out.ayt_mat_top.y-out.ayt_mat.y};
+      if(g.d>=0&&g.y>=0&&(g.d||g.y)){ out.ayt_geo=g; kanit.ayt_geo='toplamdan çıkarıldı'; }
+    }
+    delete out.ayt_mat_top;
+  }
+  delete out.tyt_fen_top; delete out.tyt_sos_top;
+  delete kanit.tyt_mat_top; delete kanit.ayt_mat_top;
+
+  const log=[];
+  const isim={}; list.forEach(([k,nm])=>isim[k]=nm);
+  Object.keys(out).forEach(k=>{
+    const {d,y}=out[k];
+    log.push(`${isim[k]||k}: ${d} doğru / ${y} yanlış → ${n1(d-y/4)} net`);
+  });
+  return {out, log, kanit};
+}
+
 let PENDING_AN=[];
 /* karne konu adını panelin konu ağacıyla eşleştir */
 function konuEsle(sk,ad){
@@ -420,7 +647,8 @@ const DERSALIAS=[
  ['temel matematik','tyt_mat'],['t. mat','tyt_mat'],['t.mat','tyt_mat'],
  ['matematik-1','tyt_mat'],['matematik-2','ayt_mat'],['mat-1','tyt_mat'],['mat-2','ayt_mat'],
  ['tyt matematik','tyt_mat'],['ayt matematik','ayt_mat'],
- ['geometri','tyt_mat'],['geo-1','tyt_mat'],['geo-2','ayt_mat'],
+ ['tyt geometri','tyt_geo'],['ayt geometri','ayt_geo'],['geometri-1','tyt_geo'],['geometri-2','ayt_geo'],
+ ['geometri','tyt_geo'],['geo-1','tyt_geo'],['geo-2','ayt_geo'],['geo','tyt_geo'],
  ['tyt turkce','tyt_tur'],['turkce','tyt_tur'],
  ['felsefe grubu','tyt_fel'],['felsefe (secmeli)','tyt_fel'],['felsefe','tyt_fel'],['fel-1','tyt_fel'],['fel-2','ayt_fel'],
  ['din kul','tyt_din'],['din-1','tyt_din'],['din-2','ayt_din'],['din','tyt_din'],
@@ -642,7 +870,7 @@ function anOnizle(rows){
    Buradaki değerler o bütçeden geriye türetildi ve konu sayısına bölündü:
    SAY ~787 sa, EA ~669 sa, SÖZ ~613 sa (deneme/tekrar hariç).
    İçine konu anlatımı VE soru çözümü birlikte dahildir. Hepsi elle düzenlenebilir. */
-const SURE_VAR={tyt_mat:150,ayt_mat:180,tyt_fiz:120,ayt_fiz:150,tyt_kim:100,ayt_kim:130,
+const SURE_VAR={ tyt_geo:120, ayt_geo:150,tyt_mat:150,ayt_mat:180,tyt_fiz:120,ayt_fiz:150,tyt_kim:100,ayt_kim:130,
   tyt_biy:100,ayt_biy:120,tyt_tur:75,ayt_edb:90,tyt_tar:50,ayt_tar1:60,ayt_tar2:60,
   tyt_cog:55,ayt_cog1:65,ayt_cog2:65,tyt_fel:45,ayt_fel:55,tyt_din:35,ayt_din:40,ydt:80};
 /* bilinen ağır konular ×1,5 — kümülatif ya da işlem yoğun oldukları için */
