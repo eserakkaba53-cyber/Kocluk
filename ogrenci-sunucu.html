@@ -242,9 +242,12 @@ async function ogrBaglan(kod){
 }
 
 /* ---------- SUNUCUDAN OKU ---------- */
+var SONKIM=null;
 async function ogrSunucudanOku(){
   var k = await ogrKimlik();
+  SONKIM=k;
   if(!k.bagli) return null;
+  if(k.lisans===false) { OGRID=k.id; KOCID=k.koc_id; }
   OGRID=k.id; KOCID=k.koc_id;
 
   var o = (await sbSorgu('ogrenciler','?id=eq.'+OGRID+'&select=*'))[0];
@@ -1536,6 +1539,35 @@ async function gTest(){
   try{ await sbTest(); GHATA='OK|Sunucuya ulaşıldı.'; }catch(e){ GHATA='Bağlantı olmadı: '+(e.message||e); }
   render();
 }
+async function teshisAl(){
+  GBEKLE=true; GHATA='Kontrol ediliyor...'; render();
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/ogrenci_teshis',{method:'POST',body:{}}));
+    if(!r){ GHATA='Sunucudan cevap alınamadı.'; }
+    else if(r.sonuc==='Oturum yok. Giriş yapılmamış.'){ GHATA='Giriş yapılmamış görünüyor. Tekrar giriş yap.'; }
+    else if(r.sonuc && r.sonuc.indexOf('bağlı değil')>=0){
+      GHATA='Hesabın açık ama henüz bir öğrenci kaydına bağlanmamış.\n\n'+
+        'Öğretmeninin verdiği 6 haneli kodu gir.'+(r.koc_hesabi_mi?'\n\nUYARI: Bu e-posta koç hesabı olarak kayıtlı. Öğrenci için farklı bir e-posta kullan.':'');
+      GMOD='kod';
+    }
+    else if(r.koc_lisansi_gecerli===false){
+      GHATA='Kaydın bulundu ('+ (r.ogrenci||'') +') ama öğretmeninin kullanım süresi dolmuş.\n\n'+
+        'Öğretmenine haber ver; süre uzatılınca panelin açılacak.';
+    }
+    else {
+      GHATA='OK|Her şey yolunda görünüyor: '+(r.ogrenci||'')+' · Öğretmen: '+(r.koc||'')+' · '+(r.odev_sayisi||0)+' ödev kayıtlı.\nSayfayı yenile.';
+    }
+  }catch(e){ GHATA='Kontrol yapılamadı: '+(e.message||e); }
+  GBEKLE=false; render();
+}
+function yardimIste(){
+  const mesaj='Merhaba, çalışma paneline giriş yapamıyorum.\n\n'+
+    'E-posta: '+(SB.mail||'—')+'\n'+
+    'Durum: '+(GHATA||'—').replace(/\n/g,' ')+'\n\nYardımcı olur musunuz?';
+  const tel=String((D&&D.kocTel)||'').replace(/\D/g,'');
+  const t=tel?(tel.startsWith('0')?'90'+tel.slice(1):(tel.length===10?'90'+tel:tel)):'';
+  window.open((t?'https://wa.me/'+t:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),'_blank','noopener');
+}
 async function gSifreUnuttum(){
   const m=(document.getElementById('gMail')?.value||'').trim();
   if(!m){ GHATA='Önce e-posta adresini yaz, sonra bu bağlantıya bas.'; render(); return; }
@@ -1577,7 +1609,11 @@ async function gGiris(){
     await sunucuAc();
   }catch(e){
     GHATA = /Invalid login/i.test(e.message)?'E-posta ya da şifre yanlış.'
-      : /already registered/i.test(e.message)?'Bu e-posta zaten kayıtlı. "Giriş yap" seç.'
+      : /already registered|already exists/i.test(e.message)
+        ? 'Bu e-posta ile zaten bir hesap var.\n\nDaha önce kayıt olduysan "Zaten hesabım var" deyip giriş yap. Şifreni unuttuysan "Şifremi unuttum" bağlantısını kullan.'
+      : /signups? (are )?disabled/i.test(e.message)
+        ? 'Yeni kayıtlar şu an kapalı. Öğretmenine haber ver.'
+      : /rate|too many/i.test(e.message) ? 'Çok fazla deneme yapıldı. Birkaç dakika bekle.'
       : (e.message||String(e));
   }
   GBEKLE=false; render();
@@ -1596,7 +1632,15 @@ async function gKodGir(){
 async function sunucuAc(){
   if(BEKLEYENKOD) await otoBaglan();
   const d=await ogrSunucudanOku();
-  if(!d){ GMOD='kod'; GHATA=''; render(); return; }
+  if(!d){
+    GMOD='kod';
+    if(!GHATA) GHATA='Hesabın açıldı. Şimdi öğretmeninin verdiği kodu gir.';
+    render(); return;
+  }
+  if(SONKIM && SONKIM.lisans===false){
+    GHATA='Öğretmeninin kullanım süresi dolmuş. Ödevlerin duruyor ama panel şu an açılamıyor.\nÖğretmenine haber ver.';
+    GMOD='giris'; render(); return;
+  }
   D=d; try{ localStorage.setItem(KEY,JSON.stringify(D)); }catch(e){}
   TAB='odev'; GHATA=''; render();
 }
@@ -1646,7 +1690,8 @@ function girisEkrani(){
       <input type="text" id="gKod" placeholder="ABC123" style="text-transform:uppercase;font-family:var(--mono);font-size:18px;letter-spacing:2px;text-align:center"
         onkeydown="if(event.key==='Enter')gKodGir()"></div></div>
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gKodGir()">${GBEKLE?'Bekle...':'Bağlan'}</button>
-    <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>${hata}
+    <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="teshisAl()">Sorun mu var? Kontrol et</button>${hata}
   </div></div>`;
   return `<div class="card"><h2>${GMOD==='kayit'?'Hesap oluştur':'Giriş yap'}<small>${
     BEKLEYENKOD?'Öğretmenin seni davet etti. E-posta ve şifre belirle, gerisi kendiliğinden olacak.'
@@ -1663,7 +1708,8 @@ function girisEkrani(){
       ${GMOD==='kayit'?'Zaten hesabım var':'Hesabım yok — oluştur'}</button>${hata}
     ${GMOD==='giris'?`<div style="text-align:center;margin-top:12px">
       <a href="#" onclick="gSifreUnuttum();return false" style="color:var(--accent);font-size:13.5px;text-decoration:underline">Şifremi unuttum</a>
-      <div class="hint" style="margin-top:4px">Önce e-postanı yaz, sonra buna bas.</div></div>`:''}
+      <div class="hint" style="margin-top:4px">Önce e-postanı yaz, sonra buna bas.</div></div>
+      ${sbOturum()?`<button class="btn ghost wide" style="margin-top:10px" onclick="teshisAl()">Giremiyorum — kontrol et</button>`:''}`:''}
   </div></div>`;
 }
 
