@@ -92,6 +92,8 @@ progress{width:100%;height:9px}
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
+<!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
+<script src="sunucu.js"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -114,11 +116,16 @@ async function save(){ sunucuKaydet(); const s=JSON.stringify(D); MEM=D;
    SB.key  : anon public anahtar (Settings › API › anon public)
    SB.tok  : oturum jetonu       (girişte alınır, tarayıcıda saklanır)
 ==================================================================== */
-var SB = { url:'', key:'', tok:'', ref:'', uid:'', mail:'', sonHata:'' };
+/* Sunucu ayarları sunucu.js dosyasından gelir; yoksa davet linkinden dolar. */
+const SUNUCU = (window.SUNUCU_AYAR && window.SUNUCU_AYAR.key)
+  ? window.SUNUCU_AYAR : { url:'', key:'' };
+var SB = { url:SUNUCU.url||'', key:SUNUCU.key||'', tok:'', ref:'', uid:'', mail:'', sonHata:'' };
 var SBKEY = 'ogrenci_sb_oturum';
 
 function sbYukle(){
   try{ var s=localStorage.getItem(SBKEY); if(s) SB=Object.assign(SB,JSON.parse(s)); }catch(e){}
+  if(SUNUCU.url) SB.url=SUNUCU.url;
+  if(SUNUCU.key) SB.key=SUNUCU.key;
 }
 function sbSakla(){
   try{ localStorage.setItem(SBKEY,JSON.stringify(SB)); }catch(e){}
