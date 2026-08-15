@@ -3441,24 +3441,27 @@ async function kocKaydet(id){
   }catch(e){ YONDURUM='HATA|'+(e.message||e); render(); }
 }
 let YOGRENCI=null, YOGRLISTE=[];
-async function kocOgrencileri(kocId,ad){
-  YOGRENCI={id:kocId,ad:ad}; YOGRLISTE=[]; YONDURUM='Öğrenciler yükleniyor...'; render();
+async function kocOgrencileri(kocId){
+  const k=KOCLAR.find(x=>x.id===kocId)||{};
+  YOGRENCI={id:kocId,ad:k.ad||'—'}; YOGRLISTE=[]; YONDURUM='Öğrenciler yükleniyor...'; render();
   try{
     YOGRLISTE=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:kocId}}))||[];
     YONDURUM='';
   }catch(e){ YONDURUM='HATA|'+(e.message||e); }
   render();
 }
-async function yonOgrenciSil(id,ad){
+async function yonOgrenciSil(id){
+  const o=YOGRLISTE.find(x=>x.id===id)||{}; const ad=o.ad||'Bu öğrenci';
   if(!confirm(`${ad} SİLİNECEK.\n\nTüm denemeleri, ödevleri ve konu kayıtları kalıcı olarak gidecek.\nBu işlem GERİ ALINAMAZ.\n\nDevam?`)) return;
   try{
     const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_ogrenci_sil',{method:'POST',body:{ogr:id}}));
     if(!r||!r.ok) throw new Error((r&&r.hata)||'Silinemedi');
-    await kocOgrencileri(YOGRENCI.id,YOGRENCI.ad);
+    await kocOgrencileri(YOGRENCI.id);
     await koclariOku();
   }catch(e){ alert('Silinemedi: '+(e.message||e)); }
 }
-async function yonKocSil(id,ad,ogrSayi){
+async function yonKocSil(id){
+  const k=KOCLAR.find(x=>x.id===id)||{}; const ad=k.ad||'Bu koç'; const ogrSayi=(YOGRLISTE||[]).length;
   if(!confirm(`${ad} adlı KOÇ HESABI ve ${ogrSayi} öğrencisi tamamen silinecek.\n\nBu işlem GERİ ALINAMAZ.\n\nDevam?`)) return;
   if(!confirm(`Son onay: ${ad} ve tüm verileri siliniyor. Emin misin?`)) return;
   try{
@@ -3480,12 +3483,12 @@ function vKocOgrencileri(){
         <td>${o.bagli?'<span class="pill s1" style="font-size:10.5px">bağlı</span>':'<span class="pill s3" style="font-size:10.5px">bağlı değil</span>'}</td>
         <td>${o.onay?'<span style="color:var(--ok)">✓</span>':'<span style="color:var(--bad)">eksik</span>'}</td>
         <td class="num">${o.deneme}</td><td class="num">${o.odev}</td>
-        <td style="width:52px"><button class="btn danger mini" onclick="yonOgrenciSil('${o.id}',${JSON.stringify(o.ad)})">sil</button></td>
+        <td style="width:52px"><button class="btn danger mini" onclick="yonOgrenciSil('${o.id}')">sil</button></td>
       </tr>`).join('')}
     </tbody></table>`:'<div class="empty">Bu koçun kayıtlı öğrencisi yok.</div>'}
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
-    <button class="btn danger" onclick="yonKocSil('${y.id}',${JSON.stringify(y.ad)},${YOGRLISTE.length})">Bu koç hesabını tamamen sil</button>
+    <button class="btn danger" onclick="yonKocSil('${y.id}')">Bu koç hesabını tamamen sil</button>
     <div class="hint" style="margin-top:8px">Koç hesabı silinirse öğrencileri de silinir. Öğrencilerin giriş hesapları Supabase'de kalır ama hiçbir veriye erişemez.</div>
   </div></div>`;
 }
@@ -3549,8 +3552,8 @@ function vYonetici(){
                 : '<span class="pill s3" style="font-size:10.5px">süresi doldu</span>'}</td>
         <td><select id="yp_${k.id}" style="min-width:150px">${PAKETLER.map(([v,a])=>`<option value="${v}" ${v===k.paket?'selected':''}>${a}</option>`).join('')}</select></td>
         <td class="num" style="font-weight:650;color:${dolu?'var(--bad)':'var(--ink)'}">
-          <a href="#" onclick="kocOgrencileri('${k.id}',${JSON.stringify(k.ad||'')});return false"
-             style="color:inherit;text-decoration:underline">${k.ogrenci}/${k.limit}</a></td>
+          <button class="btn ghost mini" onclick="kocOgrencileri('${k.id}')"
+             style="font-family:var(--mono);font-weight:650">${k.ogrenci}/${k.limit}</button></td>
         <td><input type="date" id="yb_${k.id}" value="${k.lisans_bitis||''}" style="width:140px">
           <button class="btn ghost mini" style="margin-top:4px" onclick="yilEkle('${k.id}')">+1 yıl</button>
           ${bit?`<div style="font-size:10.5px;color:${yakin?'var(--warn)':'var(--ink-3)'};margin-top:2px">${k.lisans_bitis?'lisans':'deneme'} ${bit}</div>`:''}</td>
