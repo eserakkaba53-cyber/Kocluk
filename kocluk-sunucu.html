@@ -1565,13 +1565,35 @@ function addStudent(){
   YENIOGR={ad:'',track:'SAY',grade:'11',tel:'',eposta:'',resit:false,veliAd:'',veliTel:'',onay:false,not:''};
   render();
 }
-function yoAlan(a,v){ if(!YENIOGR) return; YENIOGR[a]= (a==='resit'||a==='onay') ? !!v : v; render(); }
+function yoAlan(a,v){
+  if(!YENIOGR) return;
+  YENIOGR[a]= (a==='resit'||a==='onay') ? !!v : v;
+  if(a==='eposta'){ YENIOGR.epostaDurum=''; epostaKontrol(v); }
+  render();
+}
+let EPOSTAZAMAN=null;
+function epostaKontrol(mail){
+  clearTimeout(EPOSTAZAMAN);
+  const m=(mail||'').trim();
+  if(!m || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){ return; }
+  EPOSTAZAMAN=setTimeout(async()=>{
+    if(!YENIOGR) return;
+    try{
+      const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/eposta_musait',{method:'POST',body:{mail:m}}));
+      if(!YENIOGR) return;
+      YENIOGR.epostaDurum = r && r.musait ? 'musait'
+        : (r && r.ogrencide ? 'kendi' : 'dolu');
+      render();
+    }catch(e){}
+  },700);
+}
 function yoIptal(){ YENIOGR=null; render(); }
 function yoKaydet(){
   const y=YENIOGR; if(!y) return;
   const ad=(y.ad||'').trim();
   if(ad.length<3){ alert('Öğrencinin adını yaz.'); return; }
   if(!y.onay){ alert('Onay kutusu işaretlenmeden öğrenci eklenemez.'); return; }
+  if(y.epostaDurum==='dolu' && !confirm('Bu e-posta ile zaten bir hesap var.\n\nÖğrenci bu adresle YENİ hesap açamaz; sadece var olan hesabıyla girip davet kodunu kullanabilir.\n\nYine de bu adresle kaydedilsin mi?')) return;
   if(!y.resit){
     if((y.veliAd||'').trim().length<3){ alert('Velinin adı soyadı gerekli.'); return; }
     if(String(y.veliTel||'').replace(/\D/g,'').length<10){ alert('Velinin telefon numarası eksik.'); return; }
@@ -1601,7 +1623,10 @@ function yeniOgrenciEkrani(){
         <div><label class="f">Öğrenci telefonu</label>
           <input type="text" value="${esc(y.tel)}" onchange="yoAlan('tel',this.value)" placeholder="05XX XXX XX XX"></div>
         <div><label class="f">Öğrenci e-postası</label>
-          <input type="text" value="${esc(y.eposta)}" onchange="yoAlan('eposta',this.value)" placeholder="isteğe bağlı"></div>
+          <input type="text" value="${esc(y.eposta)}" onchange="yoAlan('eposta',this.value)" placeholder="isteğe bağlı">
+          ${y.epostaDurum==='musait'?'<div style="font-size:12px;color:var(--ok);margin-top:4px">✓ Bu e-posta uygun</div>'
+           :y.epostaDurum==='kendi'?'<div style="font-size:12px;color:var(--warn);margin-top:4px">! Bu e-postayı başka bir öğrencinde kullanmışsın</div>'
+           :y.epostaDurum==='dolu'?'<div style="font-size:12px;color:var(--bad);margin-top:4px">! Bu e-posta ile zaten bir hesap var — öğrenci yeni hesap açamaz, farklı bir adres kullan</div>':''}</div>
       </div>
 
       <div style="border-top:1px solid var(--line);margin:18px 0 0;padding-top:16px">
@@ -3415,6 +3440,55 @@ async function kocKaydet(id){
     YONDURUM='OK|Kaydedildi.'; await koclariOku(); await lisansOku();
   }catch(e){ YONDURUM='HATA|'+(e.message||e); render(); }
 }
+let YOGRENCI=null, YOGRLISTE=[];
+async function kocOgrencileri(kocId,ad){
+  YOGRENCI={id:kocId,ad:ad}; YOGRLISTE=[]; YONDURUM='Öğrenciler yükleniyor...'; render();
+  try{
+    YOGRLISTE=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:kocId}}))||[];
+    YONDURUM='';
+  }catch(e){ YONDURUM='HATA|'+(e.message||e); }
+  render();
+}
+async function yonOgrenciSil(id,ad){
+  if(!confirm(`${ad} SİLİNECEK.\n\nTüm denemeleri, ödevleri ve konu kayıtları kalıcı olarak gidecek.\nBu işlem GERİ ALINAMAZ.\n\nDevam?`)) return;
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_ogrenci_sil',{method:'POST',body:{ogr:id}}));
+    if(!r||!r.ok) throw new Error((r&&r.hata)||'Silinemedi');
+    await kocOgrencileri(YOGRENCI.id,YOGRENCI.ad);
+    await koclariOku();
+  }catch(e){ alert('Silinemedi: '+(e.message||e)); }
+}
+async function yonKocSil(id,ad,ogrSayi){
+  if(!confirm(`${ad} adlı KOÇ HESABI ve ${ogrSayi} öğrencisi tamamen silinecek.\n\nBu işlem GERİ ALINAMAZ.\n\nDevam?`)) return;
+  if(!confirm(`Son onay: ${ad} ve tüm verileri siliniyor. Emin misin?`)) return;
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_koc_sil',{method:'POST',body:{koc:id}}));
+    if(!r||!r.ok) throw new Error((r&&r.hata)||'Silinemedi');
+    YOGRENCI=null; await koclariOku();
+    alert(ad+' silindi.');
+  }catch(e){ alert('Silinemedi: '+(e.message||e)); }
+}
+function vKocOgrencileri(){
+  const y=YOGRENCI;
+  return `<div style="margin-bottom:14px"><button class="btn ghost" onclick="YOGRENCI=null;render()">← Koç listesine dön</button></div>
+  <div class="card"><h2>${esc(y.ad)} — öğrencileri<small>${YOGRLISTE.length} kayıt. Buradan silebilirsin; koçun kendi panelinden de silinmiş olur.</small></h2>
+  <div class="body" style="padding:0;overflow:auto">
+    ${YOGRLISTE.length?`<table><thead><tr><th>Öğrenci</th><th>Sınıf</th><th>Hesap</th><th>Onay</th><th class="num">Deneme</th><th class="num">Ödev</th><th></th></tr></thead><tbody>
+      ${YOGRLISTE.map(o=>`<tr>
+        <td><b>${esc(o.ad)}</b>${o.eposta?`<div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(o.eposta)}</div>`:''}</td>
+        <td>${esc(o.sinif||'—')} · ${esc(o.alan||'')}</td>
+        <td>${o.bagli?'<span class="pill s1" style="font-size:10.5px">bağlı</span>':'<span class="pill s3" style="font-size:10.5px">bağlı değil</span>'}</td>
+        <td>${o.onay?'<span style="color:var(--ok)">✓</span>':'<span style="color:var(--bad)">eksik</span>'}</td>
+        <td class="num">${o.deneme}</td><td class="num">${o.odev}</td>
+        <td style="width:52px"><button class="btn danger mini" onclick="yonOgrenciSil('${o.id}',${JSON.stringify(o.ad)})">sil</button></td>
+      </tr>`).join('')}
+    </tbody></table>`:'<div class="empty">Bu koçun kayıtlı öğrencisi yok.</div>'}
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <button class="btn danger" onclick="yonKocSil('${y.id}',${JSON.stringify(y.ad)},${YOGRLISTE.length})">Bu koç hesabını tamamen sil</button>
+    <div class="hint" style="margin-top:8px">Koç hesabı silinirse öğrencileri de silinir. Öğrencilerin giriş hesapları Supabase'de kalır ama hiçbir veriye erişemez.</div>
+  </div></div>`;
+}
 function yilEkle(id){
   const el=document.getElementById('yb_'+id);
   const t=new Date(); t.setFullYear(t.getFullYear()+1);
@@ -3433,6 +3507,7 @@ function vYonetici(){
   const ogrToplam=KOCLAR.reduce((a,k)=>a+(k.ogrenci||0),0);
   const gun=(t)=>{ if(!t) return '—'; const f=Math.floor((Date.now()-new Date(t))/864e5);
     return f===0?'bugün':f===1?'dün':f+' gün önce'; };
+  if(YOGRENCI) return vKocOgrencileri();
   return `
   <div class="card"><div class="stats">
     <div class="stat"><div class="k">Ücretli abone</div><div class="v" style="color:var(--ok)">${ucretli.length}</div>
@@ -3473,7 +3548,9 @@ function vYonetici(){
                 ? '<span class="pill s2" style="font-size:10.5px">deneme</span>'
                 : '<span class="pill s3" style="font-size:10.5px">süresi doldu</span>'}</td>
         <td><select id="yp_${k.id}" style="min-width:150px">${PAKETLER.map(([v,a])=>`<option value="${v}" ${v===k.paket?'selected':''}>${a}</option>`).join('')}</select></td>
-        <td class="num" style="font-weight:650;color:${dolu?'var(--bad)':'var(--ink)'}">${k.ogrenci}/${k.limit}</td>
+        <td class="num" style="font-weight:650;color:${dolu?'var(--bad)':'var(--ink)'}">
+          <a href="#" onclick="kocOgrencileri('${k.id}',${JSON.stringify(k.ad||'')});return false"
+             style="color:inherit;text-decoration:underline">${k.ogrenci}/${k.limit}</a></td>
         <td><input type="date" id="yb_${k.id}" value="${k.lisans_bitis||''}" style="width:140px">
           <button class="btn ghost mini" style="margin-top:4px" onclick="yilEkle('${k.id}')">+1 yıl</button>
           ${bit?`<div style="font-size:10.5px;color:${yakin?'var(--warn)':'var(--ink-3)'};margin-top:2px">${k.lisans_bitis?'lisans':'deneme'} ${bit}</div>`:''}</td>
@@ -3883,7 +3960,9 @@ function girisEkrani(){
     </div></div></div>`;
   return `<div style="max-width:460px;margin:36px auto">
     <div class="card"><h2>${kurulu?(GIRISMOD==='kayit'?'Koç hesabı oluştur':'Koç girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
-      kurulu?'Verilerin sunucuda saklanır; her cihazdan aynı veriye ulaşırsın.'
+      kurulu?(GIRISMOD==='kayit'
+        ? 'Kaydını tamamla, 7 günlük denemen hemen başlasın.'
+        : 'Verilerin sunucuda saklanır; her cihazdan aynı veriye ulaşırsın.')
             :'Panel dosyasına anahtar yazılmamış. Geçici olarak buradan girebilirsin.'}</small></h2><div class="body">
       ${!kurulu?`
         <div class="flag warn"><span class="ic">!</span><span>
@@ -3904,7 +3983,13 @@ function girisEkrani(){
             GitHub → <b>kocluk-sunucu.html</b> → kalem ikonu → <b>Ctrl+F</b> ile <span style="font-family:var(--mono)">const SUNUCU</span> ara
             → o üç satırı bununla değiştir → <b>Commit changes</b>.</div>`:''}
       `:`
-        ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">Adın</label>
+        ${GIRISMOD==='kayit'?`
+          <div class="flag ok" style="margin-bottom:14px"><span class="ic">★</span><span>
+            <b>7 gün ücretsiz deneme</b> — kredi kartı istenmez, otomatik ücretlendirme yoktur.<br>
+            Bu süre boyunca <b>2 öğrenciye kadar</b> sistemin tamamını kullanırsın: ödev takibi,
+            deneme analizi, konu haritası, öğrenci paneli.<br>
+            Süre bitince verilerin durur ve okunabilir kalır; devam etmek istersen paket seçersin.</span></div>
+          <div class="fr"><div style="flex:1"><label class="f">Adın</label>
           <input type="text" id="gAd" placeholder="Eser Akkaba"></div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
           <input type="text" id="gMail" placeholder="ornek@eposta.com"></div></div>
@@ -3914,7 +3999,17 @@ function girisEkrani(){
         <button class="btn wide" ${GIRISBEKLE?'disabled':''} onclick="girisYap()">
           ${GIRISBEKLE?'Bekle...':(GIRISMOD==='kayit'?'Hesabı oluştur':'Giriş yap')}</button>
         <button class="btn ghost wide" style="margin-top:8px" onclick="GIRISMOD='${GIRISMOD==='kayit'?'giris':'kayit'}';GIRISHATA='';render()">
-          ${GIRISMOD==='kayit'?'Zaten hesabım var — giriş yap':'Hesabım yok — oluştur'}</button>
+          ${GIRISMOD==='kayit'?'Zaten hesabım var — giriş yap':'Hesabım yok — 7 gün ücretsiz dene'}</button>
+        ${GIRISMOD==='kayit'?`
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)">
+            <div style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650;margin-bottom:8px">Deneme sonrası paketler</div>
+            <table style="font-size:13px"><tbody>
+              <tr><td>Koç Paketi</td><td class="num" style="color:var(--ink-3)">10 öğrenci</td><td class="num" style="font-weight:650">1.000 TL/yıl</td></tr>
+              <tr><td>Sınıf Paketi</td><td class="num" style="color:var(--ink-3)">40 öğrenci</td><td class="num" style="font-weight:650">3.000 TL/yıl</td></tr>
+              <tr><td>Okul Paketi</td><td class="num" style="color:var(--ink-3)">200 öğrenci</td><td class="num" style="font-weight:650">10.000 TL/yıl</td></tr>
+            </tbody></table>
+            <div class="hint" style="margin-top:8px">Paket almak zorunlu değil; deneme kendiliğinden ücretli hâle gelmez.</div>
+          </div>`:''}
         ${GIRISMOD==='giris'?`<div style="text-align:center;margin-top:12px">
           <a href="#" onclick="sifreUnuttum();return false" style="color:var(--accent);font-size:13.5px;text-decoration:underline">Şifremi unuttum</a>
           <div class="hint" style="margin-top:4px">Önce e-postanı yaz, sonra buna bas.</div></div>`:''}
