@@ -200,6 +200,7 @@ async function load(){
 }
 let YAZKUYRUK=null, YAZDURUM='';
 function sunucuyaKaydet(){
+  if(DEMO) return;              // tanıtım modu: hiçbir şey kaydedilmez
   if(!sbOturum()) return;
   if(DB.sel===ORNEK_ID) return;   // örnek öğrenci sunucuya yazılmaz
   clearTimeout(YAZKUYRUK);
@@ -215,6 +216,8 @@ function sunucuyaKaydet(){
   },900);
 }
 function rayDurum(){
+  const lr=document.getElementById('lisansRozet');
+  if(lr && !sbOturum()) lr.innerHTML='';
   const el=document.getElementById('sbDurum'); if(!el) return;
   if(!sbOturum()){ el.innerHTML=''; return; }
   const d=YAZDURUM;
@@ -224,6 +227,7 @@ function rayDurum(){
     : '<span style="color:#6E8E9B">'+esc(SB.mail||'')+'</span>';
 }
 async function save(){
+  if(DEMO) return;              // tanıtım modunda yerel kayıt da yok
   sunucuyaKaydet();
   const s=JSON.stringify(DB); MEM=DB;
   try{ if(window.storage){await window.storage.set(KEY,s); return;} }catch(e){}
@@ -1558,6 +1562,7 @@ function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DI
 /* ================= ÖĞRENCİ ================= */
 let YENIOGR=null;
 function addStudent(){
+  if(DEMO){ alert('Tanıtım modundasın. Öğrenci eklemek için önce hesap aç.'); demoBitir(); return; }
   if(LISANS && !LISANS.kota_var){
     alert(`ÖĞRENCİ SINIRINA ULAŞTIN\n\nPaketin: ${LISANS.paket_adi} (${LISANS.ogrenci_limiti} öğrenci)\nMevcut: ${LISANS.ogrenci_sayisi}\n\nYeni öğrenci eklemek için:\n· Ayrılan bir öğrenciyi arşivle, ya da\n· Paketini yükselt\n\nKoç 10 · Sınıf 40 · Okul 200 öğrenci`);
     return;
@@ -1726,7 +1731,7 @@ function render(){
   const _af0=document.activeElement, _aid0=_af0&&_af0.id;
   let _s0=null,_e0=null;
   try{ if(_af0&&('selectionStart' in _af0)){_s0=_af0.selectionStart;_e0=_af0.selectionEnd;} }catch(x){}
-  if(!sbOturum()){
+  if(!sbOturum() && !DEMO){
     document.getElementById('railList').innerHTML='';
     document.getElementById('stName').textContent='Koçluk Paneli';
     document.getElementById('stMeta').textContent='';
@@ -1750,7 +1755,9 @@ function render(){
     : '<div style="padding:20px 16px;color:#7E939F;font-size:12.5px">Henüz öğrenci yok. Aşağıdan ekle.</div>';
 
   const re=document.getElementById('railEk');
-  if(re) re.innerHTML = sbOturum()
+  if(re) re.innerHTML = DEMO
+    ? `<button onclick="demoBitir()" style="background:var(--accent);color:#fff;font-weight:650">Hesap aç ve başla</button>`
+    : sbOturum()
     ? `${(LISANS && (!LISANS.gecerli || (DENEME&&DENEME.deneme_mi)))
         ? `<button onclick="ABONE=true;render()" style="background:var(--accent);color:#fff;font-weight:650">★ Abonelik al</button>`
         : `<button onclick="ABONE=true;render()">Abonelik / paketler</button>`}
@@ -1758,7 +1765,7 @@ function render(){
        <button onclick="sbCikisYap()">Çıkış yap</button>`
     : `<button onclick="yereldenAktar()">Yerel veriyi sunucuya aktar</button>`;
   const lr=document.getElementById('lisansRozet');
-  if(lr) lr.innerHTML = sbOturum()?lisansRozeti():'';
+  if(lr) lr.innerHTML = (sbOturum()&&LISANS)?lisansRozeti():'';
   const ks=document.getElementById('kaynakSatir');
   if(ks){const k=kaynakBilgi();
     ks.textContent = k.tip==='dosya' ? '⚠ bilgisayar dosyası' : k.metin;
@@ -3122,6 +3129,17 @@ function kvkkYazdir(tip){
 
 /* ---------- HESAP SEKMESİ ---------- */
 function vHesap(st){
+  if(DEMO) return demoSerit()+`
+    <div class="card"><h2>Hesap ve lisans</h2><div class="body">
+      <div class="hint" style="margin-bottom:12px">Bu sekmede kendi hesabın, kullanım süren, bağlı cihazların
+      ve KVKK belgelerin bulunur. Tanıtım modunda gösterilecek bir hesap yok.</div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Paket ve kalan gün sayısı</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Bağlı cihazlar — istemediğini kaldırırsın</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Şifre değiştirme</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn"><b>KVKK belgeleri</b> — aydınlatma metni ve veli onay formu, adınla hazır, tek tıkla yazdırılır</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Tüm verilerini indirme</span></div>
+      <button class="btn wide" style="margin-top:14px" onclick="demoBitir()">Hesap aç ve başla</button>
+    </div></div>`;
   return `
   ${lisansUyarisi()}
 
@@ -3292,7 +3310,30 @@ function ogrListesi(){
   if(ornekGizliMi()) return g;
   return g.concat([ornekOgrenci()]);
 }
+function demoBaslat(){
+  DEMO=true;
+  DB={students:[],sel:ORNEK_ID,siteUrl:'',kocTel:'',kocAd:'Örnek Koç',sureler:{},rutin:RUTIN_VAR};
+  LISANS=null; DENEME=null; TAB='hafta';
+  try{ localStorage.removeItem('ornek_gizli'); }catch(e){}
+  render();
+}
+function demoBitir(){
+  DEMO=false; DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:RUTIN_VAR};
+  GIRISMOD='kayit'; GIRISHATA=''; render();
+}
+function demoSerit(){
+  if(!DEMO) return '';
+  return `<div class="card" style="border:2px solid var(--accent);background:#EEF5F7"><div class="body" style="padding:13px 16px">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px;font-size:13.5px">
+        <b>Tanıtım modu.</b> Gördüğün her şey örnek bir öğrencinin 5 aylık verisi.
+        Sekmeleri gez: denemeler, konu haritası, ödev geçmişi, hedefe uzaklık.
+        <span style="color:var(--ink-3)">Hiçbir şey kaydedilmez.</span></div>
+      <button class="btn" onclick="demoBitir()">Kendi hesabımı açayım</button>
+    </div></div></div>`;
+}
 function ornekUyari(st){
+  if(DEMO) return demoSerit();
   if(!st || !st.ornek) return '';
   return `<div class="card" style="border:2px solid var(--warn);background:#FFFBF2"><div class="body" style="padding:14px 16px">
     <div class="flag warn" style="margin:0"><span class="ic">i</span><span>
@@ -3304,7 +3345,7 @@ function ornekUyari(st){
 }
 
 /* Bağlantı açar; tarayıcı engellerse ekranda tıklanabilir bağlantı bırakır. */
-let SONLINK=null;
+let SONLINK=null, DEMO=false;
 function baglantiAc(url,etiket){
   try{ const w=window.open(url,'_blank','noopener'); if(w){ SONLINK=null; return true; } }catch(e){}
   try{
@@ -3936,8 +3977,11 @@ async function sunucudanYukle(){
 }
 async function sbCikisYap(){
   if(!confirm('Çıkış yapılacak. Verilerin sunucuda kalır, tekrar giriş yapınca gelir.\nDevam?')) return;
-  sbCikis(); DB={students:[],sel:null,siteUrl:'',kocTel:'',sureler:{},rutin:RUTIN_VAR};
-  GIRISMOD='giris'; GIRISHATA=''; render();
+  sbCikis();
+  DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:RUTIN_VAR};
+  LISANS=null; DENEME=null; KOCLAR=[]; CIHAZLAR=[]; YOGRENCI=null; YOGRLISTE=[];
+  ABONE=false; YAZDURUM=''; CIHAZHATA=''; YONDURUM=''; DAVETDURUM='';
+  GIRISMOD='giris'; GIRISHATA=''; DEMO=false; render();
 }
 async function yereldenAktar(){
   let yerel=null;
@@ -4031,6 +4075,8 @@ function girisEkrani(){
             </tbody></table>
             <div class="hint" style="margin-top:8px">Paket almak zorunlu değil; deneme kendiliğinden ücretli hâle gelmez.</div>
           </div>`:''}
+        <button class="btn ghost wide" style="margin-top:8px" onclick="demoBaslat()">Önce sistemi gezmek istiyorum</button>
+        <div class="hint" style="margin-top:6px;text-align:center">Örnek bir öğrenci üzerinden, kayıt olmadan.</div>
         ${GIRISMOD==='giris'?`<div style="text-align:center;margin-top:12px">
           <a href="#" onclick="sifreUnuttum();return false" style="color:var(--accent);font-size:13.5px;text-decoration:underline">Şifremi unuttum</a>
           <div class="hint" style="margin-top:4px">Önce e-postanı yaz, sonra buna bas.</div></div>`:''}
