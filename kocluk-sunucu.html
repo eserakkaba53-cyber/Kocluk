@@ -184,6 +184,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
 const KEY='kocluk_v1_sunucu';
 /* Panelin tüm verisi. Sunucudan yüklenir; buradaki değerler yalnızca ilk çizim içindir. */
 let DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:[]};
+let TAB='hafta';
 /* Panellerin bulunduğu klasör. Ayar gerektirmez; panelin kendi adresinden türetilir.
    Örn. .../Kocluk/kocluk-sunucu.html  →  .../Kocluk/ */
 function tabanAdres(){
@@ -1122,6 +1123,7 @@ async function sunucudanOku(){
     sureler: ((k && k.ayarlar && k.ayarlar.sureler) || {}),
     rutin:   ((k && k.ayarlar && k.ayarlar.rutin)   || (typeof RUTIN_VAR!=='undefined'?RUTIN_VAR:[])),
     kocAd:   (k && k.ad) || '',
+    kurum:   (k && k.kurum) || '',
     lisansBitis: (k && k.lisans_bitis) || null,
     sonYedek: (k && k.ayarlar && k.ayarlar.sonYedek) || null
   };
@@ -1230,6 +1232,7 @@ async function kocYaz(){
   await sbGuncelle('koclar', '?id=eq.'+SB.uid, {
     ad: DB.kocAd || '',
     telefon: DB.kocTel || '',
+    kurum: DB.kurum || '',
     site_url: DB.siteUrl || tabanAdres() || '',
     ayarlar: { sureler: DB.sureler||{}, rutin: DB.rutin||[], kopru: DB.kopru||'', sonYedek: DB.sonYedek||null }
   });
@@ -1447,7 +1450,9 @@ function paketUret(st,zorla,limitEx,limitGor){
   }
   return link;
 }
-function setKocTel(v){ DB.kocTel=v.trim(); PAKET=null; save(); render(); }
+function setKocTel(v){ DB.kocTel=v.trim(); save(); render(); }
+function setKocAd(v){ DB.kocAd=v.trim(); save(); render(); }
+function setKurum(v){ DB.kurum=v.trim(); save(); render(); }
 let PAKET=null, PAKETKISA=null, PAKETHAZIR=false;
 /* Kısa (v2) rapor biçimini eski biçime çevirir.
    v2'de konu adları sıra numarası, alan adları tek harf. */
@@ -1604,14 +1609,23 @@ function yoKaydet(){
     if((y.veliAd||'').trim().length<3){ alert('Velinin adı soyadı gerekli.'); return; }
     if(String(y.veliTel||'').replace(/\D/g,'').length<10){ alert('Velinin telefon numarası eksik.'); return; }
   }
-  DB.students.push({id:uid(),name:ad,track:S[y.track]?y.track:'SAY',grade:y.grade||'11',
+  DB.students.push({id:yeniKimlik(),name:ad,track:S[y.track]?y.track:'SAY',grade:y.grade||'11',
     tel:y.tel||'', eposta:y.eposta||'',
     resit:!!y.resit, veliAd:y.resit?'':(y.veliAd||'').trim(), veliTel:y.resit?'':(y.veliTel||'').trim(),
     veliOnay:new Date().toISOString(), veliOnayNotu:(y.not||'').trim(),
     dept:'',rank:'',score:'',tabanPuan:'',tabanSira:'',tabanYil:'',dip:'',obp:'',yerlesti:false,
     refNets:{},exams:[],tasks:[],topics:{},startedAt:today()});
-  DB.sel=DB.students[DB.students.length-1].id;
-  YENIOGR=null; TAB='ogrenci'; save(); render();
+  const yeniSt=DB.students[DB.students.length-1];
+  DB.sel=yeniSt.id;
+  YENIOGR=null; TAB='ogrenci'; render();
+  if(sbOturum()){
+    YAZDURUM='yaziliyor'; rayDurum();
+    ogrenciYaz(yeniSt)
+      .then(()=>{ YAZDURUM='ok'; rayDurum(); return lisansOku(); })
+      .then(()=>render())
+      .catch(e=>{ YAZDURUM='hata|'+(e.message||e); rayDurum();
+        alert('Öğrenci sunucuya kaydedilemedi: '+(e.message||e)+'\n\nSayfayı yenileyip tekrar dene.'); });
+  } else save();
 }
 function yeniOgrenciEkrani(){
   const y=YENIOGR;
@@ -1810,15 +1824,17 @@ function render(){
     document.getElementById('stMeta').textContent='';
     v.innerHTML=kvkkEkrani(); rayDurum(); return;
   }
-  if(YENIOGR){ v.innerHTML=yeniOgrenciEkrani(); 
-    if(_aid){ const _el=document.getElementById(_aid);
-      if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
-    return; }
   if(!st && TAB!=='yonetim'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
+  if(YENIOGR){
+    v.innerHTML=yeniOgrenciEkrani();
+    if(_aid){ const _el=document.getElementById(_aid);
+      if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+    return;
+  }
   if(!TABSAL().find(t=>t[0]===TAB)) TAB='hafta';
   if(TAB==='yonetim'){
     if(!KOCLAR.length && !YONDURUM){ YONDURUM='Yükleniyor...'; setTimeout(koclariOku,10); }
@@ -2514,11 +2530,23 @@ function vOdev(st){
       <div><label class="f">Ders</label><select onchange="setOdevDers(this.value)">
         ${list.map(([k,nm])=>`<option value="${k}" ${k===sk?'selected':''}>${nm}</option>`).join('')}</select></div>
       <div style="flex:1.4"><label class="f">Ünite</label><select onchange="setOdevUnite(this.value)">
-        <option value="">Tüm üniteler — ${acik.reduce((a,u)=>a+u[1].length,0)} konu, ${sa(acik.reduce((a,u)=>a+u[1].reduce((b,t)=>b+sureOf(sk,t),0),0))}</option>
+        <option value="">Tüm üniteler — ${acik.reduce((a,u)=>a+u[1].length,0)} konu${(gizli&&OHIDE)?' (+'+gizli+' bitmiş)':''}, ${sa(acik.reduce((a,u)=>a+u[1].reduce((b,t)=>b+sureOf(sk,t),0),0))}</option>
         ${acik.map(([u,ks])=>`<option value="${esc(u)}" ${u===OU?'selected':''}>${esc(u)} — ${ks.length} konu, ${sa(ks.reduce((a,t)=>a+sureOf(sk,t),0))}</option>`).join('')}</select></div>
       <div style="flex:1.6"><label class="f">Konu <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">— parantez içi tahmini süre</span></label><select id="tkK">
-        ${konular.length?konular.map(t=>`<option value="${esc(t)}">${esc(t)} (${sa(sureOf(sk,t))})</option>`).join(''):'<option value="">— açık konu kalmadı —</option>'}</select></div>
+        ${konular.length?konular.map(t=>`<option value="${esc(t)}">${esc(t)} (${sa(sureOf(sk,t))})</option>`).join(''):'<option value="">— açık konu kalmadı —</option>'}</select>
+        <div style="margin-top:5px;font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <span style="color:var(--ink-3)">Listede <b>${konular.length}</b> konu var.</span>
+          ${gizli?(OHIDE
+            ? `<span style="color:var(--warn)">${gizli} bitmiş konu gizli.</span>
+               <a href="#" onclick="toggleHide(false);return false" style="color:var(--accent);text-decoration:underline">Hepsini göster</a>`
+            : `<span style="color:var(--ok)">Bitmiş konular dahil.</span>
+               <a href="#" onclick="toggleHide(true);return false" style="color:var(--accent);text-decoration:underline">Bitmişleri gizle</a>`)
+          :'<span style="color:var(--ink-3)">Bu derste bitmiş konu yok.</span>'}
+        </div></div>
     </div>
+    ${(gizli&&OHIDE)?`<div class="hint" style="margin:-4px 0 10px">
+      Konular sekmesinde <b>Bitti</b> işaretlediğin konular ödev listesinden düşer.
+      Tekrar ödev vermek için "Hepsini göster" de.</div>`:''}
     <div class="fr"><div style="flex:1"><label class="f">Not (isteğe bağlı)</label>
       <input type="text" id="tkX" placeholder="ör. önce konu tekrarı, sonra orta-zor sorular"></div></div>
     <button class="btn" onclick="addTask()">Ödevi ekle</button>
@@ -2534,10 +2562,7 @@ function vOdev(st){
         Bu haftanın toplamı: <b>${sa(top)}</b>
         <span style="color:var(--ink-3);font-size:11.5px">(konu ${sa(konuDk)} + rutin ${sa(rutDk)}${devDk?' + devreden '+sa(devDk):''})</span>
         ${hafta?` · öğrencinin beyanı ${sa(hafta)}${asim?' <b>— AŞILDI</b>':''}`:''}</span>`;})()}
-    <label style="display:inline-flex;gap:7px;align-items:center;margin-left:14px;font-size:13px">
-      <input type="checkbox" ${OHIDE?'checked':''} onchange="toggleHide(this.checked)" style="width:auto">
-      Bitmiş konuları gizle${gizli?` (${gizli} konu gizli)`:''}</label>
-    <div class="hint">Konular sekmesinde <b>Bitti</b> işaretlediğin konular listeden düşer. Tekrar ödevi vermek istersen kutunun işaretini kaldır.</div>
+
   </div></div>
 
   ${hizliKart(st)}
@@ -3146,6 +3171,24 @@ function vHesap(st){
 
   ${hesapKarti()}
 
+  <div class="card"><h2>İletişim bilgilerin<small>Öğrencilere gönderdiğin mesajlarda ve KVKK belgelerinde bu bilgiler kullanılır.</small></h2><div class="body">
+    <div class="fr">
+      <div style="flex:1"><label class="f">Adın soyadın</label>
+        <input type="text" id="hsAd" value="${esc(DB.kocAd||'')}" placeholder="Eser Akkaba"
+          onchange="setKocAd(this.value)"></div>
+      <div style="flex:1"><label class="f">WhatsApp numaran</label>
+        <input type="text" id="hsTel" value="${esc(DB.kocTel||'')}" placeholder="05XX XXX XX XX"
+          onchange="setKocTel(this.value)"></div>
+    </div>
+    <div class="fr"><div style="flex:1"><label class="f">Kurum (isteğe bağlı)</label>
+      <input type="text" value="${esc(DB.kurum||'')}" placeholder="Okul, dershane ya da kendi adın"
+        onchange="setKurum(this.value)"></div></div>
+    ${(!DB.kocAd||!DB.kocTel)?`<div class="flag warn" style="margin-top:4px"><span class="ic">!</span><span>
+      ${!DB.kocAd?'<b>Adın eksik</b> — KVKK belgelerinde ve öğrenci davetlerinde görünmesi gerekiyor.<br>':''}
+      ${!DB.kocTel?'<b>Numaran eksik</b> — öğrencilerin sana ulaşamaz, aydınlatma metninde iletişim bilgisi boş kalır.':''}</span></div>`
+     :`<div class="flag ok" style="margin-top:4px"><span class="ic">✓</span><span>Bilgilerin tam.</span></div>`}
+  </div></div>
+
   <div class="card"><h2>KVKK belgeleri<small>Öğrenci kaydı açmadan önce velilerden imzalı onay alman gerekir. Belgeler burada.</small></h2><div class="body">
     <div class="flag warn"><span class="ic">!</span><span>
       <b>18 yaş altı her öğrenci için velinin yazılı onayı zorunludur.</b>
@@ -3585,6 +3628,10 @@ function vYonetici(){
       return `<tr>
         <td><b>${esc(k.ad||'—')}</b>${k.id===SB.uid?' <span class="pill s1" style="font-size:10px">sen</span>':''}
           <div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(k.eposta||'')}</div>
+          ${k.telefon?`<div style="font-size:11.5px;font-family:var(--mono)">
+              <a href="https://wa.me/${String(k.telefon).replace(/\D/g,'').replace(/^0/,'90')}" target="_blank" rel="noopener"
+                 style="color:var(--ok);text-decoration:underline">${esc(k.telefon)}</a></div>`
+            :`<div style="font-size:11px;color:var(--warn)">telefon girilmemiş</div>`}
           ${k.kurum?`<div style="font-size:11px;color:var(--ink-3)">${esc(k.kurum)}</div>`:''}
           <div style="font-size:10.5px;color:${k.kvkk_onay?'var(--ok)':'var(--warn)'}">${k.kvkk_onay?'KVKK onaylı':'KVKK onayı yok'}</div></td>
         <td>${(k.ucretli||(k.lisans_bitis&&k.lisans_bitis>=bugun))
@@ -3813,6 +3860,9 @@ async function davetUret(){
   DAVETDURUM='Kod üretiliyor...'; render();
   try{
     const kod=kodUret();
+    // kayıt henüz sunucuda olmayabilir — önce onu garantiye al
+    const v=await sbSorgu('ogrenciler','?id=eq.'+st.id+'&select=id');
+    if(!v || !v.length) await ogrenciYaz(st);
     await sbGuncelle('ogrenciler','?id=eq.'+st.id, { davet_kodu:kod, auth_id:null });
     st.davetKodu=kod; st.authId=null;
     DAVETDURUM=''; render();
