@@ -4167,6 +4167,55 @@ function davetWa(){
   baglantiAc((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),'WhatsApp — davet');
 }
 
+/* ---------- KULLANIM VİDEOLARI ----------
+   Liste sunucu.js dosyasından gelir; panel güncellemeleri onu bozmaz.
+   Video panelin İÇİNDE açılır, YouTube'a geçilmez. */
+let VIDEOSEC=null;
+function videoListesi(){
+  const v=(window.VIDEOLAR||[]);
+  return v.filter(x=>x&&x.id&&String(x.id).length>5);
+}
+function videoAc(i){ VIDEOSEC=(VIDEOSEC===i?null:i); render();
+  setTimeout(()=>{ const el=document.getElementById('videoAlan'); if(el&&el.scrollIntoView) try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} },60); }
+function videoKapat(){ VIDEOSEC=null; render(); }
+function videoBolumu(){
+  const v=videoListesi();
+  if(!v.length) return '';
+  const s=VIDEOSEC!=null?v[VIDEOSEC]:null;
+  return `<div style="max-width:760px;margin:22px auto 0">
+    <div class="card"><h2>Kullanım videoları<small>Kısa anlatımlar. Videolar bu sayfada açılır, başka yere gitmezsin.</small></h2><div class="body">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px">
+        ${v.map((x,i)=>`<button onclick="videoAc(${i})"
+          style="text-align:left;background:${VIDEOSEC===i?'var(--accent)':'#F3F7F8'};
+                 color:${VIDEOSEC===i?'#fff':'var(--ink)'};border:1px solid ${VIDEOSEC===i?'var(--accent)':'var(--line-soft)'};
+                 border-radius:8px;padding:12px 13px;cursor:pointer;width:100%;font-family:inherit">
+          <div style="display:flex;gap:9px;align-items:flex-start">
+            <div style="flex:none;width:24px;height:24px;border-radius:50%;
+                 background:${VIDEOSEC===i?'rgba(255,255,255,.22)':'var(--accent)'};color:#fff;
+                 display:flex;align-items:center;justify-content:center;font-size:11px">▶</div>
+            <div><div style="font-weight:650;font-size:13.5px;line-height:1.3">${esc(x.b||('Video '+(i+1)))}</div>
+              ${x.a?`<div style="font-size:11.5px;opacity:.75;margin-top:3px;line-height:1.35">${esc(x.a)}</div>`:''}
+              ${x.sure?`<div style="font-size:11px;opacity:.6;margin-top:3px;font-family:var(--mono)">${esc(x.sure)}</div>`:''}
+            </div></div></button>`).join('')}
+      </div>
+      ${s?`<div id="videoAlan" style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <b style="font-size:14px">${esc(s.b||'')}</b>
+          <button class="btn ghost mini" onclick="videoKapat()">Kapat</button></div>
+        <div style="position:relative;padding-top:56.25%;border-radius:9px;overflow:hidden;background:#000">
+          <iframe src="https://www.youtube-nocookie.com/embed/${esc(s.id)}?rel=0&modestbranding=1&playsinline=1"
+            title="${esc(s.b||'Kullanım videosu')}" loading="lazy"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+        <div class="hint" style="margin-top:7px">Video açılmıyorsa
+          <a href="https://youtu.be/${esc(s.id)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">YouTube'da aç</a>.</div>
+      </div>`:''}
+    </div></div>
+  </div>`;
+}
+
 /* ---------- SUNUCU: giriş ve kurulum ekranı ---------- */
 let GIRISMOD='giris', GIRISHATA='', GIRISBEKLE=false, AKTARDURUM='';
 function sbAyarla(alan,v){ SB[alan]=v.trim(); SB.sonHata=''; sbSakla(); render(); }
@@ -4370,7 +4419,8 @@ function girisEkrani(){
       ${h?`<div class="flag ${iyi?'ok':'bad'}" style="margin-top:12px"><span class="ic">${iyi?'✓':'!'}</span><span>${esc(h.replace(/^OK\|/,'')).replace(/\n/g,'<br>')}</span></div>`:''}
       ${kurulu?`<div class="hint" style="margin-top:12px"><a href="#" onclick="SB.url='';SB.key='';sbSakla();render();return false" style="color:var(--accent)">Sunucu adresini değiştir</a></div>`:''}
     </div></div>
-  </div>`;
+  </div>
+  ${videoBolumu()}`;
 }
 
 /* ---------- nereden açıldı? ---------- */
