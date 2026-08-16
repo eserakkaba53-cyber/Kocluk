@@ -506,11 +506,14 @@ const TL=['Görmedim','İşliyorum','Bitirdim','Eksiğim var'];
 
 let D=null, TAB='odev', KSUB=null;
 const TABS_HEPSI=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denememi gir'],['gelisim','Gelişimim'],['hedef','Hedefe uzaklık'],['puan','Puan hesapla'],['rapor','Rapor gönder'],['ayar','Ayarlar']];
+/* Sunucu modunda Ayarlar sekmesi gizlenir (içindekiler gereksiz);
+   yerine sekme çubuğunun sonunda çıkış düğmesi durur. Kod duruyor,
+   sunucu bağlantısı olmayan panelde eskisi gibi görünür. */
 /* Sunucu modunda ödevler ve denemeler kendiliğinden iletilir; rapor göndermeye gerek yoktur.
    Sekme yalnızca GİZLENİR — kodu duruyor, sunucu bağlantısı kesilirse yedek yol açılır. */
 function TABLIST(){
   const sunucuda = (typeof sbOturum==='function') && sbOturum() && OGRID;
-  return sunucuda ? TABS_HEPSI.filter(t=>t[0]!=='rapor') : TABS_HEPSI;
+  return sunucuda ? TABS_HEPSI.filter(t=>t[0]!=='rapor' && t[0]!=='ayar') : TABS_HEPSI;
 }
 
 /* ---------- paket yükleme ---------- */
@@ -607,7 +610,11 @@ function render(){
   const hk=haftaKalan();
   document.getElementById('hMeta').textContent=
     [D.grade+'. SINIF', D.dept?D.dept.toUpperCase():null, hk!==null?'SINAVA '+hk+' HAFTA':null].filter(Boolean).join(' · ');
-  document.getElementById('tabs').innerHTML=TABLIST().map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('');
+  document.getElementById('tabs').innerHTML=
+    TABLIST().map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('')
+    + ((sbOturum()&&OGRID)
+        ? `<button class="tab" onclick="sbCikisYap()" title="${esc(SB.mail||'')}"
+             style="margin-left:auto;color:#9FBBD0">Çıkış</button>` : '');
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
@@ -1629,11 +1636,9 @@ async function gGiris(){
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(m)){ GHATA='E-posta adresi geçerli görünmüyor.'; render(); return; }
     const s2=(document.getElementById('gSifre2')?.value||'');
     if(s!==s2){ GHATA='İki şifre aynı değil.'; render(); return; }
-    if(!BEKLEYENKOD){
-      const kod=(document.getElementById('gKodK')?.value||'').trim();
-      if(!kod){ GHATA='Öğretmeninin verdiği 6 haneli kodu yaz.'; render(); return; }
-      BEKLEYENKOD=kod.toUpperCase().replace(/[^A-Z0-9]/g,'');
-    }
+    const kod=(document.getElementById('gKodK')?.value||'').trim();
+    if(!kod){ GHATA='Öğretmeninin verdiği 6 haneli kodu yaz.'; render(); return; }
+    BEKLEYENKOD=kod.toUpperCase().replace(/[^A-Z0-9]/g,'');
   }
   GBEKLE=true; GHATA=''; render();
   try{
@@ -1749,7 +1754,7 @@ function girisEkrani(){
       ? (BEKLEYENKOD?'Bilgilerini gir, panelin hemen açılsın.':'Öğretmeninin verdiği kodu da hazır bulundur.')
       :'Ödevlerin ve gelişimin öğretmeninin sisteminde saklanır.'}</small></h2><div class="body">
     ${GMOD==='kayit'&&BEKLEYENKOD?`<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
-      <b>Davet bağlantın tanındı.</b> Kod yazmana gerek yok — e-posta ve şifre belirle, panelin açılsın.</span></div>`:''}
+      <b>Davet bağlantın tanındı</b> ve kodun aşağıya yazıldı. E-posta ve şifre belirle, hesabın açılsın.</span></div>`:''}
     ${GMOD==='kayit'&&!BEKLEYENKOD?`<div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>
       Öğretmeninin gönderdiği <b>bağlantıya tıklayarak</b> gelirsen kod otomatik dolar.
       Elle geldiysen 6 haneli kodu aşağıya yazman gerekiyor.</span></div>`:''}
@@ -1767,10 +1772,13 @@ function girisEkrani(){
     ${GMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">Şifreni tekrar yaz</label>
       <input type="password" id="gSifre2" placeholder="aynısını yaz"
         onkeydown="if(event.key==='Enter')gGiris()"></div></div>
-      ${!BEKLEYENKOD?`<div class="fr"><div style="flex:1"><label class="f">Öğretmeninin verdiği kod</label>
-        <input type="text" id="gKodK" placeholder="ABC123" autocomplete="off"
+      <div class="fr"><div style="flex:1"><label class="f">Öğretmeninin verdiği kod</label>
+        <input type="text" id="gKodK" value="${esc(BEKLEYENKOD||'')}" placeholder="ABC123" autocomplete="off"
           style="text-transform:uppercase;font-family:var(--mono);font-size:17px;letter-spacing:2px;text-align:center"
-          onkeydown="if(event.key==='Enter')gGiris()"></div></div>`:''}`:''}
+          onkeydown="if(event.key==='Enter')gGiris()">
+        <div class="hint" style="margin-top:4px">${BEKLEYENKOD
+          ? 'Bağlantıdan geldi. Öğretmeninin sana verdiği kodla aynı mı, kontrol et.'
+          : 'Öğretmeninin gönderdiği 6 haneli kod.'}</div></div></div>`:''}
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gGiris()">${GBEKLE?'Bekle...':(GMOD==='kayit'?'Hesabı oluştur ve panelimi aç':'Giriş yap')}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="GMOD='${GMOD==='kayit'?'giris':'kayit'}';GHATA='';render()">
       ${GMOD==='kayit'?'Zaten hesabım var':'Hesabım yok — oluştur'}</button>${hata}
@@ -1806,9 +1814,10 @@ function kaynakUyarisi(){
   const hs0=decodeURIComponent(location.hash.slice(1)||'');
   if(hs0.indexOf('KUR:')===0 && davettenKur(hs0)){
     history.replaceState(null,'',location.pathname+location.search);
-    if(sbOturum()){
-      try{ await otoBaglan(); const dd=await ogrSunucudanOku(); if(dd){D=dd;render();return;} }catch(e){}
-    }
+    // Davet linki her zaman KAYIT ekranını açar.
+    // Cihazda başka birinin oturumu kalmış olabilir; onu kapatıyoruz ki
+    // öğrenci başkasının hesabına bağlanmasın.
+    sbCikis(); OGRID=null; D=null;
     GMOD='kayit'; render(); return;
   }
   if(sbOturum()){

@@ -1861,7 +1861,7 @@ function yeniOgrenciEkrani(){
     <div class="card"><h2>Yeni öğrenci<small>Kayıt açmadan önce veri sorumluluğu adımını tamamla.</small></h2><div class="body">
       <div class="fr">
         <div style="flex:2"><label class="f">Adı soyadı</label>
-          <input type="text" id="yo_ad" value="${esc(y.ad)}" onchange="yoAlan('ad',this.value)" placeholder="Berat Eroğlu"></div>
+          <input type="text" id="yo_ad" value="${esc(y.ad)}" onchange="yoAlan('ad',this.value)" placeholder="Ad Soyad"></div>
         <div><label class="f">Alan</label><select onchange="yoAlan('track',this.value)">
           ${['SAY','EA','SOZ','DIL'].map(t=>`<option value="${t}" ${t===y.track?'selected':''}>${trLabel(t)}</option>`).join('')}</select></div>
         <div><label class="f">Sınıf</label><select onchange="yoAlan('grade',this.value)">
@@ -1888,7 +1888,7 @@ function yeniOgrenciEkrani(){
             Onay formunu imzalatmadan kayıt açma — <b>kvkk-metinleri.txt</b> dosyasında hazır form var.</span></div>
           <div class="fr" style="margin-top:12px">
             <div><label class="f">Veli adı soyadı</label>
-              <input type="text" value="${esc(y.veliAd)}" onchange="yoAlan('veliAd',this.value)" placeholder="Ayşe Eroğlu"></div>
+              <input type="text" value="${esc(y.veliAd)}" onchange="yoAlan('veliAd',this.value)" placeholder="Velinin adı soyadı"></div>
             <div><label class="f">Veli telefonu</label>
               <input type="text" value="${esc(y.veliTel)}" onchange="yoAlan('veliTel',this.value)" placeholder="05XX XXX XX XX"></div>
           </div>`:`<div class="flag ok"><span class="ic">✓</span><span>
@@ -2021,7 +2021,7 @@ function render(){
   if(yde){ yde.textContent=yd.metin; yde.style.color=yd.renk==='var(--ok)'?'#7FD1A8':yd.renk==='var(--warn)'?'#E8C77A':'#F0A79C'; }
   const st=cur();
   document.getElementById('stName').textContent = st?st.name:'Öğrenci seç';
-  document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()} · BAŞLANGIÇ ${st.startedAt}`:'';
+  document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()}${st.startedAt?' · BAŞLANGIÇ '+st.startedAt:''}`:'';
   document.getElementById('stGoal').innerHTML = st&&st.dept
     ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${st.rank||'—'} · puan ${st.score||'—'}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
   document.getElementById('tabs').innerHTML = (st || (LISANS&&LISANS.yonetici))
@@ -3252,14 +3252,17 @@ function yaklasmaKarti(st){
 
 /* ---------- HEDEF ---------- */
 function vOgrenciBilgi(st){
+  const tam=onayTam(st);
   return `
   ${ornekUyari(st)}
 
-  ${davetKart(st)}
+  ${tam ? davetKart(st) : ''}
 
   ${onaysizUyari()}
 
   ${onayKarti(st)}
+
+  ${tam ? '' : davetKart(st)}
 
   <div class="card"><h2>Öğrenci kaydı</h2><div class="body">
     <div class="fr">
@@ -3409,7 +3412,7 @@ function vHesap(st){
   <div class="card"><h2>İletişim bilgilerin<small>Öğrencilere gönderdiğin mesajlarda ve KVKK belgelerinde bu bilgiler kullanılır.</small></h2><div class="body">
     <div class="fr">
       <div style="flex:1"><label class="f">Adın soyadın</label>
-        <input type="text" id="hsAd" value="${esc(DB.kocAd||'')}" placeholder="Eser Akkaba"
+        <input type="text" id="hsAd" value="${esc(DB.kocAd||'')}" placeholder="Ad Soyad"
           onchange="setKocAd(this.value)"></div>
       <div style="flex:1"><label class="f">WhatsApp numaran</label>
         <input type="text" id="hsTel" value="${esc(DB.kocTel||'')}" placeholder="05XX XXX XX XX"
@@ -4008,8 +4011,14 @@ function lisansUyarisi(){
       <a href="#" onclick="ABONE=true;render();return false" style="color:var(--warn);font-weight:650;text-decoration:underline">Paketleri gör</a></span></div></div></div>`;
   return '';
 }
+function onayTam(st){
+  if(!st) return false;
+  if(!st.veliOnay) return false;
+  if(st.resit) return true;
+  return (st.veliAd||'').trim().length>=3 && String(st.veliTel||'').replace(/\D/g,'').length>=10;
+}
 function onayKarti(st){
-  const tam = st.veliOnay && (st.resit || ((st.veliAd||'').trim().length>=3 && String(st.veliTel||'').replace(/\D/g,'').length>=10));
+  const tam = onayTam(st);
   return `<div class="card" style="${tam?'':'border:2px solid var(--bad)'}"><h2>${tam?'Veri sorumluluğu':'⚠ Veli onayı eksik'}<small>${
     tam?'Bu kayıt için onay alınmış. Denetimde gösterilecek belge budur.'
        :'Bu öğrenci onay kaydı tamamlanmadan eklenmiş. Sunucu yeni değişiklikleri reddedecektir.'}</small></h2><div class="body">
@@ -4039,7 +4048,7 @@ function onayKarti(st){
   </div></div>`;
 }
 function onaysizUyari(){
-  const eksik=(DB.students||[]).filter(s=>!(s.veliOnay && (s.resit || ((s.veliAd||'').trim().length>=3 && String(s.veliTel||'').replace(/\D/g,'').length>=10))));
+  const eksik=(DB.students||[]).filter(s=>!onayTam(s));
   if(!eksik.length) return '';
   return `<div class="card" style="border:2px solid var(--bad);background:#FDF4F3"><div class="body">
     <div class="flag bad"><span class="ic">!</span><span>
@@ -4092,6 +4101,13 @@ function kodUret(){
 async function davetUret(){
   const st=cur(); if(!st) return;
   if(st.ornek){ alert('Örnek öğrenci için davet kodu üretilemez.'); return; }
+  if(!onayTam(st)){
+    alert(st.name+' için VELİ ONAYI KAYDI EKSİK.\n\n'+
+      'Sunucu, onay kaydı olmayan öğrencide değişiklik yapılmasına izin vermiyor — davet kodu da üretilemiyor.\n\n'+
+      'Yapman gereken: bu sayfadaki "Veli onayı" kartını doldur (veli adı, telefonu ve onay kutusu), sonra tekrar dene.\n\n'+
+      'Not: Tarayıcı sürümünden aktardığın öğrencilerde bu alan boş gelir; her biri için bir kez doldurman gerekiyor.');
+    return;
+  }
   DAVETDURUM='Kod üretiliyor...'; render();
   try{
     const kod=kodUret();
@@ -4101,7 +4117,13 @@ async function davetUret(){
     await sbGuncelle('ogrenciler','?id=eq.'+st.id, { davet_kodu:kod, auth_id:null });
     st.davetKodu=kod; st.authId=null;
     DAVETDURUM=''; render();
-  }catch(e){ DAVETDURUM='HATA|'+(e.message||e); render(); }
+  }catch(e){
+    const m=String(e.message||e);
+    DAVETDURUM='HATA|'+(/row-level security|violates/i.test(m)
+      ? 'Sunucu bu kaydı kabul etmedi. Neredeyse her zaman sebebi veli onayı kaydının eksik olmasıdır. Yukarıdaki "Veli onayı" kartını doldurup tekrar dene.'
+      : m);
+    render();
+  }
 }
 async function davetKopar(){
   const st=cur(); if(!st) return;
@@ -4145,8 +4167,12 @@ function davetKart(st){
       <button class="btn wide" style="margin-top:10px" onclick="davetWa()">Daveti WhatsApp'la gönder</button>
       <button class="btn ghost wide" style="margin-top:8px" onclick="davetUret()">Yeni kod üret</button>
       <div class="hint" style="margin-top:8px">Kod bir kez kullanılır. Bağlantı açılmazsa öğrenci panele girip kodu elle de yazabilir.</div>`
-    :`<div class="hint" style="margin-bottom:10px">${esc(st.name)} için henüz hesap açılmamış. Kod üret, öğrenciye gönder.</div>
-      <button class="btn wide" onclick="davetUret()">Davet kodu üret</button>`}
+    :onayTam(st)
+      ?`<div class="hint" style="margin-bottom:10px">${esc(st.name)} için henüz hesap açılmamış. Kod üret, öğrenciye gönder.</div>
+        <button class="btn wide" onclick="davetUret()">Davet kodu üret</button>`
+      :`<div class="flag bad"><span class="ic">!</span><span>
+          <b>Önce veli onayı kartını doldur.</b> Onay kaydı olmadan sunucu bu öğrenciye kod yazmıyor.
+          Yukarıdaki kartta veli adı, telefonu ve onay kutusunu tamamla.</span></div>`}
     ${DAVETDURUM?`<div class="flag ${DAVETDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-top:10px"><span class="ic">·</span><span>${esc(DAVETDURUM.replace('HATA|',''))}</span></div>`:''}
   </div></div>`;
 }
@@ -4382,7 +4408,7 @@ function girisEkrani(){
             deneme analizi, konu haritası, öğrenci paneli.<br>
             Süre bitince verilerin durur ve okunabilir kalır; devam etmek istersen paket seçersin.</span></div>
           <div class="fr"><div style="flex:1"><label class="f">Adın</label>
-          <input type="text" id="gAd" placeholder="Eser Akkaba"></div></div>`:''}
+          <input type="text" id="gAd" placeholder="Ad Soyad"></div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
           <input type="text" id="gMail" placeholder="ornek@eposta.com"></div></div>
         ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">E-postanı tekrar yaz</label>
