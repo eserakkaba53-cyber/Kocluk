@@ -1379,7 +1379,8 @@ async function sunucudanOku(){
     var s=harita[t.ogrenci_id]; if(!s) return;
     s.tasks.push({ id:t.id, date:t.tarih, sub:t.ders, konu:t.konu||'',
       q:t.soru||0, yap:t.yapilan||0, s:t.durum||0, rutin:!!t.rutin, ekstra:!!t.ekstra,
-      dks:t.dk_soru==null?undefined:Number(t.dk_soru), txt:t.aciklama||'', type:'h' });
+      dks:t.dk_soru==null?undefined:Number(t.dk_soru), txt:t.aciklama||'', type:'h',
+      dg:t.dogru||0, yn:t.yanlis||0, bs:t.bos||0 });
   });
   den.forEach(function(e){
     var s=harita[e.ogrenci_id]; if(!s) return;
@@ -1426,7 +1427,8 @@ async function ogrenciYaz(st){
   await sbYaz('odevler', (st.tasks||[]).map(function(t){
     return { id:t.id, ogrenci_id:st.id, tarih:t.date, ders:t.sub, konu:t.konu||'',
       soru:t.q||0, yapilan:t.yap||0, durum:t.s||0, rutin:!!t.rutin, ekstra:!!t.ekstra,
-      dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'' };
+      dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'',
+      dogru:+t.dg||0, yanlis:+t.yn||0, bos:+t.bs||0 };
   }), 'id');
 
   /* denemeler */
@@ -2344,12 +2346,19 @@ function vHafta(st){
   ${rutinKart(st)}
 
   <div class="card"><h2>Bu haftanın ödevleri — ${wk}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri buraya anında yansır.</small></h2><div class="body" style="padding:0">
-    ${tasks.filter(t=>!t.rutin).length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Süre</th><th>Durum</th></tr></thead><tbody>
-      ${tasks.filter(t=>!t.rutin).map(t=>`<tr><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td>
+    ${tasks.filter(t=>!t.rutin).length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th></tr></thead><tbody>
+      ${tasks.filter(t=>!t.rutin).map(t=>{
+        const dg=+t.dg||0, yn=+t.yn||0, bs=+t.bs||0, dybVar=(dg+yn+bs)>0;
+        return `<tr><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td>
         <td style="color:var(--ink-3);font-size:12px">${esc((uniteOf[t.sub]||{})[t.konu]||'—')}</td>
         <td><b>${esc(t.konu||'—')}</b></td><td class="num">${t.q||'—'}</td>
+        <td class="num" style="color:${(t.q&&t.yap<t.q)?'var(--warn)':'var(--ink)'}">${t.yap||0}${t.q?'/'+t.q:''}</td>
+        <td class="num" style="font-family:var(--mono);font-size:12px">${dybVar
+          ? `<span style="color:var(--ok)">${dg}</span> · <span style="color:var(--bad)">${yn}</span> · <span style="color:var(--ink-3)">${bs}</span>`
+          : '<span style="color:var(--ink-3)">—</span>'}</td>
+        <td class="num"><b>${dybVar?n1(dg-yn/4):'—'}</b></td>
         <td class="num" style="color:var(--ink-3)">${t.konu?Math.round(sureOf(t.sub,t.konu))+' dk':'—'}</td>
-        <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td></tr>`).join('')}
+        <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td></tr>`;}).join('')}
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
   </div></div>
 
