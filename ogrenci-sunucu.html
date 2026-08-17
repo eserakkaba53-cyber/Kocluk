@@ -676,6 +676,8 @@ function setDYB(id,alan,v){
 }
 function dybAc(id){ DYBACIK[id]=!DYBACIK[id]; render(); }
 let DYBACIK={};
+/* Kendi çalışmam bölümünün seçili ders/ünite durumu ve arşiv görünürlüğü */
+let ARSIV=false, EDERS=null, EUNITE='';
 function odevSatiri(t,devreden){
   const hf=devreden?haftaFarki(t.date):0;
   const v=dyb(t), top=v.d+v.y+v.b;
