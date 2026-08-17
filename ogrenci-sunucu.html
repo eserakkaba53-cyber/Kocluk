@@ -279,7 +279,8 @@ async function ogrSunucudanOku(){
   odev.forEach(function(t){
     D2.tasks.push({ id:t.id, date:t.tarih, sub:t.ders, konu:t.konu||'', q:t.soru||0,
       yap:t.yapilan||0, s:t.durum||0, rutin:!!t.rutin, ekstra:!!t.ekstra,
-      dks:t.dk_soru==null?undefined:Number(t.dk_soru), txt:t.aciklama||'' });
+      dks:t.dk_soru==null?undefined:Number(t.dk_soru), txt:t.aciklama||'',
+      dg:t.dogru||0, yn:t.yanlis||0, bs:t.bos||0 });
   });
   den.forEach(function(e){
     D2.exams.push({ id:e.id, date:e.tarih, name:e.ad||'', tur:e.tur||'tyt',
@@ -301,7 +302,8 @@ async function ogrSunucuyaYaz(){
     await sbYaz('odevler', deg.map(function(t){
       return { id:t.id, ogrenci_id:OGRID, tarih:t.date, ders:t.sub, konu:t.konu||'',
         soru:t.q||0, yapilan:t.yap||0, durum:t.s||0, rutin:!!t.rutin, ekstra:!!t.ekstra,
-        dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'' };
+        dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'',
+        dogru:+t.dg||0, yanlis:+t.yn||0, bos:+t.bs||0 };
     }), 'id');
   }
   /* öğrencinin kendi eklediği çalışmalar */
@@ -626,13 +628,24 @@ function render(){
 }
 
 /* ---------- ödevlerim ---------- */
-function setTask(id,s){const t=D.tasks.find(x=>x.id===id); if(t){t.s=s;save();render();}}
+function setTask(id,s){
+  const t=D.tasks.find(x=>x.id===id); if(!t) return;
+  t.s=s;
+  // Yaptım / Yarım seçildiyse ve soru sayısı varsa döküm alanını aç
+  if(t.q && (s===1||s===2) && dybTop(t)===0) DYBACIK[id]=true;
+  if(s===1 && t.q && dybTop(t)===0) t.yap=t.q;
+  if(s===3){ t.yap=0; t.dg=0; t.yn=0; t.bs=0; DYBACIK[id]=false; }
+  save(); render();
+}
 function weekKey(ds){const d=new Date(ds+'T00:00');const g=(d.getDay()+6)%7;d.setDate(d.getDate()-g);return d.toISOString().slice(0,10);}
 function haftaFarki(ds){const a=new Date(weekKey(ds)+'T00:00'),b=new Date(weekKey(today())+'T00:00');return Math.round((b-a)/604800000);}
 function setSoru(id,v){const t=D.tasks.find(x=>x.id===id); if(t){t.yap=Math.max(0,+v||0);save();render();}}
 function setYap(id,v){const t=D.tasks.find(x=>x.id===id); if(!t)return;
   t.yap=Math.max(0,+v||0); const o=t.q?t.yap/t.q:0; t.s=o>=0.9?1:o>0?2:0; save(); render();}
 function yedekUyari(){
+  // Sunucu modunda veri zaten sunucuda; yedek uyarısı anlamsız ve
+  // gösterdiği "Ayarlar" sekmesi de gizli. Sadece eski (tarayıcı) panelde çıkar.
+  if(typeof sbOturum==='function' && sbOturum() && OGRID) return '';
   const s=D.sonYedek;
   const g=s?Math.round((new Date(today())-new Date(s))/86400000):999;
   if(g<14) return '';
@@ -643,8 +656,32 @@ function yedekUyari(){
     <button class="btn ghost" onclick="TAB='ayar';render()">Ayarlara git</button>
   </div></div>`;
 }
+/* Ödevde çözülen soruların doğru/yanlış/boş dökümü.
+   Toplam, öğretmenin verdiği soru sayısını AŞAMAZ.
+   Toplam < verilen soru  → "Yarım"
+   Toplam = verilen soru  → "Yaptım" */
+function dyb(t){ return { d:+t.dg||0, y:+t.yn||0, b:+t.bs||0 }; }
+function dybTop(t){ const v=dyb(t); return v.d+v.y+v.b; }
+function setDYB(id,alan,v){
+  const t=D.tasks.find(x=>x.id===id); if(!t) return;
+  let n=Math.max(0,parseInt(v,10)||0);
+  const v0=dyb(t), digerler=(v0.d+v0.y+v0.b)-(+t[alan]||0);
+  if(t.q && digerler+n>t.q) n=Math.max(0,t.q-digerler);   // fazlaya izin yok
+  t[alan]=n;
+  const v1=dyb(t), top=v1.d+v1.y+v1.b;
+  t.yap=top;
+  if(t.q){ t.s = top>=t.q ? 1 : (top>0 ? 2 : 0); }
+  else   { t.s = top>0 ? 1 : 0; }
+  save(); render();
+}
+function dybAc(id){ DYBACIK[id]=!DYBACIK[id]; render(); }
+let DYBACIK={};
 function odevSatiri(t,devreden){
   const hf=devreden?haftaFarki(t.date):0;
+  const v=dyb(t), top=v.d+v.y+v.b;
+  const eksik = t.q ? Math.max(0,t.q-top) : 0;
+  const acik = DYBACIK[t.id] || (t.s===2) || (t.s===1 && top>0);
+  const net = v.d - v.y/4;
   return `<div style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
     <div style="font-size:11px;color:${devreden?'var(--bad)':'var(--ink-3)'};font-family:var(--mono)">
       ${devreden?`⚠ ${hf} hafta önce verildi · `:''}${t.date} · ${subName(t.sub)}${t.q?' · '+t.q+' soru':''}${t.konu?' · tahmini '+sa(sureOf(t.sub,t.konu)):''}</div>
@@ -652,12 +689,36 @@ function odevSatiri(t,devreden){
     ${t.txt&&t.txt!=='Sabit haftalık rutin'?`<div style="font-size:13px;color:var(--ink-2);margin-bottom:8px">${esc(t.txt)}</div>`:''}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="seg">${[1,2,3].map(s=>`<button data-v="${s}" class="${t.s===s?'on':''}" onclick="setTask('${t.id}',${s})">${SL[s]}</button>`).join('')}</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-        <span style="font-size:12px;color:var(--ink-3)">çözdüğüm soru</span>
-        <input type="number" min="0" value="${t.yap||0}" onchange="setSoru('${t.id}',this.value)" style="width:78px"></div>
-    </div></div>`;
+      ${t.q?`<button class="btn ghost mini" onclick="dybAc('${t.id}')" style="margin-left:auto">
+        ${acik?'Dökümü gizle':(top?`${v.d} D · ${v.y} Y · ${v.b} B`:'Doğru / yanlış / boş gir')}</button>`
+      :`<div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+         <span style="font-size:12px;color:var(--ink-3)">çözdüğüm soru</span>
+         <input type="number" min="0" value="${t.yap||0}" onchange="setSoru('${t.id}',this.value)" style="width:78px"></div>`}
+    </div>
+    ${(t.q&&acik)?`<div style="margin-top:10px;background:#F4F8FA;border:1px solid var(--line-soft);border-radius:8px;padding:11px 12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:74px"><label class="f" style="color:var(--ok)">Doğru</label>
+          <input type="number" min="0" max="${t.q}" value="${v.d||''}" placeholder="0"
+            onchange="setDYB('${t.id}','dg',this.value)"></div>
+        <div style="flex:1;min-width:74px"><label class="f" style="color:var(--bad)">Yanlış</label>
+          <input type="number" min="0" max="${t.q}" value="${v.y||''}" placeholder="0"
+            onchange="setDYB('${t.id}','yn',this.value)"></div>
+        <div style="flex:1;min-width:74px"><label class="f" style="color:var(--ink-3)">Boş</label>
+          <input type="number" min="0" max="${t.q}" value="${v.b||''}" placeholder="0"
+            onchange="setDYB('${t.id}','bs',this.value)"></div>
+      </div>
+      <div style="margin-top:9px;font-size:12.5px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <span>Girdiğin: <b>${top}</b> / ${t.q} soru</span>
+        <span style="color:var(--ink-3)">·</span>
+        <span>Net: <b>${n1(net)}</b></span>
+        ${eksik?`<span style="color:var(--vurgu);margin-left:auto">${eksik} soru daha gir, ödev tamamlansın</span>`
+               :`<span style="color:var(--ok);margin-left:auto">✓ Tamamlandı</span>`}
+      </div>
+      ${eksik?`<div class="hint" style="margin-top:6px">Toplam ${t.q} soruyu geçemezsin. Eksik kaldığı sürece ödev <b>Yarım</b> görünür.</div>`:''}
+    </div>`:''}
+  </div>`;
 }
-let ARSIV=false, EDERS=null, EUNITE='';
+
 function ekstraDers(){ const l=subs(D); if(!EDERS||!l.find(x=>x[0]===EDERS)) EDERS=l[0][0]; return EDERS; }
 function ekstraEkle(){
   const sk=ekstraDers();
@@ -1049,6 +1110,8 @@ function atlasSec(kod){
 
 /* ---------- hedefe uzaklık ---------- */
 let HDUZEN=false;
+function setSinav(v){ D.sinav=(v||'').trim(); D.hedef=D.hedef||{}; D.hedef.sinav=D.sinav; save(); render(); }
+function setHaftalik(v){ const n=parseInt(v,10); D.haftalikSaat=(isNaN(n)||n<=0)?'':n; D.hedef=D.hedef||{}; D.hedef.haftalikSaat=D.haftalikSaat; save(); render(); }
 function setHedef(alan,v){ D.hedef=D.hedef||{}; D.hedef[alan]=v; save(); }
 function setHedefNet(k,v){ D.hedef=D.hedef||{}; D.hedef.refNets=D.hedef.refNets||{};
   if(v==='') delete D.hedef.refNets[k]; else D.hedef.refNets[k]=+v; save(); }
@@ -1057,8 +1120,37 @@ function hedefPuan(){ const h=D.hedef&&D.hedef.score; return h!==undefined&&h!==
 function hedefBolum(){ const h=D.hedef&&D.hedef.dept; return h||D.dept||''; }
 function vHedef(){
   const list=subs(D), a=son3Ort();
+  const hk=haftaKalan(), hs=+D.haftalikSaat||0;
+  let topDk=0;
+  list.forEach(([k])=>{ topDk += kalanSure(k)||0; });
+  const topSaat=topDk/60;
+  const gerekli=hk?topSaat/hk:null;
   const hp=parseFloat(String(hedefPuan()||'').replace(',','.'));
   const su=a.adet?puanHesapla(a.nets):null;
+  const yetisKart=`
+  <div class="card"><div class="stats">
+    <div class="stat"><div class="k">Sınava kalan</div>
+      <div class="v">${hk===null?'—':hk}</div>
+      <div class="n">${hk===null?'sınav tarihi gir':'hafta'}</div></div>
+    <div class="stat"><div class="k">Kalan konu süresi</div>
+      <div class="v">${topSaat?Math.round(topSaat):'—'}</div>
+      <div class="n">saat · bitmemiş konular</div></div>
+    <div class="stat"><div class="k">Haftada gereken</div>
+      <div class="v" style="color:${gerekli&&hs&&gerekli>hs?'var(--bad)':'inherit'}">${gerekli?n1(gerekli):'—'}</div>
+      <div class="n">saat/hafta${hs?' · senin beyanın '+hs:''}</div></div>
+    <div class="stat"><div class="k">Yetişir mi</div>
+      <div class="v" style="font-size:19px;color:${!gerekli||!hs?'var(--ink-3)':gerekli<=hs?'var(--ok)':'var(--bad)'}">${!gerekli||!hs?'—':gerekli<=hs?'Yetişir':'Yetişmez'}</div>
+      <div class="n">${!gerekli||!hs?'sınav tarihi ve haftalık süreni gir'
+        :gerekli<=hs?n1(hs-gerekli)+' saat payın var'
+        :'haftada '+n1(gerekli-hs)+' saat açık'}</div></div>
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <div class="hint">${!gerekli||!hs
+      ? 'Aşağıdaki <b>Hedefim</b> kartından sınav tarihini ve haftalık çalışma süreni gir; bu kutu dolacak.'
+      : gerekli<=hs
+        ? 'Bu hızla gidersen kalan konuları sınava kadar bitirirsin. Süre tahminleri planlama içindir, kesin ölçüm değildir.'
+        : 'Bu hızla kalan konular yetişmiyor. Ya haftalık süreni artır ya da öğretmeninle konu önceliklerini konuş.'}</div>
+  </div></div>`;
   let cN=0,hN=0,varH=false;
   list.forEach(([k])=>{ cN+=a.nets[k]||0; const t=+hedefNet(k)||0; if(t){hN+=t;varH=true;} });
   const bar=([k,nm,q])=>{
@@ -1115,6 +1207,15 @@ function vHedef(){
     <div class="fr">
       <div><label class="f">Hedef puan</label><input type="text" value="${esc(hedefPuan()||'')}" placeholder="ör. 480" onchange="setHedef('score',this.value);render()"></div>
       <div><label class="f">Hedef sıralama</label><input type="text" value="${esc((D.hedef&&D.hedef.rank)||D.rank||'')}" placeholder="ör. 12.000" onchange="setHedef('rank',this.value);render()"></div>
+    </div>
+    <div class="fr">
+      <div><label class="f">Sınav tarihi</label>
+        <input type="date" value="${esc(D.sinav||'')}" onchange="setSinav(this.value)">
+        <div class="hint" style="margin-top:4px">Kalan hafta buradan hesaplanır.</div></div>
+      <div><label class="f">Haftalık çalışma sürem</label>
+        <input type="number" min="0" max="90" step="1" value="${D.haftalikSaat||''}" placeholder="ör. 20"
+          onchange="setHaftalik(this.value)">
+        <div class="hint" style="margin-top:4px">Ders dışında, haftada kaç saat çalışıyorsun.</div></div>
     </div>
     <button class="btn ghost wide" onclick="HDUZEN=!HDUZEN;render()">${HDUZEN?'Hedef netleri gizle':'Ders ders hedef net gir'}</button>
     ${HDUZEN?`<div style="margin-top:12px">
