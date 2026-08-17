@@ -46,4 +46,4 @@ window.VIDEOLAR = [
    canlı sayımın yerine geçer.
       window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
    ============================================================ */
-window.SAYILAR = { ogretmen:'', ogrenci:'' };
+window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
