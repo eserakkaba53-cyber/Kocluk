@@ -3667,7 +3667,7 @@ function karneTalep(){
 }
 
 /* ---------- REFERANS ---------- */
-let REFERANS=null, REFDURUM='', REFHATA='', REFYUKLENIYOR=false;
+let REFERANS=null, REFDURUM='', REFHATA='', REFYUKLENIYOR=false, REFAD='';
 async function referansOku(){
   if(REFYUKLENIYOR) return;
   REFYUKLENIYOR=true; REFHATA='';
@@ -3706,18 +3706,6 @@ function refKopyala(){
   document.body.appendChild(ta); ta.select();
   try{ document.execCommand('copy'); alert('Davet bağlantın kopyalandı.'); }catch(e){}
   document.body.removeChild(ta);
-}
-async function refKodGir(){
-  const k=(document.getElementById('refKod')?.value||'').trim();
-  if(!k){ REFDURUM='HATA|Kodu yaz.'; render(); return; }
-  REFDURUM='Kontrol ediliyor...'; render();
-  try{
-    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_uygula',{method:'POST',body:{kod:k}}));
-    if(!r||!r.ok) throw new Error((r&&r.hata)||'Kabul edilmedi');
-    REFDURUM='OK|Tanımlandı. Seni davet eden: '+(r.davet_eden_ad||'—');
-    await referansOku();
-  }catch(e){ REFDURUM='HATA|'+(e.message||e); }
-  render();
 }
 function vDavet(){
   const R=REFERANS;
@@ -3786,14 +3774,7 @@ function vDavet(){
   ${R.davet_edildi
     ? `<div class="card"><div class="body"><div class="flag ok"><span class="ic">✓</span><span>
         Seni <b>${esc(R.davet_eden||'bir koç')}</b> davet etmiş. Pakete geçtiğinde onun sayacı ilerler.</span></div></div></div>`
-    : `<div class="card"><h2>Seni davet eden var mı?<small>Bir arkadaşının kodu varsa buraya yazabilirsin. Bir kez tanımlanır, sonra değişmez.</small></h2><div class="body">
-        <div class="fr"><div style="flex:1"><label class="f">Referans kodu</label>
-          <input type="text" id="refKod" placeholder="ABC123" autocomplete="off"
-            style="text-transform:uppercase;font-family:var(--mono);font-size:17px;letter-spacing:2px;text-align:center"></div>
-          <div style="flex:none;align-self:flex-end"><button class="btn" onclick="refKodGir()">Tanımla</button></div></div>
-        ${REFDURUM?`<div class="flag ${REFDURUM.startsWith('OK|')?'ok':REFDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-top:10px">
-          <span class="ic">${REFDURUM.startsWith('OK|')?'✓':'!'}</span><span>${esc(REFDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
-      </div></div>` }
+    : '' }
 
   ${videoBolumu()}`;
 }
@@ -4454,9 +4435,29 @@ async function girisYap(){
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(m)){ GIRISHATA='E-posta adresi geçerli görünmüyor.'; render(); return; }
     const s2=(document.getElementById('gSifre2')?.value||'');
     if(s!==s2){ GIRISHATA='İki şifre aynı değil.'; render(); return; }
-    // Referans kodu: kayıt sırasında alınır, hesap açılınca uygulanır
+    // Referans kodu: BOŞ ya da DOĞRU olmalı. Yanlışsa kayıt yapılmaz.
     const rk=(document.getElementById('gRef')?.value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
     try{ if(rk) localStorage.setItem('bekleyen_referans',rk); else localStorage.removeItem('bekleyen_referans'); }catch(e){}
+    if(rk){
+      GIRISBEKLE=true; GIRISHATA='Referans kodu kontrol ediliyor...'; render();
+      let gecerli=false;
+      try{
+        const c=await sbCagri('/rest/v1/rpc/referans_gecerli_mi',{method:'POST',body:{kod:rk}});
+        gecerli = !!(c && c.gecerli);
+        if(!gecerli){
+          GIRISBEKLE=false;
+          GIRISHATA='Girdiğin referans kodu bulunamadı: '+rk+
+            '\n\nKodu doğru yazdığından emin ol. Referansın yoksa kutuyu boş bırakabilirsin.';
+          render(); return;
+        }
+        REFAD = (c && c.ad) || '';
+      }catch(e){
+        GIRISBEKLE=false;
+        GIRISHATA='Referans kodu doğrulanamadı. İnternetini kontrol et; kod yoksa kutuyu boş bırakıp devam edebilirsin.';
+        render(); return;
+      }
+      GIRISHATA='';
+    }
   }
   GIRISBEKLE=true; GIRISHATA=''; render();
   try{
@@ -4595,7 +4596,8 @@ function girisEkrani(){
                 style="text-transform:uppercase;font-family:var(--mono);font-size:16px;letter-spacing:2px;text-align:center">
               <div class="hint" style="margin-top:4px">${bk
                 ? 'Davet bağlantısıyla geldin, kodun yazıldı. Boş bırakırsan da kayıt olabilirsin.'
-                : 'Seni bir meslektaşın davet ettiyse kodunu buraya yaz. Yoksa boş bırak.'}</div></div></div>`; })()}`:''}
+                : 'Seni bir meslektaşın davet ettiyse kodunu buraya yaz. Yoksa boş bırak.'}<br>
+                <b>Yanlış kodla kayıt yapılmaz</b> — ya boş bırak ya doğrusunu yaz.</div></div></div>`; })()}`:''}
         <button class="btn wide" ${GIRISBEKLE?'disabled':''} onclick="girisYap()">
           ${GIRISBEKLE?'Bekle...':(GIRISMOD==='kayit'?'Hesabı oluştur':'Giriş yap')}</button>
         <button class="btn ghost wide" style="margin-top:8px" onclick="GIRISMOD='${GIRISMOD==='kayit'?'giris':'kayit'}';GIRISHATA='';render()">
