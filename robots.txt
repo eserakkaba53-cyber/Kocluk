@@ -1,0 +1,14 @@
+# Biyoser Koçluk Sistemi
+# Tanıtım sayfası taranabilir; panel sayfaları taranmaz (giriş gerektirir).
+
+User-agent: *
+Allow: /Kocluk/$
+Allow: /Kocluk/index.html
+Disallow: /Kocluk/kocluk-sunucu.html
+Disallow: /Kocluk/ogrenci-sunucu.html
+Disallow: /Kocluk/kocluk-paneli.html
+Disallow: /Kocluk/ogrenci-paneli.html
+Disallow: /Kocluk/sunucu.js
+Disallow: /Kocluk/atlas.json
+
+Sitemap: https://eserakkaba53-cyber.github.io/Kocluk/sitemap.xml
