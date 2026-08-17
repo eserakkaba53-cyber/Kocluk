@@ -27,7 +27,7 @@ window.SUNUCU_AYAR = {
    ============================================================ */
 window.VIDEOLAR = [
   { b:'1 · ÖĞRENCİ EKLEME',    a:'Hesap açma ve öğrenci ekleme',       id:'RPzk7lkXm7Y' },
-  { b:'2 · HEDEF BELİRLEME',       a:'ÖK verisiyle bölüm seçimi, hedefe uzaklık',   id:'jbWGy8c-Ub0' },
+  { b:'2 · HEDEF BELİRLEME',       a:'YÖK verisiyle bölüm seçimi, hedefe uzaklık',   id:'jbWGy8c-Ub0' },
   { b:'3 · DENEME SONUÇLARI',         a:'Deneme karnesini yapıştır, netler otomatik', id:'2jN49XP5p9g' },
   { b:'4 · ÖDEVLER', a:'Konu seçimi, süre planı ve rutinler',        id:'qys0nXOuQio' },
   { b:'5 · KONU TAKİBİ',          a:'612 konuluk harita nasıl işaretlenir',       id:'vNScbFsC2H0' },
