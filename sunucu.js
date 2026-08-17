@@ -35,15 +35,3 @@ window.VIDEOLAR = [
 ];
 
 
-
-/* ============================================================
-   TANITIM SAYAÇLARI  (isteğe bağlı)
-   ------------------------------------------------------------
-   Boş bırakırsan sayılar SUNUCUDAN CANLI okunur ve
-   kendiliğinden güncellenir — önerilen budur.
- 
-   Elle yazmak istersen aşağıyı doldur. Yazdığın değer
-   canlı sayımın yerine geçer.
-      window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
-   ============================================================ */
-window.SAYILAR = { ogretmen:'40', ogrenci:'70' };
