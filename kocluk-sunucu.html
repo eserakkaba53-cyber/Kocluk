@@ -1784,7 +1784,8 @@ function durumBul(L){
 }
 let RAPOR_ON=null, GERIKORU=true;
 const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],
-                  ['konu','Konular'],['hedef','Hedef'],['ogrenci','Öğrenci bilgileri'],['hesap','Hesap']];
+                  ['konu','Konular'],['hedef','Hedef'],['ogrenci','Öğrenci bilgileri'],
+                  ['davet','Davet et'],['hesap','Hesap']];
 function TABSAL(){ return (LISANS&&LISANS.yonetici) ? TABS_TEMEL.concat([['yonetim','Yönetim']]) : TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
 const ORNEK_ID='ornek-ogrenci';
@@ -2026,7 +2027,7 @@ function render(){
   document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()}${st.startedAt?' · BAŞLANGIÇ '+st.startedAt:''}`:'';
   document.getElementById('stGoal').innerHTML = st&&st.dept
     ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${st.rank||'—'} · puan ${st.score||'—'}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
-  document.getElementById('tabs').innerHTML = (st || (LISANS&&LISANS.yonetici))
+  document.getElementById('tabs').innerHTML = (st || LISANS)
     ? TABSAL().map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('') : '';
 
   const v=document.getElementById('view');
@@ -2067,12 +2068,19 @@ function render(){
       if(_e1){ try{ _e1.focus({preventScroll:true}); if(_s0!==null&&('setSelectionRange' in _e1)) _e1.setSelectionRange(_s0,_e0); }catch(x){} } }
     return;
   }
-  if(!st && TAB!=='yonetim'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
+  if(!st && TAB!=='yonetim' && TAB!=='davet'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
   if(!TABSAL().find(t=>t[0]===TAB)) TAB='hafta';
+  if(TAB==='davet'){
+    if(!REFERANS) setTimeout(()=>referansOku().then(render),10);
+    v.innerHTML=kaynakUyarisi()+vDavet();
+    if(_aid){ const _el=document.getElementById(_aid);
+      if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+    return;
+  }
   if(TAB==='yonetim'){
     if(!KOCLAR.length && !YONDURUM){ YONDURUM='Yükleniyor...'; setTimeout(koclariOku,10); }
     v.innerHTML=kaynakUyarisi()+vYonetici();
@@ -3658,6 +3666,106 @@ function karneTalep(){
   baglantiAc('https://wa.me/'+SATIS_TEL+'?text='+encodeURIComponent(mesaj),'WhatsApp — karne desteği');
 }
 
+/* ---------- REFERANS ---------- */
+let REFERANS=null, REFDURUM='';
+async function referansOku(){
+  try{ REFERANS=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_durum',{method:'POST',body:{}})); }
+  catch(e){ REFERANS=null; }
+}
+function refLinki(){
+  if(!REFERANS||!REFERANS.kod) return '';
+  return tabanAdres()+'kocluk-sunucu.html#REF:'+REFERANS.kod;
+}
+function refWa(){
+  if(!REFERANS||!REFERANS.kod) return;
+  const mesaj=`Merhaba hocam,\n\n`+
+    `Kendi öğrencilerim için kullandığım koçluk takip sistemini paylaşmak istedim.\n\n`+
+    `En sevdiğim yanı: deneme karnesini olduğu gibi kopyalayıp yapıştırıyorsunuz, `+
+    `sistem netleri hesaplıyor ve hangi konudan kaç yanlış yapıldığını çıkarıyor. `+
+    `Yayınevi fark etmiyor.\n\n`+
+    `Üstüne haftalık ödev takibi, 612 konuluk harita ve YÖK verisiyle hedef bölüm karşılaştırması var. `+
+    `Öğrenci ayrı uygulama indirmiyor.\n\n`+
+    `7 gün ücretsiz deneyebilirsiniz:\n${refLinki()}\n\n`+
+    `(Bağlantı açılmazsa ${tabanAdres()}kocluk-sunucu.html adresine girip `+
+    `kayıt sırasında şu referans kodunu yazabilirsiniz: ${REFERANS.kod})`;
+  baglantiAc('https://wa.me/?text='+encodeURIComponent(mesaj),'WhatsApp — davet');
+}
+function refKopyala(){
+  const ta=document.createElement('textarea'); ta.value=refLinki();
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); alert('Davet bağlantın kopyalandı.'); }catch(e){}
+  document.body.removeChild(ta);
+}
+async function refKodGir(){
+  const k=(document.getElementById('refKod')?.value||'').trim();
+  if(!k){ REFDURUM='HATA|Kodu yaz.'; render(); return; }
+  REFDURUM='Kontrol ediliyor...'; render();
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_uygula',{method:'POST',body:{kod:k}}));
+    if(!r||!r.ok) throw new Error((r&&r.hata)||'Kabul edilmedi');
+    REFDURUM='OK|Tanımlandı. Seni davet eden: '+(r.davet_eden_ad||'—');
+    await referansOku();
+  }catch(e){ REFDURUM='HATA|'+(e.message||e); }
+  render();
+}
+function vDavet(){
+  const R=REFERANS;
+  if(!R) return `<div class="card"><div class="empty">Referans bilgin yükleniyor...</div></div>`;
+  const uc=R.ucretli||0, kalan=(2-(uc%2))%2 || (uc===0?2:2);
+  const sonrakiIcin = uc%2===0 ? 2 : 1;
+  return `
+  <div class="card"><div class="stats">
+    <div class="stat"><div class="k">Davet ettiğin</div><div class="v">${R.toplam||0}</div><div class="n">koç kayıt oldu</div></div>
+    <div class="stat"><div class="k">Pakete geçen</div><div class="v" style="color:var(--ok)">${uc}</div><div class="n">ücretli abone</div></div>
+    <div class="stat"><div class="k">Kazandığın</div><div class="v" style="color:var(--accent)">${R.kazanilan_yil||0}</div><div class="n">yıl · lisansına eklendi</div></div>
+    <div class="stat"><div class="k">Sonraki yıl için</div><div class="v">${sonrakiIcin}</div><div class="n">ücretli davet daha</div></div>
+  </div></div>
+
+  <div class="card"><h2>Davet bağlantın<small>Bu bağlantıyla kayıt olup pakete geçen her 2 koç için lisansına 1 yıl eklenir.</small></h2><div class="body">
+    <div style="background:#F3F7F8;border:1px solid var(--line-soft);border-radius:9px;padding:16px;text-align:center">
+      <div style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650">Referans kodun</div>
+      <div style="font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:5px;color:var(--accent);margin:4px 0 8px">${esc(R.kod||'—')}</div>
+      <div style="font-size:11.5px;color:var(--ink-3);word-break:break-all;font-family:var(--mono)">${esc(refLinki())}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn" onclick="refWa()">WhatsApp'tan davet gönder</button>
+      <button class="btn ghost" onclick="refKopyala()">Bağlantıyı kopyala</button>
+    </div>
+    <div class="hint" style="margin-top:10px">Davet ettiğin kişi bağlantıya tıklarsa kod kendiliğinden dolar.
+      Elle kayıt olursa kayıt ekranında kodu yazması yeterli.</div>
+  </div></div>
+
+  <div class="card"><h2>Nasıl işliyor</h2><div class="body">
+    <div class="topic"><span class="dot t2"></span><span class="tn">Bağlantını gönderirsin, arkadaşın kayıt olur ve <b>7 gün ücretsiz</b> dener.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Beğenip <b>bir paket alırsa</b> senin sayacın 1 artar.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Her 2 ücretli davet</b> için lisansına <b>1 yıl</b> eklenir.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Yıl eklemesi kendiliğinden yapılır; bir şey talep etmene gerek yok.</span></div>
+    <div class="hint" style="margin-top:10px">Deneme süresindeki davetler sayılmaz; sayaç ancak paket alındığında ilerler.</div>
+  </div></div>
+
+  ${(R.liste&&R.liste.length)?`<div class="card"><h2>Davet ettiklerin</h2><div class="body" style="padding:0;overflow:auto">
+    <table><thead><tr><th>Koç</th><th>Kayıt</th><th>Durum</th></tr></thead><tbody>
+      ${R.liste.map(x=>`<tr><td><b>${esc(x.ad)}</b></td>
+        <td class="num" style="color:var(--ink-3);font-size:12px">${esc(String(x.kayit||'').slice(0,10))}</td>
+        <td>${x.ucretli?'<span class="pill s1" style="font-size:10.5px">ücretli</span>'
+                       :'<span class="pill s2" style="font-size:10.5px">deneme</span>'}</td></tr>`).join('')}
+    </tbody></table></div></div>`:''}
+
+  ${R.davet_edildi
+    ? `<div class="card"><div class="body"><div class="flag ok"><span class="ic">✓</span><span>
+        Seni <b>${esc(R.davet_eden||'bir koç')}</b> davet etmiş. Pakete geçtiğinde onun sayacı ilerler.</span></div></div></div>`
+    : `<div class="card"><h2>Seni davet eden var mı?<small>Bir arkadaşının kodu varsa buraya yazabilirsin. Bir kez tanımlanır, sonra değişmez.</small></h2><div class="body">
+        <div class="fr"><div style="flex:1"><label class="f">Referans kodu</label>
+          <input type="text" id="refKod" placeholder="ABC123" autocomplete="off"
+            style="text-transform:uppercase;font-family:var(--mono);font-size:17px;letter-spacing:2px;text-align:center"></div>
+          <div style="flex:none;align-self:flex-end"><button class="btn" onclick="refKodGir()">Tanımla</button></div></div>
+        ${REFDURUM?`<div class="flag ${REFDURUM.startsWith('OK|')?'ok':REFDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-top:10px">
+          <span class="ic">${REFDURUM.startsWith('OK|')?'✓':'!'}</span><span>${esc(REFDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
+      </div></div>` }
+
+  ${videoBolumu()}`;
+}
+
 /* ---------- ABONELİK / PAKETLER ---------- */
 let DENEME=null, ABONE=false;
 const SATIS_TEL='905325874992';   // paket talepleri buraya gelir
@@ -4333,9 +4441,21 @@ async function girisYap(){
   }
   GIRISBEKLE=false; render();
 }
+async function bekleyenReferans(){
+  let k=null;
+  try{ k=localStorage.getItem('bekleyen_referans'); }catch(e){}
+  if(!k) return;
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_uygula',{method:'POST',body:{kod:k}}));
+    if(r&&r.ok) REFDURUM='OK|Seni davet eden: '+(r.davet_eden_ad||'—');
+  }catch(e){}
+  try{ localStorage.removeItem('bekleyen_referans'); }catch(e){}
+}
 async function sunucudanYukle(){
+  await bekleyenReferans();
   await lisansOku();
   await denemeOku();
+  referansOku();
   const izin=await cihazKaydet();
   if(!izin){ GIRISHATA=CIHAZHATA; sbCikis(); render(); return; }
   await cihazlariOku();
@@ -4426,7 +4546,10 @@ function girisEkrani(){
         <div class="fr"><div style="flex:1"><label class="f">Şifre</label>
           <input type="password" id="gSifre" placeholder="${GIRISMOD==='kayit'?'en az 8 karakter':'••••••••'}"
             onkeydown="if(event.key==='Enter')girisYap()"></div></div>
-        ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">Şifreni tekrar yaz</label>
+        ${GIRISMOD==='kayit'?`${(()=>{ let bk=''; try{ bk=localStorage.getItem('bekleyen_referans')||''; }catch(e){}
+          return bk?`<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
+            Davet bağlantısıyla geldin. Referans kodu: <b style="font-family:var(--mono)">${esc(bk)}</b></span></div>`:''; })()}
+          <div class="fr"><div style="flex:1"><label class="f">Şifreni tekrar yaz</label>
           <input type="password" id="gSifre2" placeholder="aynısını yaz"
             onkeydown="if(event.key==='Enter')girisYap()"></div></div>
           <div class="hint" style="margin:-4px 0 12px">E-postanı iki kez soruyoruz çünkü
@@ -4482,6 +4605,13 @@ function kaynakUyarisi(){
   sbYukle();
   // şifre sıfırlama bağlantısından mı gelindi?
   const hh=location.hash||'';
+  // Referans daveti: kodu sakla, kayıt/giriş sonrası uygulanır
+  const refm=hh.match(/^#REF:([A-Za-z0-9]{4,10})$/);
+  if(refm){
+    try{ localStorage.setItem('bekleyen_referans', refm[1].toUpperCase()); }catch(e){}
+    history.replaceState(null,'',location.pathname+location.search);
+    if(!sbOturum()) GIRISMOD='kayit';
+  }
   if(hh.indexOf('type=recovery')>=0){
     const pr=new URLSearchParams(hh.replace(/^#/,''));
     const at=pr.get('access_token'), rt=pr.get('refresh_token');
