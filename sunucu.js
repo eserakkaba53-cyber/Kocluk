@@ -33,3 +33,17 @@ window.VIDEOLAR = [
   { b:'5 · KONU TAKİBİ',          a:'612 konuluk harita nasıl işaretlenir',       id:'vNScbFsC2H0' },
   { b:'6 · HAFTALIK VE DURUM TAKİVİ',        a:'YÖK verisiyle bölüm seçimi, hedefe uzaklık', id:'UcaOE0iuwqo' }
 ];
+
+
+
+/* ============================================================
+   TANITIM SAYAÇLARI  (isteğe bağlı)
+   ------------------------------------------------------------
+   Boş bırakırsan sayılar SUNUCUDAN CANLI okunur ve
+   kendiliğinden güncellenir — önerilen budur.
+ 
+   Elle yazmak istersen aşağıyı doldur. Yazdığın değer
+   canlı sayımın yerine geçer.
+      window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
+   ============================================================ */
+window.SAYILAR = { ogretmen:'', ogrenci:'' };
