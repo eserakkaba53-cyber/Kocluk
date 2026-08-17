@@ -34,7 +34,7 @@ window.VIDEOLAR = [
   { b:'6 · HAFTALIK VE DURUM TAKİBİ',        a:'Öğrencinin genel takibi', id:'UcaOE0iuwqo' }
 ];
 
-* ============================================================
+/* ============================================================
    TANITIM SAYAÇLARI
    ------------------------------------------------------------
    BU BLOĞU mevcut sunucu.js dosyanın SONUNA EKLE.
