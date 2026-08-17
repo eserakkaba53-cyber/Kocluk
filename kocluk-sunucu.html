@@ -4369,19 +4369,19 @@ function videoBolumu(tekSira){
   return `<div style="max-width:760px;margin:22px auto 0">
     <div class="card"><h2>Kullanım videoları<small>Kısa anlatımlar. Videolar bu sayfada açılır, başka yere gitmezsin.</small></h2><div class="body">
       <div style="${tekSira
-      ? 'display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch'
+      ? 'display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:9px'
       : 'display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px'}">
         ${v.map((x,i)=>`<button onclick="videoAc(${i})"
-          style="${tekSira?'flex:0 0 210px;':''}text-align:left;background:${VIDEOSEC===i?'var(--accent)':'#F3F7F8'};
+          style="text-align:left;background:${VIDEOSEC===i?'var(--accent)':'#F3F7F8'};
                  color:${VIDEOSEC===i?'#fff':'var(--ink)'};border:1px solid ${VIDEOSEC===i?'var(--accent)':'var(--line-soft)'};
-                 border-radius:8px;padding:12px 13px;cursor:pointer;width:100%;font-family:inherit">
-          <div style="display:flex;gap:9px;align-items:flex-start">
-            <div style="flex:none;width:24px;height:24px;border-radius:50%;
+                 border-radius:8px;padding:${tekSira?'10px 11px':'12px 13px'};cursor:pointer;width:100%;font-family:inherit">
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <div style="flex:none;width:${tekSira?'21px':'24px'};height:${tekSira?'21px':'24px'};border-radius:50%;
                  background:${VIDEOSEC===i?'rgba(255,255,255,.22)':'var(--accent)'};color:#fff;
-                 display:flex;align-items:center;justify-content:center;font-size:11px">▶</div>
-            <div><div style="font-weight:650;font-size:13.5px;line-height:1.3">${esc(x.b||('Video '+(i+1)))}</div>
-              ${x.a?`<div style="font-size:11.5px;opacity:.75;margin-top:3px;line-height:1.35">${esc(x.a)}</div>`:''}
-              ${x.sure?`<div style="font-size:11px;opacity:.6;margin-top:3px;font-family:var(--mono)">${esc(x.sure)}</div>`:''}
+                 display:flex;align-items:center;justify-content:center;font-size:${tekSira?'10px':'11px'}">▶</div>
+            <div style="min-width:0"><div style="font-weight:650;font-size:${tekSira?'12.5px':'13.5px'};line-height:1.3">${esc(x.b||('Video '+(i+1)))}</div>
+              ${x.a?`<div style="font-size:${tekSira?'11px':'11.5px'};opacity:.75;margin-top:3px;line-height:1.3">${esc(x.a)}</div>`:''}
+              ${x.sure?`<div style="font-size:10.5px;opacity:.6;margin-top:3px;font-family:var(--mono)">${esc(x.sure)}</div>`:''}
             </div></div></button>`).join('')}
       </div>
       ${s?`<div id="videoAlan" style="margin-top:14px">
