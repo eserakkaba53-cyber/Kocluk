@@ -634,21 +634,20 @@ function setTask(id,s){
     t.s=3; t.yap=0; t.dg=0; t.yn=0; t.bs=0; DYBACIK[id]=false; DYBUYARI[id]='';
     save(); render(); return;
   }
-  if(t.q){
-    // Soru sayısı verilmişse "Yaptım" tek başına yetmez:
-    // ödev ancak doğru+yanlış+boş toplamı soru sayısına ulaşınca tamamlanır.
-    DYBACIK[id]=true;
+  if(s===1 && t.q){
+    // "Yaptım" ancak döküm tamamsa kabul edilir
     const top=dybTop(t);
     t.yap=top;
-    if(top>=t.q){ t.s=1; DYBUYARI[id]=''; }
+    if(top>=t.q){ t.s=1; DYBUYARI[id]=''; DYBACIK[id]=false; }
     else{
-      t.s = top>0 ? 2 : 0;
-      DYBUYARI[id] = s===1
-        ? `Ödevi tamamlamak için ${t.q} sorunun doğru / yanlış / boş dökümünü gir.`
-        : '';
+      DYBACIK[id]=true;
+      DYBUYARI[id]=`Ödevi tamamlamak için ${t.q} sorunun doğru / yanlış / boş dökümünü gir. Şu an ${top}/${t.q} girdin.`;
+      if(t.s!==1) t.s = top>0 ? 2 : 0;
     }
   } else {
-    t.s=s;                                     // soru sayısı yoksa eski davranış
+    // Yarım / Yapmadım / soru sayısı olmayan ödevde Yaptım: doğrudan uygula
+    t.s=s; DYBUYARI[id]='';
+    if(s===2 && t.q) DYBACIK[id]=true;          // geri alınca döküm görünsün
   }
   save(); render();
 }
@@ -685,8 +684,10 @@ function setDYB(id,alan,v){
   t[alan]=n;
   const v1=dyb(t), top=v1.d+v1.y+v1.b;
   t.yap=top;
-  if(t.q){ t.s = top>=t.q ? 1 : (top>0 ? 2 : 0); if(top>=t.q) DYBUYARI[id]=''; }
-  else   { t.s = top>0 ? 1 : 0; }
+  // Durumu sistem DEĞİŞTİRMEZ. Ödevi bitiren öğrencidir; "Yaptım"a basmalı.
+  // Tek istisna: hiç sayı yokken "bekliyor"a, sayı girilince "yarım"a geçmek.
+  if(t.s!==1){ t.s = top>0 ? 2 : 0; }
+  if(t.q && top>=t.q) DYBUYARI[id]='';
   save(); render();
 }
 function dybAc(id){ DYBACIK[id]=!DYBACIK[id]; render(); }
@@ -731,10 +732,15 @@ function odevSatiri(t,devreden){
         <span>Girdiğin: <b>${top}</b> / ${t.q} soru</span>
         <span style="color:var(--ink-3)">·</span>
         <span>Net: <b>${n1(net)}</b></span>
-        ${eksik?`<span style="color:var(--vurgu);margin-left:auto">${eksik} soru daha gir, ödev tamamlansın</span>`
-               :`<span style="color:var(--ok);margin-left:auto">✓ Tamamlandı</span>`}
+        ${eksik?`<span style="color:var(--vurgu);margin-left:auto">${eksik} soru daha girmen gerekiyor</span>`
+          :(t.s===1
+            ?`<span style="color:var(--ok);margin-left:auto">✓ Ödev tamamlandı</span>`
+            :`<span style="color:var(--ok);margin-left:auto">Döküm tamam — şimdi <b>Yaptım</b>'a bas</span>`)}
       </div>
-      ${eksik?`<div class="hint" style="margin-top:6px">Toplam ${t.q} soruyu geçemezsin. Eksik kaldığı sürece ödev <b>Yarım</b> görünür.</div>`:''}
+      ${eksik
+        ?`<div class="hint" style="margin-top:6px">Toplam ${t.q} soruyu geçemezsin. Ödev, sen <b>Yaptım</b>'a basana kadar tamamlanmaz.</div>`
+        :(t.s!==1?`<button class="btn wide" style="margin-top:10px" onclick="setTask('${t.id}',1)">Ödevi tamamla</button>`
+                 :`<div class="hint" style="margin-top:6px">Bir şeyi düzeltmek istersen <b>Yarım</b>'a basıp geri alabilirsin.</div>`)}
     </div>`:''}
   </div>`;
 }
