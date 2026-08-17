@@ -142,6 +142,13 @@ input[type=number]{font-family:var(--mono);text-align:right}
 .sec-h{display:flex;align-items:center;gap:12px;margin:0 0 12px}
 .sec-h h3{margin:0;font-size:14px;font-weight:650}
 .spark{display:block}
+
+/* Kullanım videoları — tek sıra. Sütun sayısı video sayısına eşittir.
+   Dar ekranlarda okunmaz hale gelmemesi için kademeli olarak kırılır. */
+.vsira{display:grid;grid-template-columns:repeat(var(--n,6),minmax(0,1fr));gap:9px}
+.vsira > button{min-width:0}
+@media(max-width:1100px){ .vsira{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media(max-width:620px){  .vsira{grid-template-columns:repeat(2,minmax(0,1fr))} }
 </style>
 
 <div class="app">
@@ -4368,9 +4375,8 @@ function videoBolumu(tekSira){
   const s=VIDEOSEC!=null?v[VIDEOSEC]:null;
   return `<div style="max-width:760px;margin:22px auto 0">
     <div class="card"><h2>Kullanım videoları<small>Kısa anlatımlar. Videolar bu sayfada açılır, başka yere gitmezsin.</small></h2><div class="body">
-      <div style="${tekSira
-      ? 'display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:9px'
-      : 'display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px'}">
+      <div ${tekSira?`class="vsira" style="--n:${v.length}"`
+                  :'style="display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px"'}>
         ${v.map((x,i)=>`<button onclick="videoAc(${i})"
           style="text-align:left;background:${VIDEOSEC===i?'var(--accent)':'#F3F7F8'};
                  color:${VIDEOSEC===i?'#fff':'var(--ink)'};border:1px solid ${VIDEOSEC===i?'var(--accent)':'var(--line-soft)'};
