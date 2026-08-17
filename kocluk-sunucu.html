@@ -4324,6 +4324,33 @@ function davetWa(){
   baglantiAc((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),'WhatsApp — davet');
 }
 
+/* ---------- KULLANIM SAYAÇLARI ----------
+   Kaynak: sunucu.js içindeki SAYILAR (elle yazılmışsa),
+   yoksa sunucudan canlı sayım. */
+let SAYAC=null, SAYACOK=false;
+async function sayaclariOku(){
+  if(SAYACOK) return; SAYACOK=true;
+  const el=window.SAYILAR;
+  if(el && (el.ogretmen || el.ogrenci)){ SAYAC={ogretmen:el.ogretmen,ogrenci:el.ogrenci}; render(); return; }
+  try{
+    const d=await sbCagri('/rest/v1/rpc/kullanim_sayilari',{method:'POST',body:{}});
+    if(d) SAYAC={
+      ogretmen: d.ogretmen>=5  ? '+'+(Math.floor(d.ogretmen/5)*5)  : '',
+      ogrenci:  d.ogrenci>=10  ? '+'+(Math.floor(d.ogrenci/10)*10) : '' };
+  }catch(e){ SAYAC=null; }
+  render();
+}
+function sayacSerit(){
+  if(!SAYAC || (!SAYAC.ogretmen && !SAYAC.ogrenci)) return '';
+  const kutu=(s,e)=>`<div style="flex:1;min-width:126px;background:#F3F7F8;border:1px solid var(--line-soft);
+      border-radius:9px;padding:13px 16px;text-align:center">
+      <div style="font-family:var(--mono);font-size:25px;font-weight:700;color:var(--accent);line-height:1.1">${esc(s)}</div>
+      <div style="font-size:12px;color:var(--ink-2);margin-top:3px">${e}</div></div>`;
+  return `<div style="display:flex;gap:10px;margin-bottom:16px">
+    ${SAYAC.ogretmen?kutu(SAYAC.ogretmen,'öğretmen kullanıyor'):''}
+    ${SAYAC.ogrenci?kutu(SAYAC.ogrenci,'öğrenci takip ediliyor'):''}</div>`;
+}
+
 /* ---------- KULLANIM VİDEOLARI ----------
    Liste sunucu.js dosyasından gelir; panel güncellemeleri onu bozmaz.
    Video panelin İÇİNDE açılır, YouTube'a geçilmez. */
@@ -4551,6 +4578,7 @@ function girisEkrani(){
       ${h?`<div class="flag ${iyi?'ok':'bad'}" style="margin-top:12px"><span class="ic">${iyi?'✓':'!'}</span><span>${esc(h.replace(/^OK\|/,'')).replace(/\n/g,'<br>')}</span></div>`:''}
     </div></div></div>`;
   return `<div style="max-width:460px;margin:36px auto">
+    ${kurulu?sayacSerit():''}
     <div class="card"><h2>${kurulu?(GIRISMOD==='kayit'?'Koç hesabı oluştur':'Koç girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
       kurulu?(GIRISMOD==='kayit'
         ? 'Kaydını tamamla, 7 günlük denemen hemen başlasın.'
@@ -4655,6 +4683,7 @@ function kaynakUyarisi(){
 /* ---------- AÇILIŞ ---------- */
 (async()=>{
   sbYukle();
+  sayaclariOku();
   // şifre sıfırlama bağlantısından mı gelindi?
   const hh=location.hash||'';
   // Referans daveti: kodu sakla, kayıt/giriş sonrası uygulanır

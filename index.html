@@ -72,10 +72,12 @@
 body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;font-size:16px}
 .kap{max-width:940px;margin:0 auto;padding:0 20px}
 header{background:var(--lacivert);color:#fff;padding:16px 0}
-header .kap{display:flex;align-items:center;gap:13px}
-header img{width:44px;height:44px;object-fit:contain}
-header b{font-size:17px;letter-spacing:.5px}
-header span{font-size:12.5px;color:#8FB3C7;display:block;font-weight:400;letter-spacing:0}
+header{padding:26px 0 22px}
+header .kap{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+header img{width:104px;height:104px;object-fit:contain}
+header b{font-size:20px;letter-spacing:1.2px;display:block}
+header span{font-size:13.5px;color:#8FB3C7;display:block;font-weight:400;letter-spacing:0;margin-top:2px}
+@media(max-width:600px){ header img{width:84px;height:84px} header b{font-size:17px} }
 .ust{background:linear-gradient(180deg,var(--lacivert) 0%,#0B2D45 100%);color:#fff;padding:52px 0 58px;text-align:center}
 .ust h1{font-size:33px;line-height:1.25;margin:0 0 14px;font-weight:700}
 .ust p{font-size:17.5px;color:#C6DAE6;max-width:680px;margin:0 auto 26px}
@@ -128,6 +130,7 @@ footer a{color:#C6DAE6}
   <a class="dugme" href="kocluk-sunucu.html">7 gün ücretsiz dene</a>
   <a class="dugme ikinci" href="kocluk-sunucu.html">Önce sistemi gez</a>
   <div class="not">Kredi kartı istenmez · Kurulum yok · Tarayıcıdan çalışır</div>
+  <div id="sayaclar" style="margin-top:30px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap"></div>
 </div></div>
 
 <section class="beyaz"><div class="kap">
@@ -267,6 +270,37 @@ footer a{color:#C6DAE6}
   </div>
 </div></footer>
 
+<script>
+/* Kullanım sayıları. Kaynak sırası:
+   1) sunucu.js içindeki SAYILAR (elle yazılmışsa o geçerli)
+   2) sunucudan canlı sayım (her zaman gerçek, kendiliğinden güncellenir) */
+(function(){
+  const kap=document.getElementById('sayaclar');
+  if(!kap) return;
+  function ciz(ogretmen, ogrenci){
+    if(!ogretmen && !ogrenci){ kap.style.display='none'; return; }
+    const kutu=(sayi,etiket)=>`
+      <div style="background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);
+           border-radius:11px;padding:15px 26px;min-width:150px">
+        <div style="font-family:var(--mono);font-size:30px;font-weight:700;color:var(--turuncu);line-height:1.1">${sayi}</div>
+        <div style="font-size:13px;color:#C6DAE6;margin-top:3px">${etiket}</div>
+      </div>`;
+    kap.innerHTML = (ogretmen?kutu(ogretmen,'öğretmen kullanıyor'):'')
+                  + (ogrenci?kutu(ogrenci,'öğrenci takip ediliyor'):'');
+  }
+  const el=window.SAYILAR;
+  if(el && (el.ogretmen || el.ogrenci)){ ciz(el.ogretmen, el.ogrenci); return; }
+  // canlı sayım
+  const A=window.SUNUCU_AYAR;
+  if(!A || !A.url || !A.key){ kap.style.display='none'; return; }
+  fetch(A.url.replace(/\/+$/,'')+'/rest/v1/rpc/kullanim_sayilari',
+    {method:'POST',headers:{'apikey':A.key,'Authorization':'Bearer '+A.key,'Content-Type':'application/json'},body:'{}'})
+    .then(r=>r.json())
+    .then(d=>{ if(!d) throw 0;
+      ciz(d.ogretmen>=5?('+'+(Math.floor(d.ogretmen/5)*5)):'', d.ogrenci>=10?('+'+(Math.floor(d.ogrenci/10)*10)):''); })
+    .catch(()=>{ kap.style.display='none'; });
+})();
+</script>
 <script>
 /* Videolar sunucu.js dosyasından gelir. Koç ve öğrenci listeleri birlikte gösterilir. */
 (function(){
