@@ -630,11 +630,26 @@ function render(){
 /* ---------- ödevlerim ---------- */
 function setTask(id,s){
   const t=D.tasks.find(x=>x.id===id); if(!t) return;
-  t.s=s;
-  // Yaptım / Yarım seçildiyse ve soru sayısı varsa döküm alanını aç
-  if(t.q && (s===1||s===2) && dybTop(t)===0) DYBACIK[id]=true;
-  if(s===1 && t.q && dybTop(t)===0) t.yap=t.q;
-  if(s===3){ t.yap=0; t.dg=0; t.yn=0; t.bs=0; DYBACIK[id]=false; }
+  if(s===3){                                   // Yapmadım: her şeyi temizle
+    t.s=3; t.yap=0; t.dg=0; t.yn=0; t.bs=0; DYBACIK[id]=false; DYBUYARI[id]='';
+    save(); render(); return;
+  }
+  if(t.q){
+    // Soru sayısı verilmişse "Yaptım" tek başına yetmez:
+    // ödev ancak doğru+yanlış+boş toplamı soru sayısına ulaşınca tamamlanır.
+    DYBACIK[id]=true;
+    const top=dybTop(t);
+    t.yap=top;
+    if(top>=t.q){ t.s=1; DYBUYARI[id]=''; }
+    else{
+      t.s = top>0 ? 2 : 0;
+      DYBUYARI[id] = s===1
+        ? `Ödevi tamamlamak için ${t.q} sorunun doğru / yanlış / boş dökümünü gir.`
+        : '';
+    }
+  } else {
+    t.s=s;                                     // soru sayısı yoksa eski davranış
+  }
   save(); render();
 }
 function weekKey(ds){const d=new Date(ds+'T00:00');const g=(d.getDay()+6)%7;d.setDate(d.getDate()-g);return d.toISOString().slice(0,10);}
@@ -670,12 +685,12 @@ function setDYB(id,alan,v){
   t[alan]=n;
   const v1=dyb(t), top=v1.d+v1.y+v1.b;
   t.yap=top;
-  if(t.q){ t.s = top>=t.q ? 1 : (top>0 ? 2 : 0); }
+  if(t.q){ t.s = top>=t.q ? 1 : (top>0 ? 2 : 0); if(top>=t.q) DYBUYARI[id]=''; }
   else   { t.s = top>0 ? 1 : 0; }
   save(); render();
 }
 function dybAc(id){ DYBACIK[id]=!DYBACIK[id]; render(); }
-let DYBACIK={};
+let DYBACIK={}, DYBUYARI={};
 /* Kendi çalışmam bölümünün seçili ders/ünite durumu ve arşiv görünürlüğü */
 let ARSIV=false, EDERS=null, EUNITE='';
 function odevSatiri(t,devreden){
@@ -690,13 +705,16 @@ function odevSatiri(t,devreden){
     <div style="font-weight:600;margin:3px 0 8px">${esc(t.konu||'—')}</div>
     ${t.txt&&t.txt!=='Sabit haftalık rutin'?`<div style="font-size:13px;color:var(--ink-2);margin-bottom:8px">${esc(t.txt)}</div>`:''}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="seg">${[1,2,3].map(s=>`<button data-v="${s}" class="${t.s===s?'on':''}" onclick="setTask('${t.id}',${s})">${SL[s]}</button>`).join('')}</div>
+      <div class="seg">${[1,2,3].map(s=>`<button data-v="${s}" class="${t.s===s?'on':''}"
+        ${(s===1&&t.q)?`title="Doğru / yanlış / boş dökümünü girmen gerekiyor"`:''}
+        onclick="setTask('${t.id}',${s})">${SL[s]}</button>`).join('')}</div>
       ${t.q?`<button class="btn ghost mini" onclick="dybAc('${t.id}')" style="margin-left:auto">
         ${acik?'Dökümü gizle':(top?`${v.d} D · ${v.y} Y · ${v.b} B`:'Doğru / yanlış / boş gir')}</button>`
       :`<div style="display:flex;align-items:center;gap:6px;margin-left:auto">
          <span style="font-size:12px;color:var(--ink-3)">çözdüğüm soru</span>
          <input type="number" min="0" value="${t.yap||0}" onchange="setSoru('${t.id}',this.value)" style="width:78px"></div>`}
     </div>
+    ${(t.q&&DYBUYARI[t.id])?`<div class="flag warn" style="margin-top:9px"><span class="ic">!</span><span>${esc(DYBUYARI[t.id])}</span></div>`:''}
     ${(t.q&&acik)?`<div style="margin-top:10px;background:#F4F8FA;border:1px solid var(--line-soft);border-radius:8px;padding:11px 12px">
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
         <div style="flex:1;min-width:74px"><label class="f" style="color:var(--ok)">Doğru</label>
