@@ -2075,7 +2075,7 @@ function render(){
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
   if(!TABSAL().find(t=>t[0]===TAB)) TAB='hafta';
   if(TAB==='davet'){
-    if(!REFERANS) setTimeout(()=>referansOku().then(render),10);
+    if(!REFERANS && !REFHATA && !REFYUKLENIYOR){ REFYUKLENIYOR=true; setTimeout(()=>referansOku().then(render),10); }
     v.innerHTML=kaynakUyarisi()+vDavet();
     if(_aid){ const _el=document.getElementById(_aid);
       if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
@@ -3667,10 +3667,21 @@ function karneTalep(){
 }
 
 /* ---------- REFERANS ---------- */
-let REFERANS=null, REFDURUM='';
+let REFERANS=null, REFDURUM='', REFHATA='', REFYUKLENIYOR=false;
 async function referansOku(){
-  try{ REFERANS=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_durum',{method:'POST',body:{}})); }
-  catch(e){ REFERANS=null; }
+  if(REFYUKLENIYOR) return;
+  REFYUKLENIYOR=true; REFHATA='';
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_durum',{method:'POST',body:{}}));
+    if(r && r.kod){ REFERANS=r; }
+    else if(r===null || r===undefined){ REFHATA='bos'; }
+    else { REFERANS=r; }            // kod boş gelirse de göster; ekran uyarır
+  }catch(e){
+    const m=String((e&&e.message)||e);
+    REFHATA = (e&&e.kod===404) || /could not find|not found|does not exist|schema cache|PGRST202|404/i.test(m)
+      ? 'kurulmamis' : m;
+  }
+  REFYUKLENIYOR=false;
 }
 function refLinki(){
   if(!REFERANS||!REFERANS.kod) return '';
@@ -3710,7 +3721,23 @@ async function refKodGir(){
 }
 function vDavet(){
   const R=REFERANS;
-  if(!R) return `<div class="card"><div class="empty">Referans bilgin yükleniyor...</div></div>`;
+  if(!R){
+    if(REFYUKLENIYOR) return `<div class="card"><div class="empty">Referans bilgin yükleniyor...</div></div>`;
+    if(REFHATA==='kurulmamis') return `<div class="card"><h2>Davet sistemi henüz kurulmamış</h2><div class="body">
+      <div class="flag warn"><span class="ic">!</span><span>
+        Bu özellik için veritabanı güncellemesi gerekiyor. Sistemi sana veren kişiye
+        <b>supabase-14-referans.sql</b> dosyasının çalıştırılması gerektiğini iletebilirsin.</span></div>
+      <button class="btn ghost wide" style="margin-top:12px" onclick="REFHATA='';referansOku().then(render)">Tekrar dene</button>
+      </div></div>${videoBolumu()}`;
+    return `<div class="card"><h2>Referans bilgin alınamadı</h2><div class="body">
+      <div class="flag bad"><span class="ic">!</span><span>${esc(REFHATA||'Bilinmeyen bir sorun oluştu.')}</span></div>
+      <button class="btn ghost wide" style="margin-top:12px" onclick="REFHATA='';referansOku().then(render)">Tekrar dene</button>
+      </div></div>${videoBolumu()}`;
+  }
+  if(!R.kod) return `<div class="card"><h2>Referans kodun oluşturulmamış</h2><div class="body">
+      <div class="flag warn"><span class="ic">!</span><span>Hesabında referans kodu bulunamadı.
+        Sistemi sana veren kişiye bildirebilirsin.</span></div>
+    </div></div>${videoBolumu()}`;
   const uc=R.ucretli||0, kalan=(2-(uc%2))%2 || (uc===0?2:2);
   const sonrakiIcin = uc%2===0 ? 2 : 1;
   return `
