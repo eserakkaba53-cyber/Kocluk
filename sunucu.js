@@ -32,6 +32,7 @@ window.VIDEOLAR = [
   { b:'4 · ÖDEVLER', a:'Konu seçimi, süre planı ve rutinler',        id:'qys0nXOuQio' },
   { b:'5 · KONU TAKİBİ',          a:'612 konuluk harita nasıl işaretlenir',       id:'vNScbFsC2H0' },
   { b:'6 · HAFTALIK VE DURUM TAKİBİ',        a:'Öğrencinin genel takibi', id:'UcaOE0iuwqo' }
+  { b:'1 · ÖĞRENCİ PANELİ', a:'Hesap açma, ödevler, denemeler ve konu takibi', id:'85bXcQvlQdM' },
 ];
 
 /* ============================================================
