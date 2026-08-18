@@ -9,56 +9,57 @@ window.SUNUCU_AYAR = {
 
 
 /* ============================================================
-   KULLANIM VİDEOLARI
+   KOÇ VİDEOLARI
    ------------------------------------------------------------
-   BU BLOĞU mevcut sunucu.js dosyanın SONUNA EKLE.
-   Dosyayı değiştirme — içindeki anahtar orada kalmalı.
+   Koç giriş sayfası · Davet ve kullanım sekmesi · tanıtım sayfası
 
    id  : YouTube adresindeki kod (ZORUNLU)
-         https://www.youtube.com/watch?v=dQw4w9WgXcQ  →  dQw4w9WgXcQ
-         https://youtu.be/dQw4w9WgXcQ                 →  dQw4w9WgXcQ
+         https://youtu.be/dQw4w9WgXcQ  →  dQw4w9WgXcQ
    b   : başlık
-   a   : kısa açıklama        (istersen sil)
-   sure: süre, ör. '4:12'     (istersen sil — yazmazsan görünmez)
+   a   : kısa açıklama   (istersen sil)
+   sure: süre, ör. '4:12' (istersen sil)
 
-   · id'si boş olan satır ekranda GÖRÜNMEZ.
-   · Video eklemek için bir satırı kopyalayıp altına yapıştır.
-   · Hiç video istemiyorsan: window.VIDEOLAR = [];
+   · id'si boş olan satır GÖRÜNMEZ.
+   · HER SATIRIN SONUNDA VİRGÜL OLMALI (son satır hariç).
    ============================================================ */
 window.VIDEOLAR = [
-  { b:'1 · ÖĞRENCİ EKLEME',    a:'Hesap açma ve öğrenci ekleme',       id:'RPzk7lkXm7Y' },
-  { b:'2 · HEDEF BELİRLEME',       a:'YÖK verisiyle bölüm seçimi, hedefe uzaklık',   id:'jbWGy8c-Ub0' },
-  { b:'3 · DENEME SONUÇLARI',         a:'Deneme karnesini yapıştır, netler otomatik', id:'2jN49XP5p9g' },
-  { b:'4 · ÖDEVLER', a:'Konu seçimi, süre planı ve rutinler',        id:'qys0nXOuQio' },
-  { b:'5 · KONU TAKİBİ',          a:'612 konuluk harita nasıl işaretlenir',       id:'vNScbFsC2H0' },
-  { b:'6 · HAFTALIK VE DURUM TAKİBİ',        a:'Öğrencinin genel takibi', id:'UcaOE0iuwqo' }
-  { b:'1 · ÖĞRENCİ PANELİ', a:'Hesap açma, ödevler, denemeler ve konu takibi', id:'85bXcQvlQdM' },
+  { b:'1 · ÖĞRENCİ EKLEME',           a:'Hesap açma ve öğrenci ekleme',                id:'RPzk7lkXm7Y' },
+  { b:'2 · HEDEF BELİRLEME',          a:'YÖK verisiyle bölüm seçimi, hedefe uzaklık',  id:'jbWGy8c-Ub0' },
+  { b:'3 · DENEME SONUÇLARI',         a:'Deneme karnesini yapıştır, netler otomatik',  id:'2jN49XP5p9g' },
+  { b:'4 · ÖDEVLER',                  a:'Konu seçimi, süre planı ve rutinler',         id:'qys0nXOuQio' },
+  { b:'5 · KONU TAKİBİ',              a:'612 konuluk harita nasıl işaretlenir',        id:'vNScbFsC2H0' },
+  { b:'6 · HAFTALIK VE DURUM TAKİBİ', a:'Öğrencinin genel takibi',                     id:'UcaOE0iuwqo' }
 ];
+
+
+/* ============================================================
+   ÖĞRENCİ VİDEOLARI
+   ------------------------------------------------------------
+   Öğrenci giriş ekranı · kayıt ekranı · kod ekranı ·
+   Yardım sekmesi · tanıtım sayfası
+
+   Bu AYRI bir listedir; koç videolarıyla karıştırma.
+   ============================================================ */
+window.OGRENCI_VIDEOLAR = [
+  { b:'1 · ÖĞRENCİ PANELİ',        a:'Hesap açma, ödevler, denemeler ve konu takibi', id:'85bXcQvlQdM' },
+  { b:'2 · Ödevlerimi işaretleme', a:'Yaptım / yarım / yapmadım ve soru dökümü',      id:'' },
+  { b:'3 · Deneme sonucu girme',   a:'Netlerini panele nasıl eklersin',               id:'' },
+  { b:'4 · Konularımı işaretleme', a:'Bitti, işleniyor, eksiğim var',                 id:'' },
+  { b:'5 · Hedefe uzaklık',        a:'Bölüm seçimi ve yetişir mi hesabı',             id:'' }
+];
+
 
 /* ============================================================
    TANITIM SAYAÇLARI
    ------------------------------------------------------------
-   BU BLOĞU mevcut sunucu.js dosyanın SONUNA EKLE.
-   Dosyayı silme — içindeki anahtar orada kalmalı.
- 
-   İki yerde birden görünür:
-     · Koç giriş sayfası (formun üstünde)
-     · Tanıtım sayfası (index.html)
- 
-   BOŞ BIRAKIRSAN: sayılar sunucudan canlı okunur ve
-   kendiliğinden güncellenir. Bunun için Supabase'de
-   supabase-17-sayilar.sql çalıştırılmış olmalı.
- 
-   ELLE YAZMAK İSTERSEN: tırnakların arasına yaz.
-   Yazdığın değer canlı sayımın yerine geçer.
- 
+   Koç giriş sayfası · tanıtım sayfası
+
+   BOŞ BIRAKIRSAN sunucudan canlı okunur (supabase-17-sayilar.sql
+   çalıştırılmış olmalı) ve kendiliğinden güncellenir.
+
    Örnekler:
      window.SAYILAR = { ogretmen:'20',  ogrenci:'75'  };
      window.SAYILAR = { ogretmen:'+20', ogrenci:'+70' };
-     window.SAYILAR = { ogretmen:'20',  ogrenci:''    };   // sadece öğretmen görünür
      window.SAYILAR = { ogretmen:'',    ogrenci:''    };   // canlı sayım
- 
-   Tırnakları silme, sadece aralarına yaz.
    ============================================================ */
 window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
- 
