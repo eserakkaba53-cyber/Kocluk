@@ -1,6 +1,6 @@
 # Biyoser Koçluk Sistemi
 # Tanıtım sayfası taranabilir; panel sayfaları taranmaz (giriş gerektirir).
- 
+
 User-agent: *
 Allow: /$
 Allow: /index.html
@@ -10,6 +10,5 @@ Disallow: /kocluk-paneli.html
 Disallow: /ogrenci-paneli.html
 Disallow: /sunucu.js
 Disallow: /atlas.json
- 
+
 Sitemap: https://biyoser.com.tr/sitemap.xml
- 
