@@ -114,6 +114,10 @@ footer{background:var(--lacivert);color:#8FB3C7;padding:34px 0;font-size:14px}
 footer a{color:#C6DAE6}
 .orta{text-align:center}
 @media(max-width:600px){ .ust h1{font-size:26px} .ust p{font-size:16px} .dugme.ikinci{margin:10px 0 0} }
+
+/* Kullanım videoları — tek sıra, dar ekranda kırılır */
+@media(max-width:1000px){ .vsira{grid-template-columns:repeat(3,minmax(0,1fr))!important} }
+@media(max-width:620px){  .vsira{grid-template-columns:repeat(2,minmax(0,1fr))!important} }
 </style>
 </head>
 <body>
@@ -132,6 +136,14 @@ footer a{color:#C6DAE6}
   <div class="not">Kredi kartı istenmez · Kurulum yok · Tarayıcıdan çalışır</div>
   <div id="sayaclar" style="margin-top:30px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap"></div>
 </div></div>
+
+<section id="videolar" style="padding:38px 0"><div class="kap">
+  <div style="text-align:center;margin-bottom:22px">
+    <h2 style="margin:0 0 6px">Sistemi 3 dakikada görün</h2>
+    <p class="alt" style="margin:0">Kısa anlatımlar. Videolar bu sayfada açılır, başka yere gitmezsiniz.</p>
+  </div>
+  <div id="videoAlani"><p style="color:var(--ink-3);text-align:center">Videolar yükleniyor…</p></div>
+</div></section>
 
 <section class="beyaz"><div class="kap">
   <span class="rozet">EN ÇOK ZAMAN KAZANDIRAN ÖZELLİK</span>
@@ -233,12 +245,6 @@ footer a{color:#C6DAE6}
   </div>
 </div></section>
 
-<section class="beyaz" id="videolar"><div class="kap">
-  <h2>Kullanım videoları</h2>
-  <p class="alt">Kısa anlatımlar. Videolar bu sayfada açılır.</p>
-  <div id="videoAlani"><p style="color:var(--ink-3)">Videolar yükleniyor…</p></div>
-</div></section>
-
 <section class="beyaz"><div class="kap">
   <h2>Sık sorulanlar</h2>
   <details><summary>Deneme karnesi nasıl okunuyor?</summary>
@@ -327,20 +333,21 @@ footer a{color:#C6DAE6}
       <div style="margin-bottom:22px">
         <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
              font-weight:650;margin-bottom:10px">${esc(g.baslik)}</div>
-        <div class="izgara">
+        <div style="display:grid;grid-template-columns:repeat(${g.v.length},minmax(0,1fr));gap:10px" class="vsira">
           ${g.v.map((x,i)=>{
             const anahtar=gi+'-'+i, acik=secili===anahtar;
             return `<button data-k="${anahtar}" style="text-align:left;cursor:pointer;font-family:inherit;
               background:${acik?'var(--accent)':'var(--paper)'};color:${acik?'#fff':'var(--ink)'};
-              border:1px solid ${acik?'var(--accent)':'var(--line-soft)'};border-radius:10px;padding:16px">
-              <div style="display:flex;gap:10px;align-items:flex-start">
-                <span style="flex:none;width:25px;height:25px;border-radius:50%;
+              border:1px solid ${acik?'var(--accent)':'var(--line-soft)'};border-radius:10px;padding:13px 14px;min-width:0">
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:${x.a?'7px':'0'}">
+                <span style="flex:none;width:23px;height:23px;border-radius:50%;
                   background:${acik?'rgba(255,255,255,.22)':'var(--accent)'};color:#fff;
-                  display:flex;align-items:center;justify-content:center;font-size:11px">&#9654;</span>
-                <span><b style="font-size:15px;display:block">${esc(x.b||'Video')}</b>
-                ${x.a?`<span style="font-size:13.5px;opacity:.78;display:block;margin-top:3px">${esc(x.a)}</span>`:''}
-                ${x.sure?`<span style="font-size:12px;opacity:.6;display:block;margin-top:3px;font-family:var(--mono)">${esc(x.sure)}</span>`:''}
-                </span></div></button>`;}).join('')}
+                  display:flex;align-items:center;justify-content:center;font-size:10px">&#9654;</span>
+                <b style="font-size:13.5px;line-height:1.25;min-width:0">${esc(x.b||'Video')}</b>
+              </div>
+              ${x.a?`<div style="font-size:12.5px;opacity:.78;line-height:1.35">${esc(x.a)}</div>`:''}
+              ${x.sure?`<div style="font-size:11.5px;opacity:.6;margin-top:3px;font-family:var(--mono)">${esc(x.sure)}</div>`:''}
+              </button>`;}).join('')}
         </div>
       </div>`).join('') + (secili===null?'':oynatici());
 
