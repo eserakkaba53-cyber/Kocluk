@@ -1931,7 +1931,8 @@ function girisEkrani(){
     <div class="fr"><div style="flex:1"><label class="f">Yeni şifre (tekrar)</label>
       <input type="password" id="nS2" placeholder="aynısını yaz" onkeydown="if(event.key==='Enter')gYeniSifre()"></div></div>
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gYeniSifre()">${GBEKLE?'Bekle...':'Şifreyi kaydet'}</button>${hata}
-  </div></div>`;
+  </div></div>
+  ${videoBolumu()}`;
   if(GMOD==='kod') return `<div class="card"><h2>Öğretmeninin kodu</h2><div class="body">
     <div class="hint" style="margin-bottom:10px">Hesabın açıldı. Şimdi öğretmeninin verdiği <b>6 haneli kodu</b> yaz — böylece ödevlerin gelmeye başlar.</div>
     <div class="fr"><div style="flex:1"><label class="f">Kod</label>
@@ -1940,7 +1941,8 @@ function girisEkrani(){
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gKodGir()">${GBEKLE?'Bekle...':'Bağlan'}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="teshisAl()">Sorun mu var? Kontrol et</button>${hata}
-  </div></div>`;
+  </div></div>
+  ${videoBolumu()}`;
   return `<div class="card"><h2>${GMOD==='kayit'?'Hesabını oluştur':'Giriş yap'}<small>${
     GMOD==='kayit'
       ? (BEKLEYENKOD?'Bilgilerini gir, panelin hemen açılsın.':'Öğretmeninin verdiği kodu da hazır bulundur.')
