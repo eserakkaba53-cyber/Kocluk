@@ -81,6 +81,34 @@ input[type=number]{font-family:var(--mono);text-align:right}
 .hint{font-size:12.5px;color:var(--ink-3);margin-top:6px}
 .big{font-family:var(--mono);font-size:12px;word-break:break-all;background:#F2F5F9;border:1px solid var(--line-soft);border-radius:6px;padding:10px;max-height:150px;overflow:auto}
 progress{width:100%;height:9px}
+
+/* ================= DAR EKRAN İNCE AYARLARI =================
+   Panel zaten mobil odaklı; bunlar telefonda kalan pürüzleri kapatır.
+   Geniş ekranlarda hiçbir şey değişmez. */
+@media(max-width:640px){
+  /* iOS'ta 16px altı alana dokununca sayfa kendiliğinden yakınlaşır */
+  input,select,textarea{font-size:16px}
+
+  .wrap{padding:0 10px 70px}
+  .card{margin-bottom:12px}
+  .card .body{padding:12px;overflow-x:auto}
+  .card>h2{padding:11px 12px}
+
+  /* geniş tablolar sıkışıp okunmaz olmasın, kart içinde yatay kaysın */
+  .card .body table{min-width:480px}
+
+  /* sekmeler parmakla kaysın, kaydırma çubuğu görünmesin */
+  .tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{white-space:nowrap}
+
+  /* dokunma hedefleri */
+  .btn{min-height:42px}
+}
+@media(max-width:400px){
+  .stats{grid-template-columns:1fr}
+}
+
 </style>
 
 <div class="hdr"><div class="in">
