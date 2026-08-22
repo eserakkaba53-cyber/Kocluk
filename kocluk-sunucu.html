@@ -49,7 +49,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ---- ana ---- */
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.hdr{background:var(--panel);border-bottom:1px solid var(--line);padding:16px 26px 0}
+.hdr{background:var(--panel);border-bottom:1px solid var(--line);padding:16px 26px 0;position:sticky;top:0;z-index:40;box-shadow:0 1px 0 rgba(0,0,0,.04),0 6px 14px -10px rgba(11,32,51,.35)}
 .hdr-row{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap}
 .hdr h1{margin:0;font-size:23px;font-weight:650;letter-spacing:-.01em}
 .hdr .meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.02em}
@@ -149,6 +149,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
 .vsira > button{min-width:0}
 @media(max-width:1100px){ .vsira{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media(max-width:620px){  .vsira{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media print{ .hdr{position:static;box-shadow:none} }
 </style>
 
 <div class="app">
