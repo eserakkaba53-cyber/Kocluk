@@ -195,7 +195,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-b</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-d</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -589,6 +589,283 @@ const S={
   }
 })();
 const subs=st=>S.TYT.concat(S[st.track]||[]);
+
+/* ================= KARNE AYRIŞTIRICI =================
+   Yayınevi düzenine değil, matematiksel tutarlılığa dayanır:
+   net = D - Y/4  ve  D + Y + Boş = soru sayısı  eşitliklerini
+   aynı anda sağlayan sayı ikilisini seçer. */
+const ALIAS={
+ tyt_tur:['turkce'], tyt_mat:['temel matematik','matematik'],
+ tyt_fiz:['fizik'], tyt_kim:['kimya'], tyt_biy:['biyoloji'],
+ tyt_tar:['tarih'], tyt_cog:['cografya'], tyt_fel:['felsefe'], tyt_din:['din kulturu','din kult','din'],
+ ayt_mat:['matematik'], ayt_fiz:['fizik'], ayt_kim:['kimya'], ayt_biy:['biyoloji'],
+ ayt_edb:['turk dili ve edebiyati','edebiyat'], ayt_tar1:['tarih-1','tarih 1','tarih1','tarih'],
+ ayt_cog1:['cografya-1','cografya 1','cografya1','cografya'],
+ ayt_tar2:['tarih-2','tarih 2','tarih2'], ayt_cog2:['cografya-2','cografya 2','cografya2'],
+ ayt_fel:['felsefe grubu','felsefe'], ayt_din:['din kulturu','din'],
+ ydt:['yabanci dil','ingilizce','ydt']
+};
+function norm(s){
+  return s.toLocaleLowerCase('tr-TR')
+    .replace(/[ıİ]/g,'i').replace(/[şŞ]/g,'s').replace(/[ğĞ]/g,'g')
+    .replace(/[üÜ]/g,'u').replace(/[öÖ]/g,'o').replace(/[çÇ]/g,'c')
+    .replace(/\s+/g,' ').trim();
+}
+function solveLine(nums,q){
+  let best=null;
+  for(let i=0;i<nums.length;i++)for(let j=0;j<nums.length;j++){
+    if(i===j) continue;
+    const D=nums[i],Y=nums[j];
+    if(!Number.isInteger(D)||!Number.isInteger(Y)||D<0||Y<0||D>q||Y>q||D+Y>q) continue;
+    const nt=D-Y/4;
+    let sc=0;
+    if(nums.some((v,x)=>x!==i&&x!==j&&Math.abs(v-nt)<0.06)) sc+=3;      // net satırda var
+    if(nums.some((v,x)=>x!==i&&x!==j&&Number.isInteger(v)&&D+Y+v===q)) sc+=2; // boş tutuyor
+    if(i<j) sc+=1;                                                       // D genelde Y'den önce
+    if(sc<3) continue;                                                   // en az bir güçlü kanıt şart
+    if(!best||sc>best.sc||(sc===best.sc&&i<best.i)) best={D,Y,sc,i};
+  }
+  return best;
+}
+/* ================= KARNE AYRIŞTIRICI (v3) =================
+   İki karne ailesini birlikte okur:
+     A) Satır tabanlı  — "TYT Türkçe 40 31 5 4 29,75 % 74"
+     B) Sütun tabanlı  — başlıkta dersler, altta SORU/DOĞRU/YANLIŞ/BOŞ/NET satırları
+   Her okumayı NET İLE DOĞRULAR: |(D − Y/4) − beyan edilen net| < 0,02
+   Doğrulanamayan satır kabul edilmez; yanlış okuma yerine boş bırakılır.
+============================================================ */
+
+/* --- ders adı → panel kodu (uzun eşleşme kazanır) --- */
+const KARNE_DERS=[
+  ['tyt turkce','tyt_tur'],['turkce','tyt_tur'],
+  ['tyt matematik','tyt_mat_top'],['t. mat','tyt_mat_top'],['t.mat','tyt_mat_top'],['temel matematik','tyt_mat_top'],
+  ['matematik-1','tyt_mat'],['matematik-2','ayt_mat'],['mat-1','tyt_mat'],['mat-2','ayt_mat'],
+  ['ayt matematik','ayt_mat_top'],
+  ['geometri-1','tyt_geo'],['geometri-2','ayt_geo'],['geo-1','tyt_geo'],['geo-2','ayt_geo'],['geometri','tyt_geo'],
+  ['tyt fen','tyt_fen_top'],['fen bilimleri','tyt_fen_top'],['fen bil','tyt_fen_top'],
+  ['tyt sosyal','tyt_sos_top'],['sosyal bilimler','tyt_sos_top'],['sosyal bil','tyt_sos_top'],
+  ['fizik-1','tyt_fiz'],['fizik-2','ayt_fiz'],['fiz-1','tyt_fiz'],['fiz-2','ayt_fiz'],['fizik','tyt_fiz'],
+  ['kimya-1','tyt_kim'],['kimya-2','ayt_kim'],['kim-1','tyt_kim'],['kim-2','ayt_kim'],['kimya','tyt_kim'],
+  ['biyoloji-1','tyt_biy'],['biyoloji-2','ayt_biy'],['biy-1','tyt_biy'],['biy-2','ayt_biy'],['biyoloji','tyt_biy'],
+  ['tarih-1','tyt_tar'],['tarih-2','ayt_tar1'],['tarih-3','ayt_tar2'],
+  ['tar-1','tyt_tar'],['tar-2','ayt_tar1'],['tar-3','ayt_tar2'],['tarih','tyt_tar'],
+  ['cografya-1','tyt_cog'],['cografya-2','ayt_cog1'],['cografya-3','ayt_cog2'],
+  ['cog-1','tyt_cog'],['cog-2','ayt_cog1'],['cog-3','ayt_cog2'],['cografya','tyt_cog'],
+  ['din kul. ve ahl. bil','tyt_din'],['din kul','tyt_din'],['din-1','tyt_din'],['din-2','ayt_din'],['din kul.','tyt_din'],
+  ['felsefe (secmeli)','__atla'],['felsefe grubu','tyt_fel'],['fel-1','tyt_fel'],['fel-2','ayt_fel'],['felsefe','tyt_fel'],
+  ['t.d. edebiyati','ayt_edb'],['turk dili ve edebiyati','ayt_edb'],['edebiyat','ayt_edb'],['edeb','ayt_edb'],
+  ['yabanci dil','ydt'],['ingilizce','ydt'],['y. dil','ydt'],
+  ['toplam','__atla'],['genel','__atla'],['puan','__atla']
+].sort((a,b)=>b[0].length-a[0].length);
+
+function kDersBul(satir){
+  const b=kDersleriBul(satir);
+  return b.length?b[0].kod:null;
+}
+/* Bir satırda BİRDEN FAZLA ders olabilir:
+   "TYT Türkçe 40 31 5 4 29,75 % 74   Matematik-1 30 8 2 20 7,50 % 25"
+   Hepsini yerleriyle döndürür; her ders kendi parçasındaki sayılarla çözülür. */
+function kDersleriBul(satir){
+  const L=norm(satir);
+  const bulunan=[];
+  for(const [ad,kod] of KARNE_DERS){
+    let i=0;
+    while((i=L.indexOf(ad,i))>=0){
+      const onceki = i===0 ? ' ' : L[i-1];
+      const sonraki = L[i+ad.length]||' ';
+      const bas=i, son=i+ad.length;
+      i=son;
+      if(/[a-z0-9çğıöşü]/.test(onceki)) continue;          // kelime ortası
+      if(/[a-zçğıöşü]/.test(sonraki)) continue;            // daha uzun bir adın parçası
+      if(bulunan.some(x=>bas<x.son && son>x.bas)) continue; // daha uzun eşleşmeyle çakışıyor
+      bulunan.push({kod, bas, son});
+    }
+  }
+  return bulunan.sort((a,b)=>a.bas-b.bas);
+}
+
+/* Sayı dizisinden (D,Y) çöz — beyan edilen net ile doğrula.
+   Kanıt gücü: SDYB-net(4) > SDY-net(3) > SDYB(2) > DY-net(1) */
+function kNetCoz(nums, soru){
+  const yak=(a,b)=>Math.abs(a-b)<0.02;
+  let en=null;
+  const koy=(d,y,g,p)=>{ if(!en||p>en.p) en={d,y,g,p}; };
+  // 1) [S,D,Y,B,Net] / [S,D,Y,Net]
+  for(let i=0;i+2<nums.length;i++){
+    const S=nums[i], D=nums[i+1], Y=nums[i+2];
+    if(!Number.isInteger(S)||!Number.isInteger(D)||!Number.isInteger(Y)) continue;
+    if(S<=0||S>200||D<0||Y<0||D+Y>S) continue;
+    if(soru && S!==soru) continue;          // soru sayısı biliniyorsa birebir tutmalı
+    const B=nums[i+3], N=nums[i+4];
+    if(Number.isInteger(B)&&B>=0&&D+Y+B===S&&yak(N,D-Y/4)) koy(D,Y,'SDYB-net',4);
+    else if(yak(B,D-Y/4)) koy(D,Y,'SDY-net',3);
+    else if(Number.isInteger(B)&&B>=0&&D+Y+B===S) koy(D,Y,'SDYB',2);
+  }
+  // 2) [D,Y,Net] — soru sayısı satırda yok. Sıfır satırları kabul edilmez.
+  if(!en) for(let i=0;i+2<nums.length;i++){
+    const D=nums[i], Y=nums[i+1], N=nums[i+2];
+    if(!Number.isInteger(D)||!Number.isInteger(Y)||D<0||Y<0) continue;
+    if(D+Y===0) continue;                   // "Türkçe 0 0 0 0" gibi başlık satırlarını ele
+    if(soru && D+Y>soru) continue;
+    if(yak(N,D-Y/4)) koy(D,Y,'DY-net',1);
+  }
+  return en;
+}
+
+/* ---------- A) SATIR TABANLI ---------- */
+function karneSatirlardan(text, list){
+  const out={}, kanit={}, puan={};
+  const soruSay={}; list.forEach(([k,,q])=>soruSay[k]=q);
+  soruSay.tyt_mat_top=40; soruSay.ayt_mat_top=40; soruSay.tyt_fen_top=20; soruSay.tyt_sos_top=20;
+  text.split(/[\r\n]+/).forEach(raw=>{
+    const bul=kDersleriBul(raw);
+    if(!bul.length) return;
+    bul.forEach((b,j)=>{
+      if(b.kod==='__atla') return;
+      // bu dersin parçası: kendi adından sonraki ders adına kadar
+      const son = j+1<bul.length ? bul[j+1].bas : raw.length;
+      const parca = raw.slice(b.son, son);
+      const nums=(parca.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(s=>parseFloat(s.replace(',','.')));
+      if(nums.length<3) return;
+      const r=kNetCoz(nums, soruSay[b.kod]);
+      if(!r) return;
+      const eski=puan[b.kod];
+      if(eski!==undefined && eski>=r.p) return;
+      out[b.kod]={d:r.d,y:r.y}; kanit[b.kod]=r.g; puan[b.kod]=r.p;
+    });
+  });
+  return {out,kanit};
+}
+
+/* ---------- B) SÜTUN TABANLI (AKBİM, İlk Adım) ---------- */
+function karneSutunlardan(text){
+  const sat=text.split(/[\r\n]+/);
+  const out={};
+  // başlık: ders adlarını sırayla içeren satır
+  let bas=-1, kodlar=null;
+  for(let i=0;i<sat.length;i++){
+    const L=norm(sat[i]);
+    if(!/turkce/.test(L)) continue;
+    const parca=sat[i].split(/\s{1,}/).filter(Boolean);
+    const k=parca.map(p=>kDersBul(p));
+    const dolu=k.filter(x=>x&&x!=='__atla');
+    if(dolu.length>=3){ bas=i; kodlar=k; break; }
+  }
+  if(bas<0) return {out,kanit:{}};
+  // sonraki 12 satırda DOĞRU / YANLIŞ / NET satırlarını ara
+  let D=null,Y=null,N=null;
+  for(let i=bas;i<Math.min(sat.length,bas+14);i++){
+    const L=norm(sat[i]);
+    const nums=(sat[i].match(/-?\d+(?:[.,]\d+)?/g)||[]).map(s=>parseFloat(s.replace(',','.')));
+    if(/dogru/.test(L)&&!D) D=nums;
+    else if(/yanlis/.test(L)&&!Y) Y=nums;
+    else if(/^net\b/.test(L)&&!N) N=nums;
+  }
+  if(!D||!Y||!N) return {out,kanit:{}};
+  const kanit={};
+  const gecerli=kodlar.filter(x=>x&&x!=='__atla');
+  // hizalama: ders sayısı ile sayı sayısı uyuşmalı
+  const n=Math.min(gecerli.length, D.length, Y.length, N.length);
+  for(let j=0;j<n;j++){
+    const kod=gecerli[j];
+    if(out[kod]) continue;
+    if(Math.abs(N[j]-(D[j]-Y[j]/4))<0.02){ out[kod]={d:D[j],y:Y[j]}; kanit[kod]='sutun'; }
+  }
+  return {out,kanit};
+}
+
+/* ---------- C) SABİT SÜTUN DÜZENLERİ (İlk Adım gibi) ----------
+   "S.Sayısı 40 5 5 5 5 40 7 7 6 20 20 120" satırı düzeni ele verir. */
+const SUTUN_DUZEN=[
+  { soru:[40,5,5,5,5,40,7,7,6,20,20,120],
+    ders:['tyt_tur','tyt_tar','tyt_cog','tyt_fel','tyt_din','tyt_mat_top','tyt_fiz','tyt_kim','tyt_biy',null,null,null] },
+  { soru:[40,20,40,20],
+    ders:['tyt_tur',null,'tyt_mat_top',null] }
+];
+function karneSabitDuzen(text){
+  const sat=text.split(/[\r\n]+/);
+  const out={}, kanit={};
+  const sayilar=s=>(s.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(',','.')));
+  let S=null,D=null,Y=null,N=null;
+  for(let i=0;i<sat.length;i++){
+    const L=norm(sat[i]);
+    const T=L.trim(), sy=sayilar(sat[i]);
+    if(sy.length<2) continue;                      // sayı içermeyen satır etiket değildir
+    if(!S && /^(s\.?\s?sayisi|soru sayisi)/.test(T)) S=sy.filter(x=>Number.isInteger(x));
+    else if(!D && /^dogru( cevap)?\b/.test(T)) D=sy;
+    else if(!Y && /^yanlis( cevap)?\b/.test(T)) Y=sy;
+    else if(!N && /^net\b/.test(T)) N=sy;
+  }
+  if(!S||!D||!Y||!N) return {out,kanit};
+  const duzen=SUTUN_DUZEN.find(z=>z.soru.length===S.length && z.soru.every((v,j)=>v===S[j]));
+  if(!duzen) return {out,kanit};
+  const n=Math.min(duzen.ders.length,D.length,Y.length,N.length);
+  for(let j=0;j<n;j++){
+    const kod=duzen.ders[j]; if(!kod) continue;
+    if(Math.abs(N[j]-(D[j]-Y[j]/4))<0.02) { out[kod]={d:D[j],y:Y[j]}; kanit[kod]='sabit sütun'; }
+  }
+  return {out,kanit};
+}
+
+/* ---------- D) KONU TABLOSUNDAN TOPLAM ----------
+   Bazı karnelerde (AKBİM) özet tablo ders ders vermez; konu analizi tablosunun
+   satırları toplanarak doğru/yanlış çıkarılır. */
+function karneKonudanToplam(text, st){
+  const out={}, kanit={};
+  let kt=null;
+  try{ kt=parseKonuTablo(text, st); }catch(e){ return {out,kanit}; }
+  if(!kt) return {out,kanit};
+  for(const kod in kt){
+    const v=kt[kod];
+    if(!v || !v.konu || !v.konu.length) continue;
+    let d=0,y=0,ss=0;
+    v.konu.forEach(k=>{ ss+=(k.ss||0); d+=(k.d||0); y+=(k.y||0); });
+    if(!ss) continue;
+    out[kod]={d,y}; kanit[kod]='konu tablosundan toplandı';
+  }
+  return {out,kanit};
+}
+
+/* ---------- BİRLEŞTİR ---------- */
+function parseKarne(text, st){
+  const list=subs(st);
+  const A=karneSatirlardan(text, list);
+  let out=A.out, kanit=A.kanit;
+  const zayif=k=>kanit[k]==='DY-net';
+  const ekle=(kaynak)=>{ for(const k in kaynak.out){
+    if(out[k]===undefined || zayif(k)){ out[k]=kaynak.out[k]; kanit[k]=kaynak.kanit[k]; } } };
+  if(Object.keys(out).length<10) ekle(karneSabitDuzen(text));
+  if(Object.keys(out).length<10) ekle(karneSutunlardan(text));
+  if(Object.keys(out).length<10) ekle(karneKonudanToplam(text, st));
+  // toplam satırlarını çöz: TYT Matematik = Matematik-1 + Geometri
+  if(out.tyt_mat_top){
+    if(!out.tyt_mat && !out.tyt_geo){ out.tyt_mat=out.tyt_mat_top; kanit.tyt_mat=(kanit.tyt_mat_top||'')+' (geometri dahil)'; }
+    else if(out.tyt_mat && !out.tyt_geo){
+      const g={d:out.tyt_mat_top.d-out.tyt_mat.d, y:out.tyt_mat_top.y-out.tyt_mat.y};
+      if(g.d>=0&&g.y>=0&&(g.d||g.y)){ out.tyt_geo=g; kanit.tyt_geo='toplamdan çıkarıldı'; }
+    }
+    delete out.tyt_mat_top;
+  }
+  if(out.ayt_mat_top){
+    if(!out.ayt_mat && !out.ayt_geo){ out.ayt_mat=out.ayt_mat_top; kanit.ayt_mat=(kanit.ayt_mat_top||'')+' (geometri dahil)'; }
+    else if(out.ayt_mat && !out.ayt_geo){
+      const g={d:out.ayt_mat_top.d-out.ayt_mat.d, y:out.ayt_mat_top.y-out.ayt_mat.y};
+      if(g.d>=0&&g.y>=0&&(g.d||g.y)){ out.ayt_geo=g; kanit.ayt_geo='toplamdan çıkarıldı'; }
+    }
+    delete out.ayt_mat_top;
+  }
+  delete out.tyt_fen_top; delete out.tyt_sos_top;
+  delete kanit.tyt_mat_top; delete kanit.ayt_mat_top;
+
+  const log=[];
+  const isim={}; list.forEach(([k,nm])=>isim[k]=nm);
+  Object.keys(out).forEach(k=>{
+    const {d,y}=out[k];
+    log.push(`${isim[k]||k}: ${d} doğru / ${y} yanlış → ${n1(d-y/4)} net`);
+  });
+  return {out, log, kanit};
+}
+
 const subName=k=>{for(const g in S)for(const s of S[g])if(s[0]===k)return s[1];return k;};
 const subQ=k=>{for(const g in S)for(const s of S[g])if(s[0]===k)return s[2];return 0;};
 const uniteOf={}; for(const k in KONU){uniteOf[k]={};KONU[k].forEach(([u,ks])=>ks.forEach(t=>uniteOf[k][t]=u));}
@@ -1014,17 +1291,82 @@ function denemeKaydet(){
   if(bos){alert('En az bir derse doğru/yanlış yaz.');return;}
   D.exams.push({id:uid(),tur:DTUR,date:document.getElementById('sD').value||today(),
     name:document.getElementById('sN').value.trim(),n});
+  KARNE_SONUC=null; KARNE_HATA='';
   save(); render();
-  alert('Deneme kaydedildi. Rapor gönderdiğinde öğretmenine iletilecek.');
+  alert(sbKurulu()
+    ? 'Deneme kaydedildi. Öğretmenin panelinde anında görünür.'
+    : 'Deneme kaydedildi. Rapor gönderdiğinde öğretmenine iletilecek.');
 }
 function denemeSil(id){D.exams=D.exams.filter(e=>e.id!==id);save();render();}
-function setDTur(t){DTUR=t;render();}
+let KARNE_SONUC=null;      // son okunan karne
+let KARNE_HATA='';
+
+/* Okunan değerleri ekrandaki doğru/yanlış kutularına yazar.
+   Her render sonrası çağrılır; TYT↔AYT geçişinde de dolu kalır. */
+function karneDoldur(){
+  if(!KARNE_SONUC) return;
+  let yazilan=0;
+  for(const k in KARNE_SONUC){
+    const de=document.getElementById('sd_'+k), ye=document.getElementById('sy_'+k);
+    if(de){ de.value=KARNE_SONUC[k].d; yazilan++; }
+    if(ye){ ye.value=KARNE_SONUC[k].y; }
+  }
+  return yazilan;
+}
+
+function karneOku(){
+  const el=document.getElementById('kMetin');
+  const t=(el?el.value:'').trim();
+  KARNE_HATA='';
+  if(t.length<40){ KARNE_HATA='Karne metni çok kısa. PDF’i açıp tümünü kopyaladığından emin ol.'; render(); return; }
+  let r=null;
+  try{ r=parseKarne(t, D); }catch(e){ r=null; }
+  if(!r || !Object.keys(r.out).length){
+    KARNE_SONUC=null;
+    KARNE_HATA='Karne okunamadı. PDF’i açıp Ctrl+A → Ctrl+C ile TAMAMINI kopyalayıp buraya yapıştır. Ekran görüntüsü veya fotoğraf okunamaz.';
+    render(); return;
+  }
+  KARNE_SONUC=r.out;
+  const anahtar=Object.keys(r.out);
+  const tytN=anahtar.filter(k=>k.indexOf('tyt_')===0).length;
+  const aytN=anahtar.filter(k=>k.indexOf('ayt_')===0).length;
+  DTUR = (aytN>tytN) ? 'ayt' : 'tyt';
+  render();
+  setTimeout(karneDoldur, 30);
+}
+
+function karneTemizle(){
+  KARNE_SONUC=null; KARNE_HATA='';
+  const el=document.getElementById('kMetin'); if(el) el.value='';
+  render();
+}
+
+function setDTur(t){DTUR=t;render();setTimeout(karneDoldur,30);}
 const TURAD={tyt:'TYT denemesi',ayt:'AYT denemesi',brans:'Branş denemesi'};
 function vDeneme(){
   const hepsi=subs(D);
   if(!DBRANS||!hepsi.find(x=>x[0]===DBRANS)) DBRANS=hepsi[0][0];
   const liste = DTUR==='tyt'?tytDersleri() : DTUR==='ayt'?aytDersleri() : [hepsi.find(x=>x[0]===DBRANS)].filter(Boolean);
+  const anahtar = KARNE_SONUC?Object.keys(KARNE_SONUC):[];
   return `
+  <div class="card"><h2>Karneni yapıştır<small>Elle yazmak yerine karnenin kendisini okut.</small></h2><div class="body">
+    <div class="hint" style="margin-bottom:8px">
+      Deneme karnenin <b>PDF</b>’ini bilgisayarda aç → <b>Ctrl+A</b> (tümünü seç) → <b>Ctrl+C</b> (kopyala) →
+      aşağıya <b>yapıştır</b>. Netlerin kendiliğinden dolar; kaydetmeden önce kontrol edersin.
+    </div>
+    <textarea id="kMetin" rows="4" style="width:100%" placeholder="Karne metnini buraya yapıştır..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn" onclick="karneOku()">Karneyi oku</button>
+      ${KARNE_SONUC?`<button class="btn ghost" onclick="karneTemizle()">Temizle</button>`:''}
+    </div>
+    ${KARNE_HATA?`<div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>${esc(KARNE_HATA)}</span></div>`:''}
+    ${KARNE_SONUC?`<div class="flag ok" style="margin-top:10px"><span class="ic">i</span><span>
+      <b>${anahtar.length} ders okundu.</b> Aşağıdaki kutulara yazıldı — kontrol edip <b>Denemeyi kaydet</b>’e bas.
+      Yanlış okunan varsa kutuyu elle düzelt.</span></div>
+      <div style="margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);line-height:1.8">
+      ${anahtar.map(k=>`${esc(subName(k))}: ${KARNE_SONUC[k].d} D / ${KARNE_SONUC[k].y} Y`).join(' · ')}</div>`:''}
+  </div></div>
+
   <div class="card"><div class="body">
     <label class="f">Hangi denemeyi gireceksin</label>
     <div class="seg" style="width:100%">
@@ -1741,7 +2083,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-b</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-d</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
