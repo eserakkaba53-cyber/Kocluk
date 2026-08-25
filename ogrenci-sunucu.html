@@ -195,7 +195,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.13</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -1740,7 +1740,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.13</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
@@ -2112,6 +2112,15 @@ function kaynakUyarisi(){
   {
     const qp = new URLSearchParams(location.search||'');
     const hp = new URLSearchParams((location.hash||'').replace(/^#/,''));
+
+    const hata = hp.get('error_code')||hp.get('error')||qp.get('error_code')||qp.get('error');
+    if(hata){
+      history.replaceState(null,'',location.pathname);
+      GHATA = /expired|otp/i.test(hata)
+        ? 'Bu bağlantı artık geçerli değil. Bağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Öğretmeninden yeni bağlantı iste.'
+        : 'Bağlantı doğrulanamadı. Yeni bir bağlantı iste.';
+      GMOD='giris'; render(); return;
+    }
 
     if(hh.indexOf('type=recovery')>=0 && hp.get('access_token')){
       SB.tok=hp.get('access_token'); SB.ref=hp.get('refresh_token')||''; sbSakla();
