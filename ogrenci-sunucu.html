@@ -195,7 +195,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-b</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -697,7 +697,8 @@ function haftaKalan(){ if(!D.sinav) return null; const d=(new Date(D.sinav)-new 
 function render(){
   const v=document.getElementById('view');
   // SUNUCU MODU: oturum yoksa ya da kayda bağlı değilse giriş ekranı
-  if(sbKurulu() && (!sbOturum() || !OGRID)){
+  /* Şifre yenileme ekranı oturum açıkken de gösterilmeli */
+  if(GMOD==='yenisifre' || (sbKurulu() && (!sbOturum() || !OGRID))){
     document.getElementById('hAd').textContent='Çalışma Panelim';
     document.getElementById('hMeta').textContent='';
     document.getElementById('tabs').innerHTML='';
@@ -1740,7 +1741,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-b</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
