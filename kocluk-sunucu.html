@@ -4481,7 +4481,8 @@ async function sifreSifirla(){
   if(!mail){ alert('Önce öğrencinin e-posta adresini gir (Hedef sekmesi → Öğrenci kaydı).'); return; }
   if(!confirm(mail+' adresine şifre sıfırlama bağlantısı gönderilecek. Devam?')) return;
   try{
-    await sbCagri('/auth/v1/recover',{method:'POST',body:{email:mail}});
+    const geri = encodeURIComponent(ogrenciPaneliAdresi());
+    await sbCagri('/auth/v1/recover?redirect_to='+geri,{method:'POST',body:{email:mail}});
     alert('Gönderildi. Öğrenci e-postasındaki bağlantıya tıklayıp yeni şifre belirleyecek.');
   }catch(e){ alert('Gönderilemedi: '+(e.message||e)); }
 }
@@ -4642,8 +4643,10 @@ async function sifreUnuttum(){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){ GIRISHATA='Geçerli bir e-posta adresi yaz.'; render(); return; }
   GIRISBEKLE=true; GIRISHATA=''; render();
   try{
-    await sbCagri('/auth/v1/recover',{method:'POST',
-      body:{ email:m, options:{ redirectTo: location.origin+location.pathname } }});
+    /* redirect_to GÖVDEDE değil SORGUDA gönderilir; yoksa Supabase
+       Site URL'e (tanıtım sayfası) düşer ve şifre ekranı hiç açılmaz. */
+    const geri = encodeURIComponent(location.origin+location.pathname);
+    await sbCagri('/auth/v1/recover?redirect_to='+geri,{method:'POST',body:{ email:m }});
     GIRISHATA='OK|'+m+' adresine sıfırlama bağlantısı gönderildi.\n\nGelen kutunu (ve gereksiz/spam klasörünü) kontrol et. Bağlantıya tıklayıp yeni şifreni belirle, sonra buradan gir.';
   }catch(e){
     GIRISHATA = /rate|limit|too many/i.test(e.message||'')

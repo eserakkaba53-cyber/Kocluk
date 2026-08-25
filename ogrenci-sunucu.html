@@ -1902,8 +1902,10 @@ async function gSifreUnuttum(){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){ GHATA='Geçerli bir e-posta adresi yaz.'; render(); return; }
   GBEKLE=true; GHATA=''; render();
   try{
-    await sbCagri('/auth/v1/recover',{method:'POST',
-      body:{ email:m, options:{ redirectTo: location.origin+location.pathname } }});
+    /* redirect_to GÖVDEDE değil SORGUDA gönderilir; yoksa Supabase
+       Site URL'e (tanıtım sayfası) düşer ve şifre ekranı hiç açılmaz. */
+    const geri = encodeURIComponent(location.origin+location.pathname);
+    await sbCagri('/auth/v1/recover?redirect_to='+geri,{method:'POST',body:{ email:m }});
     GHATA='OK|'+m+' adresine sıfırlama bağlantısı gönderildi.\nGelen kutunu ve gereksiz/spam klasörünü kontrol et.';
   }catch(e){
     GHATA = /rate|limit|too many/i.test(e.message||'')
