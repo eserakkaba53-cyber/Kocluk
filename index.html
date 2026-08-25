@@ -380,5 +380,30 @@ footer a{color:#C6DAE6}
   ciz();
 })();
 </script>
+
+<!-- Şifre sıfırlama güvenlik ağı: Supabase Site URL'e düşen kurtarma
+     bağlantılarını doğru panele yönlendirir. Eski e-postalar için gerekli. -->
+<script>
+(function(){
+  var h = location.hash || '';
+  if (h.indexOf('type=recovery') < 0) return;
+  var kutu = document.createElement('div');
+  kutu.setAttribute('style',
+    'position:fixed;inset:0;z-index:9999;background:#0B2033;color:#fff;'+
+    'display:flex;flex-direction:column;align-items:center;justify-content:center;'+
+    'gap:18px;padding:28px;text-align:center;font-family:system-ui,sans-serif');
+  kutu.innerHTML =
+    '<div style="font-size:20px;font-weight:700">Şifre yenileme</div>'+
+    '<div style="font-size:15px;color:#B9CBDA;max-width:420px;line-height:1.6">'+
+    'Devam etmek için hangi panele giriş yaptığınızı seçin.</div>'+
+    '<a id="_kp" style="background:#186C68;color:#fff;padding:14px 26px;border-radius:8px;'+
+    'text-decoration:none;font-weight:600;min-width:240px">Koç paneli</a>'+
+    '<a id="_op" style="background:#1B3D5C;color:#fff;padding:14px 26px;border-radius:8px;'+
+    'text-decoration:none;font-weight:600;min-width:240px">Öğrenci paneli</a>';
+  document.body.appendChild(kutu);
+  document.getElementById('_kp').href = 'kocluk-sunucu.html' + h;
+  document.getElementById('_op').href = 'ogrenci-sunucu.html' + h;
+})();
+</script>
 </body>
 </html>
