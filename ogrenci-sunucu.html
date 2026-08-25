@@ -188,6 +188,21 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .flag > span{min-width:0;overflow-wrap:break-word}
 .card,.stat,.view,.wrap{max-width:100%}
 
+
+/* ===== ÖNCELİK ROZETLERİ · mobil uyumlu ===== */
+.onc-sat{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;line-height:1.4}
+.onc-sat > span{max-width:100%}
+.topic .tn{display:block;min-width:0;overflow-wrap:break-word}
+@media(max-width:760px){
+  .topic-grid{grid-template-columns:1fr}
+  .topic{align-items:flex-start;padding:8px 9px}
+  .onc-sat{margin-top:4px}
+  .onc-sat > span{font-size:8.5px !important;padding:1px 4px !important}
+}
+@media(max-width:400px){
+  .onc-sat > span{font-size:8px !important;letter-spacing:0 !important}
+}
+
 </style>
 
 <div class="hdr"><div class="in">
@@ -195,7 +210,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-e</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-f</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -1328,7 +1343,7 @@ function vKonu(){
   ${(KONU[KSUB]||[]).map(([u,ks])=>`<div class="card"><h2>${esc(u)} — ${ks.length} konu, ${sa(ks.reduce((a,t)=>a+sureOf(KSUB,t),0))}</h2><div class="body">
     ${ks.map(t=>{const o=_onc&&_onc.bilgi[t];return `<div class="topic"><span class="dot t${m[t]||0}"></span>
       <span class="tn">${esc(t)}
-        ${o?`<div style="margin-top:3px">${oncRozet(o.oncelik,o.kilit)}</div>`:''}
+        ${o?`<span class="onc-sat">${oncRozet(o.oncelik,o.kilit)}</span>`:''}
         <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono)">${sa(sureOf(KSUB,t))}${
           o&&o.agirlik>0?` · ${o.agirlik.toFixed(1)} soru/yıl`:''}</div></span>
       <button class="btn ghost mini" onclick="cycleT('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">${TL[m[t]||0]}</button>
@@ -2143,7 +2158,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-e</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-f</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
