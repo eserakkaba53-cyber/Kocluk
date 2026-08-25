@@ -195,7 +195,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-d</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-e</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -1214,9 +1214,58 @@ function dersOzet(sk){
     if(v===2)bit++;else if(v===1)isl++;else if(v===3)eks++;}));
   return {top,bit,isl,eks,kalan:top-bit,yuzde:top?Math.round(bit/top*100):0};
 }
+
+/* ============ HEDEFE GÖRE KONU ÖNCELİĞİ (öğrenci görünümü) ============
+   Koç panelindekiyle aynı hesap; sadece etiketler öğrenciye göre yazıldı.
+   "GENİŞLEME" yerine "EN SON" denir — çünkü hiçbir konu atlanmaz, SIRA verilir. */
+let AGIRLIK=null;
+const AGIRLIK_KEY='kocluk_agirlik_v1';
+async function agirlikYukle(){
+  try{ const c=localStorage.getItem(AGIRLIK_KEY);
+    if(c){ const j=JSON.parse(c); if(j&&j.agirlik) AGIRLIK=j; } }catch(e){}
+  try{ const r=await fetch('agirlik-2027.json',{cache:'no-cache'});
+    if(r.ok){ const j=await r.json();
+      if(j&&j.agirlik){ AGIRLIK=j; try{ localStorage.setItem(AGIRLIK_KEY, JSON.stringify(j)); }catch(e){} } }
+  }catch(e){}
+}
+function konuOncelik(sk){
+  if(!AGIRLIK || !AGIRLIK.agirlik[sk]) return null;
+  const tab=AGIRLIK.agirlik[sk];
+  const hedef=(D.refNets&&D.refNets[sk])!=null ? +D.refNets[sk] : null;
+  const kalem=[];
+  for(const [u,ks] of (KONU[sk]||[])) for(const t of ks){
+    const a=tab[t]||{soru_yil:0,kilit:false};
+    kalem.push({konu:t,unite:u,agirlik:+a.soru_yil||0,kilit:!!a.kilit});
+  }
+  kalem.sort((x,y)=> y.agirlik-x.agirlik || x.konu.localeCompare(y.konu,'tr'));
+  const toplam=kalem.reduce((a,x)=>a+x.agirlik,0)||1;
+  const e1 = hedef!=null ? hedef*1.25 : toplam*0.50;
+  const e2 = hedef!=null ? hedef*1.55 : toplam*0.80;
+  let kum=0; const bilgi={};
+  kalem.forEach(x=>{
+    kum+=x.agirlik;
+    let o = kum<=e1?'once':(kum<=e2?'sonra':'ensons');
+    if(x.kilit) o='once';
+    bilgi[x.konu]={oncelik:o,kilit:x.kilit,agirlik:x.agirlik,
+                   kapsam: hedef?Math.min(100,Math.round(kum/hedef*100)):Math.round(kum/toplam*100)};
+  });
+  return {bilgi, hedef, sirali:kalem};
+}
+const ONC_AD={once:'ÖNCE BU', sonra:'SONRA', ensons:'EN SON'};
+function oncRozet(o,kilit){
+  const c={once:'#B3261E',sonra:'#D68A2E',ensons:'#5A7794'}[o]||'#5A7794';
+  return `<span style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;
+    padding:1px 5px;border-radius:4px;background:${c}1F;color:${c};border:1px solid ${c}55;
+    white-space:nowrap;vertical-align:1px">${ONC_AD[o]}</span>`+
+   (kilit?`<span title="Bu konu başka konuların temeli" style="display:inline-block;font-size:9px;
+    font-weight:700;padding:1px 5px;border-radius:4px;margin-left:3px;background:#0E4A461F;
+    color:#0E4A46;border:1px solid #0E4A4655;white-space:nowrap;vertical-align:1px">🔒 TEMEL</span>`:'');
+}
+
 function vKonu(){
   const list=subs(D); if(!KSUB||!list.find(l=>l[0]===KSUB)) KSUB=list[0][0];
   const m=D.topics[KSUB]||{};
+  const _onc=konuOncelik(KSUB);
   const oz=list.map(([k,nm])=>({k,nm,...dersOzet(k),dk:kalanSure(k)}));
   const gTop=oz.reduce((a,o)=>a+o.top,0), gBit=oz.reduce((a,o)=>a+o.bit,0);
   const gDk=oz.reduce((a,o)=>a+o.dk,0), hk=haftaKalan();
@@ -1267,12 +1316,23 @@ function vKonu(){
       <progress value="${bit}" max="${say}" style="flex:1"></progress>
       <span style="font-family:var(--mono);font-size:13px;font-weight:600">${bit}/${say}</span></div>
     <div class="hint">Her konuya dokundukça durum değişir: Görmedim → İşliyorum → Bitirdim → Eksiğim var. Dürüst işaretle; öğretmenin buna göre ödev veriyor.</div>
+    ${_onc?`<div class="flag ok" style="margin-top:10px"><span class="ic">i</span><span>
+      <b>Sıralama hedefine göre.</b> Konuların yanındaki etiket, <b>hangi sırayla</b> çalışmanın hedef netine
+      en hızlı götürdüğünü gösterir — ÖSYM'de son 8 yılda o konudan çıkan soru sayısına göre.
+      <span style="color:#B3261E;font-weight:700">ÖNCE BU</span> ·
+      <span style="color:#D68A2E;font-weight:700">SONRA</span> ·
+      <span style="color:#5A7794;font-weight:700">EN SON</span>.
+      <b>🔒 TEMEL</b> işaretliler az soru getirse de başka konuların altyapısıdır, atlanmaz.
+      <b>Hiçbir konu "gerekmiyor" demek değildir</b> — sadece sıra önerisidir.</span></div>`:''}
   </div></div>
   ${(KONU[KSUB]||[]).map(([u,ks])=>`<div class="card"><h2>${esc(u)} — ${ks.length} konu, ${sa(ks.reduce((a,t)=>a+sureOf(KSUB,t),0))}</h2><div class="body">
-    ${ks.map(t=>`<div class="topic"><span class="dot t${m[t]||0}"></span>
-      <span class="tn">${esc(t)}<div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono)">${sa(sureOf(KSUB,t))}</div></span>
+    ${ks.map(t=>{const o=_onc&&_onc.bilgi[t];return `<div class="topic"><span class="dot t${m[t]||0}"></span>
+      <span class="tn">${esc(t)}
+        ${o?`<div style="margin-top:3px">${oncRozet(o.oncelik,o.kilit)}</div>`:''}
+        <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono)">${sa(sureOf(KSUB,t))}${
+          o&&o.agirlik>0?` · ${o.agirlik.toFixed(1)} soru/yıl`:''}</div></span>
       <button class="btn ghost mini" onclick="cycleT('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">${TL[m[t]||0]}</button>
-    </div>`).join('')}
+    </div>`;}).join('')}
   </div></div>`).join('')}`;
 }
 
@@ -2083,7 +2143,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-d</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-e</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
@@ -2450,6 +2510,7 @@ function kaynakUyarisi(){
 /* ---------- açılış ---------- */
 (async()=>{
   sbYukle();
+  agirlikYukle().then(()=>{ try{render();}catch(e){} });
   const hh=location.hash||'';
   /* ---- ŞİFRE SIFIRLAMA: üç olası biçim de tanınır ---- */
   {
