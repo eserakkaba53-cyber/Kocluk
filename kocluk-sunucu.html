@@ -4910,12 +4910,55 @@ function kaynakUyarisi(){
     history.replaceState(null,'',location.pathname+location.search);
     if(!sbOturum()) GIRISMOD='kayit';
   }
-  if(hh.indexOf('type=recovery')>=0){
-    const pr=new URLSearchParams(hh.replace(/^#/,''));
-    const at=pr.get('access_token'), rt=pr.get('refresh_token');
-    if(at){ SB.tok=at; SB.ref=rt||''; sbSakla();
-      history.replaceState(null,'',location.pathname+location.search);
-      GIRISMOD='yenisifre'; render(); return; }
+  /* ---- ŞİFRE SIFIRLAMA: Supabase üç ayrı biçimde dönebilir ----
+     1) #access_token=...&type=recovery      (implicit akış)
+     2) ?token_hash=...&type=recovery        (doğrulama bağlantısı)
+     3) ?code=...                            (PKCE akışı)
+     Üçünü de tanıyoruz; hangisi gelirse gelsin yeni şifre ekranı açılır. */
+  {
+    const qp = new URLSearchParams(location.search||'');
+    const hp = new URLSearchParams((location.hash||'').replace(/^#/,''));
+
+    // 1) hash içinde hazır oturum
+    if(hh.indexOf('type=recovery')>=0 && hp.get('access_token')){
+      SB.tok=hp.get('access_token'); SB.ref=hp.get('refresh_token')||''; sbSakla();
+      history.replaceState(null,'',location.pathname);
+      GIRISMOD='yenisifre'; render(); return;
+    }
+
+    // 2) token_hash ile doğrulama
+    if(qp.get('token_hash') && (qp.get('type')||'')==='recovery'){
+      try{
+        const r = await sbCagri('/auth/v1/verify',{method:'POST',
+          body:{ type:'recovery', token_hash: qp.get('token_hash') }});
+        if(r && r.access_token){
+          SB.tok=r.access_token; SB.ref=r.refresh_token||''; sbSakla();
+          history.replaceState(null,'',location.pathname);
+          GIRISMOD='yenisifre'; render(); return;
+        }
+      }catch(e){
+        history.replaceState(null,'',location.pathname);
+        GIRISHATA='Sıfırlama bağlantısı geçersiz ya da süresi dolmuş (bağlantılar 1 saat geçerlidir). Lütfen yeni bir bağlantı iste.';
+        GIRISMOD='giris'; render(); return;
+      }
+    }
+
+    // 3) PKCE kodu
+    if(qp.get('code')){
+      try{
+        const r = await sbCagri('/auth/v1/token?grant_type=pkce',{method:'POST',
+          body:{ auth_code: qp.get('code') }});
+        if(r && r.access_token){
+          SB.tok=r.access_token; SB.ref=r.refresh_token||''; sbSakla();
+          history.replaceState(null,'',location.pathname);
+          GIRISMOD='yenisifre'; render(); return;
+        }
+      }catch(e){
+        history.replaceState(null,'',location.pathname);
+        GIRISHATA='Sıfırlama bağlantısı doğrulanamadı. Bağlantıyı, isteği gönderdiğin tarayıcıda aç ya da yeni bir bağlantı iste.';
+        GIRISMOD='giris'; render(); return;
+      }
+    }
   }
   if(sbOturum()){
     try{ await sunucudanYukle(); return; }

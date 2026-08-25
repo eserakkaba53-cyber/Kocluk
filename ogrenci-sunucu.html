@@ -2108,12 +2108,46 @@ function kaynakUyarisi(){
 (async()=>{
   sbYukle();
   const hh=location.hash||'';
-  if(hh.indexOf('type=recovery')>=0){
-    const pr=new URLSearchParams(hh.replace(/^#/,''));
-    const at=pr.get('access_token'), rt=pr.get('refresh_token');
-    if(at){ SB.tok=at; SB.ref=rt||''; sbSakla();
-      history.replaceState(null,'',location.pathname+location.search);
-      GMOD='yenisifre'; render(); return; }
+  /* ---- ŞİFRE SIFIRLAMA: üç olası biçim de tanınır ---- */
+  {
+    const qp = new URLSearchParams(location.search||'');
+    const hp = new URLSearchParams((location.hash||'').replace(/^#/,''));
+
+    if(hh.indexOf('type=recovery')>=0 && hp.get('access_token')){
+      SB.tok=hp.get('access_token'); SB.ref=hp.get('refresh_token')||''; sbSakla();
+      history.replaceState(null,'',location.pathname);
+      GMOD='yenisifre'; render(); return;
+    }
+    if(qp.get('token_hash') && (qp.get('type')||'')==='recovery'){
+      try{
+        const r = await sbCagri('/auth/v1/verify',{method:'POST',
+          body:{ type:'recovery', token_hash: qp.get('token_hash') }});
+        if(r && r.access_token){
+          SB.tok=r.access_token; SB.ref=r.refresh_token||''; sbSakla();
+          history.replaceState(null,'',location.pathname);
+          GMOD='yenisifre'; render(); return;
+        }
+      }catch(e){
+        history.replaceState(null,'',location.pathname);
+        GHATA='Bağlantı geçersiz ya da süresi dolmuş. Öğretmeninden yeni bağlantı iste.';
+        GMOD='giris'; render(); return;
+      }
+    }
+    if(qp.get('code')){
+      try{
+        const r = await sbCagri('/auth/v1/token?grant_type=pkce',{method:'POST',
+          body:{ auth_code: qp.get('code') }});
+        if(r && r.access_token){
+          SB.tok=r.access_token; SB.ref=r.refresh_token||''; sbSakla();
+          history.replaceState(null,'',location.pathname);
+          GMOD='yenisifre'; render(); return;
+        }
+      }catch(e){
+        history.replaceState(null,'',location.pathname);
+        GHATA='Bağlantı doğrulanamadı. Yeni bir bağlantı iste.';
+        GMOD='giris'; render(); return;
+      }
+    }
   }
   const hs0=decodeURIComponent(location.hash.slice(1)||'');
   if(hs0.indexOf('KUR:')===0 && davettenKur(hs0)){
