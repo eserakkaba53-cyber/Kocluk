@@ -210,7 +210,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-n</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-p</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -1258,10 +1258,10 @@ function konuOncelik(sk){
   if(!AGIRLIK || !AGIRLIK.agirlik[sk]) return null;
   const tab=AGIRLIK.agirlik[sk];
   const hedef=hedefNet(sk);
-  const kalem=[];
+  const kalem=[]; let _s=0;
   for(const [u,ks] of (KONU[sk]||[])) for(const t of ks){
     const a=tab[t]||{soru_yil:0,kilit:false};
-    kalem.push({konu:t,unite:u,agirlik:+a.soru_yil||0,kilit:!!a.kilit});
+    kalem.push({konu:t,unite:u,agirlik:+a.soru_yil||0,kilit:!!a.kilit,mufredat:_s++});
   }
   kalem.sort((x,y)=> y.agirlik-x.agirlik || x.konu.localeCompare(y.konu,'tr'));
   const toplam=kalem.reduce((a,x)=>a+x.agirlik,0)||1;
@@ -1277,12 +1277,11 @@ function konuOncelik(sk){
                    kapsam: hedef?Math.min(100,Math.round(kum/hedef*100)):Math.round(kum/toplam*100)};
   });
   /* Ön koşullar kendi kademesinin başına: temel konu, üstüne bina edilenden önce. */
-  const KAD_SIRA={once:0, sonra:1, ensons:2};
-  kalem.sort((x,y)=>
-       (KAD_SIRA[x.oncelik]-KAD_SIRA[y.oncelik])
-    || ((y.kilit?1:0)-(x.kilit?1:0))
-    || (y.agirlik-x.agirlik)
-    || x.konu.localeCompare(y.konu,'tr'));
+  /* Gruplar: 0 temel (ön koşul) · 1 önce bu · 2 sonra · 3 en son
+     Her grup kendi içinde müfredat sırasıyla. */
+  const KAD_SIRA={once:1, sonra:2, ensons:3};
+  kalem.forEach(x=>{ x.grup = x.kilit ? 0 : KAD_SIRA[x.oncelik]; });
+  kalem.sort((x,y)=> (x.grup-y.grup) || (x.mufredat-y.mufredat));
   return {bilgi, hedef, sirali:kalem};
 }
 const ONC_AD={once:'ÖNCE BU', sonra:'SONRA', ensons:'EN SON'};
@@ -2177,7 +2176,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-n</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-p</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
