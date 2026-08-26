@@ -210,7 +210,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-f</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-k</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -1243,10 +1243,19 @@ async function agirlikYukle(){
       if(j&&j.agirlik){ AGIRLIK=j; try{ localStorage.setItem(AGIRLIK_KEY, JSON.stringify(j)); }catch(e){} } }
   }catch(e){}
 }
+/* Geometri hedefi matematiğe eklenir — konu ağacı birleşik. */
+const BIRLESIK_HEDEF={ tyt_mat:['tyt_mat','tyt_geo'], ayt_mat:['ayt_mat','ayt_geo'] };
+function hedefNet(sk){
+  const r=D&&D.refNets; if(!r) return null;
+  const liste=BIRLESIK_HEDEF[sk]||[sk];
+  let t=0, varMi=false;
+  liste.forEach(k=>{ if(r[k]!=null && r[k]!==''){ t+=(+r[k]||0); varMi=true; } });
+  return varMi ? t : null;
+}
 function konuOncelik(sk){
   if(!AGIRLIK || !AGIRLIK.agirlik[sk]) return null;
   const tab=AGIRLIK.agirlik[sk];
-  const hedef=(D.refNets&&D.refNets[sk])!=null ? +D.refNets[sk] : null;
+  const hedef=hedefNet(sk);
   const kalem=[];
   for(const [u,ks] of (KONU[sk]||[])) for(const t of ks){
     const a=tab[t]||{soru_yil:0,kilit:false};
@@ -2158,7 +2167,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-f</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-k</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
