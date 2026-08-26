@@ -2939,17 +2939,17 @@
   "tyt_geo": {
    "AÇILAR ÜÇGENDE AÇILAR": {
     "kademe": "A",
-    "soru_yil": 0.98,
+    "soru_yil": 1.12,
     "kilit": true
    },
    "ÜÇGENLERİ EŞİTLİĞİ VE ÖZEL ÜÇGENLER": {
     "kademe": "A",
-    "soru_yil": 0.77,
+    "soru_yil": 0.84,
     "kilit": true
    },
    "ÜÇGENDE AÇI KENAR BAĞINTILARI": {
-    "kademe": "B",
-    "soru_yil": 0.42,
+    "kademe": "C",
+    "soru_yil": 0.28,
     "kilit": false
    },
    "ÜÇGENLERİN BENZERLİĞİ": {
@@ -2959,12 +2959,12 @@
    },
    "ÜÇGENİN YARDIMCI ELEMANLARI (AÇIORTAY KENAR ORTAY YÜKSEKLİK)": {
     "kademe": "C",
-    "soru_yil": 0.35,
+    "soru_yil": 0.21,
     "kilit": false
    },
    "ÜÇGENİN ALANI": {
-    "kademe": "C",
-    "soru_yil": 0.42,
+    "kademe": "B",
+    "soru_yil": 0.49,
     "kilit": true
    },
    "ÇOKGEN DÜZGÜN ÇOKGEN": {
@@ -3052,7 +3052,7 @@
    "SAYI DOĞRUSU VEANALİTİK DÜZLEM": {
     "kademe": "C",
     "soru_yil": 0.35,
-    "kilit": false
+    "kilit": true
    },
    "DOĞRU PARÇASINI BELLİ ORANDA BÖLEN NOKTANIN KOORDİNATLARI": {
     "kademe": "A",
