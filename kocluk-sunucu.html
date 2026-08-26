@@ -87,7 +87,8 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ---- istatistik ---- */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line-soft)}
-@media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stats.uc{grid-template-columns:repeat(3,1fr)}
+@media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}.stats.uc{grid-template-columns:1fr}}
 .stat{background:var(--panel);padding:15px 18px}
 .stat .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
 .stat .v{font-family:var(--mono);font-size:25px;font-weight:600;letter-spacing:-.02em;margin-top:3px}
@@ -1979,6 +1980,15 @@ const ORNEK_ONEK='ornek-ogrenci-';
 const ornekMi=id=>typeof id==='string' && (id===ORNEK_ID || id.indexOf(ORNEK_ONEK)===0);
 const cur=()=>(ornekMi(DB.sel) ? ornekBul(DB.sel) : (DB.students.find(s=>s.id===DB.sel)||null));
 const n1=v=>(Math.round(v*100)/100).toFixed(2).replace(/\.00$/,'');
+// Saati insan diline çevirir: yarım saate yuvarlar. 6→"6 saat", 8.5→"8 buçuk saat", ~0→"yarım saatten az".
+function saatY(h){
+  h=Math.abs(+h||0);
+  const r=Math.round(h*2)/2;
+  if(r===0) return 'yarım saatten az';
+  const tam=Math.floor(r), buc=(r-tam)>=0.5;
+  if(tam===0) return 'yarım saat';
+  return buc ? tam+' buçuk saat' : tam+' saat';
+}
 const net=(d,y)=>d-y/4;
 const today=()=>new Date().toISOString().slice(0,10);
 function weekKey(ds){const d=new Date(ds+'T00:00');const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10);}
@@ -3360,7 +3370,7 @@ function vKonu(st){
     if(!gerekli||!hs) return {v:'—',c:'var(--ink-3)',n:'Hedef sekmesini doldur'};
     const need=gerekli*m, ok=need<=hs;
     return {v:ok?'Yetişir':'Yetişmez', c:ok?'var(--ok)':'var(--bad)',
-      n: ok?`${n1(hs-need)} saat pay var`:`haftada ${n1(need-hs)} saat açık`};
+      n: ok?`${saatY(hs-need)} pay var`:`haftada ${saatY(need-hs)} açık`};
   };
   const S_ONC=yetSenaryo(1), S_GUV=yetSenaryo(1.15), S_GEN=yetSenaryo(1.30);
   return `
@@ -3370,13 +3380,14 @@ function vKonu(st){
     <div class="stat"><div class="k">Kalan konu</div><div class="v">${stats.reduce((a,s)=>a+s.ad,0)}</div><div class="n">bitmemiş konu sayısı</div></div>
     <div class="stat"><div class="k">Tahmini gereken süre</div><div class="v">${Math.round(topSaat)}</div><div class="n">saat · konu bazlı tahmin</div></div>
     <div class="stat"><div class="k">Haftada gereken</div><div class="v" style="color:${gerekli&&hs&&gerekli>hs?'var(--bad)':'inherit'}">${gerekli?n1(gerekli):'—'}</div><div class="n">saat/hafta${hs?` · beyan ${hs}`:''}</div></div>
+    <div class="stat"><div class="k">Sınava kalan</div><div class="v">${hk===null?'—':hk}</div><div class="n">${hk===null?'sınav tarihi yok':'hafta'}</div></div>
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
     <div class="hint">Süre tahminleri planlama başlangıcıdır, ölçüm değil. İşleniyor işaretli konular yarım, eksik işaretliler %70 süreyle sayılır. Her konunun süresini aşağıdan kendine göre düzeltebilirsin — düzeltmeler tüm öğrenciler için geçerlidir.</div>
   </div></div>
 
   <div class="card"><h2>Yetişir mi — üç senaryo<small>Kalan konuları sınava kadar bitirme payı. Öncelikli: tam denk (pay yok). Güvenlik payı: %15 fazladan pay — hastalık, tekrar, aksama için. Genişleme: %30 pay — ekstra soru çözümü ve tekrar için yer.</small></h2>
-  <div class="stats">
+  <div class="stats uc">
     <div class="stat"><div class="k">Öncelikli yetişir mi</div><div class="v" style="font-size:19px;color:${S_ONC.c}">${S_ONC.v}</div><div class="n">${S_ONC.n}</div></div>
     <div class="stat"><div class="k">Güvenlik payı yetişir mi</div><div class="v" style="font-size:19px;color:${S_GUV.c}">${S_GUV.v}</div><div class="n">%15 payla · ${S_GUV.n}</div></div>
     <div class="stat"><div class="k">Genişleme yetişir mi</div><div class="v" style="font-size:19px;color:${S_GEN.c}">${S_GEN.v}</div><div class="n">%30 payla · ${S_GEN.n}</div></div>

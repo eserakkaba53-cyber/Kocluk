@@ -886,6 +886,15 @@ const subQ=k=>{for(const g in S)for(const s of S[g])if(s[0]===k)return s[2];retu
 const uniteOf={}; for(const k in KONU){uniteOf[k]={};KONU[k].forEach(([u,ks])=>ks.forEach(t=>uniteOf[k][t]=u));}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const n1=v=>(Math.round(v*100)/100).toFixed(2).replace(/\.00$/,'');
+// Saati insan diline çevirir: yarım saate yuvarlar. 6→"6 saat", 8.5→"8 buçuk saat", ~0→"yarım saatten az".
+function saatY(h){
+  h=Math.abs(+h||0);
+  const r=Math.round(h*2)/2;
+  if(r===0) return 'yarım saatten az';
+  const tam=Math.floor(r), buc=(r-tam)>=0.5;
+  if(tam===0) return 'yarım saat';
+  return buc ? tam+' buçuk saat' : tam+' saat';
+}
 const today=()=>new Date().toISOString().slice(0,10);
 const uid=()=>Math.random().toString(36).slice(2,9);
 const net=(d,y)=>d-y/4;
@@ -995,7 +1004,7 @@ function yetSenaryo(gerekli, hs, m){
   if(!gerekli||!hs) return {v:'—',c:'var(--ink-3)',n:'sınav tarihi ve haftalık süreni gir'};
   const need=gerekli*m, ok=need<=hs;
   return {v:ok?'Yetişir':'Yetişmez', c:ok?'var(--ok)':'var(--bad)',
-    n: ok?`${n1(hs-need)} saat payın var`:`haftada ${n1(need-hs)} saat açık`};
+    n: ok?`${saatY(hs-need)} payın var`:`haftada ${saatY(need-hs)} açık`};
 }
 function ucSenaryoKart(gerekli, hs){
   const O=yetSenaryo(gerekli,hs,1), G=yetSenaryo(gerekli,hs,1.15), E=yetSenaryo(gerekli,hs,1.30);
