@@ -210,7 +210,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-s</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-t</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -926,7 +926,10 @@ const TABS_HEPSI=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denemem
    Sekme yalnızca GİZLENİR — kodu duruyor, sunucu bağlantısı kesilirse yedek yol açılır. */
 function TABLIST(){
   const sunucuda = (typeof sbOturum==='function') && sbOturum() && OGRID;
-  return sunucuda ? TABS_HEPSI.filter(t=>t[0]!=='rapor' && t[0]!=='ayar') : TABS_HEPSI;
+  let l = sunucuda ? TABS_HEPSI.filter(t=>t[0]!=='rapor' && t[0]!=='ayar') : TABS_HEPSI.slice();
+  // Koçu olmayan öğrenci kendi paketini görür ve yönetir
+  if(sunucuda && typeof soloMu==='function' && soloMu()) l.push(['paket','Paketim']);
+  return l;
 }
 
 /* ---------- paket yükleme ---------- */
@@ -1034,7 +1037,7 @@ function render(){
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
   if(!TABLIST().find(t=>t[0]===TAB)&&TAB!=='kilavuz') TAB='odev';
-  v.innerHTML=uy+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,yardim:vYardim,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar})[TAB]();
+  v.innerHTML=uy+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,yardim:vYardim,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar,paket:vPaket})[TAB]();
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
 }
@@ -2242,7 +2245,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-s</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-t</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
@@ -2304,6 +2307,63 @@ function videoAc(i){ VIDEOSEC=(VIDEOSEC===i?null:i); render();
   setTimeout(()=>{ const el=document.getElementById('videoAlan');
     if(el&&el.scrollIntoView) try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} },60); }
 function videoKapat(){ VIDEOSEC=null; render(); }
+/* ---------- PAKETİM (koçsuz öğrenci) ---------- */
+function vPaket(){
+  const k=SONKIM||{};
+  const paket=(k.paket||'deneme');
+  const denemede=(paket==='deneme'||paket==='ogrenci') && k.bitis;
+  let kalan=null;
+  if(k.bitis) kalan=Math.ceil((new Date(k.bitis)-new Date())/86400000);
+  const bitisMetin = k.bitis ? new Date(k.bitis).toLocaleDateString('tr-TR') : 'süresiz';
+  const aktif = (paket==='ogrenci' && kalan!==null && kalan>7);
+
+  return `
+  <div class="card"><h2>Paketim<small>Kendi hesabınla çalışıyorsun — öğretmene bağlı değilsin.</small></h2><div class="body">
+    <div class="stats">
+      <div class="stat"><div class="k">Paket</div>
+        <div class="v" style="font-size:19px">${aktif?'Öğrenci':'Deneme'}</div>
+        <div class="n">${aktif?'99 TL / yıl':'ücretsiz'}</div></div>
+      <div class="stat"><div class="k">Bitiş</div>
+        <div class="v" style="font-size:19px">${esc(bitisMetin)}</div>
+        <div class="n">${kalan!==null?(kalan>0?kalan+' gün kaldı':'süre doldu'):'-'}</div></div>
+    </div>
+    ${(kalan!==null&&kalan<=7)?`<div class="flag ${kalan<=2?'warn':'ok'}" style="margin-top:12px">
+      <span class="ic">${kalan<=2?'!':'i'}</span><span>
+      ${kalan>0?`<b>${kalan} günün kaldı.</b>`:'<b>Süren doldu.</b>'}
+      Süre bitince panel donar; konu işaretlerin, denemelerin ve ödev geçmişin
+      <b>silinmez</b>, paketin tanımlanınca kaldığın yerden devam edersin.</span></div>`:''}
+  </div></div>
+
+  <div class="card"><h2>Öğrenci Paketi<small>Yıllık · KDV dahil</small></h2><div class="body">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px">
+      <div style="font-size:38px;font-weight:800;font-family:var(--mono);color:var(--accent)">99 TL</div>
+      <div style="font-size:13px;color:var(--ink-3)">/ yıl</div>
+    </div>
+    <div style="font-size:13.5px;line-height:2;margin-bottom:14px">
+      · Hedef bölümüne göre <b>konu önceliği</b><br>
+      · Deneme karnesi okuyucu — netler ve eksik konular otomatik<br>
+      · 612 konuluk takip haritası<br>
+      · <b>Kendine ödev verme</b><br>
+      · Net gelişim grafikleri ve hedefe uzaklık<br>
+      · Yıl boyunca güncellemeler
+    </div>
+    <button class="btn wide" onclick="ogrPaketTalep()">WhatsApp'tan paket iste</button>
+    <div class="hint" style="margin-top:10px">
+      <b>Nasıl işliyor:</b> WhatsApp'tan yazarsın → paketin kısa sürede tanımlanır →
+      iletilen IBAN'a ödemeni yaparsın → panelin açılır.
+      Kredi kartı istenmez, otomatik yenileme yoktur.
+    </div>
+  </div></div>
+
+  <div class="card"><h2>Öğretmenin var mı?<small>İstersen bir öğretmene bağlanabilirsin.</small></h2><div class="body">
+    <div class="hint">Bir öğretmen sana koçluk yapıyorsa, onun vereceği <b>6 haneli kodla</b> hesabını
+    ona bağlayabilirsin. O zaman ödevlerini öğretmenin verir ve paketi o öder.
+    Geçmiş kayıtların korunur.</div>
+    <div class="hint" style="margin-top:8px">Bağlanmak için öğretmeninden kod iste, sonra
+    çıkış yapıp tekrar giriş yaptığında kod ekranı açılır.</div>
+  </div></div>`;
+}
+
 function vYardim(){
   const v=videoListesi();
   return `
