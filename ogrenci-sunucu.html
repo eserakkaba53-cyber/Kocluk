@@ -210,7 +210,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-t</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-u</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -2245,7 +2245,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-t</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-u</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
@@ -2711,8 +2711,10 @@ function girisEkrani(){
     ${GMOD==='kayit'&&BEKLEYENKOD?`<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
       <b>Davet bağlantın tanındı</b> ve kodun aşağıya yazıldı. E-posta ve şifre belirle, hesabın açılsın.</span></div>`:''}
     ${GMOD==='kayit'&&!BEKLEYENKOD?`<div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>
-      Öğretmeninin gönderdiği <b>bağlantıya tıklayarak</b> gelirsen kod otomatik dolar.
-      Elle geldiysen 6 haneli kodu aşağıya yazman gerekiyor.</span></div>`:''}
+      <b>Öğretmenin varsa:</b> gönderdiği bağlantıya tıklayarak gelirsen kod otomatik dolar;
+      elle geldiysen 6 haneli kodu aşağıya yaz.<br>
+      <b>Öğretmenin yoksa:</b> kod alanını boş bırak — bir sonraki adımda
+      "Kendi başıma başla" seçeneği çıkacak.</span></div>`:''}
     ${GMOD==='kayit'?`<div class="hint" style="margin-bottom:12px">
       E-postanı iki kez soruyoruz çünkü <b>şifreni unutursan sıfırlama bağlantısı oraya gidecek.</b>
       Yanlış yazarsan geri alamayız.</div>`:''}
@@ -2742,6 +2744,21 @@ function girisEkrani(){
       <div class="hint" style="margin-top:4px">Önce e-postanı yaz, sonra buna bas.</div></div>
       ${sbOturum()?`<button class="btn ghost wide" style="margin-top:10px" onclick="teshisAl()">Giremiyorum — kontrol et</button>`:''}`:''}
   </div></div>
+
+  ${GMOD==='giris'?`
+  <div class="card" style="border:2px solid var(--accent)"><h2>Öğretmenim yok<small>Kendi başına da kullanabilirsin — 7 gün ücretsiz.</small></h2><div class="body">
+    <div class="hint" style="margin-bottom:10px">
+      Hedef bölümünü seç, sistem <b>hangi konuya önce çalışman gerektiğini</b> sıraya koysun.
+      Deneme karneni yapıştır — netlerin ve eksik konuların kendiliğinden çıksın.
+      Ödevini kendin ver, konularını kendin işaretle.
+    </div>
+    <div class="hint" style="margin-bottom:10px">
+      Önce <b>hesabını oluştur</b> (yukarıdaki "Hesabım yok — oluştur"), kod ekranı gelince
+      <b>"Kendi başıma başla"</b> de. Öğretmen kodu istemiyoruz.
+    </div>
+    <button class="btn wide" onclick="GMOD='kayit';BEKLEYENKOD='';GHATA='';render();window.scrollTo(0,0)">
+      Kendi hesabımı açmak istiyorum</button>
+  </div></div>`:''}
   ${videoBolumu()}`;
 }
 
