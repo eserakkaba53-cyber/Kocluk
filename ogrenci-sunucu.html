@@ -210,7 +210,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-m</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-n</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -1272,9 +1272,17 @@ function konuOncelik(sk){
     kum+=x.agirlik;
     let o = kum<=e1?'once':(kum<=e2?'sonra':'ensons');
     if(x.kilit) o='once';
+    x.oncelik=o;
     bilgi[x.konu]={oncelik:o,kilit:x.kilit,agirlik:x.agirlik,
                    kapsam: hedef?Math.min(100,Math.round(kum/hedef*100)):Math.round(kum/toplam*100)};
   });
+  /* Ön koşullar kendi kademesinin başına: temel konu, üstüne bina edilenden önce. */
+  const KAD_SIRA={once:0, sonra:1, ensons:2};
+  kalem.sort((x,y)=>
+       (KAD_SIRA[x.oncelik]-KAD_SIRA[y.oncelik])
+    || ((y.kilit?1:0)-(x.kilit?1:0))
+    || (y.agirlik-x.agirlik)
+    || x.konu.localeCompare(y.konu,'tr'));
   return {bilgi, hedef, sirali:kalem};
 }
 const ONC_AD={once:'ÖNCE BU', sonra:'SONRA', ensons:'EN SON'};
@@ -2169,7 +2177,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-m</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-n</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
