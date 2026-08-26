@@ -988,6 +988,28 @@ function birlestir(p){
 }
 function haftaKalan(){ if(!D.sinav) return null; const d=(new Date(D.sinav)-new Date())/86400000; return d>0?Math.floor(d/7):0; }
 
+// Yetişir mi — üç senaryo (zaman tamponu kademeleri).
+// gerekli: haftada gereken saat, hs: haftalık çalışma saati.
+// m: gereken saate uygulanan pay katsayısı (1.00 öncelikli, 1.15 güvenlik payı, 1.30 genişleme).
+function yetSenaryo(gerekli, hs, m){
+  if(!gerekli||!hs) return {v:'—',c:'var(--ink-3)',n:'sınav tarihi ve haftalık süreni gir'};
+  const need=gerekli*m, ok=need<=hs;
+  return {v:ok?'Yetişir':'Yetişmez', c:ok?'var(--ok)':'var(--bad)',
+    n: ok?`${n1(hs-need)} saat payın var`:`haftada ${n1(need-hs)} saat açık`};
+}
+function ucSenaryoKart(gerekli, hs){
+  const O=yetSenaryo(gerekli,hs,1), G=yetSenaryo(gerekli,hs,1.15), E=yetSenaryo(gerekli,hs,1.30);
+  return `<div class="card"><h2>Yetişir mi — üç senaryo<small>Kalan konuları sınava kadar bitirme payın. Öncelikli: tam denk (pay yok). Güvenlik payı: %15 fazladan pay — hastalık, aksama, tekrar için. Genişleme: %30 pay — ekstra soru çözümü ve tekrar için yer.</small></h2>
+  <div class="stats">
+    <div class="stat"><div class="k">Öncelikli yetişir mi</div><div class="v" style="font-size:19px;color:${O.c}">${O.v}</div><div class="n">${O.n}</div></div>
+    <div class="stat"><div class="k">Güvenlik payı yetişir mi</div><div class="v" style="font-size:19px;color:${G.c}">${G.v}</div><div class="n">%15 payla · ${G.n}</div></div>
+    <div class="stat"><div class="k">Genişleme yetişir mi</div><div class="v" style="font-size:19px;color:${E.c}">${E.v}</div><div class="n">%30 payla · ${E.n}</div></div>
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <div class="hint">Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise planın çok gergin; küçük bir aksama sınava yetişmemeye döner. Üçü de "Yetişir" ise ekstra soru çözecek rahat alanın var.</div>
+  </div></div>`;
+}
+
 /* ---------- görünüm ---------- */
 function render(){
   const v=document.getElementById('view');
@@ -1378,24 +1400,9 @@ function vKonu(){
     <div class="stat"><div class="k">Bitirdiğin</div><div class="v" style="color:var(--ok)">${gBit}</div><div class="n">%${gTop?Math.round(gBit/gTop*100):0}</div></div>
     <div class="stat"><div class="k">Kalan</div><div class="v" style="color:var(--vurgu)">${gTop-gBit}</div><div class="n">konu</div></div>
     <div class="stat"><div class="k">Gereken süre</div><div class="v" style="font-size:21px">${sa(gDk)}</div><div class="n">${hk?`sınava ${hk} hafta`:'kalan konuların tamamı için'}</div></div>
-    ${(()=>{ const hs=+D.haftalikSaat||0, ger=hk?(gDk/60/hk):null;
-      return `<div class="stat"><div class="k">Yetişir mi</div>
-        <div class="v" style="font-size:19px;color:${!ger||!hs?'var(--ink-3)':ger<=hs?'var(--ok)':'var(--bad)'}">${
-          !ger||!hs?'—':ger<=hs?'Yetişir':'Yetişmez'}</div>
-        <div class="n">${!ger?'sınav tarihi gir'
-          :!hs?`haftada ~${ger.toFixed(1)} sa gerek · süreni gir`
-          :ger<=hs?`haftada ${ger.toFixed(1)} sa gerek · ${hs} sa çalışıyorsun`
-          :`haftada ${ger.toFixed(1)} sa gerek · ${(ger-hs).toFixed(1)} sa açık`}</div></div>`;})()}
   </div>
-  ${(()=>{ const hs=+D.haftalikSaat||0, ger=hk?(gDk/60/hk):null;
-    if(ger&&hs) return `<div class="body" style="border-top:1px solid var(--line-soft)">
-      <div class="hint">${ger<=hs
-        ? 'Bu hızla gidersen kalan konuları sınava kadar bitirirsin. Süre tahminleri planlama içindir.'
-        : 'Bu hızla kalan konular yetişmiyor. Haftalık süreni artır ya da öğretmeninle konu önceliklerini konuş.'}</div></div>`;
-    return `<div class="body" style="border-top:1px solid var(--line-soft)">
-      <div class="hint"><b>Hedefe uzaklık</b> sekmesinden sınav tarihini ve haftalık çalışma süreni girersen
-        bu kutu "yetişir / yetişmez" diye dolar.</div></div>`;})()}
   </div>
+  ${ucSenaryoKart(hk?(gDk/60/hk):null, +D.haftalikSaat||0)}
 
   <div class="card"><h2>Ders ders durumun</h2><div class="body" style="padding:0;overflow:auto">
     <table><thead><tr><th>Ders</th><th class="num">Bitti</th><th class="num">Kalan</th><th class="num">Eksik</th><th class="num">Süre</th><th style="width:110px">Tamamlanma</th></tr></thead><tbody>
@@ -1774,19 +1781,15 @@ function vHedef(){
     <div class="stat"><div class="k">Haftada gereken</div>
       <div class="v" style="color:${gerekli&&hs&&gerekli>hs?'var(--bad)':'inherit'}">${gerekli?n1(gerekli):'—'}</div>
       <div class="n">saat/hafta${hs?' · senin beyanın '+hs:''}</div></div>
-    <div class="stat"><div class="k">Yetişir mi</div>
-      <div class="v" style="font-size:19px;color:${!gerekli||!hs?'var(--ink-3)':gerekli<=hs?'var(--ok)':'var(--bad)'}">${!gerekli||!hs?'—':gerekli<=hs?'Yetişir':'Yetişmez'}</div>
-      <div class="n">${!gerekli||!hs?'sınav tarihi ve haftalık süreni gir'
-        :gerekli<=hs?n1(hs-gerekli)+' saat payın var'
-        :'haftada '+n1(gerekli-hs)+' saat açık'}</div></div>
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
     <div class="hint">${!gerekli||!hs
-      ? 'Aşağıdaki <b>Hedefim</b> kartından sınav tarihini ve haftalık çalışma süreni gir; bu kutu dolacak.'
+      ? 'Aşağıdaki <b>Hedefim</b> kartından sınav tarihini ve haftalık çalışma süreni gir; aşağıdaki senaryolar dolacak.'
       : gerekli<=hs
         ? 'Bu hızla gidersen kalan konuları sınava kadar bitirirsin. Süre tahminleri planlama içindir, kesin ölçüm değildir.'
         : 'Bu hızla kalan konular yetişmiyor. Ya haftalık süreni artır ya da öğretmeninle konu önceliklerini konuş.'}</div>
-  </div></div>`;
+  </div></div>
+  ${ucSenaryoKart(gerekli, hs)}`;
   let cN=0,hN=0,varH=false;
   list.forEach(([k])=>{ cN+=a.nets[k]||0; const t=+hedefNet(k)||0; if(t){hN+=t;varH=true;} });
   const bar=([k,nm,q])=>{
