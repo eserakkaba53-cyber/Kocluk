@@ -3354,6 +3354,15 @@ function vKonu(st){
   const topDk=stats.reduce((a,s)=>a+s.dk,0), topSaat=topDk/60;
   const hk=haftaKalan(st), hs=+st.haftalikSaat||0;
   const gerekli=hk?topSaat/hk:null;
+  // Yetişir mi — üç senaryo (zaman tamponu kademeleri).
+  // m: gereken saate uygulanan pay katsayısı. 1.00 tam denk, 1.15 güvenlik payı, 1.30 genişleme.
+  const yetSenaryo=(m)=>{
+    if(!gerekli||!hs) return {v:'—',c:'var(--ink-3)',n:'Hedef sekmesini doldur'};
+    const need=gerekli*m, ok=need<=hs;
+    return {v:ok?'Yetişir':'Yetişmez', c:ok?'var(--ok)':'var(--bad)',
+      n: ok?`${n1(hs-need)} saat pay var`:`haftada ${n1(need-hs)} saat açık`};
+  };
+  const S_ONC=yetSenaryo(1), S_GUV=yetSenaryo(1.15), S_GEN=yetSenaryo(1.30);
   return `
   ${ornekUyari(st)}
 
@@ -3361,10 +3370,19 @@ function vKonu(st){
     <div class="stat"><div class="k">Kalan konu</div><div class="v">${stats.reduce((a,s)=>a+s.ad,0)}</div><div class="n">bitmemiş konu sayısı</div></div>
     <div class="stat"><div class="k">Tahmini gereken süre</div><div class="v">${Math.round(topSaat)}</div><div class="n">saat · konu bazlı tahmin</div></div>
     <div class="stat"><div class="k">Haftada gereken</div><div class="v" style="color:${gerekli&&hs&&gerekli>hs?'var(--bad)':'inherit'}">${gerekli?n1(gerekli):'—'}</div><div class="n">saat/hafta${hs?` · beyan ${hs}`:''}</div></div>
-    <div class="stat"><div class="k">Yetişir mi</div><div class="v" style="font-size:19px;color:${!gerekli||!hs?'var(--ink-3)':gerekli<=hs?'var(--ok)':'var(--bad)'}">${!gerekli||!hs?'—':gerekli<=hs?'Yetişir':'Yetişmez'}</div><div class="n">${!gerekli||!hs?'Hedef sekmesini doldur':gerekli<=hs?`${n1(hs-gerekli)} saat pay var`:`haftada ${n1(gerekli-hs)} saat açık`}</div></div>
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
     <div class="hint">Süre tahminleri planlama başlangıcıdır, ölçüm değil. İşleniyor işaretli konular yarım, eksik işaretliler %70 süreyle sayılır. Her konunun süresini aşağıdan kendine göre düzeltebilirsin — düzeltmeler tüm öğrenciler için geçerlidir.</div>
+  </div></div>
+
+  <div class="card"><h2>Yetişir mi — üç senaryo<small>Kalan konuları sınava kadar bitirme payı. Öncelikli: tam denk (pay yok). Güvenlik payı: %15 fazladan pay — hastalık, tekrar, aksama için. Genişleme: %30 pay — ekstra soru çözümü ve tekrar için yer.</small></h2>
+  <div class="stats">
+    <div class="stat"><div class="k">Öncelikli yetişir mi</div><div class="v" style="font-size:19px;color:${S_ONC.c}">${S_ONC.v}</div><div class="n">${S_ONC.n}</div></div>
+    <div class="stat"><div class="k">Güvenlik payı yetişir mi</div><div class="v" style="font-size:19px;color:${S_GUV.c}">${S_GUV.v}</div><div class="n">%15 payla · ${S_GUV.n}</div></div>
+    <div class="stat"><div class="k">Genişleme yetişir mi</div><div class="v" style="font-size:19px;color:${S_GEN.c}">${S_GEN.v}</div><div class="n">%30 payla · ${S_GEN.n}</div></div>
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <div class="hint">Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise plan çok gergin demektir; küçük bir aksama sınava yetişmemeye döner. Üçü de "Yetişir" ise öğrencinin ekstra soru çözecek rahat alanı var.</div>
   </div></div>
 
   ${sureKart()}
@@ -4150,7 +4168,8 @@ async function karsilamaKapat(){
   render();
 }
 function paketTalep(paket){
-  const P={koc:['Koç Paketi','10 öğrenci','449 TL'],
+  const P={ogrenci:['Öğrenci Paketi','1 öğrenci','99 TL'],
+           koc:['Koç Paketi','10 öğrenci','449 TL'],
            sinif:['Öğretmen Paketi','40 öğrenci','2.999 TL'],
            okul:['Okul Paketi','200 öğrenci','19.999 TL']}[paket];
   const mesaj=`Merhaba, Biyoser Koçluk Sistemi için abonelik almak istiyorum.\n\n`+
@@ -4196,10 +4215,10 @@ function vAbonelik(){
              'Karne okuyucu ve YÖK bölüm veritabanı','Yıl boyunca güncellemeler'])
            .map(x=>`<div class="topic"><span class="dot t2"></span><span class="tn">${x}</span></div>`).join('')}
         ${kod==='ogrenci'
-          ? `<div class="hint" style="margin-top:14px">Bu paketi <b>öğrenci kendisi alır</b>.
-               Senin kontenjanını kullanmaz, panelinde görünmez.
-               Öğrencine <b>ogrenci-sunucu.html</b> adresini gönder; oradan
-               “Öğretmenim yok” diyerek kendi hesabını açar.</div>`
+          ? `<button class="btn wide" style="margin-top:14px" onclick="paketTalep('${kod}')">Bu paketi istiyorum</button>
+             <div class="hint" style="margin-top:10px">İstersen öğrenci bu paketi <b>kendisi de</b> alabilir:
+               ona <b>ogrenci-sunucu.html</b> adresini gönder, “Öğretmenim yok” diyerek kendi hesabını açsın.
+               O yol senin kontenjanını kullanmaz, panelinde görünmez.</div>`
           : `<button class="btn wide" style="margin-top:14px" onclick="paketTalep('${kod}')">Bu paketi istiyorum</button>`}
       </div></div>`;
   return `
