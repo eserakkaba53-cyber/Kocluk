@@ -210,7 +210,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
     <div style="flex:1;min-width:0"><h1 id="hAd">Çalışma Panelim</h1><div class="meta" id="hMeta"></div></div>
     <div style="text-align:right;align-self:flex-end;padding-bottom:2px">
       <div id="sbDurum" style="font-family:var(--mono);font-size:10px;min-height:12px"></div>
-      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-p</div></div></div>
+      <div style="font-family:var(--mono);font-size:9.5px;color:#5A7794;white-space:nowrap">SUNUCU · 2026.08.25-s</div></div></div>
   <div class="tabs" id="tabs"></div>
 </div></div>
 <div class="wrap" id="view"></div>
@@ -1169,6 +1169,41 @@ function ekstraKart(){
     </div>`:''}
   </div></div>`;
 }
+
+/* ---------- KENDİNE ÖDEV VER (solo öğrenci) ----------
+   Koçu olmayan öğrenci, hedef önceliğine göre sıradaki konuyu alır ve
+   kendine ödev yazar. Ödev kaydı koçun verdiğiyle aynı yapıda tutulur;
+   sonradan bir öğretmene bağlanırsa geçmişi kaybolmaz. */
+/* Solo mu? Öğrencinin koç kimliği kendi kullanıcı kimliğine eşitse koçu yok demektir. */
+function soloMu(){
+  if(SOLO) return true;
+  try{ const u=(SB&&SB.tok)?JSON.parse(atob(SB.tok.split('.')[1])).sub:null;
+       return !!(u && KOCID && KOCID===u); }catch(e){ return false; }
+}
+
+/* Her ders için: bitmemiş, ödevi verilmemiş ilk konu (öncelik sırasıyla) */
+function soloSiradaki(){
+  const out=[];
+  for(const [sk,ad] of subs(D)){
+    const m=(D.topics&&D.topics[sk])||{};
+    const verilmis=new Set(D.tasks.filter(t=>t.sub===sk&&!t.rutin).map(t=>t.konu));
+    const oc=konuOncelik(sk);
+    const liste = oc ? oc.sirali.map(x=>({konu:x.konu,unite:x.unite,
+                        oncelik:x.oncelik,kilit:x.kilit,agirlik:x.agirlik}))
+                     : (KONU[sk]||[]).flatMap(([u,ks])=>ks.map(t=>({konu:t,unite:u})));
+    const bul = liste.find(x=>(m[x.konu]||0)!==2 && !verilmis.has(x.konu));
+    if(bul) out.push({sub:sk, ad, ...bul, dk:sureOf(sk,bul.konu)});
+  }
+  return out;
+}
+
+function soloOdevVer(sub, konu){
+  const q=parseInt(document.getElementById('soloQ')?.value||'30',10)||30;
+  D.tasks.push({ id:'s'+Date.now().toString(36), date:today(), sub:sub, konu:konu,
+                 q:q, yap:0, s:0, rutin:false, txt:'', kendi:true });
+  save(); render();
+}
+
 function vOdev(){
   const wk=weekKey(today());
   const rut=D.tasks.filter(t=>t.rutin);
@@ -1177,8 +1212,39 @@ function vOdev(){
   const kon=konHepsi.filter(t=>t.s!==1&&weekKey(t.date)>=wk);
   const tamam=konHepsi.filter(t=>t.s===1);
   const bit=D.tasks.filter(t=>t.s===1).length;
+  const _solo = soloMu();
+  const _sira = _solo ? soloSiradaki() : [];
+  // solo öğrenci: kalan deneme günü uyarısı
+  let _kalan=null;
+  if(_solo && SONKIM && SONKIM.paket==='ogrenci' && SONKIM.bitis){
+    _kalan = Math.ceil((new Date(SONKIM.bitis) - new Date())/86400000);
+  }
   return `
   ${yedekUyari()}
+  ${(_kalan!==null && _kalan<=7)?`<div class="flag ${_kalan<=2?'warn':'ok'}" style="margin-bottom:12px">
+    <span class="ic">${_kalan<=2?'!':'i'}</span><span>
+    <b>Deneme sürenin ${_kalan>0?_kalan+' günü kaldı.':'son günü.'}</b>
+    Süre dolunca panel donar, verilerin silinmez.
+    <a href="#" onclick="ogrPaketTalep();return false" style="color:var(--accent);text-decoration:underline">Öğrenci paketi al — 99 TL/yıl</a></span></div>`:''}
+  ${_solo?`<div class="card"><h2>Kendine ödev ver<small>Hedefine göre sıradaki konular. Öğretmenin yok — planı sen kuruyorsun.</small></h2><div class="body">
+    <div class="fr" style="margin-bottom:10px">
+      <div style="max-width:160px"><label class="f">Soru sayısı</label>
+        <input type="number" id="soloQ" min="5" max="200" value="30"></div><div></div>
+    </div>
+    ${_sira.length?`<div style="overflow-x:auto"><table>
+      <thead><tr><th>Ders</th><th>Sıradaki konu</th><th class="num">Süre</th><th></th></tr></thead><tbody>
+      ${_sira.map(x=>`<tr>
+        <td>${esc(x.ad)}</td>
+        <td><b>${esc(x.konu)}</b>
+          ${x.oncelik?`<div style="margin-top:3px">${oncRozet(x.oncelik,x.kilit)}</div>`:''}
+          ${x.unite?`<div style="font-size:10.5px;color:var(--ink-3)">${esc(x.unite)}</div>`:''}</td>
+        <td class="num">${sa(x.dk)}</td>
+        <td><button class="btn mini" onclick="soloOdevVer('${x.sub}',${JSON.stringify(x.konu).replace(/"/g,'&quot;')})">ödev ver</button></td>
+      </tr>`).join('')}
+    </tbody></table></div>`:`<div class="empty">Tüm konuları bitirmişsin ya da hepsine ödev vermişsin.</div>`}
+    <div class="hint" style="margin-top:10px">Sıralama <b>hedef bölümüne</b> göre yapılır.
+      Hedefini <b>Hedefe uzaklık</b> sekmesinden seçmediysen müfredat sırası kullanılır.</div>
+  </div></div>`:''}
   <div class="card"><div class="stats">
     <div class="stat"><div class="k">Bu hafta</div><div class="v">${D.tasks.length}</div><div class="n">ödev var</div></div>
     <div class="stat"><div class="k">Tamamladığın</div><div class="v" style="color:var(--ok)">${bit}</div><div class="n">${D.tasks.length?Math.round(bit/D.tasks.length*100):0}%</div></div>
@@ -2176,7 +2242,7 @@ function vAyar(){
   </div></div>`:''}
 
   <div class="card"><h2>Sürüm</h2><div class="body">
-    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-p</b></div>
+    <div style="font-family:var(--mono);font-size:13px">Çalışma Paneli <b>SUNUCU · 2026.08.25-s</b></div>
     <div class="hint">Öğretmenin "yeni sürüm var" derse, paneli açtığın sayfayı <b>yenile</b> (telefonda sayfayı aşağı çekerek, bilgisayarda Ctrl+F5). Verilerin silinmez.</div>
   </div></div>
 
@@ -2411,6 +2477,40 @@ async function gGiris(){
   }
   GBEKLE=false; render();
 }
+/* ---------- SOLO ÖĞRENCİ (Öğrenci Paketi) ----------
+   Öğrenci kendi kendinin koçu olur: solo_ogrenci_kur() hem koclar hem
+   ogrenciler satırını açar, koc_id = auth_id olur. Böylece mevcut tüm
+   yetki kuralları değişmeden çalışır. */
+let SOLO=false;
+/* Öğrenci paketi talebi — koçlardaki akışın aynısı, WhatsApp üzerinden. */
+function ogrPaketTalep(){
+  const tel=(window.BIYOSER_WP||'').replace(/[^0-9]/g,'');
+  const ad=(SONKIM&&SONKIM.ad)?SONKIM.ad:'';
+  const mesaj='Merhaba, Biyoser Öğrenci Paketi almak istiyorum.\n\n'+
+    'Paket : Öğrenci Paketi — 99 TL / yıl\n'+
+    (ad?('Adım  : '+ad+'\n'):'')+
+    'Deneme sürem doldu, hesabımın açılmasını rica ediyorum.';
+  window.open((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),
+              '_blank','noopener');
+}
+
+async function soloKur(){
+  const ad=(document.getElementById('gSoloAd')?.value||'').trim();
+  if(ad.length<2){ GHATA='Adını yaz (en az 2 harf).'; render(); return; }
+  const alan=(document.getElementById('gSoloAlan')?.value||'SAY');
+  GBEKLE=true; GHATA=''; render();
+  try{
+    await sbCagri('/rest/v1/rpc/solo_ogrenci_kur',{method:'POST',
+      body:{ p_ad:ad, p_alan:alan }});
+    await sunucuAc();
+  }catch(e){
+    GHATA = /function .*does not exist/i.test(e.message||'')
+      ? 'Öğrenci paketi bu sistemde henüz açılmamış. Yöneticiye haber ver.'
+      : (e.message||String(e));
+  }
+  GBEKLE=false; render();
+}
+
 async function gKodGir(){
   const k=document.getElementById('gKod').value.trim();
   if(!k){ GHATA='Öğretmeninin verdiği kodu yaz.'; render(); return; }
@@ -2431,6 +2531,11 @@ async function sunucuAc(){
     render(); return;
   }
   if(SONKIM && SONKIM.lisans===false){
+    if(SONKIM.solo){
+      /* Koçsuz öğrenci: deneme süresi doldu. Veriler duruyor, panel donuk.
+         Paket ekranına düşer, WhatsApp'tan iletişime geçer. */
+      SOLO=true; GMOD='paket'; GHATA=''; render(); return;
+    }
     GHATA='Öğretmeninin kullanım süresi dolmuş. Ödevlerin duruyor ama panel şu an açılamıyor.\nÖğretmenine haber ver.';
     GMOD='giris'; render(); return;
   }
@@ -2478,6 +2583,37 @@ function girisEkrani(){
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gYeniSifre()">${GBEKLE?'Bekle...':'Şifreyi kaydet'}</button>${hata}
   </div></div>
   ${videoBolumu()}`;
+  if(GMOD==='paket') return `
+  <div class="card" style="border:2px solid var(--vurgu)"><h2>Deneme süren doldu<small>Verilerin duruyor — silinmedi.</small></h2><div class="body">
+    <div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>
+      <b>Panelin şu an donuk.</b> Konu işaretlerin, denemelerin ve ödev geçmişin
+      olduğu gibi saklanıyor. Paketin tanımlandığı anda kaldığın yerden devam edeceksin.</span></div>
+
+    <div style="border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--line-soft)">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-3)">ÖĞRENCİ PAKETİ</div>
+        <div style="font-size:30px;font-weight:800;font-family:var(--mono);color:var(--accent);margin-top:4px">99 TL</div>
+        <div style="font-size:12px;color:var(--ink-3)">yıllık · KDV dahil</div>
+      </div>
+      <div style="padding:12px 14px;font-size:13px;line-height:1.9">
+        · Hedefine göre <b>konu önceliği</b><br>
+        · Deneme karnesi okuyucu<br>
+        · 612 konuluk takip haritası<br>
+        · Kendine ödev verme<br>
+        · Net gelişimi ve hedefe uzaklık<br>
+        · Yıl boyunca güncellemeler
+      </div>
+    </div>
+
+    <button class="btn wide" onclick="ogrPaketTalep()">WhatsApp'tan paket iste</button>
+    <div class="hint" style="margin-top:10px">
+      <b>Nasıl işliyor:</b> WhatsApp'tan yazarsın → paketin kısa sürede tanımlanır →
+      iletilen IBAN'a ödemeni yaparsın → panelin açılır.
+      Kredi kartı istenmez, otomatik yenileme yoktur.
+    </div>
+    <button class="btn ghost wide" style="margin-top:10px" onclick="sbCikis();SOLO=false;GMOD='giris';GHATA='';render()">Çıkış yap</button>
+  </div></div>`;
+
   if(GMOD==='kod') return `<div class="card"><h2>Öğretmeninin kodu</h2><div class="body">
     <div class="hint" style="margin-bottom:10px">Hesabın açıldı. Şimdi öğretmeninin verdiği <b>6 haneli kodu</b> yaz — böylece ödevlerin gelmeye başlar.</div>
     <div class="fr"><div style="flex:1"><label class="f">Kod</label>
@@ -2486,6 +2622,26 @@ function girisEkrani(){
     <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gKodGir()">${GBEKLE?'Bekle...':'Bağlan'}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="teshisAl()">Sorun mu var? Kontrol et</button>${hata}
+  </div></div>
+
+  <div class="card"><h2>Öğretmenim yok<small>Kendi başına da kullanabilirsin.</small></h2><div class="body">
+    <div class="hint" style="margin-bottom:10px">
+      Hedef bölümünü seç, sistem <b>hangi konuya önce çalışman gerektiğini</b> sıraya koysun.
+      Deneme karneni yapıştır, netlerin ve eksik konuların çıksın. Kendi ödevini kendin ver.
+      <b>7 gün ücretsiz.</b>
+    </div>
+    <div class="fr">
+      <div style="flex:2"><label class="f">Adın</label>
+        <input type="text" id="gSoloAd" placeholder="Adın Soyadın"></div>
+      <div style="flex:1"><label class="f">Alanın</label>
+        <select id="gSoloAlan">
+          <option value="SAY">Sayısal</option><option value="EA">Eşit Ağırlık</option>
+          <option value="SOZ">Sözel</option><option value="DIL">Dil</option>
+        </select></div>
+    </div>
+    <button class="btn wide" style="margin-top:10px" ${GBEKLE?'disabled':''} onclick="soloKur()">
+      ${GBEKLE?'Bekle...':'Kendi başıma başla'}</button>
+    <div class="hint" style="margin-top:8px">Sonradan bir öğretmene bağlanmak istersen hesabını taşıyabilirsin.</div>
   </div></div>
   ${videoBolumu()}`;
   return `<div class="card"><h2>${GMOD==='kayit'?'Hesabını oluştur':'Giriş yap'}<small>${
