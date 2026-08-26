@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Öğrenci Gelişim Defteri</title>
+<style>
+  :root{
+    --paper:#F4F6F3;
+    --card:#FFFFFF;
+    --ink:#16211E;
+    --ink-soft:#5A6B65;
+    --ink-faint:#8A968F;
+    --line:#E2E7E1;
+    --line-soft:#EDF0EC;
+    --teal:#147A63;
+    --teal-dark:#0E5B4A;
+    --teal-soft:#E7F1EE;
+    --amber:#9C6510;
+    --amber-soft:#F6EEDC;
+    --red:#A8323F;
+    --red-soft:#F8E9EB;
+    --shadow:0 1px 2px rgba(20,40,35,.06),0 6px 18px rgba(20,40,35,.05);
+    --radius:12px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--font);
+    background:var(--paper);
+    color:var(--ink);
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+  /* ---------- Shell ---------- */
+  .app{display:flex;flex-direction:column;height:100vh}
+  header.topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:12px 18px;background:var(--card);
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand .mark{
+    font-weight:800;letter-spacing:-.02em;font-size:18px;color:var(--teal-dark);
+  }
+  .brand .sub{font-size:12px;color:var(--ink-faint)}
+  .topbar .spacer{flex:1}
+  .backup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .backup .status{font-size:12px;color:var(--ink-faint)}
+  .backup .status.warn{color:var(--amber)}
+
+  main{flex:1;display:flex;min-height:0}
+
+  /* ---------- Roster (left) ---------- */
+  .roster{
+    width:300px;flex-shrink:0;background:var(--card);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;min-height:0;
+  }
+  .roster .roster-head{padding:14px 16px 10px;border-bottom:1px solid var(--line-soft)}
+  .roster .count{font-size:12px;color:var(--ink-faint);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+  .roster .search{width:100%}
+  .roster-list{overflow-y:auto;flex:1;padding:6px}
+  .stud-item{
+    padding:10px 12px;border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;gap:10px;margin-bottom:2px;
+    border:1px solid transparent;
+  }
+  .stud-item:hover{background:var(--line-soft)}
+  .stud-item.active{background:var(--teal-soft);border-color:#CFE4DD}
+  .stud-item .avatar{
+    width:34px;height:34px;border-radius:8px;flex-shrink:0;
+    background:var(--teal-soft);color:var(--teal-dark);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;
+  }
+  .stud-item.active .avatar{background:#fff}
+  .stud-item .meta{min-width:0}
+  .stud-item .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stud-item .sn{font-size:12px;color:var(--ink-faint)}
+  .roster-foot{padding:10px;border-top:1px solid var(--line-soft)}
+
+  /* ---------- Detail (right) ---------- */
+  .detail{flex:1;overflow-y:auto;min-width:0}
+  .detail-inner{max-width:900px;margin:0 auto;padding:22px 26px 80px}
+  .empty{
+    height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--ink-faint);text-align:center;gap:10px;padding:30px;
+  }
+  .empty .big{font-size:44px}
+  .empty h2{color:var(--ink-soft);font-weight:600;font-size:17px}
+
+  .stud-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:6px}
+  .stud-header .avatar-lg{
+    width:52px;height:52px;border-radius:12px;flex-shrink:0;
+    background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:20px;
+  }
+  .stud-header h1{font-size:22px;letter-spacing:-.02em;line-height:1.15}
+  .stud-header .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+  .btn-back{display:none}
+
+  .tag{
+    font-size:12px;padding:3px 9px;border-radius:999px;
+    background:var(--line-soft);color:var(--ink-soft);font-weight:500;
+  }
+  .tag.teal{background:var(--teal-soft);color:var(--teal-dark)}
+
+  /* Tabs */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:18px 0 20px;overflow-x:auto}
+  .tab{
+    padding:9px 15px;cursor:pointer;font-weight:600;font-size:14px;color:var(--ink-faint);
+    border-bottom:2px solid transparent;white-space:nowrap;
+  }
+  .tab:hover{color:var(--ink-soft)}
+  .tab.active{color:var(--teal-dark);border-bottom-color:var(--teal)}
+
+  /* Cards / sections */
+  .section{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;
+  }
+  .section > h3{
+    font-size:14px;padding:13px 16px;border-bottom:1px solid var(--line-soft);
+    display:flex;align-items:center;justify-content:space-between;letter-spacing:-.01em;
+  }
+  .section > h3 .n{font-size:12px;color:var(--ink-faint);font-weight:500}
+  .section-body{padding:14px 16px}
+  .section-note{font-size:12px;color:var(--ink-faint);padding:0 16px 12px}
+
+  .warn-box{
+    background:var(--amber-soft);border:1px solid #E7D6AE;border-radius:9px;
+    padding:10px 12px;font-size:12.5px;color:var(--amber);margin-bottom:12px;line-height:1.45;
+  }
+
+  /* Data tables */
+  table.data{width:100%;border-collapse:collapse;font-size:14px}
+  table.data th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--ink-faint);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line-soft);
+  }
+  table.data td{padding:8px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  table.data tr:last-child td{border-bottom:none}
+  table.data td.actions{text-align:right;width:1%;white-space:nowrap}
+  .empty-row{color:var(--ink-faint);font-size:13px;padding:10px 8px;font-style:italic}
+
+  /* Add form */
+  .addform{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:12px;
+    padding-top:12px;border-top:1px dashed var(--line)}
+  .addform .fld{display:flex;flex-direction:column;gap:3px}
+  .addform .fld label{font-size:11px;color:var(--ink-faint);font-weight:600}
+  .addform .fld.grow{flex:1;min-width:140px}
+
+  /* Inputs */
+  input,select,textarea{
+    font-family:inherit;font-size:14px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;outline:none;transition:border-color .12s,box-shadow .12s;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
+  textarea{resize:vertical;min-height:70px;width:100%;line-height:1.5}
+  input.sm{padding:7px 9px}
+  select{cursor:pointer}
+
+  /* Buttons */
+  .btn{
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    border-radius:8px;padding:8px 14px;border:1px solid transparent;
+    display:inline-flex;align-items:center;gap:6px;transition:background .12s,border-color .12s;
+    background:var(--line-soft);color:var(--ink-soft);
+  }
+  .btn:hover{background:#E3E8E3}
+  .btn.primary{background:var(--teal);color:#fff}
+  .btn.primary:hover{background:var(--teal-dark)}
+  .btn.ghost{background:transparent;border-color:var(--line)}
+  .btn.ghost:hover{background:var(--line-soft)}
+  .btn.sm{padding:6px 11px;font-size:13px}
+  .btn.icon{padding:6px 8px;background:transparent;color:var(--ink-faint);border-radius:6px}
+  .btn.icon:hover{background:var(--red-soft);color:var(--red)}
+  .btn.wide{width:100%;justify-content:center}
+
+  /* Profile grid */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+  .field-row label{font-size:12px;color:var(--ink-soft);font-weight:600}
+  .field-row .val-input{width:100%}
+
+  /* Sparkline */
+  .spark-wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .spark svg{display:block}
+  .spark-legend{font-size:12px;color:var(--ink-faint)}
+  .spark-legend b{color:var(--teal-dark);font-size:15px}
+
+  /* Timeline (rehberlik) */
+  .tl-entry{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-soft)}
+  .tl-entry:last-child{border-bottom:none}
+  .tl-date{font-size:12px;color:var(--ink-faint);width:82px;flex-shrink:0;padding-top:2px}
+  .tl-body{flex:1;min-width:0}
+  .tl-kind{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-dark);margin-bottom:2px}
+  .tl-kind.veli{color:var(--amber)}
+  .tl-text{white-space:pre-wrap;word-break:break-word}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,33,30,.4);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .modal h3{font-size:17px;margin-bottom:14px}
+  .modal .row{margin-bottom:12px}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+
+  /* Toast */
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;
+    opacity:0;pointer-events:none;transition:all .25s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Responsive: master-detail stacks on mobile/tablet-portrait */
+  @media(max-width:820px){
+    .roster{width:100%;position:absolute;inset:0;top:0;z-index:10;border-right:none}
+    main{position:relative}
+    .detail{position:absolute;inset:0;z-index:5;background:var(--paper)}
+    body.viewing .roster{display:none}
+    body:not(.viewing) .detail{display:none}
+    .btn-back{display:inline-flex}
+    .detail-inner{padding:16px 16px 80px}
+    .grid2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">Öğrenci Gelişim Defteri</span>
+      <span class="sub">yerel · çevrimdışı · veri yalnızca bu cihazda</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="backup">
+      <span class="status" id="backupStatus">Kaydedilmemiş değişiklik yok</span>
+      <button class="btn ghost sm" onclick="importJSON()">📂 Yükle</button>
+      <button class="btn primary sm" onclick="exportJSON()">💾 Yedekle (JSON)</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="roster">
+      <div class="roster-head">
+        <div class="count" id="rosterCount">0 öğrenci</div>
+        <input class="search" id="searchBox" placeholder="Ara: ad veya numara" oninput="renderRoster()">
+      </div>
+      <div class="roster-list" id="rosterList"></div>
+      <div class="roster-foot">
+        <button class="btn primary wide" onclick="openAddStudent()">+ Öğrenci ekle</button>
+      </div>
+    </aside>
+
+    <section class="detail" id="detail">
+      <div class="empty" id="emptyState">
+        <div class="big">🗂️</div>
+        <h2>Bir öğrenci seç ya da yeni öğrenci ekle</h2>
+        <p style="max-width:340px;font-size:13px">Her öğrencinin 4 yıllık akademik ve gelişim kaydı burada tutulur. Veri hiçbir yere gönderilmez — düzenli olarak <b>Yedekle</b> ile JSON dosyası indir.</p>
+      </div>
+      <div class="detail-inner" id="detailInner" style="display:none"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Add-student modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Yeni öğrenci</h3>
+    <div class="row">
+      <label style="font-size:12px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px">Ad soyad *</label>
+      <input id="m_ad" style="width:100%" placeholder="Örn. Ayşe Yılmaz">
+    </div>
+    <div class="row" style="display:flex;gap:10px">
+      <div style="flex:1">
+        <label style="font-size:12px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px">Okul no</label>
+        <input id="m_no" class="num" style="width:100%" placeholder="1234">
+      </div>
+      <div style="flex:1">
+        <label style="font-size:12px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px">Sınıf / şube</label>
+        <input id="m_sinif" style="width:100%" placeholder="10-A">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Vazgeç</button>
+      <button class="btn primary" onclick="addStudent()">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept="application/json" style="display:none">
+
+<script>
+/* ============================================================
+   VERİ MODELİ
+   db = { meta, ogrenciler: [ { ...alanlar, listeler } ] }
+   Bilinçli olarak DIŞARIDA bırakılanlar (KVKK özel nitelikli veri
+   ve/veya etik risk): hastalık, ilaç, boy, kilo, fobi, ekran süresi.
+   ============================================================ */
+let db = {
+  "meta": {
+    "version": 1,
+    "olusturma": "2026-08-26T00:07:54.799Z",
+    "ornek": true
+  },
+  "ogrenciler": [
+    {
+      "id": "mt9c4ucvcwym",
+      "ad": "Elif Demir",
+      "no": "458",
+      "sinif": "12-B",
+      "girisPuani": "458.7",
+      "girisYuzdelik": "1.8",
+      "hobiler": "Voleybol, piyano, bilim kurgu okuma",
+      "hedefAciklama": "Tıp Fakültesi — ilk 5.000 sıralama hedefi. Öncelik: Hacettepe / İstanbul Tıp. Sayısal ağırlıklı, biyoloji güçlü.",
+      "acilNot": "",
+      "veliler": [
+        {
+          "id": "id1",
+          "ad": "Ayşe Demir",
+          "yakinlik": "Anne",
+          "telefon": "0532 000 00 01"
+        },
+        {
+          "id": "id2",
+          "ad": "Mehmet Demir",
+          "yakinlik": "Baba",
+          "telefon": "0532 000 00 02"
+        }
+      ],
+      "denemeler": [
+        {
+          "id": "id3",
+          "tarih": "2024-10-13",
+          "ad": "3D TYT Deneme 1",
+          "net": "78.5",
+          "siralama": "42000"
+        },
+        {
+          "id": "id4",
+          "tarih": "2024-11-10",
+          "ad": "3D TYT Deneme 2",
+          "net": "82.25",
+          "siralama": "35000"
+        },
+        {
+          "id": "id5",
+          "tarih": "2024-12-08",
+          "ad": "Bilfen TYT 1",
+          "net": "85",
+          "siralama": "30000"
+        },
+        {
+          "id": "id6",
+          "tarih": "2025-01-12",
+          "ad": "3D TYT Deneme 3",
+          "net": "83.75",
+          "siralama": "32000"
+        },
+        {
+          "id": "id7",
+          "tarih": "2025-02-16",
+          "ad": "Apotemi TYT",
+          "net": "88.5",
+          "siralama": "25000"
+        },
+        {
+          "id": "id8",
+          "tarih": "2025-03-16",
+          "ad": "3D TYT Deneme 4",
+          "net": "91.25",
+          "siralama": "21000"
+        },
+        {
+          "id": "id9",
+          "tarih": "2025-04-13",
+          "ad": "Bilfen TYT 2",
+          "net": "90",
+          "siralama": "22000"
+        },
+        {
+          "id": "id10",
+          "tarih": "2025-05-11",
+          "ad": "3D TYT Deneme 5",
+          "net": "94.5",
+          "siralama": "16000"
+        },
+        {
+          "id": "id11",
+          "tarih": "2025-10-12",
+          "ad": "3D TYT Deneme 6",
+          "net": "96.25",
+          "siralama": "13000"
+        },
+        {
+          "id": "id12",
+          "tarih": "2025-11-09",
+          "ad": "Apotemi TYT 2",
+          "net": "99.5",
+          "siralama": "11000"
+        },
+        {
+          "id": "id13",
+          "tarih": "2025-12-14",
+          "ad": "3D TYT Deneme 7",
+          "net": "101.75",
+          "siralama": "9500"
+        },
+        {
+          "id": "id14",
+          "tarih": "2026-01-11",
+          "ad": "Bilfen TYT 3",
+          "net": "100.5",
+          "siralama": "10200"
+        },
+        {
+          "id": "id15",
+          "tarih": "2026-02-15",
+          "ad": "3D TYT Deneme 8",
+          "net": "105.25",
+          "siralama": "7800"
+        },
+        {
+          "id": "id16",
+          "tarih": "2026-03-15",
+          "ad": "Apotemi TYT 3",
+          "net": "108",
+          "siralama": "6500"
+        },
+        {
+          "id": "id17",
+          "tarih": "2026-04-12",
+          "ad": "3D TYT Deneme 9",
+          "net": "110.5",
+          "siralama": "5200"
+        },
+        {
+          "id": "id18",
+          "tarih": "2026-05-10",
+          "ad": "Genel TYT Deneme",
+          "net": "113.25",
+          "siralama": "4300"
+        }
+      ],
+      "sinavlar": [
+        {
+          "id": "id19",
+          "tarih": "2022-11-04",
+          "ders": "Biyoloji",
+          "tur": "1. Yazılı",
+          "not": "92"
+        },
+        {
+          "id": "id20",
+          "tarih": "2023-04-14",
+          "ders": "Biyoloji",
+          "tur": "2. Yazılı",
+          "not": "88"
+        },
+        {
+          "id": "id21",
+          "tarih": "2023-11-10",
+          "ders": "Biyoloji",
+          "tur": "1. Yazılı",
+          "not": "85"
+        },
+        {
+          "id": "id22",
+          "tarih": "2024-04-19",
+          "ders": "Biyoloji",
+          "tur": "2. Yazılı",
+          "not": "90"
+        },
+        {
+          "id": "id23",
+          "tarih": "2024-11-15",
+          "ders": "Biyoloji",
+          "tur": "1. Yazılı",
+          "not": "78"
+        },
+        {
+          "id": "id24",
+          "tarih": "2025-04-11",
+          "ders": "Biyoloji",
+          "tur": "2. Yazılı",
+          "not": "84"
+        },
+        {
+          "id": "id25",
+          "tarih": "2025-11-14",
+          "ders": "Biyoloji",
+          "tur": "1. Yazılı",
+          "not": "95"
+        },
+        {
+          "id": "id26",
+          "tarih": "2026-01-16",
+          "ders": "Kimya",
+          "tur": "1. Yazılı",
+          "not": "89"
+        }
+      ],
+      "karne": [
+        {
+          "id": "id27",
+          "donem": "2022-2023 · 1. dönem",
+          "ortalama": "89",
+          "davranis": "Örnek"
+        },
+        {
+          "id": "id28",
+          "donem": "2022-2023 · 2. dönem",
+          "ortalama": "91",
+          "davranis": "Örnek"
+        },
+        {
+          "id": "id29",
+          "donem": "2023-2024 · 1. dönem",
+          "ortalama": "92",
+          "davranis": "Örnek"
+        },
+        {
+          "id": "id30",
+          "donem": "2023-2024 · 2. dönem",
+          "ortalama": "90",
+          "davranis": "İyi"
+        },
+        {
+          "id": "id31",
+          "donem": "2024-2025 · 1. dönem",
+          "ortalama": "88",
+          "davranis": "İyi"
+        },
+        {
+          "id": "id32",
+          "donem": "2024-2025 · 2. dönem",
+          "ortalama": "90",
+          "davranis": "Örnek"
+        },
+        {
+          "id": "id33",
+          "donem": "2025-2026 · 1. dönem",
+          "ortalama": "93",
+          "davranis": "Örnek"
+        },
+        {
+          "id": "id34",
+          "donem": "2025-2026 · 2. dönem",
+          "ortalama": "94",
+          "davranis": "Örnek"
+        }
+      ],
+      "devamsizlik": [
+        {
+          "id": "id35",
+          "tarih": "2022-11-14",
+          "gun": "1",
+          "tur": "Raporlu",
+          "aciklama": "Grip"
+        },
+        {
+          "id": "id36",
+          "tarih": "2023-03-02",
+          "gun": "2",
+          "tur": "Özürlü",
+          "aciklama": "Aile"
+        },
+        {
+          "id": "id37",
+          "tarih": "2024-10-21",
+          "gun": "1",
+          "tur": "Özürsüz",
+          "aciklama": ""
+        },
+        {
+          "id": "id38",
+          "tarih": "2025-12-05",
+          "gun": "1",
+          "tur": "Raporlu",
+          "aciklama": ""
+        }
+      ],
+      "disiplin": [
+        {
+          "id": "id39",
+          "tarih": "2023-05-10",
+          "tur": "Ödül/olumlu",
+          "aciklama": "Sınıf temsilciliği, örnek davranış"
+        },
+        {
+          "id": "id40",
+          "tarih": "2024-11-22",
+          "tur": "Ödül/olumlu",
+          "aciklama": "Bilim şenliğine katkı"
+        },
+        {
+          "id": "id41",
+          "tarih": "2025-02-07",
+          "tur": "Uyarı",
+          "aciklama": "Derste telefon kullanımı"
+        }
+      ],
+      "etkinlikler": [
+        {
+          "id": "id42",
+          "tarih": "2023-04-20",
+          "tur": "Gezi",
+          "ad": "Bilim Merkezi gezisi"
+        },
+        {
+          "id": "id43",
+          "tarih": "2024-03-15",
+          "tur": "Yarışma",
+          "ad": "TÜBİTAK 2204 bölge sergisi"
+        },
+        {
+          "id": "id44",
+          "tarih": "2024-12-18",
+          "tur": "Sosyal etkinlik",
+          "ad": "Okul kermesi — stant sorumlusu"
+        },
+        {
+          "id": "id45",
+          "tarih": "2025-05-09",
+          "tur": "Yarışma",
+          "ad": "Biyoloji olimpiyatı okul elemesi"
+        }
+      ],
+      "kulupler": [
+        {
+          "id": "id46",
+          "ad": "Bilim kulübü",
+          "donem": "2022-2023",
+          "rol": "Üye"
+        },
+        {
+          "id": "id47",
+          "ad": "Bilim kulübü",
+          "donem": "2023-2024",
+          "rol": "Yönetim"
+        },
+        {
+          "id": "id48",
+          "ad": "Münazara kulübü",
+          "donem": "2024-2025",
+          "rol": "Üye"
+        }
+      ],
+      "belgeler": [
+        {
+          "id": "id49",
+          "tarih": "2023-06-16",
+          "ad": "Takdir belgesi (9. sınıf)"
+        },
+        {
+          "id": "id50",
+          "tarih": "2024-06-14",
+          "ad": "Takdir belgesi (10. sınıf)"
+        },
+        {
+          "id": "id51",
+          "tarih": "2025-06-13",
+          "ad": "Teşekkür belgesi (11. sınıf)"
+        },
+        {
+          "id": "id52",
+          "tarih": "2026-01-24",
+          "ad": "Takdir belgesi (12. sınıf 1. dönem)"
+        }
+      ],
+      "oduller": [
+        {
+          "id": "id53",
+          "tarih": "2024-04-06",
+          "ad": "TÜBİTAK 2204 bölge — 3.lük"
+        },
+        {
+          "id": "id54",
+          "tarih": "2025-05-24",
+          "ad": "Biyoloji olimpiyatı okul birinciliği"
+        }
+      ],
+      "projeler": [
+        {
+          "id": "id55",
+          "ad": "TÜBİTAK 2204-A: Yerel bitki ekstraktının antibakteriyel etkisi",
+          "teslim": "2024-03-01",
+          "durum": "Tamamlandı",
+          "not": "Bölge sergisine seçildi"
+        },
+        {
+          "id": "id56",
+          "ad": "12. sınıf bitirme araştırması",
+          "teslim": "2026-04-15",
+          "durum": "Devam ediyor",
+          "not": "Literatür taraması bitti"
+        }
+      ],
+      "kitaplar": [
+        {
+          "id": "id57",
+          "tarih": "2022-10-02",
+          "ad": "Sapiens — Y. N. Harari"
+        },
+        {
+          "id": "id58",
+          "tarih": "2023-02-11",
+          "ad": "Hayvan Çiftliği — G. Orwell"
+        },
+        {
+          "id": "id59",
+          "tarih": "2024-01-20",
+          "ad": "Gen: Bir Kavramın Tarihi — S. Mukherjee"
+        },
+        {
+          "id": "id60",
+          "tarih": "2025-03-08",
+          "ad": "Kozmos — C. Sagan"
+        }
+      ],
+      "gorusmeler": [
+        {
+          "id": "id61",
+          "tarih": "2022-09-20",
+          "tur": "Öğrenci görüşmesi",
+          "not": "Uyum iyi. Sağlık alanına ilgili olduğunu söyledi, uzun vadede tıp aklında. İlk hedef: 9. sınıfta güçlü temel + biyoloji-kimyada üst düzey."
+        },
+        {
+          "id": "id62",
+          "tarih": "2023-01-15",
+          "tur": "Veli görüşmesi",
+          "not": "Anne katıldı. 9. sınıf gidişatı çok iyi. Evde çalışma düzeni oturmuş. Kaygı yok. Karar: bu tempoyu korumak, henüz YKS baskısı yapmamak."
+        },
+        {
+          "id": "id63",
+          "tarih": "2023-11-10",
+          "tur": "Öğrenci görüşmesi",
+          "not": "10. sınıf ders seçimi konuşuldu. Sayısalda net karar. Biyolojiye ilgisi belirgin. TÜBİTAK 2204 projesine yönlendirdim."
+        },
+        {
+          "id": "id64",
+          "tarih": "2024-10-05",
+          "tur": "Öğrenci görüşmesi",
+          "not": "YKS sürecine giriş. Haftalık deneme rutini kararlaştırıldı (2 haftada 1 TYT). Zayıf alan: TYT matematik hız. Karar: soru bankasından süreli çözüm."
+        },
+        {
+          "id": "id65",
+          "tarih": "2024-12-20",
+          "tur": "Veli görüşmesi",
+          "not": "11. sınıf ortası. Aile hafif kaygılı — netler beklenenden yavaş yükseliyor. Sakinleştirdim, bu dönemde dip-çıkış normal. Uyku/ekran dengesine dikkat önerildi."
+        },
+        {
+          "id": "id66",
+          "tarih": "2025-01-18",
+          "tur": "Öğrenci görüşmesi",
+          "not": "Ocak denemesinde düşüş (83.75) sonrası moral bozuk. Trend grafiğini gösterdim: genel yön yukarı. Tek denemeye takılmama üzerine konuştuk."
+        },
+        {
+          "id": "id67",
+          "tarih": "2025-09-12",
+          "tur": "Öğrenci görüşmesi",
+          "not": "12. sınıf planı. Hedef netleşti: Tıp, ilk 5.000. AYT sayısala ağırlık kararı. Deneme sıklığı haftalığa çıkarıldı. Motivasyon yüksek."
+        },
+        {
+          "id": "id68",
+          "tarih": "2026-01-10",
+          "tur": "Veli görüşmesi",
+          "not": "Son düzlük. Netler 100+ bandında stabil. Tercih stratejisi ön konuşması yapıldı. Aile destekleyici. Sınav kaygısını yönetmek için basit nefes/planlama rutini paylaşıldı."
+        }
+      ],
+      "gozlemler": [
+        {
+          "id": "id69",
+          "tarih": "2022-10-08",
+          "not": "Derste çok aktif, biyoloji sorularında öne çıkıyor. Merakı yüksek."
+        },
+        {
+          "id": "id70",
+          "tarih": "2023-04-22",
+          "not": "Grup çalışmasında doğal lider. Arkadaşlarına anlatırken kendi öğrenmesi de pekişiyor."
+        },
+        {
+          "id": "id71",
+          "tarih": "2024-11-15",
+          "not": "Deneme öncesi belirgin kaygı gözlendi. Zaman yönetimi ve planlama üzerine kısa yönlendirme yapıldı."
+        },
+        {
+          "id": "id72",
+          "tarih": "2025-03-30",
+          "not": "Netlerde istikrarlı yükseliş görülüyor, özgüveni arttı. Matematik hız problemi büyük ölçüde çözülmüş."
+        },
+        {
+          "id": "id73",
+          "tarih": "2025-12-01",
+          "not": "Sınav yaklaştıkça yoğun çalışma temposu; dinlenme aralarını ihmal etmemesi konusunda hatırlatma yapıldı."
+        }
+      ]
+    }
+  ]
+};
+let activeId = null;
+let activeTab = 'genel';
+let dirty = false;
+
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const bugun = () => new Date().toISOString().slice(0,10);
+const el = id => document.getElementById(id);
+
+/* ---- Boş öğrenci iskeleti ---- */
+function bosOgrenci(ad,no,sinif){
+  return {
+    id:uid(), ad, no:no||'', sinif:sinif||'',
+    girisPuani:'', girisYuzdelik:'',
+    hobiler:'', hedefAciklama:'', acilNot:'',
+    veliler:[], denemeler:[], sinavlar:[], karne:[], devamsizlik:[],
+    disiplin:[], etkinlikler:[], kulupler:[], belgeler:[],
+    oduller:[], projeler:[], kitaplar:[], gorusmeler:[], gozlemler:[]
+  };
+}
+
+/* Eski/eksik yedekleri güvenle tamamla (geriye dönük uyumluluk) */
+const OG_ARRAYS = ['veliler','denemeler','sinavlar','karne','devamsizlik','disiplin','etkinlikler','kulupler','belgeler','oduller','projeler','kitaplar','gorusmeler','gozlemler'];
+const OG_FIELDS = { no:'', sinif:'', girisPuani:'', girisYuzdelik:'', hobiler:'', hedefAciklama:'', acilNot:'' };
+function normalizeStudent(o){
+  OG_ARRAYS.forEach(k=>{ if(!Array.isArray(o[k])) o[k]=[]; });
+  Object.keys(OG_FIELDS).forEach(k=>{ if(o[k]==null) o[k]=OG_FIELDS[k]; });
+  if(!o.id) o.id=uid();
+  return o;
+}
+
+/* ============================================================
+   DURUM / KAYIT
+   ============================================================ */
+function markDirty(){
+  dirty = true;
+  const s = el('backupStatus');
+  s.textContent = '⚠ Kaydedilmemiş değişiklik — yedek al';
+  s.className = 'status warn';
+}
+function markSaved(){
+  dirty = false;
+  const s = el('backupStatus');
+  s.textContent = 'Yedeklendi ✓';
+  s.className = 'status';
+}
+function toast(msg){
+  const t = el('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'),2200);
+}
+window.addEventListener('beforeunload', e=>{
+  if(dirty){ e.preventDefault(); e.returnValue=''; }
+});
+
+/* ============================================================
+   YEDEKLE / YÜKLE  (kalıcı yerel depolama = JSON dosyası)
+   ============================================================ */
+function exportJSON(){
+  db.meta.sonYedek = new Date().toISOString();
+  const blob = new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date().toISOString().slice(0,10);
+  a.download = `ogrenci-defteri-${d}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  markSaved();
+  toast('Yedek indirildi');
+}
+function importJSON(){ el('fileInput').click(); }
+el('fileInput').addEventListener('change', ev=>{
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const data = JSON.parse(r.result);
+      if(!data.ogrenciler) throw new Error('geçersiz');
+      db = data;
+      db.ogrenciler = db.ogrenciler.map(normalizeStudent);
+      activeId = null;
+      renderRoster(); renderDetail();
+      markSaved();
+      toast(db.ogrenciler.length+' öğrenci yüklendi');
+    }catch(e){ toast('Dosya okunamadı — geçerli bir yedek değil'); }
+  };
+  r.readAsText(f);
+  ev.target.value = '';
+});
+
+/* ============================================================
+   ÖĞRENCİ EKLE / SİL
+   ============================================================ */
+function openAddStudent(){ el('m_ad').value=el('m_no').value=el('m_sinif').value=''; el('modalBg').classList.add('open'); setTimeout(()=>el('m_ad').focus(),50); }
+function closeModal(){ el('modalBg').classList.remove('open'); }
+function addStudent(){
+  const ad = el('m_ad').value.trim();
+  if(!ad){ toast('Ad soyad gerekli'); return; }
+  const o = bosOgrenci(ad, el('m_no').value.trim(), el('m_sinif').value.trim());
+  db.ogrenciler.push(o);
+  activeId = o.id; markDirty(); closeModal();
+  renderRoster(); renderDetail();
+}
+function deleteStudent(id){
+  const o = db.ogrenciler.find(x=>x.id===id);
+  if(!confirm(`"${o.ad}" öğrencisinin TÜM kaydı silinsin mi? Bu geri alınamaz.`)) return;
+  db.ogrenciler = db.ogrenciler.filter(x=>x.id!==id);
+  if(activeId===id) activeId = null;
+  markDirty(); renderRoster(); renderDetail();
+}
+
+/* ============================================================
+   ROSTER (sol liste)
+   ============================================================ */
+function initials(ad){
+  const p = ad.trim().split(/\s+/);
+  return ((p[0]?.[0]||'')+(p[1]?.[0]||'')).toUpperCase() || '?';
+}
+function renderRoster(){
+  const q = el('searchBox').value.toLowerCase().trim();
+  const list = db.ogrenciler
+    .filter(o => !q || o.ad.toLowerCase().includes(q) || (o.no+'').includes(q))
+    .sort((a,b)=>a.ad.localeCompare(b.ad,'tr'));
+  el('rosterCount').textContent = db.ogrenciler.length+' öğrenci';
+  const c = el('rosterList');
+  if(list.length===0){
+    c.innerHTML = `<div style="padding:20px 12px;color:var(--ink-faint);font-size:13px;text-align:center">${db.ogrenciler.length? 'Eşleşen öğrenci yok':'Henüz öğrenci yok'}</div>`;
+    return;
+  }
+  c.innerHTML = list.map(o=>`
+    <div class="stud-item ${o.id===activeId?'active':''}" onclick="selectStudent('${o.id}')">
+      <div class="avatar">${initials(o.ad)}</div>
+      <div class="meta">
+        <div class="nm">${esc(o.ad)}</div>
+        <div class="sn">${o.no?('No '+esc(o.no)):'—'} ${o.sinif?('· '+esc(o.sinif)):''}</div>
+      </div>
+    </div>`).join('');
+}
+function selectStudent(id){
+  activeId = id; activeTab = 'genel';
+  document.body.classList.add('viewing');
+  renderRoster(); renderDetail();
+  el('detail').scrollTop = 0;
+}
+function backToRoster(){ document.body.classList.remove('viewing'); }
+
+/* ============================================================
+   DETAY GÖRÜNÜMÜ
+   ============================================================ */
+function renderDetail(){
+  const o = db.ogrenciler.find(x=>x.id===activeId);
+  if(!o){ el('emptyState').style.display='flex'; el('detailInner').style.display='none'; return; }
+  el('emptyState').style.display='none';
+  const d = el('detailInner'); d.style.display='block';
+
+  const tabs = [
+    ['genel','Genel'],['akademik','Akademik'],
+    ['okul','Okul Yaşamı'],['rehberlik','Rehberlik']
+  ];
+  d.innerHTML = `
+    <button class="btn ghost sm btn-back" onclick="backToRoster()" style="margin-bottom:14px">← Liste</button>
+    <div class="stud-header">
+      <div class="avatar-lg">${initials(o.ad)}</div>
+      <div style="flex:1;min-width:0">
+        <h1>${esc(o.ad)}</h1>
+        <div class="tags">
+          ${o.no?`<span class="tag">No ${esc(o.no)}</span>`:''}
+          ${o.sinif?`<span class="tag teal">${esc(o.sinif)}</span>`:''}
+          ${o.girisYuzdelik?`<span class="tag">Giriş %${esc(o.girisYuzdelik)}</span>`:''}
+        </div>
+      </div>
+      <button class="btn icon" title="Öğrenciyi sil" onclick="deleteStudent('${o.id}')">🗑</button>
+    </div>
+    <div class="tabs">
+      ${tabs.map(([k,l])=>`<div class="tab ${k===activeTab?'active':''}" onclick="setTab('${k}')">${l}</div>`).join('')}
+    </div>
+    <div id="tabContent"></div>`;
+  renderTab(o);
+}
+function setTab(t){ activeTab=t; renderDetail(); }
+
+function renderTab(o){
+  const c = el('tabContent');
+  if(activeTab==='genel') c.innerHTML = tabGenel(o);
+  else if(activeTab==='akademik') c.innerHTML = tabAkademik(o);
+  else if(activeTab==='okul') c.innerHTML = tabOkul(o);
+  else if(activeTab==='rehberlik') c.innerHTML = tabRehberlik(o);
+}
+
+/* ---- Ortak yardımcılar ---- */
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function saveField(field,val){ const o=db.ogrenciler.find(x=>x.id===activeId); o[field]=val; markDirty(); if(field==='ad'||field==='no'||field==='sinif'||field==='girisYuzdelik'){renderRoster();} }
+function addRow(field,obj){ const o=db.ogrenciler.find(x=>x.id===activeId); o[field].unshift(obj); markDirty(); renderTab(o); }
+function delRow(field,id){ const o=db.ogrenciler.find(x=>x.id===activeId); o[field]=o[field].filter(r=>r.id!==id); markDirty(); renderTab(o); }
+
+/* Generic liste + ekleme formu üreticisi */
+function listSection(title, field, cols, rows, sortKey){
+  let data = rows.slice();
+  if(sortKey) data.sort((a,b)=> (b[sortKey]||'').localeCompare(a[sortKey]||''));
+  const head = cols.map(c=>`<th>${c.label}</th>`).join('')+'<th></th>';
+  const body = data.length ? data.map(r=>`
+    <tr>
+      ${cols.map(c=>`<td class="${c.num?'num':''}">${esc(r[c.key])||'<span style="color:var(--ink-faint)">—</span>'}</td>`).join('')}
+      <td class="actions"><button class="btn icon" onclick="delRow('${field}','${r.id}')">✕</button></td>
+    </tr>`).join('')
+    : `<tr><td colspan="${cols.length+1}" class="empty-row">Kayıt yok</td></tr>`;
+  const inputs = cols.map(c=>{
+    const w = c.grow?'fld grow':'fld';
+    if(c.type==='select'){
+      return `<div class="${w}"><label>${c.label}</label><select id="in_${field}_${c.key}">${c.options.map(op=>`<option>${op}</option>`).join('')}</select></div>`;
+    }
+    const t = c.type==='date'?'date':(c.num?'number':'text');
+    const val = c.type==='date'?`value="${bugun()}"`:'';
+    return `<div class="${w}"><label>${c.label}</label><input class="sm ${c.num?'num':''}" type="${t}" id="in_${field}_${c.key}" ${val} placeholder="${c.ph||''}"></div>`;
+  }).join('');
+  return `
+  <div class="section">
+    <h3>${title}<span class="n">${rows.length} kayıt</span></h3>
+    <div class="section-body">
+      <table class="data"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+      <div class="addform">
+        ${inputs}
+        <button class="btn primary sm" onclick="submitRow('${field}',${JSON.stringify(cols.map(c=>c.key)).replace(/"/g,'&quot;')})">+ Ekle</button>
+      </div>
+    </div>
+  </div>`;
+}
+function submitRow(field, keys){
+  const obj = { id:uid() };
+  keys.forEach(k=>{ obj[k] = el(`in_${field}_${k}`).value.trim(); });
+  // tarih dışında en az bir alan dolu olmalı
+  const meaningful = keys.some(k=> k!=='tarih' && obj[k]);
+  if(!meaningful){ toast('Boş kayıt eklenmez'); return; }
+  addRow(field,obj);
+}
+
+/* ============================================================
+   TAB: GENEL
+   ============================================================ */
+function tabGenel(o){
+  return `
+  <div class="section">
+    <h3>Kimlik ve giriş bilgileri</h3>
+    <div class="section-body">
+      <div class="grid2">
+        ${fieldInput('Ad soyad','ad',o.ad)}
+        ${fieldInput('Okul no','no',o.no,true)}
+        ${fieldInput('Sınıf / şube','sinif',o.sinif)}
+        ${fieldInput('Okula giriş puanı','girisPuani',o.girisPuani,true)}
+        ${fieldInput('Yüzdelik dilim','girisYuzdelik',o.girisYuzdelik,true)}
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Üniversite / bölüm hedefi</h3>
+    <div class="section-body">
+      <div class="field-row">
+        <textarea oninput="saveField('hedefAciklama',this.value)" placeholder="Hedeflenen bölüm(ler), üniversite, sıralama hedefi ve gerekçesi...">${esc(o.hedefAciklama)}</textarea>
+      </div>
+    </div>
+  </div>
+
+  ${listSection('Veli iletişim','veliler',[
+    {key:'ad',label:'Ad soyad',grow:true,ph:'Veli adı'},
+    {key:'yakinlik',label:'Yakınlık',type:'select',options:['Anne','Baba','Vasi','Diğer']},
+    {key:'telefon',label:'Telefon',num:true,ph:'05..'}
+  ],o.veliler)}
+
+  <div class="section">
+    <h3>Hobiler / ilgi alanları</h3>
+    <div class="section-body">
+      <div class="field-row">
+        <textarea oninput="saveField('hobiler',this.value)" placeholder="Spor, müzik, ilgi alanları... (rehberlik ve yönlendirme için)">${esc(o.hobiler)}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Acil durum güvenlik notu <span class="n">opsiyonel</span></h3>
+    <div class="section-note" style="padding-top:12px">
+      <div class="warn-box">
+        Buraya yalnızca <b>acil bir durumda bilinmesi gereken</b> kritik bilgi yazın (ör. ciddi alerji, gezide dikkat edilmesi gereken durum). Bunu doldurmadan önce <b>veli onayı</b> alın. Detaylı hastalık, ilaç, boy/kilo gibi sağlık verileri bilinçli olarak bu sisteme dahil edilmemiştir — bunlar KVKK'da özel nitelikli veridir ve okul sağlık birimi/rehberlik servisinin sorumluluğundadır.
+      </div>
+      <textarea oninput="saveField('acilNot',this.value)" placeholder="(Veli onayı alındıysa) acil durumda bilinmesi gereken tek satırlık kritik not...">${esc(o.acilNot)}</textarea>
+    </div>
+  </div>`;
+}
+function fieldInput(label,field,val,num){
+  return `<div class="field-row">
+    <label>${label}</label>
+    <input class="val-input ${num?'num':''}" value="${esc(val)}" oninput="saveField('${field}',this.value)">
+  </div>`;
+}
+
+/* ============================================================
+   TAB: AKADEMİK
+   ============================================================ */
+function tabAkademik(o){
+  return `
+  ${sparkline(o.denemeler)}
+  ${listSection('Deneme sonuçları','denemeler',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'ad',label:'Deneme',grow:true,ph:'Yayın / deneme adı'},
+    {key:'net',label:'Net',num:true,ph:'0'},
+    {key:'siralama',label:'Sıralama',num:true,ph:'—'}
+  ],o.denemeler,'tarih')}
+
+  ${listSection('Sınav / yazılı notları','sinavlar',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'ders',label:'Ders',grow:true,ph:'Biyoloji'},
+    {key:'tur',label:'Tür',type:'select',options:['1. Yazılı','2. Yazılı','Sözlü','Performans','Diğer']},
+    {key:'not',label:'Not',num:true,ph:'0-100'}
+  ],o.sinavlar,'tarih')}
+
+  ${listSection('Karne / dönem ortalaması','karne',[
+    {key:'donem',label:'Dönem',grow:true,ph:'2025-2026 · 1. dönem'},
+    {key:'ortalama',label:'Ortalama',num:true,ph:'0-100'},
+    {key:'davranis',label:'Davranış / not',grow:true,ph:'(ops.)'}
+  ],o.karne,'donem')}
+  `;
+}
+
+/* Deneme net trendi (mini SVG sparkline) */
+function sparkline(denemeler){
+  const d = denemeler.filter(x=>x.net!=='' && !isNaN(parseFloat(x.net)))
+    .slice().sort((a,b)=>(a.tarih||'').localeCompare(b.tarih||''));
+  if(d.length<2){
+    return `<div class="section"><h3>Deneme net gidişatı</h3><div class="section-body"><span style="color:var(--ink-faint);font-size:13px">Grafik için en az 2 deneme neti girin.</span></div></div>`;
+  }
+  const nets = d.map(x=>parseFloat(x.net));
+  const min = Math.min(...nets), max = Math.max(...nets);
+  const W=520,H=90,pad=8;
+  const rng = (max-min)||1;
+  const pts = nets.map((n,i)=>{
+    const x = pad + i*(W-2*pad)/(nets.length-1);
+    const y = H-pad - ((n-min)/rng)*(H-2*pad);
+    return [x,y];
+  });
+  const path = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const last = nets[nets.length-1], first=nets[0];
+  const diff = (last-first).toFixed(1);
+  const up = last>=first;
+  const dots = pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="#147A63"/>`).join('');
+  return `
+  <div class="section">
+    <h3>Deneme net gidişatı <span class="n">${nets.length} deneme</span></h3>
+    <div class="section-body">
+      <div class="spark-wrap">
+        <div class="spark">
+          <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="max-width:${W}px">
+            <path d="${path}" fill="none" stroke="#147A63" stroke-width="2" stroke-linejoin="round"/>
+            ${dots}
+          </svg>
+        </div>
+        <div class="spark-legend">
+          Son net: <b>${last}</b><br>
+          İlk→son: <span style="color:${up?'#147A63':'#A8323F'};font-weight:600">${up?'▲':'▼'} ${diff}</span> · en yüksek ${max} · en düşük ${min}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   TAB: OKUL YAŞAMI
+   ============================================================ */
+function tabOkul(o){
+  return `
+  ${listSection('Devamsızlık','devamsizlik',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'gun',label:'Gün',num:true,ph:'1'},
+    {key:'tur',label:'Tür',type:'select',options:['Özürsüz','Özürlü','Raporlu']},
+    {key:'aciklama',label:'Açıklama',grow:true,ph:'(ops.)'}
+  ],o.devamsizlik,'tarih')}
+
+  ${listSection('Disiplin kayıtları','disiplin',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'tur',label:'Tür',type:'select',options:['Uyarı','Kınama','Yaptırım','Ödül/olumlu','Diğer']},
+    {key:'aciklama',label:'Açıklama',grow:true,ph:'Kısa açıklama'}
+  ],o.disiplin,'tarih')}
+
+  ${listSection('Etkinlikler (gezi / yarışma)','etkinlikler',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'tur',label:'Tür',type:'select',options:['Gezi','Yarışma','Sosyal etkinlik','Proje etkinliği','Diğer']},
+    {key:'ad',label:'Ad / açıklama',grow:true,ph:'Etkinlik adı'}
+  ],o.etkinlikler,'tarih')}
+
+  ${listSection('Kulüpler','kulupler',[
+    {key:'ad',label:'Kulüp',grow:true,ph:'Kulüp adı'},
+    {key:'donem',label:'Dönem / yıl',ph:'2025-2026'},
+    {key:'rol',label:'Rol',ph:'Üye / başkan'}
+  ],o.kulupler)}
+
+  ${listSection('Belgeler (onur / teşekkür / takdir)','belgeler',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'ad',label:'Belge',grow:true,ph:'Örn. Takdir belgesi'}
+  ],o.belgeler,'tarih')}
+
+  ${listSection('Ödüller','oduller',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'ad',label:'Ödül',grow:true,ph:'Ödül adı / derece'}
+  ],o.oduller,'tarih')}
+
+  ${listSection('Proje ödevi takibi','projeler',[
+    {key:'ad',label:'Proje',grow:true,ph:'Proje / ödev adı'},
+    {key:'teslim',label:'Teslim',type:'date'},
+    {key:'durum',label:'Durum',type:'select',options:['Verildi','Devam ediyor','Tamamlandı','Teslim edilmedi']},
+    {key:'not',label:'Not/geri bildirim',grow:true,ph:'(ops.)'}
+  ],o.projeler)}
+
+  ${listSection('Okuduğu kitaplar','kitaplar',[
+    {key:'tarih',label:'Tarih',type:'date'},
+    {key:'ad',label:'Kitap',grow:true,ph:'Kitap adı — yazar'}
+  ],o.kitaplar,'tarih')}
+  `;
+}
+
+/* ============================================================
+   TAB: REHBERLİK (insani katman — e-Okul'un tutmadığı kısım)
+   ============================================================ */
+function tabRehberlik(o){
+  const gorTL = timeline(o.gorusmeler,'gorusmeler',true);
+  const gozTL = timeline(o.gozlemler,'gozlemler',false);
+  return `
+  <div class="section">
+    <h3>Görüşme notları <span class="n">${o.gorusmeler.length} kayıt</span></h3>
+    <div class="section-note" style="padding-top:12px">Öğrenci ve veli görüşmelerinin tarihli kaydı. Alınan kararları ve verilen sözleri buraya yazın.</div>
+    <div class="section-body">
+      <div class="addform" style="border-top:none;padding-top:0;margin-top:0">
+        <div class="fld"><label>Tarih</label><input class="sm" type="date" id="g_tarih" value="${bugun()}"></div>
+        <div class="fld"><label>Tür</label><select id="g_tur"><option>Öğrenci görüşmesi</option><option>Veli görüşmesi</option><option>Telefon</option></select></div>
+        <div class="fld grow" style="min-width:100%"><label>Not</label><textarea id="g_not" style="min-height:60px" placeholder="Görüşmede konuşulanlar, alınan kararlar, hedefler..."></textarea></div>
+        <button class="btn primary sm" onclick="addGorusme()">+ Görüşme ekle</button>
+      </div>
+      <div style="margin-top:16px">${gorTL}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Gözlemler <span class="n">${o.gozlemler.length} kayıt</span></h3>
+    <div class="section-note" style="padding-top:12px">Kendi gözlemleriniz — akademik/sosyal/davranışsal gelişime dair notlar.</div>
+    <div class="section-body">
+      <div class="addform" style="border-top:none;padding-top:0;margin-top:0">
+        <div class="fld"><label>Tarih</label><input class="sm" type="date" id="z_tarih" value="${bugun()}"></div>
+        <div class="fld grow" style="min-width:100%"><label>Gözlem</label><textarea id="z_not" style="min-height:60px" placeholder="Gözleminiz..."></textarea></div>
+        <button class="btn primary sm" onclick="addGozlem()">+ Gözlem ekle</button>
+      </div>
+      <div style="margin-top:16px">${gozTL}</div>
+    </div>
+  </div>`;
+}
+function timeline(rows,field,hasKind){
+  if(!rows.length) return `<div class="empty-row">Henüz kayıt yok</div>`;
+  const data = rows.slice().sort((a,b)=>(b.tarih||'').localeCompare(a.tarih||''));
+  return data.map(r=>`
+    <div class="tl-entry">
+      <div class="tl-date">${esc(r.tarih)||'—'}</div>
+      <div class="tl-body">
+        ${hasKind?`<div class="tl-kind ${/veli/i.test(r.tur)?'veli':''}">${esc(r.tur)}</div>`:''}
+        <div class="tl-text">${esc(r.not)}</div>
+      </div>
+      <button class="btn icon" onclick="delRow('${field}','${r.id}')">✕</button>
+    </div>`).join('');
+}
+function addGorusme(){
+  const not = el('g_not').value.trim();
+  if(!not){ toast('Görüşme notu boş olamaz'); return; }
+  addRow('gorusmeler',{ id:uid(), tarih:el('g_tarih').value, tur:el('g_tur').value, not });
+}
+function addGozlem(){
+  const not = el('z_not').value.trim();
+  if(!not){ toast('Gözlem boş olamaz'); return; }
+  addRow('gozlemler',{ id:uid(), tarih:el('z_tarih').value, not });
+}
+
+/* ============================================================
+   BAŞLANGIÇ
+   ============================================================ */
+renderRoster();
+renderDetail();
+</script>
+</body>
+</html>
