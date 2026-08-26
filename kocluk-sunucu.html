@@ -4130,6 +4130,16 @@ function vDavet(){
 /* ---------- ABONELİK / PAKETLER ---------- */
 let DENEME=null, ABONE=false;
 const SATIS_TEL='905325874992';   // paket talepleri buraya gelir
+/* Yönetim sekmesindeki paket seçme menüsünü doldurur. [değer, etiket] çiftleri;
+   değerler paket_adi()/paket_limiti() ve gelir hesabıyla birebir uyumlu olmalı. */
+const PAKETLER = [
+  ['deneme',  'Deneme'],
+  ['ogrenci', 'Öğrenci Paketi'],
+  ['koc',     'Koç Paketi'],
+  ['sinif',   'Öğretmen Paketi'],
+  ['okul',    'Okul Paketi'],
+  ['ozel',    'Özel']
+];
 async function denemeOku(){
   try{ DENEME=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/deneme_durum',{method:'POST',body:{}})); }
   catch(e){ DENEME=null; }
