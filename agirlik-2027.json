@@ -2,7 +2,7 @@
  "surum": "2027",
  "kaynak": "ÖSYM çıkmış soru dağılımı — TYT 2018-2025, AYT 2018/2019-2025",
  "olusturma": "2026-08-25",
- "aciklama": "kademe = ders içi kümülatif kapsam (A ilk %50, B %50-80, C kalan)",
+ "aciklama": "kademe = ders içi kümülatif kapsam (A ilk %50, B %50-80, C kalan) · geometri ayrı ders",
  "agirlik": {
   "tyt_tur": {
    "İLETİŞİM VE TEMEL ÖĞELERİ": {
@@ -158,7 +158,7 @@
     "kilit": false
    },
    "ASAL SAYILAR ASAL ÇARPANLAR": {
-    "kademe": "B",
+    "kademe": "C",
     "soru_yil": 0.48,
     "kilit": true
    },
@@ -183,7 +183,7 @@
     "kilit": true
    },
    "ONDALIK SAYILAR": {
-    "kademe": "B",
+    "kademe": "C",
     "soru_yil": 0.49,
     "kilit": false
    },
@@ -193,7 +193,7 @@
     "kilit": true
    },
    "MUTLAK DEĞER": {
-    "kademe": "A",
+    "kademe": "B",
     "soru_yil": 1.12,
     "kilit": false
    },
@@ -208,7 +208,7 @@
     "kilit": false
    },
    "KÖKLÜ İFADELER VE ÖZELLİKLERİ KÖKLÜ DENKLEMLER": {
-    "kademe": "A",
+    "kademe": "B",
     "soru_yil": 1.0,
     "kilit": true
    },
@@ -298,7 +298,7 @@
     "kilit": true
    },
    "KÜME PROBLEMLERİ": {
-    "kademe": "B",
+    "kademe": "C",
     "soru_yil": 0.5,
     "kilit": false
    },
@@ -353,103 +353,13 @@
     "kilit": false
    },
    "OLASILIK": {
-    "kademe": "A",
+    "kademe": "B",
     "soru_yil": 1.12,
     "kilit": false
    },
    "İSTATİSTİK": {
     "kademe": "B",
     "soru_yil": 0.62,
-    "kilit": false
-   },
-   "AÇILAR ÜÇGENDE AÇILAR": {
-    "kademe": "B",
-    "soru_yil": 0.98,
-    "kilit": true
-   },
-   "ÜÇGENLERİ EŞİTLİĞİ VE ÖZEL ÜÇGENLER": {
-    "kademe": "B",
-    "soru_yil": 0.77,
-    "kilit": true
-   },
-   "ÜÇGENDE AÇI KENAR BAĞINTILARI": {
-    "kademe": "C",
-    "soru_yil": 0.42,
-    "kilit": false
-   },
-   "ÜÇGENLERİN BENZERLİĞİ": {
-    "kademe": "B",
-    "soru_yil": 0.56,
-    "kilit": true
-   },
-   "ÜÇGENİN YARDIMCI ELEMANLARI (AÇIORTAY KENAR ORTAY YÜKSEKLİK)": {
-    "kademe": "C",
-    "soru_yil": 0.35,
-    "kilit": false
-   },
-   "ÜÇGENİN ALANI": {
-    "kademe": "C",
-    "soru_yil": 0.42,
-    "kilit": true
-   },
-   "ÇOKGEN DÜZGÜN ÇOKGEN": {
-    "kademe": "A",
-    "soru_yil": 1.0,
-    "kilit": false
-   },
-   "DÖRTGENLER DELTOİD": {
-    "kademe": "C",
-    "soru_yil": 0.0,
-    "kilit": false
-   },
-   "YAMUK": {
-    "kademe": "B",
-    "soru_yil": 0.75,
-    "kilit": false
-   },
-   "PARALELKENAR": {
-    "kademe": "C",
-    "soru_yil": 0.34,
-    "kilit": false
-   },
-   "EŞKENAR DÖRTGEN": {
-    "kademe": "C",
-    "soru_yil": 0.25,
-    "kilit": false
-   },
-   "DİKDÖRTGEN": {
-    "kademe": "B",
-    "soru_yil": 0.76,
-    "kilit": false
-   },
-   "KARE": {
-    "kademe": "B",
-    "soru_yil": 0.5,
-    "kilit": false
-   },
-   "DİK PRİZMALAR": {
-    "kademe": "B",
-    "soru_yil": 0.56,
-    "kilit": false
-   },
-   "DİK DAİRESEL SİLİNDİR": {
-    "kademe": "C",
-    "soru_yil": 0.47,
-    "kilit": false
-   },
-   "DİK PİRAMİTLER": {
-    "kademe": "C",
-    "soru_yil": 0.38,
-    "kilit": false
-   },
-   "DİK DAİRESEL KONT": {
-    "kademe": "C",
-    "soru_yil": 0.28,
-    "kilit": false
-   },
-   "KÜRE": {
-    "kademe": "C",
-    "soru_yil": 0.19,
     "kilit": false
    }
   },
@@ -1514,7 +1424,7 @@
     "kilit": true
    },
    "İKİNCİ DERECEDEN FONKSİYONLAR VE GRAFİKLERİ (PARABOL)": {
-    "kademe": "B",
+    "kademe": "C",
     "soru_yil": 0.62,
     "kilit": false
    },
@@ -1549,7 +1459,7 @@
     "kilit": false
    },
    "DİZİ ÇEŞİTLERİ": {
-    "kademe": "B",
+    "kademe": "C",
     "soru_yil": 0.5,
     "kilit": false
    },
@@ -1584,7 +1494,7 @@
     "kilit": false
    },
    "TÜREV KAVRAMI VE TÜREV ALMA KURALLARI": {
-    "kademe": "A",
+    "kademe": "B",
     "soru_yil": 0.9,
     "kilit": true
    },
@@ -1594,7 +1504,7 @@
     "kilit": false
    },
    "BİR FONKSİYONUN ARTAN AZALAN ARALIKLARI VE EKSTRAMUM NOKTALARI": {
-    "kademe": "B",
+    "kademe": "C",
     "soru_yil": 0.67,
     "kilit": false
    },
@@ -1604,7 +1514,7 @@
     "kilit": true
    },
    "İNTEGRAL ALMA YÖNTEMİ": {
-    "kademe": "A",
+    "kademe": "B",
     "soru_yil": 0.86,
     "kilit": true
    },
@@ -1614,83 +1524,8 @@
     "kilit": false
    },
    "BELİRLİ İNTEGRALİN UYGULAMALARI": {
-    "kademe": "B",
+    "kademe": "C",
     "soru_yil": 0.58,
-    "kilit": false
-   },
-   "ÇEMBERİN TEMEL ELEMANLARI": {
-    "kademe": "C",
-    "soru_yil": 0.4,
-    "kilit": true
-   },
-   "ÇEMBERLERDE AÇILAR": {
-    "kademe": "B",
-    "soru_yil": 0.7,
-    "kilit": false
-   },
-   "ÇEMBERDE TEĞET": {
-    "kademe": "C",
-    "soru_yil": 0.5,
-    "kilit": false
-   },
-   "DAİRENİN ÇEVRESİ VE ALANI": {
-    "kademe": "C",
-    "soru_yil": 0.4,
-    "kilit": false
-   },
-   "SAYI DOĞRUSU VEANALİTİK DÜZLEM": {
-    "kademe": "C",
-    "soru_yil": 0.35,
-    "kilit": false
-   },
-   "DOĞRU PARÇASINI BELLİ ORANDA BÖLEN NOKTANIN KOORDİNATLARI": {
-    "kademe": "B",
-    "soru_yil": 0.53,
-    "kilit": false
-   },
-   "DOĞRUNUN DENKLEMLERİ": {
-    "kademe": "B",
-    "soru_yil": 0.6,
-    "kilit": true
-   },
-   "DÜZLEMDE İKİ DOĞRUNUN BİRBİRİNE GÖRE DURUMLARI NOKTANIN DOĞRUYA OLAN UZAKLIĞI": {
-    "kademe": "B",
-    "soru_yil": 0.52,
-    "kilit": false
-   },
-   "DENKLEMİ VERİLEN BİR DOĞRUNUN GRAFİĞİ VE DOĞRUNUN DÜZLEMDE AYIRDIĞI BÖLGELER": {
-    "kademe": "C",
-    "soru_yil": 0.38,
-    "kilit": false
-   },
-   "ÖTELEME YANSIMA VE DÖNME DÖNÜŞÜMLERİ NOKTANIN NOKTAYA EKSENLERE ÖZEL DOĞRULARA VE HERHANGİ BİR DOĞRUYA GÖRE YANSIMASI": {
-    "kademe": "C",
-    "soru_yil": 0.38,
-    "kilit": false
-   },
-   "BİR DOĞRUNUN BAŞKA BİR DOĞRUYA VE BİR NOKTAYA GÖRE YANSIMASI": {
-    "kademe": "C",
-    "soru_yil": 0.22,
-    "kilit": false
-   },
-   "BİR NOKTANIN BAŞLANGIÇ NOKTASI ETRAFINDA DÖNDÜRÜLMESİ": {
-    "kademe": "C",
-    "soru_yil": 0.15,
-    "kilit": false
-   },
-   "ÇEMBERİN DENKLEMLERİ": {
-    "kademe": "C",
-    "soru_yil": 0.34,
-    "kilit": false
-   },
-   "DENKLEMLERİ VERİLEN DOĞRU İLE ÇEMBERİN BİRBİRİNE GÖRE DURUMLARI": {
-    "kademe": "C",
-    "soru_yil": 0.22,
-    "kilit": false
-   },
-   "ÇEMBERİN ÜZERİNDEKİ BİR NOKTADAN ÇİZİLEN TEĞET VE NORMALİN DENKLEMİ": {
-    "kademe": "C",
-    "soru_yil": 0.19,
     "kilit": false
    }
   },
@@ -3098,6 +2933,175 @@
    "Akışı bozan cümle": {
     "kademe": "B",
     "soru_yil": 4.0,
+    "kilit": false
+   }
+  },
+  "tyt_geo": {
+   "AÇILAR ÜÇGENDE AÇILAR": {
+    "kademe": "A",
+    "soru_yil": 0.98,
+    "kilit": true
+   },
+   "ÜÇGENLERİ EŞİTLİĞİ VE ÖZEL ÜÇGENLER": {
+    "kademe": "A",
+    "soru_yil": 0.77,
+    "kilit": true
+   },
+   "ÜÇGENDE AÇI KENAR BAĞINTILARI": {
+    "kademe": "B",
+    "soru_yil": 0.42,
+    "kilit": false
+   },
+   "ÜÇGENLERİN BENZERLİĞİ": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": true
+   },
+   "ÜÇGENİN YARDIMCI ELEMANLARI (AÇIORTAY KENAR ORTAY YÜKSEKLİK)": {
+    "kademe": "C",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "ÜÇGENİN ALANI": {
+    "kademe": "C",
+    "soru_yil": 0.42,
+    "kilit": true
+   },
+   "ÇOKGEN DÜZGÜN ÇOKGEN": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "DÖRTGENLER DELTOİD": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "YAMUK": {
+    "kademe": "A",
+    "soru_yil": 0.75,
+    "kilit": false
+   },
+   "PARALELKENAR": {
+    "kademe": "C",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "EŞKENAR DÖRTGEN": {
+    "kademe": "C",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "DİKDÖRTGEN": {
+    "kademe": "A",
+    "soru_yil": 0.76,
+    "kilit": false
+   },
+   "KARE": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "DİK PRİZMALAR": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": false
+   },
+   "DİK DAİRESEL SİLİNDİR": {
+    "kademe": "B",
+    "soru_yil": 0.47,
+    "kilit": false
+   },
+   "DİK PİRAMİTLER": {
+    "kademe": "C",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "DİK DAİRESEL KONT": {
+    "kademe": "C",
+    "soru_yil": 0.28,
+    "kilit": false
+   },
+   "KÜRE": {
+    "kademe": "C",
+    "soru_yil": 0.19,
+    "kilit": false
+   }
+  },
+  "ayt_geo": {
+   "ÇEMBERİN TEMEL ELEMANLARI": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": true
+   },
+   "ÇEMBERLERDE AÇILAR": {
+    "kademe": "A",
+    "soru_yil": 0.7,
+    "kilit": false
+   },
+   "ÇEMBERDE TEĞET": {
+    "kademe": "A",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "DAİRENİN ÇEVRESİ VE ALANI": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "SAYI DOĞRUSU VEANALİTİK DÜZLEM": {
+    "kademe": "C",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "DOĞRU PARÇASINI BELLİ ORANDA BÖLEN NOKTANIN KOORDİNATLARI": {
+    "kademe": "A",
+    "soru_yil": 0.53,
+    "kilit": false
+   },
+   "DOĞRUNUN DENKLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.6,
+    "kilit": true
+   },
+   "DÜZLEMDE İKİ DOĞRUNUN BİRBİRİNE GÖRE DURUMLARI NOKTANIN DOĞRUYA OLAN UZAKLIĞI": {
+    "kademe": "A",
+    "soru_yil": 0.52,
+    "kilit": false
+   },
+   "DENKLEMİ VERİLEN BİR DOĞRUNUN GRAFİĞİ VE DOĞRUNUN DÜZLEMDE AYIRDIĞI BÖLGELER": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "ÖTELEME YANSIMA VE DÖNME DÖNÜŞÜMLERİ NOKTANIN NOKTAYA EKSENLERE ÖZEL DOĞRULARA VE HERHANGİ BİR DOĞRUYA GÖRE YANSIMASI": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "BİR DOĞRUNUN BAŞKA BİR DOĞRUYA VE BİR NOKTAYA GÖRE YANSIMASI": {
+    "kademe": "C",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "BİR NOKTANIN BAŞLANGIÇ NOKTASI ETRAFINDA DÖNDÜRÜLMESİ": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "ÇEMBERİN DENKLEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "DENKLEMLERİ VERİLEN DOĞRU İLE ÇEMBERİN BİRBİRİNE GÖRE DURUMLARI": {
+    "kademe": "C",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "ÇEMBERİN ÜZERİNDEKİ BİR NOKTADAN ÇİZİLEN TEĞET VE NORMALİN DENKLEMİ": {
+    "kademe": "C",
+    "soru_yil": 0.19,
     "kilit": false
    }
   }
