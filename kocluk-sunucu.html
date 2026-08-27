@@ -2984,12 +2984,12 @@ function setOdevDers(k){OS=k;OU='';render();}
 function setOdevUnite(u){OU=u;render();}
 function toggleHide(b){OHIDE=b;render();}
 /* Konu başına hedef soru sayısı: konunun ÖSYM'de (2018-2025) yılda getirdiği
-   ortalama soruya göre ölçekli. Aralık 120–600 (çok getiren konuya daha çok pratik). */
+   ortalama soruya göre ölçekli. Aralık 60–300 (çok getiren konuya daha çok pratik). */
 function hedefSoru(sk, konu){
   var sy = (AGIRLIK && AGIRLIK.agirlik && AGIRLIK.agirlik[sk] && AGIRLIK.agirlik[sk][konu])
              ? (+AGIRLIK.agirlik[sk][konu].soru_yil||0) : 0;
-  var v = Math.round((120 + 72*sy)/10)*10;
-  return Math.max(120, Math.min(600, v));
+  var v = Math.round((60 + 36*sy)/10)*10;
+  return Math.max(60, Math.min(300, v));
 }
 /* ===== TAVSİYE EDİLEN HAFTALIK ÖDEV =====
    Hedef kapsam: ön koşul + çekirdek + güvenlik payı (genişleme HARİÇ).
