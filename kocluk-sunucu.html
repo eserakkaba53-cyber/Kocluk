@@ -1,10 +1,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script>/* Temayı ilk boyamadan ÖNCE uygula — açılışta beyaz parlaması (flash) olmasın. */
+try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.documentElement.setAttribute('data-tema',_t);}catch(e){}</script>
 <style>
 :root{
   --ink:#122430;
   --ink-2:#3D5566;
   --ink-3:#7E939F;
+  --rail:#122430;
   --paper:#E9EDEF;
   --panel:#FFFFFF;
   --line:#CBD6DB;
@@ -20,6 +23,29 @@
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:"SF Mono",'JetBrains Mono',Consolas,"Liberation Mono",Menlo,monospace;
 }
+/* ===== TEMALAR — yalnızca renk değişkenlerini değiştirir. Banner ve rozet
+   renkleri gömülü olduğundan temadan etkilenmez (bilerek). ===== */
+:root[data-tema="gece"]{
+  --ink:#E7EEF0; --ink-2:#AABEC7; --ink-3:#6E8794;
+  --rail:#0A141A; --paper:#0E1B22; --panel:#16272F; --line:#294249; --line-soft:#1F343B;
+  --accent:#43C0AD; --accent-soft:#123833;
+  --ok:#54C58C; --warn:#E2A63F; --bad:#EE7460;
+  --ok-bg:#123528; --warn-bg:#33280F; --bad-bg:#37201B;
+}
+:root[data-tema="kum"]{
+  --ink:#2A231E; --ink-2:#5C5046; --ink-3:#94867A;
+  --rail:#2A231E; --paper:#ECE4D8; --panel:#FBF7EF; --line:#DBCEBB; --line-soft:#EBE2D2;
+  --accent:#1B6E62; --accent-soft:#D8E7E2;
+  --ok:#3C7A4E; --warn:#B0740F; --bad:#B0432E;
+  --ok-bg:#E4EFDD; --warn-bg:#F6EACF; --bad-bg:#F3E0D7;
+}
+:root[data-tema="lacivert"]{
+  --ink:#0B2033; --ink-2:#37506A; --ink-3:#7389A0;
+  --rail:#0B2033; --paper:#DCE6EE; --panel:#F5F9FC; --line:#C2D2E1; --line-soft:#E1EAF2;
+  --accent:#155A8C; --accent-soft:#D6E5F2;
+  --ok:#1F7A55; --warn:#B0710A; --bad:#A73A2C;
+  --ok-bg:#E1F0E9; --warn-bg:#F7EDD6; --bad-bg:#F5E1DD;
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
@@ -29,7 +55,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .app{display:flex;min-height:100vh}
 
 /* ---- sol ray ---- */
-.rail{width:246px;flex:none;background:var(--ink);color:#DCE6EA;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.rail{width:246px;flex:none;background:var(--rail);color:#DCE6EA;display:flex;flex-direction:column;position:relative;overflow:hidden}
 
 
 .rail-top{padding:18px 14px 16px;border-bottom:1px solid rgba(255,255,255,.12);text-align:center}
@@ -3389,9 +3415,16 @@ function addTask(){
     sub:odevDers(st),konu,q:+document.getElementById('tkQ').value||0,txt:document.getElementById('tkX').value.trim(),s:0});
   save(); render();
 }
-function cycleTask(id){const t=cur().tasks.find(x=>x.id===id); t.s=(t.s+1)%4; save(); render();}
+/* "Yapıldı" işaretlenen konu-ödevi, ilgili konuyu otomatik "Bitti"ye (durum=2) taşır;
+   böylece kalan süre ve tavsiye planı senkron kalır. Geri almaz, rutin ödeve dokunmaz. */
+function odevKonuBitir(st,t){
+  if(st && t && t.konu && t.sub && !t.rutin){
+    st.topics=st.topics||{}; st.topics[t.sub]=st.topics[t.sub]||{}; st.topics[t.sub][t.konu]=2;
+  }
+}
+function cycleTask(id){const st=cur(); const t=st.tasks.find(x=>x.id===id); t.s=(t.s+1)%4; if(t.s===1) odevKonuBitir(st,t); save(); render();}
 function delTask(id){const st=cur(); st.tasks=st.tasks.filter(t=>t.id!==id); save(); render();}
-function bulkWeek(w,s){const st=cur(); st.tasks.forEach(t=>{if(weekKey(t.date)===w)t.s=s;}); save(); render();}
+function bulkWeek(w,s){const st=cur(); st.tasks.forEach(t=>{if(weekKey(t.date)===w){t.s=s; if(+s===1) odevKonuBitir(st,t);}}); save(); render();}
 
 /* ---------- SÜRE AYARLARI (tüm öğrenciler için ortak) ---------- */
 function sureOzet(){
@@ -4749,7 +4782,7 @@ function onaysizUyari(){
 }
 function hesapKarti(){
   const bu=cihazParmakIzi();
-  return `<div class="card"><h2>Hesap ve lisans<small>Giriş bilgilerin, kullanım süren ve bağlı cihazların.</small></h2><div class="body">
+  return `${gorunumKart()}<div class="card"><h2>Hesap ve lisans<small>Giriş bilgilerin, kullanım süren ve bağlı cihazların.</small></h2><div class="body">
     <div class="stats" style="margin:-18px -18px 16px;border-bottom:1px solid var(--line-soft)">
       <div class="stat"><div class="k">Hesap</div><div class="v" style="font-size:15px">${esc(SB.mail||'—')}</div><div class="n">${esc(DB.kocAd||'')}</div></div>
       <div class="stat"><div class="k">Durum</div><div class="v" style="font-size:15px;color:${LISANS&&LISANS.gecerli?'var(--ok)':'var(--bad)'}">${LISANS?(LISANS.gecerli?'Aktif':'Süre doldu'):'—'}</div>
@@ -4973,6 +5006,34 @@ let KVKK_ONAY=false, KVKK_AC=false;
    Tercih tarayıcıda saklanır, koç her açtığında aynı kalır. */
 let ODEV_SIRA = (function(){ try{ return localStorage.getItem('kocluk_odev_sira')||'mufredat'; }catch(e){ return 'mufredat'; } })();
 function setOdevSira(v){ ODEV_SIRA=v; try{ localStorage.setItem('kocluk_odev_sira',v); }catch(e){} render(); }
+
+/* ===== TEMA SEÇİMİ (cihaza kaydedilir, hesaba değil) ===== */
+const TEMALAR=[['acik','Açık','#186C68','#FFFFFF'],['gece','Gece','#43C0AD','#0E1B22'],
+               ['kum','Sıcak Kum','#1B6E62','#ECE4D8'],['lacivert','Lacivert','#155A8C','#DCE6EE']];
+function temaAktif(){ try{ return localStorage.getItem('biyoser_tema')||'acik'; }catch(e){ return 'acik'; } }
+function setTema(v){
+  try{ localStorage.setItem('biyoser_tema',v); }catch(e){}
+  if(v==='acik') document.documentElement.removeAttribute('data-tema');
+  else document.documentElement.setAttribute('data-tema',v);
+  render();
+}
+function gorunumKart(){
+  const a=temaAktif();
+  return `<div class="card"><h2>Görünüm<small>Panelin rengini seç. Tercih bu cihazda saklanır; her açılışta hatırlanır.</small></h2><div class="body">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${TEMALAR.map(([v,ad,ac,bg])=>`<button onclick="setTema('${v}')"
+        style="flex:1;min-width:120px;text-align:left;cursor:pointer;padding:11px 13px;border-radius:11px;
+        border:2px solid ${a===v?'var(--accent)':'var(--line)'};background:var(--panel)">
+        <div style="display:flex;align-items:center;gap:9px">
+          <span style="width:34px;height:34px;border-radius:8px;background:${bg};border:1px solid var(--line);
+            display:inline-flex;align-items:center;justify-content:center">
+            <span style="width:15px;height:15px;border-radius:4px;background:${ac}"></span></span>
+          <span><b style="font-size:13.5px;color:var(--ink)">${ad}</b>
+            <div style="font-size:11px;color:${a===v?'var(--accent)':'var(--ink-3)'}">${a===v?'● seçili':'seç'}</div></span>
+        </div></button>`).join('')}
+    </div>
+  </div></div>`;
+}
 const KVKK_SURUM='2026-08-25';
 function sbAyarla(alan,v){ SB[alan]=v.trim(); SB.sonHata=''; sbSakla(); render(); }
 let KURULUMKOD='';

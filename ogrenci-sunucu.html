@@ -1,6 +1,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Çalışma Panelim</title>
+<script>/* Temayı ilk boyamadan ÖNCE uygula — açılışta beyaz parlaması olmasın. */
+try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.documentElement.setAttribute('data-tema',_t);}catch(e){}</script>
 <style>
 :root{
   --ink:#14243D; --ink-2:#3F5878; --ink-3:#7D8FA8;
@@ -10,6 +12,28 @@
   --ok-bg:#DFEDE9; --warn-bg:#F8EEDA; --bad-bg:#F6E3E0;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:"SF Mono",'JetBrains Mono',Consolas,"Liberation Mono",Menlo,monospace;
+}
+/* ===== TEMALAR — yalnızca renk değişkenleri. ===== */
+:root[data-tema="gece"]{
+  --ink:#E7EEF0; --ink-2:#AABEC7; --ink-3:#6E8794;
+  --paper:#0E1B22; --panel:#16272F; --line:#294249; --line-soft:#1F343B;
+  --accent:#43C0AD; --accent-soft:#123833; --vurgu:#E2A63F;
+  --ok:#54C58C; --warn:#E2A63F; --bad:#EE7460;
+  --ok-bg:#123528; --warn-bg:#33280F; --bad-bg:#37201B;
+}
+:root[data-tema="kum"]{
+  --ink:#2A231E; --ink-2:#5C5046; --ink-3:#94867A;
+  --paper:#ECE4D8; --panel:#FBF7EF; --line:#DBCEBB; --line-soft:#EBE2D2;
+  --accent:#1B6E62; --accent-soft:#D8E7E2; --vurgu:#B0740F;
+  --ok:#3C7A4E; --warn:#B0740F; --bad:#B0432E;
+  --ok-bg:#E4EFDD; --warn-bg:#F6EACF; --bad-bg:#F3E0D7;
+}
+:root[data-tema="lacivert"]{
+  --ink:#0B2033; --ink-2:#37506A; --ink-3:#7389A0;
+  --paper:#DCE6EE; --panel:#F5F9FC; --line:#C2D2E1; --line-soft:#E1EAF2;
+  --accent:#155A8C; --accent-soft:#D6E5F2; --vurgu:#B0710A;
+  --ok:#1F7A55; --warn:#B0710A; --bad:#A73A2C;
+  --ok-bg:#E1F0E9; --warn-bg:#F7EDD6; --bad-bg:#F5E1DD;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
@@ -1074,17 +1098,28 @@ function render(){
 }
 
 /* ---------- ödevlerim ---------- */
+/* "Yaptım" işaretlenen konu-ödevi, ilgili konuyu otomatik "Bitti"ye (durum=2) taşır.
+   Böylece Konular sekmesi, kalan süre ve otomatik öneri kendiliğinden senkron kalır.
+   Yalnızca gerçek bir konuya bağlı, rutin olmayan ödevlerde çalışır; geri almaz. */
+function odevKonuBitir(t){
+  if(t && t.konu && t.sub && !t.rutin){
+    D.topics=D.topics||{}; D.topics[t.sub]=D.topics[t.sub]||{}; D.topics[t.sub][t.konu]=2;
+  }
+}
 function setTask(id,s){
   const t=D.tasks.find(x=>x.id===id); if(!t) return;
   t.s=s;
   if(t.q && (s===1||s===2)) DYBACIK[id]=true;   // döküm girebilsin diye açık kalsın
+  if(s===1) odevKonuBitir(t);                    // Yaptım → konu Bitti
   save(); render();
 }
 function weekKey(ds){const d=new Date(ds+'T00:00');const g=(d.getDay()+6)%7;d.setDate(d.getDate()-g);return d.toISOString().slice(0,10);}
 function haftaFarki(ds){const a=new Date(weekKey(ds)+'T00:00'),b=new Date(weekKey(today())+'T00:00');return Math.round((b-a)/604800000);}
 function setSoru(id,v){const t=D.tasks.find(x=>x.id===id); if(t){t.yap=Math.max(0,+v||0);save();render();}}
 function setYap(id,v){const t=D.tasks.find(x=>x.id===id); if(!t)return;
-  t.yap=Math.max(0,+v||0); const o=t.q?t.yap/t.q:0; t.s=o>=0.9?1:o>0?2:0; save(); render();}
+  t.yap=Math.max(0,+v||0); const o=t.q?t.yap/t.q:0; t.s=o>=0.9?1:o>0?2:0;
+  if(t.s===1) odevKonuBitir(t);                  // çözdüğü ≥%90 → Yaptım → konu Bitti
+  save(); render();}
 function yedekUyari(){
   // Sunucu modunda veri zaten sunucuda; yedek uyarısı anlamsız ve
   // gösterdiği "Ayarlar" sekmesi de gizli. Sadece eski (tarayıcı) panelde çıkar.
@@ -2462,9 +2497,37 @@ function vPaket(){
   </div></div>`;
 }
 
+/* ===== TEMA SEÇİMİ (cihaza kaydedilir) ===== */
+const TEMALAR=[['acik','Açık','#2E4A7D','#FFFFFF'],['gece','Gece','#43C0AD','#0E1B22'],
+               ['kum','Sıcak Kum','#1B6E62','#ECE4D8'],['lacivert','Lacivert','#155A8C','#DCE6EE']];
+function temaAktif(){ try{ return localStorage.getItem('biyoser_tema')||'acik'; }catch(e){ return 'acik'; } }
+function setTema(v){
+  try{ localStorage.setItem('biyoser_tema',v); }catch(e){}
+  if(v==='acik') document.documentElement.removeAttribute('data-tema');
+  else document.documentElement.setAttribute('data-tema',v);
+  render();
+}
+function gorunumKart(){
+  const a=temaAktif();
+  return `<div class="card"><h2>Görünüm<small>Panelin rengini seç. Tercih bu cihazda saklanır.</small></h2><div class="body">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${TEMALAR.map(([v,ad,ac,bg])=>`<button onclick="setTema('${v}')"
+        style="flex:1;min-width:120px;text-align:left;cursor:pointer;padding:11px 13px;border-radius:11px;
+        border:2px solid ${a===v?'var(--accent)':'var(--line)'};background:var(--panel)">
+        <div style="display:flex;align-items:center;gap:9px">
+          <span style="width:34px;height:34px;border-radius:8px;background:${bg};border:1px solid var(--line);
+            display:inline-flex;align-items:center;justify-content:center">
+            <span style="width:15px;height:15px;border-radius:4px;background:${ac}"></span></span>
+          <span><b style="font-size:13.5px;color:var(--ink)">${ad}</b>
+            <div style="font-size:11px;color:${a===v?'var(--accent)':'var(--ink-3)'}">${a===v?'● seçili':'seç'}</div></span>
+        </div></button>`).join('')}
+    </div>
+  </div></div>`;
+}
 function vYardim(){
   const v=videoListesi();
   return `
+  ${gorunumKart()}
   ${v.length?videoBolumu():`<div class="card"><h2>Kullanım videoları</h2><div class="body">
     <div class="empty">Videolar henüz eklenmemiş.</div></div></div>`}
 
