@@ -5,6 +5,9 @@
 window.SUNUCU_AYAR = {
   url: 'https://hdcxmunvkxkffnsewfgp.supabase.co',
   key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkY3htdW52a3hrZmZuc2V3ZmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzA4MDMsImV4cCI6MjEwMjEwNjgwM30.SypEvxn5QXwyLtKdMorumeFhv1_ED-EPwghwjdMSYNw'
+// Tüm koç ve öğrencilerin geri sayımı / "yetişir mi" hesabı bu tarihe göre yapılır.
+  // Değiştir → herkeste (mevcut ve sonradan kayıt olan) otomatik güncellenir. Biçim: YYYY-MM-DD
+  sinavTarihi: "2027-06-19"
 };
 
 
