@@ -1238,6 +1238,91 @@ function soloOdevVer(sub, konu){
   save(); render();
 }
 
+/* ===== TAVSİYE EDİLEN HAFTALIK ÖDEV (yalnızca koçsuz / solo öğrenci) =====
+   Kapsam: ön koşul + çekirdek + güvenlik payı (genişleme HARİÇ).
+   Haftalık yük = kalan kapsam süresi / sınava kalan hafta. Çalışma beyanı yükü
+   belirlemez; yalnızca gerçekçilik uyarısı için kullanılır. */
+function tavsiyeHesap(){
+  const hk = haftaKalan();
+  if(!AGIRLIK) return {durum:'agirlik'};
+  if(hk===null) return {durum:'tarih'};
+  if(hk<=0) return {durum:'gecti'};
+  let kapsamDk=0, cekDk=0; const havuz=[];
+  for(const [sk] of subs(D)){
+    const oc = konuOncelik(sk); if(!oc) continue;
+    const m = (D.topics||{})[sk]||{};
+    const verilmis = new Set(D.tasks.filter(t=>t.sub===sk&&!t.rutin).map(t=>t.konu));
+    oc.sirali.forEach(x=>{
+      if(x.oncelik==='ensons') return;           // genişleme kapsam dışı
+      const durum=m[x.konu]||0; if(durum===2) return;    // bitti
+      const dk=sureOf(sk,x.konu)*(durum===1?0.5:durum===3?0.7:1);
+      kapsamDk+=dk;
+      if(x.oncelik==='once') cekDk+=dk;
+      if(!verilmis.has(x.konu))
+        havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
+                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, dk});
+    });
+  }
+  const haftalikDk = kapsamDk/hk;
+  havuz.sort((a,b)=> (a.grup-b.grup) || (b.agirlik-a.agirlik));
+  const secim=[]; let topla=0;
+  for(const x of havuz){ if(secim.length && topla>=haftalikDk) break; secim.push(x); topla+=x.dk; }
+  const beyanDk=(+D.haftalikSaat||0)*60;
+  const gercekci = beyanDk>0 ? (haftalikDk<=beyanDk) : null;
+  return {durum:'ok', hk, kapsamDk, cekDk, haftalikDk, beyanDk, gercekci, secim, secimDk:topla};
+}
+function tavsiyeUygula(){
+  const r=tavsiyeHesap();
+  if(r.durum!=='ok' || !r.secim.length){ alert('Verilecek uygun konu bulunamadı.'); return; }
+  const gun=today();
+  r.secim.forEach((x,i)=>{ D.tasks.push({ id:'s'+Date.now().toString(36)+i, date:gun, sub:x.sub,
+    konu:x.konu, q:30, yap:0, s:0, rutin:false, txt:'Haftalık plan', kendi:true }); });
+  save(); render();
+}
+function tavsiyeHaftalikKart(){
+  const r=tavsiyeHesap();
+  const ADMAP=Object.fromEntries(subs(D));
+  const sar=(ic)=>`<div class="card" style="border:1px solid var(--vurgu)"><h2>Bu haftanın planı<small>Ön koşul + çekirdek + güvenlik payı konuları; seni sınava kadar yetiştiren otomatik plan.</small></h2><div class="body">${ic}</div></div>`;
+  if(r.durum==='agirlik') return sar(`<div class="flag warn"><span class="ic">i</span><span>Konu ağırlık verisi yüklenemedi; plan hesaplanamıyor.</span></div>`);
+  if(r.durum==='tarih')   return sar(`<div class="flag warn"><span class="ic">i</span><span><b>Sınav tarihini</b> gir (Hedefe uzaklık sekmesi); plan buna göre çıkar.</span></div>`);
+  if(r.durum==='gecti')   return sar(`<div class="flag bad"><span class="ic">!</span><span>Sınav tarihi geçmiş görünüyor; plan üretilemedi.</span></div>`);
+  if(!r.secim.length)     return sar(`<div class="flag ok"><span class="ic">✓</span><span>Kapsamdaki tüm konuları ya bitirmişsin ya da zaten kendine vermişsin. Yeni plan yok — devam!</span></div>`);
+
+  let valf='';
+  if(r.gercekci===false){
+    valf=`<div class="flag bad" style="margin-top:2px"><span class="ic">!</span><span>
+      <b>Gerçekçilik uyarısı:</b> Bu plan haftada <b>~${saatY(r.haftalikDk/60)}</b> gerektiriyor ama sen haftada <b>${+D.haftalikSaat||0} saat</b> çalıştığını yazmışsın.
+      Bu tempoyla yetişmek zor. Ya haftalık süreni artır, ya da güvenlik payı konularını sonraya bırakıp önce çekirdek + ön koşula odaklan
+      (o zaman tempo ~${saatY(r.cekDk/r.hk/60)}'e iner).</span></div>`;
+  } else if(r.gercekci===true){
+    valf=`<div class="flag ok" style="margin-top:2px"><span class="ic">✓</span><span>Bu tempo senin çalışma sürenle (${+D.haftalikSaat||0} saat/hafta) uyumlu — plan gerçekçi.</span></div>`;
+  } else {
+    valf=`<div class="flag warn" style="margin-top:2px"><span class="ic">i</span><span>Haftalık çalışma süreni girmemişsin; gerçekçilik kontrolü yapılamadı (Hedefe uzaklık sekmesi).</span></div>`;
+  }
+
+  const bySub={}; r.secim.forEach(x=>{(bySub[x.sub]=bySub[x.sub]||[]).push(x);});
+  const liste=Object.keys(bySub).map(sk=>`
+    <div style="margin-top:10px"><div style="font-weight:650;font-size:13px;margin-bottom:4px">${esc(ADMAP[sk]||sk)}
+      <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))}</span></div>
+      ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
+        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)})</span></span>
+        ${oncRozet(x.oncelik, x.kilit)}</div>`).join('')}
+    </div>`).join('');
+
+  return sar(`
+    <div class="stats" style="margin:-4px -4px 4px">
+      <div class="stat"><div class="k">Sınava kalan</div><div class="v">${r.hk}</div><div class="n">hafta</div></div>
+      <div class="stat"><div class="k">Kalan kapsam</div><div class="v">${Math.round(r.kapsamDk/60)}</div><div class="n">saat</div></div>
+      <div class="stat"><div class="k">Bu hafta hedef</div><div class="v" style="color:var(--vurgu)">${saatY(r.haftalikDk/60)}</div><div class="n">gerekli tempo</div></div>
+      <div class="stat"><div class="k">Bu haftaki plan</div><div class="v">${r.secim.length}</div><div class="n">konu · ${sa(r.secimDk)}</div></div>
+    </div>
+    ${valf}
+    <div style="margin-top:6px">${liste}</div>
+    <button class="btn wide" style="margin-top:14px" onclick="tavsiyeUygula()">Bu haftanın ödevlerini bana ver (${r.secim.length} konu)</button>
+    <div class="hint" style="margin-top:8px">Plan her hafta yeniden hesaplanır: konu bitirdikçe kalan azalır. Verdiğin konular listeden düşer.</div>
+  `);
+}
+
 function vOdev(){
   const wk=weekKey(today());
   const rut=D.tasks.filter(t=>t.rutin);
@@ -1260,6 +1345,7 @@ function vOdev(){
     <b>Deneme sürenin ${_kalan>0?_kalan+' günü kaldı.':'son günü.'}</b>
     Süre dolunca panel donar, verilerin silinmez.
     <a href="#" onclick="ogrPaketTalep();return false" style="color:var(--accent);text-decoration:underline">Öğrenci paketi al — 99 TL/yıl</a></span></div>`:''}
+  ${_solo?tavsiyeHaftalikKart():''}
   ${_solo?`<div class="card"><h2>Kendine ödev ver<small>Hedefine göre sıradaki konular. Öğretmenin yok — planı sen kuruyorsun.</small></h2><div class="body">
     <div class="fr" style="margin-bottom:10px">
       <div style="max-width:160px"><label class="f">Soru sayısı</label>

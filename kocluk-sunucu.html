@@ -2957,6 +2957,94 @@ function odevDers(st){const l=subs(st); if(!OS||!l.find(x=>x[0]===OS)) OS=l[0][0
 function setOdevDers(k){OS=k;OU='';render();}
 function setOdevUnite(u){OU=u;render();}
 function toggleHide(b){OHIDE=b;render();}
+/* ===== TAVSİYE EDİLEN HAFTALIK ÖDEV =====
+   Hedef kapsam: ön koşul + çekirdek + güvenlik payı (genişleme HARİÇ).
+   Haftalık yük = kalan kapsam süresi / sınava kalan hafta.
+   Öğrencinin çalışma beyanı yükü belirlemez; yalnızca gerçeklik uyarısı içindir. */
+function tavsiyeHesap(st){
+  const hk = haftaKalan(st);
+  if(!AGIRLIK) return {durum:'agirlik'};
+  if(hk===null) return {durum:'tarih'};
+  if(hk<=0) return {durum:'gecti'};
+  const mult = m => m===1?0.5 : m===3?0.7 : 1;   // işleniyor/eksik kısmi süre
+  let kapsamDk=0, cekDk=0; const havuz=[];
+  for(const [sk] of subs(st)){
+    const oc = konuOncelik(st, sk); if(!oc) continue;
+    const m = st.topics[sk]||{}, verilmis = odevliKonular(st, sk);
+    oc.kalem.forEach(x=>{
+      if(x.oncelik==='genisleme') return;        // kapsam dışı
+      const durum = m[x.konu]||0; if(durum===2) return;   // bitti
+      const dk = sureOf(sk, x.konu)*mult(durum);
+      kapsamDk += dk;
+      if(x.oncelik==='cekirdek') cekDk += dk;
+      if(!verilmis.has(x.konu))
+        havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
+                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, dk});
+    });
+  }
+  const haftalikDk = kapsamDk / hk;              // gerekli tempo (dk/hafta)
+  havuz.sort((a,b)=> (a.grup-b.grup) || (b.agirlik-a.agirlik));
+  const secim=[]; let topla=0;
+  for(const x of havuz){ if(secim.length && topla>=haftalikDk) break; secim.push(x); topla+=x.dk; }
+  const beyanDk = (+st.haftalikSaat||0)*60;
+  const gercekci = beyanDk>0 ? (haftalikDk<=beyanDk) : null;
+  return {durum:'ok', hk, kapsamDk, cekDk, haftalikDk, beyanDk, gercekci, secim, secimDk:topla};
+}
+function tavsiyeUygula(){
+  const st=cur(); if(!st) return;
+  const r=tavsiyeHesap(st);
+  if(r.durum!=='ok' || !r.secim.length){ alert('Verilecek uygun konu bulunamadı.'); return; }
+  const gun=today();
+  r.secim.forEach(x=>{ st.tasks.push({id:uid(), date:gun, type:'h', sub:x.sub, konu:x.konu,
+                        q:0, txt:'Tavsiye edilen haftalık plan', s:0}); });
+  save(); render();
+}
+function tavsiyeHaftalikKart(st){
+  const r=tavsiyeHesap(st);
+  const sar=(ic)=>`<div class="card" style="border:1px solid var(--accent)"><h2>Tavsiye edilen haftalık ödev<small>Ön koşul + çekirdek + güvenlik payı konuları; öğrenciyi sınava kadar yetiştiren otomatik plan.</small></h2><div class="body">${ic}</div></div>`;
+  if(r.durum==='agirlik') return sar(`<div class="flag warn"><span class="ic">i</span><span>Ağırlık dosyası (agirlik-2027.json) yüklenemedi; plan hesaplanamıyor.</span></div>`);
+  if(r.durum==='tarih')   return sar(`<div class="flag warn"><span class="ic">i</span><span>Bu öğrenci için <b>sınav tarihi</b> girilmemiş. Öğrenci bilgileri sekmesinden gir; plan buna göre hesaplanır.</span></div>`);
+  if(r.durum==='gecti')   return sar(`<div class="flag bad"><span class="ic">!</span><span>Sınav tarihi geçmiş görünüyor; haftalık plan üretilemedi.</span></div>`);
+  if(!r.secim.length)     return sar(`<div class="flag ok"><span class="ic">✓</span><span>Kapsamdaki (ön koşul + çekirdek + güvenlik payı) tüm konular ya bitmiş ya da zaten ödev olarak verilmiş. Yeni tavsiye yok.</span></div>`);
+
+  const gs=Math.round(r.haftalikDk/60*10)/10;         // gerekli saat/hafta
+  const beyan=+st.haftalikSaat||0;
+  const cekGs=Math.round(r.cekDk/r.hk/60*10)/10;      // yalnızca çekirdek temposu
+  let valf='';
+  if(r.gercekci===false){
+    valf=`<div class="flag bad" style="margin-top:2px"><span class="ic">!</span><span>
+      <b>Gerçekçilik uyarısı:</b> Bu plan haftada <b>~${saatY(r.haftalikDk/60)}</b> gerektiriyor ama öğrencinin beyanı <b>${beyan} saat</b>.
+      Bu tempoyla yetişmek gerçekçi değil. Ya haftalık süreyi artır, ya da <b>güvenlik payı</b> konularını çıkarıp yalnızca çekirdek + ön koşula odaklan
+      (o zaman tempo ~${saatY(r.cekDk/r.hk/60)}'e düşer).</span></div>`;
+  } else if(r.gercekci===true){
+    valf=`<div class="flag ok" style="margin-top:2px"><span class="ic">✓</span><span>Bu tempo öğrencinin beyanıyla (${beyan} saat/hafta) uyumlu — plan gerçekçi.</span></div>`;
+  } else {
+    valf=`<div class="flag warn" style="margin-top:2px"><span class="ic">i</span><span>Öğrencinin haftalık çalışma süresi girilmemiş; gerçekçilik kontrolü yapılamadı. Hedef sekmesinden gir.</span></div>`;
+  }
+
+  const bySub={}; r.secim.forEach(x=>{(bySub[x.sub]=bySub[x.sub]||[]).push(x);});
+  const liste=Object.keys(bySub).map(sk=>`
+    <div style="margin-top:10px"><div style="font-weight:650;font-size:13px;margin-bottom:4px">${subName(sk)}
+      <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))}</span></div>
+      ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
+        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)})</span></span>
+        ${oncelikRozet(x.oncelik, x.kilit)}</div>`).join('')}
+    </div>`).join('');
+
+  return sar(`
+    <div class="stats" style="margin:-4px -4px 4px">
+      <div class="stat"><div class="k">Sınava kalan</div><div class="v">${r.hk}</div><div class="n">hafta</div></div>
+      <div class="stat"><div class="k">Kalan kapsam</div><div class="v">${Math.round(r.kapsamDk/60)}</div><div class="n">saat · ön koşul+çekirdek+güvenlik</div></div>
+      <div class="stat"><div class="k">Bu hafta hedef</div><div class="v" style="color:var(--accent)">${saatY(r.haftalikDk/60)}</div><div class="n">gerekli tempo</div></div>
+      <div class="stat"><div class="k">Bu haftaki plan</div><div class="v">${r.secim.length}</div><div class="n">konu · ${sa(r.secimDk)}</div></div>
+    </div>
+    ${valf}
+    <div style="margin-top:6px">${liste}</div>
+    <button class="btn wide" style="margin-top:14px" onclick="tavsiyeUygula()">Bu haftanın ödevlerini ver (${r.secim.length} konu)</button>
+    <div class="hint" style="margin-top:8px">Plan her hafta yeniden hesaplanır: öğrenci konu bitirdikçe kalan azalır, tempo güncellenir. Verilen konular listeden düşer.</div>
+  `);
+}
+
 function vOdev(st){
   const list=subs(st);
   const sk=odevDers(st);
@@ -2972,6 +3060,8 @@ function vOdev(st){
 
   return `
   ${ornekUyari(st)}
+
+  ${tavsiyeHaftalikKart(st)}
 
   <div class="card"><h2>Ödev ver<small>Ders → ünite → konu seç. Parantez içindeki süreler konu anlatımı + soru çözümünü birlikte kapsar.</small></h2><div class="body">
     <div class="fr">
