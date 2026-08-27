@@ -370,6 +370,20 @@ body{font-size:clamp(13px,3.4vw,14px)}
   .kokpit-tablo{display:block;overflow-x:auto}
 }
 
+/* ===== KONU ANLATIMI VİDEO ÇEKMECESİ ===== */
+.vidbtn{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex:none;cursor:pointer;padding:0;font-size:10px;line-height:1}
+.vidbtn:hover{background:var(--accent-soft);border-color:var(--accent)}
+.vd-overlay{position:fixed;inset:0;background:rgba(9,20,26,.45);z-index:80}
+.vd-drawer{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:92vw;background:var(--panel);z-index:81;box-shadow:-8px 0 24px -12px rgba(0,0,0,.4);display:flex;flex-direction:column;color:var(--ink)}
+.vd-head{background:var(--accent);color:#fff;padding:16px 18px;position:relative}
+.vd-body{padding:18px;overflow:auto;flex:1}
+.vd-x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);border:0;color:#fff;width:28px;height:28px;border-radius:6px;font-size:15px;cursor:pointer}
+.qbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-top:10px;cursor:pointer;color:var(--ink);text-decoration:none}
+.qbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.qbtn .ico{width:30px;height:30px;border-radius:7px;background:#FF0000;color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:12px}
+.qbtn .ico.sec{background:var(--accent)}
+@media(max-width:760px){.vd-drawer{width:100%;max-width:100%}}
+
 </style>
 
 <div class="app">
@@ -3843,6 +3857,7 @@ function vKonu(st){
             onclick="cycleTopic('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">
             <span class="dot t${m[t]||0}" style="margin-top:4px;flex:none"></span>
             <span class="tn">${esc(t)}${_o?`<span class="onc-sat">${oncelikRozet(_o.oncelik,_o.kilit)}</span>`:''}</span></button>
+          <button class="vidbtn" title="Konu anlatımı videoları" onclick="konuVideoAc('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">▶</button>
           <input type="number" min="0" step="15" value="${sureOf(KSUB,t)}" title="Optimum öğrenme süresi (dakika)"
             onchange="setSure('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')},this.value);render()"
             style="width:56px;padding:2px 4px;font-size:11.5px;text-align:right;border:1px solid var(--line-soft);background:#fff">
@@ -3862,6 +3877,41 @@ function uniteAll(sk,u,v){
 function cycleTopic(sk,tn){
   const st=cur(); st.topics[sk]=st.topics[sk]||{};
   st.topics[sk][tn]=((st.topics[sk][tn]||0)+1)%4; save(); render();
+}
+/* ---------- KONU ANLATIMI VİDEO ÇEKMECESİ ----------
+   Panel içi çekmece açar. Seçilmiş video yoksa YouTube aramasını yeni sekmede
+   açan fırlatıcılar gösterir. Sistem hiçbir sonucu kendisi seçmez. */
+function konuVideoEsc(e){ if(e.key==='Escape') konuVideoKapat(); }
+function konuVideoKapat(){
+  const w=document.getElementById('vidDrawerWrap'); if(w) w.remove();
+  document.removeEventListener('keydown', konuVideoEsc);
+}
+function konuVideoAc(sk, konu){
+  const lvl = (String(sk).indexOf('tyt_')===0) ? 'TYT' : 'AYT';
+  const ders = (typeof subName==='function'?subName(sk):sk);
+  const q1 = konu+' '+lvl+' konu anlatımı';
+  const q2 = konu+' '+lvl+' soru çözümü';
+  const yt = q => 'https://www.youtube.com/results?search_query='+encodeURIComponent(q);
+  konuVideoKapat();
+  const wrap=document.createElement('div');
+  wrap.id='vidDrawerWrap';
+  wrap.innerHTML =
+    '<div class="vd-overlay" onclick="konuVideoKapat()"></div>'+
+    '<div class="vd-drawer" role="dialog" aria-label="Konu anlatımı videoları">'+
+      '<div class="vd-head"><button class="vd-x" onclick="konuVideoKapat()" title="Kapat">✕</button>'+
+        '<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.85">▶ Konu anlatımı</div>'+
+        '<div style="font-size:17px;font-weight:700;margin-top:3px">'+esc(konu)+'</div>'+
+        '<div style="font-size:12px;opacity:.9;font-family:var(--mono)">'+esc(ders)+' · '+lvl+' konu anlatımı</div></div>'+
+      '<div class="vd-body">'+
+        '<div class="flag warn" style="margin:0 0 12px"><span class="ic">i</span><span>Bu konu için <b>seçilmiş video henüz eklenmedi.</b> Aşağıdan doğrudan YouTube\'da açabilirsin.</span></div>'+
+        '<div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:650">YouTube\'da aç</div>'+
+        '<a class="qbtn" href="'+yt(q1)+'" target="_blank" rel="noopener"><span class="ico">▶</span><span><b>Konu anlatımı ara</b><div style="font-size:11.5px;color:var(--ink-3)">"'+esc(q1)+'"</div></span></a>'+
+        '<a class="qbtn" href="'+yt(q2)+'" target="_blank" rel="noopener"><span class="ico sec">✎</span><span><b>Soru çözümü ara</b><div style="font-size:11.5px;color:var(--ink-3)">"'+esc(q2)+'"</div></span></a>'+
+        '<div class="hint" style="margin-top:16px">Arama yeni sekmede YouTube\'da açılır. Sistem hiçbir sonucu kendisi seçmez; öğrenci videoyu kendi seçer. TYT/AYT etiketi konunun kademesinden gelir.</div>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(wrap);
+  document.addEventListener('keydown', konuVideoEsc);
 }
 
 /* ---------- PUAN HESAPLA ---------- */
