@@ -351,6 +351,25 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .flag > span{min-width:0;overflow-wrap:break-word}
 .card,.stat,.view,.wrap{max-width:100%}
 
+/* ===== KOKPİT ve VELİ RAPORU ===== */
+.chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink-2)}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.risk{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:650;border:1px solid;white-space:nowrap}
+.risk .d{width:8px;height:8px;border-radius:50%;flex:none}
+.risk.r{background:var(--bad-bg);border-color:#E4B8B1;color:var(--bad)} .risk.r .d{background:var(--bad)}
+.risk.y{background:var(--warn-bg);border-color:#E6CF9C;color:var(--warn)} .risk.y .d{background:var(--warn)}
+.risk.g{background:var(--ok-bg);border-color:#B6D8C8;color:var(--ok)} .risk.g .d{background:var(--ok)}
+.ubar{height:7px;background:var(--line-soft);border-radius:4px;overflow:hidden;min-width:70px;flex:1}
+.ufill{height:100%;border-radius:4px}
+.trend{font-family:var(--mono);font-weight:650;font-size:12.5px}
+.badge-new{background:var(--accent);color:#fff;font-size:9.5px;letter-spacing:.06em;padding:1px 6px;border-radius:3px;vertical-align:2px;font-weight:700}
+.kok-row{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--line-soft)}
+.kok-row:last-child{border-bottom:0}
+@media(max-width:760px){
+  .kok-row{flex-wrap:wrap;gap:8px}
+  .kokpit-tablo{display:block;overflow-x:auto}
+}
+
 </style>
 
 <div class="app">
@@ -394,6 +413,7 @@ const KEY='kocluk_v1_sunucu';
 /* Panelin tüm verisi. Sunucudan yüklenir; buradaki değerler yalnızca ilk çizim içindir. */
 let DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:[]};
 let TAB='hafta';
+let KOKPIT=false;   // koç kokpiti (tüm öğrenciler, risk sırası) modu açık mı
 /* Panellerin bulunduğu klasör. Ayar gerektirmez; panelin kendi adresinden türetilir.
    Örn. .../Kocluk/kocluk-sunucu.html  →  .../Kocluk/ */
 function tabanAdres(){
@@ -1218,9 +1238,13 @@ function rutinYeni(){
   const st=cur();
   rutinler().push({ad:'Yeni rutin',sub:subs(st)[0][0],adet:50}); save(); render();
 }
-function rutinKart(st){
-  const wk=weekKey(today()), rv=rutinVar(st,wk), liste=rutinler();
-  const eksik=liste.filter(r=>!rv.find(t=>t.konu===r.ad));
+function rutinKart(st, wk){
+  // Örnek (donmuş) öğrencide kalıcı ödev hafta geçse de görünsün: son rutin haftasına sabitle.
+  if(st.ornek) wk = sonRutinHafta(st) || wk;
+  wk = wk || weekKey(today());
+  const rv=rutinVar(st,wk), liste=rutinler();
+  // Örnek (donmuş) öğrencide "eksik rutin ekle" nag'ı gösterme; sadece kalıcı ödevi göster.
+  const eksik = st.ornek ? [] : liste.filter(r=>!rv.find(t=>t.konu===r.ad));
   return `<div class="card"><h2>Sabit haftalık rutin — hafta ${wk}</h2><div class="body">
     ${rv.length?`<table><thead><tr><th>Rutin</th><th>Ders</th><th class="num">Hedef</th><th class="num">Yapılan</th><th class="num">Oran</th><th>Durum</th></tr></thead><tbody>
       ${rv.map(t=>{const o=t.q?Math.round((t.yap||0)/t.q*100):0;
@@ -1996,7 +2020,7 @@ function durumBul(L){
   return null;
 }
 let RAPOR_ON=null, GERIKORU=true;
-const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],
+const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['veli','Veli raporu'],['deneme','Denemeler'],['odev','Ödevler'],
                   ['konu','Konular'],['hedef','Hedef'],['ogrenci','Öğrenci bilgileri'],
                   ['davet','Davet ve kullanım'],['hesap','Hesap']];
 function TABSAL(){ return (LISANS&&LISANS.yonetici) ? TABS_TEMEL.concat([['yonetim','Yönetim']]) : TABS_TEMEL; }
@@ -2018,6 +2042,19 @@ function saatY(h){
 const net=(d,y)=>d-y/4;
 const today=()=>new Date().toISOString().slice(0,10);
 function weekKey(ds){const d=new Date(ds+'T00:00');const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10);}
+/* Görüntülenecek hafta: örnek öğrencinin verisi geçmişte donmuş olduğundan
+   içinde ödev bulunan en son haftayı göster; kalıcı ödevler hafta geçse de kaybolmasın. */
+function sonDoluHafta(st){
+  let mx=null;
+  (st.tasks||[]).forEach(t=>{ const w=weekKey(t.date); if(mx===null||w>mx) mx=w; });
+  return mx || weekKey(today());
+}
+/* Örnek öğrencide kalıcı (rutin) ödevi göstermek için: rutin içeren en son hafta. */
+function sonRutinHafta(st){
+  let mx=null;
+  (st.tasks||[]).forEach(t=>{ if(!t.rutin) return; const w=weekKey(t.date); if(mx===null||w>mx) mx=w; });
+  return mx;
+}
 function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'}[t]||t;}
 
 /* ================= ÖĞRENCİ ================= */
@@ -2217,15 +2254,17 @@ function render(){
   }
   // sol ray
   const _liste=ogrListesi();
-  document.getElementById('railList').innerHTML = _liste.length
+  const _kokpitBtn = `<button class="st-item ${KOKPIT?'on':''}" style="border-bottom:1px solid rgba(255,255,255,.10)${KOKPIT?';border-left-color:#4FB3A9':''}" onclick="YENIOGR=null;ABONE=false;KOKPIT=true;render()">
+      <div class="nm">◉ Kokpit</div><div class="sub">tüm öğrenciler · risk sırası</div></button>`;
+  document.getElementById('railList').innerHTML = _kokpitBtn + (_liste.length
     ? _liste.map(s=>{
         const a=avgNets(s,3);let tot=0;for(const k in a.nets)tot+=a.nets[k];
-        return `<button class="st-item ${s.id===DB.sel?'on':''}" onclick="YENIOGR=null;DB.sel='${s.id}';${s.ornek?'':'save();'}render()"
+        return `<button class="st-item ${(!KOKPIT&&s.id===DB.sel)?'on':''}" onclick="YENIOGR=null;KOKPIT=false;DB.sel='${s.id}';${s.ornek?'':'save();'}render()"
           ${s.ornek?'style="opacity:.62"':''}>
           <div class="nm">${esc(s.name)}${s.ornek?' <span style="font-size:9.5px;letter-spacing:.06em;background:rgba(255,255,255,.16);padding:1px 5px;border-radius:3px;vertical-align:2px">ÖRNEK</span>':''}</div>
           <div class="sub">${s.grade}. sınıf · ${trLabel(s.track)} · ort ${a.count?n1(tot):'—'}</div></button>`;
       }).join('')
-    : '<div style="padding:20px 16px;color:#7E939F;font-size:12.5px">Henüz öğrenci yok. Aşağıdan ekle.</div>';
+    : '<div style="padding:20px 16px;color:#7E939F;font-size:12.5px">Henüz öğrenci yok. Aşağıdan ekle.</div>');
 
   const re=document.getElementById('railEk');
   if(re) re.innerHTML = DEMO
@@ -2295,6 +2334,15 @@ function render(){
       if(_e1){ try{ _e1.focus({preventScroll:true}); if(_s0!==null&&('setSelectionRange' in _e1)) _e1.setSelectionRange(_s0,_e0); }catch(x){} } }
     return;
   }
+  // KOÇ KOKPİTİ — global görünüm (öğrenci seçili olması gerekmez)
+  if(KOKPIT){
+    document.getElementById('stName').textContent='Koç Kokpiti';
+    document.getElementById('stMeta').textContent=ogrListesi().length+' öğrenci · risk sırasına göre';
+    document.getElementById('stGoal').innerHTML='';
+    document.getElementById('tabs').innerHTML='<button class="tab on">Kokpit</button>';
+    v.innerHTML=kaynakUyarisi()+vKokpit();
+    return;
+  }
   if(!st && TAB!=='yonetim' && TAB!=='davet'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
@@ -2315,7 +2363,7 @@ function render(){
       if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
     return;
   }
-  v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef,ogrenci:vOgrenciBilgi,hesap:vHesap})[TAB](st);
+  v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,veli:vVeli,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef,ogrenci:vOgrenciBilgi,hesap:vHesap})[TAB](st);
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
 }
@@ -2551,6 +2599,248 @@ function anTekrar(st){
   </div></div>`;
 }
 
+/* ================= KOÇ KOKPİTİ — tüm öğrenciler, risk sırası ================= */
+// Ortalama ödev uyumu (tüm haftalar).
+function ortUyum(st){
+  const ks=[...new Set((st.tasks||[]).map(t=>weekKey(t.date)))];
+  let s=0,n=0; ks.forEach(k=>{const r=weekStats(st,k).rate; if(r!==null){s+=r;n++;}});
+  return n?Math.round(s/n):null;
+}
+function sonDeneme(st){
+  const ex=[...(st.exams||[])].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!ex.length) return {net:null,trend:null};
+  const net=totalNet(ex[0]);
+  const trend=ex[1]!=null?(net-totalNet(ex[1])):null;
+  return {net,trend};
+}
+// Risk skoru: geçmiş (uyum+devreden+deneme) + gelecek ("yetişir mi") sinyali
+function riskHesap(st){
+  const uyum=ortUyum(st);
+  const dev=devredenler(st).length;
+  const d=sonDeneme(st);
+  const hk=haftaKalan(st);
+  let yetisir=null;
+  try{ const r=tavsiyeHesap(st); if(r&&r.durum==='ok') yetisir=r.gercekci; }catch(e){}
+  let sev='g'; const sebep=[];
+  // --- kırmızı (acil) ---
+  if(uyum!==null && uyum<60){ sev='r'; sebep.push('Ödev uyumu düşük (%'+uyum+')'); }
+  if(dev>=6){ sev='r'; sebep.push(dev+' devreden ödev birikmiş'); }
+  if(d.trend!==null && d.trend<=-2){ sev='r'; sebep.push('Deneme neti düşüşte'); }
+  if(yetisir===false){ sev='r'; sebep.push('Bu tempoyla hedefe yetişmiyor'); }
+  // --- sarı (izlenecek) — yalnızca kırmızı değilse ---
+  if(sev!=='r'){
+    if(uyum!==null && uyum<80){ sev='y'; sebep.push('Ödev uyumu orta (%'+uyum+')'); }
+    if(dev>=4){ sev='y'; sebep.push(dev+' devreden ödev'); }
+    if(d.trend!==null && d.trend<0){ sev='y'; sebep.push('Deneme neti hafif geriledi'); }
+  }
+  return {sev, uyum, dev, net:d.net, trend:d.trend, yetisir, hk, sebep};
+}
+function kokTrend(t){
+  if(t===null||t===undefined) return '<span class="trend" style="color:var(--ink-3)">—</span>';
+  if(t>0.5)  return '<span class="trend" style="color:var(--ok)">▲ +'+n1(t)+'</span>';
+  if(t<-0.5) return '<span class="trend" style="color:var(--bad)">▼ '+n1(t)+'</span>';
+  return '<span class="trend" style="color:var(--ink-3)">→ dengede</span>';
+}
+function uyumRenk(u){ return u==null?'var(--ink-3)':u>=80?'var(--ok)':u>=60?'var(--warn)':'var(--bad)'; }
+const KOK_AD={r:'Acil',y:'İzle',g:'Yolunda'};
+// Öğrenci aç: kokpitten çık, öğrenciyi seç, sekmeye git
+function kokpitAc(id,tab){ KOKPIT=false; DB.sel=id; TAB=tab||'hafta'; if(!ornekMi(id)) save(); render(); }
+function vKokpit(){
+  const list=ogrListesi();
+  if(!list.length) return '<div class="card"><div class="empty">Henüz öğrenci yok. Soldan ekleyince kokpit dolar.</div></div>';
+  const rows=list.map(s=>({s, r:riskHesap(s)}));
+  const rank={r:0,y:1,g:2};
+  rows.sort((a,b)=> rank[a.r.sev]-rank[b.r.sev] || ((a.r.uyum==null?999:a.r.uyum)-(b.r.uyum==null?999:b.r.uyum)));
+  const acil=rows.filter(x=>x.r.sev==='r').length;
+  const izle=rows.filter(x=>x.r.sev==='y').length;
+  const iyi =rows.filter(x=>x.r.sev==='g').length;
+
+  const oncelik = rows.filter(x=>x.r.sev!=='g').map(({s,r})=>`
+    <div class="kok-row">
+      <span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span>
+      <div style="flex:1;min-width:0"><div style="font-weight:650">${esc(s.name)} <span style="color:var(--ink-3);font-weight:400;font-size:12px">· ${s.grade}. sınıf · ${trLabel(s.track)}${s.dept?' · '+esc(s.dept):''}</span></div>
+        <div style="color:var(--ink-3);font-size:12px;margin-top:2px">${r.sebep.slice(0,3).join(' · ')||'—'}</div></div>
+      <div style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--ink-3)">uyum ${r.uyum==null?'—':'%'+r.uyum}<br>${r.dev} devreden</div>
+      <button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Öğrenciyi aç</button>
+      <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli raporu</button>
+    </div>`).join('');
+
+  const tablo = rows.map(({s,r})=>`
+    <tr>
+      <td><b>${esc(s.name)}</b><div style="color:var(--ink-3);font-size:12px">${s.grade}. sınıf · ${trLabel(s.track)}${s.dept?' · '+esc(s.dept):''}</div></td>
+      <td class="num">${r.hk==null?'—':r.hk}<div style="color:var(--ink-3);font-size:11.5px">hafta</div></td>
+      <td class="num">${r.net==null?'—':n1(r.net)+' net'}<div>${kokTrend(r.trend)}</div></td>
+      <td><div style="display:flex;align-items:center;gap:8px;min-width:120px"><div class="ubar"><div class="ufill" style="width:${r.uyum==null?0:r.uyum}%;background:${uyumRenk(r.uyum)}"></div></div><span style="font-family:var(--mono);font-weight:650;color:${uyumRenk(r.uyum)}">${r.uyum==null?'—':'%'+r.uyum}</span></div></td>
+      <td class="num" style="font-weight:650;color:${r.dev>=6?'var(--bad)':r.dev>=4?'var(--warn)':'var(--ink-2)'}">${r.dev}</td>
+      <td><span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span></td>
+      <td style="white-space:nowrap"><button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Aç</button> <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli</button></td>
+    </tr>`).join('');
+
+  return `
+  <div class="card"><div class="stats">
+    <div class="stat"><div class="k">Toplam öğrenci</div><div class="v">${list.length}</div><div class="n">aktif</div></div>
+    <div class="stat"><div class="k">Acil</div><div class="v" style="color:var(--bad)">${acil}</div><div class="n">bugün müdahale</div></div>
+    <div class="stat"><div class="k">İzlenecek</div><div class="v" style="color:var(--warn)">${izle}</div><div class="n">yakın takip</div></div>
+    <div class="stat"><div class="k">Yolunda</div><div class="v" style="color:var(--ok)">${iyi}</div><div class="n">plan tutuyor</div></div>
+  </div></div>
+  ${oncelik ? `<div class="card" style="border-color:var(--warn)"><h2>Bugün önce bunlara bak<small>Risk eşiğini aşan öğrenciler. Sıralama otomatik; en kritik en üstte.</small></h2><div class="body" style="padding:6px 18px">${oncelik}</div></div>` : `<div class="card" style="border-color:var(--ok)"><div class="body"><div class="flag ok" style="margin:0"><span class="ic">✓</span><span>Şu an acil ya da izlenecek öğrenci yok — herkes planında.</span></div></div></div>`}
+  <div class="card"><h2>Tüm öğrenciler<small>Renk = risk durumu. Risk; ödev uyumu, biriken devreden ödev, deneme trendi ve "yetişir mi" hesabından üretilir.</small></h2>
+    <div class="body" style="padding:0 0 6px">
+      <div style="padding:12px 18px 4px"><span class="chip on">Tümü (${list.length})</span> <span class="chip">Acil ${acil}</span> <span class="chip">İzlenecek ${izle}</span> <span class="chip">Yolunda ${iyi}</span></div>
+      <div class="kokpit-tablo"><table><thead><tr><th>Öğrenci</th><th class="num">Sınava</th><th class="num">Son deneme</th><th>Ödev uyumu</th><th class="num">Devreden</th><th>Durum</th><th></th></tr></thead><tbody>${tablo}</tbody></table></div>
+    </div></div>
+  <div class="hint">Risk eşikleri — Acil: uyum %60 altı <b>veya</b> 6+ devreden <b>veya</b> deneme düşüşü <b>veya</b> "yetişmiyor". İzle: uyum %60–79 <b>veya</b> 4–5 devreden <b>veya</b> hafif deneme gerilemesi. Kokpit hiçbir şey kaydetmez; yalnızca gösterir.</div>`;
+}
+
+/* ================= OTOMATİK VELİ RAPORU ================= */
+function veliHaftaSure(st,wk){
+  let dk=0;
+  (st.tasks||[]).filter(t=>weekKey(t.date)===wk).forEach(t=>{
+    if(t.rutin) dk+=(t.yap||0)*(t.dks||1.5);
+    else if(t.konu){ const s=sureOf(t.sub,t.konu); dk+= t.s===1?s : t.s===2?s*0.5 : 0; }
+  });
+  return dk;
+}
+function veliCozulen(st,wk){ return (st.tasks||[]).filter(t=>weekKey(t.date)===wk).reduce((a,t)=>a+(+t.yap||0),0); }
+function veliVeri(st){
+  const wk = st.ornek ? sonDoluHafta(st) : weekKey(today());
+  const ws = weekStats(st,wk);
+  const wkTasks = (st.tasks||[]).filter(t=>weekKey(t.date)===wk);
+  return {wk, ws, cozulen:veliCozulen(st,wk), sure:veliHaftaSure(st,wk), d:sonDeneme(st),
+          yapilan:wkTasks.filter(t=>t.s===1), eksik:wkTasks.filter(t=>t.s!==1), dev:devredenler(st)};
+}
+function veliNotTaslak(st,V){
+  const ad=(st.name||'Öğrenci').split(' ')[0];
+  const p=[]; const uyum=V.ws.rate;
+  if(uyum!==null && uyum>=80) p.push(ad+' bu hafta ödev planını büyük ölçüde tamamladı; bu istikrar en değerli şey.');
+  else if(uyum!==null && uyum>=50) p.push(ad+' bu hafta planın bir kısmını tamamladı, bir kısmı açık kaldı.');
+  else if(uyum!==null) p.push('Bu hafta ödev uyumu beklenenin altında kaldı; nedenine birlikte bakacağız.');
+  if(V.d.trend!==null && V.d.trend>0) p.push('Deneme neti yükselmeye devam ediyor (+'+n1(V.d.trend)+') — emeğin karşılığını veriyor.');
+  else if(V.d.trend!==null && V.d.trend<0) p.push('Son denemede hafif bir gerileme var; önümüzdeki hafta odağı buna göre ayarlıyoruz.');
+  if(V.eksik.length) p.push('Öncelikli açık: '+V.eksik.slice(0,2).map(t=>subName(t.sub)+' – '+t.konu).join(', ')+(V.eksik.length>2?' ve diğerleri.':'.'));
+  if(V.dev.length>=4) p.push('Geçmiş haftalardan '+V.dev.length+' ödev birikti; bunları kademeli kapatacağız.');
+  p.push('Evde '+ad+"'e destek olmanız için önümüzdeki hafta önceliklerini aşağıda paylaştım.");
+  return p.join(' ');
+}
+function veliPlan(st){
+  try{ const r=tavsiyeHesap(st);
+    if(r&&r.durum==='ok'&&r.secim&&r.secim.length) return r.secim.slice(0,3).map((x,i)=>(i+1)+'. '+subName(x.sub)+' – '+x.konu);
+  }catch(e){}
+  return null;
+}
+function vVeli(st){
+  if(!st) return '';
+  const V=veliVeri(st); const uyum=V.ws.rate;
+  const trendFlag = V.d.trend===null
+    ? `<div class="flag warn"><span class="ic">i</span><span>Henüz iki deneme yok; gidişat karşılaştırması bir sonraki denemeden sonra gelir.</span></div>`
+    : V.d.trend>=0
+    ? `<div class="flag ok"><span class="ic">✓</span><span><b>Deneme gidişatı olumlu.</b> Son deneme <b>${n1(V.d.net)} net</b> — bir önceki denemeye göre <b>+${n1(V.d.trend)}</b>.</span></div>`
+    : `<div class="flag bad"><span class="ic">!</span><span><b>Son denemede gerileme.</b> Son deneme <b>${n1(V.d.net)} net</b> — bir öncekine göre <b>${n1(V.d.trend)}</b>. Bu hafta telafiye odaklanıyoruz.</span></div>`;
+  const yapilanHtml = V.yapilan.length
+    ? V.yapilan.map(t=>`<div class="topic" style="margin-bottom:6px"><span class="dot t2"></span><span class="tn">${subName(t.sub)} — <b>${esc(t.konu)}</b>${t.rutin?` (${t.yap||0}/${t.q||0})`:''}</span></div>`).join('')
+    : `<div class="hint">Bu hafta tamamlanmış ödev görünmüyor.</div>`;
+  const eksikHtml = (V.eksik.length||V.dev.length)
+    ? (V.eksik.slice(0,4).map(t=>`<div class="topic" style="margin-bottom:6px"><span class="dot t3"></span><span class="tn">${subName(t.sub)} — <b>${esc(t.konu)}</b> ${t.rutin?`(${t.yap||0}/${t.q||0})`:'(yapılmadı)'}</span></div>`).join('')
+       + (V.dev.length?`<div class="topic"><span class="dot t3"></span><span class="tn">Geçmiş haftalardan <b>${V.dev.length} tamamlanmamış ödev</b> birikti.</span></div>`:''))
+    : `<div class="flag ok" style="margin:0"><span class="ic">✓</span><span>Bu hafta açık ödev yok.</span></div>`;
+  const plan=veliPlan(st);
+  const planHtml = plan ? plan.map(x=>esc(x)).join('<br>') : 'Ödev planı bu hafta netleşince güncellenecek.';
+  const not=veliNotTaslak(st,V);
+
+  return `
+  <div style="max-width:760px;margin:0 auto">
+  <div class="card" style="border-width:2px;border-color:var(--accent)">
+    <div style="background:var(--accent);color:#fff;padding:14px 20px;border-radius:5px 5px 0 0">
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">BİYOSER Koçluk · Haftalık Veli Bilgilendirmesi</div>
+      <div style="font-size:19px;font-weight:700;margin-top:3px">${esc(st.name)} — ${st.grade}. Sınıf ${trLabel(st.track)}</div>
+      <div style="font-size:12.5px;opacity:.9;font-family:var(--mono)">${st.dept?'Hedef: '+esc(st.dept)+' · ':''}Hafta ${V.wk}</div>
+    </div>
+    <div class="body">
+      <div class="stats uc" style="margin:-4px -4px 4px">
+        <div class="stat"><div class="k">Ödev uyumu</div><div class="v" style="color:${uyumRenk(uyum)}">${uyum==null?'—':'%'+uyum}</div><div class="n">bu hafta</div></div>
+        <div class="stat"><div class="k">Çözülen soru</div><div class="v">${V.cozulen||0}</div><div class="n">bu hafta</div></div>
+        <div class="stat"><div class="k">Çalışma süresi</div><div class="v" style="font-size:21px">${V.sure?sa(V.sure):'—'}</div><div class="n">kayda geçen</div></div>
+      </div>
+      <div style="margin-top:12px">${trendFlag}</div>
+      <div class="sec-h" style="margin-top:16px"><h3>Bu hafta ne yaptı</h3></div>
+      ${yapilanHtml}
+      <div class="sec-h" style="margin-top:16px"><h3>Dikkat edilmesi gereken</h3></div>
+      ${eksikHtml}
+      <div class="sec-h" style="margin-top:16px"><h3>Koçun notu <span style="font-weight:400;color:var(--ink-3);font-size:12px">(otomatik taslak — düzenleyebilirsin)</span></h3></div>
+      <textarea id="veliNot" rows="6" style="line-height:1.6">${esc(not)}</textarea>
+      <div class="sec-h" style="margin-top:16px"><h3>Önümüzdeki hafta planı</h3></div>
+      <div style="color:var(--ink-2);font-size:13px;line-height:1.9">${planHtml}</div>
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+        <button class="btn" onclick="veliWaGonder()">WhatsApp'ta gönder</button>
+        <button class="btn ghost" onclick="veliYazdir()">PDF / Yazdır</button>
+      </div>
+      <div class="hint" style="margin-top:10px">Bu özet panelin verisinden <b>otomatik üretildi</b>. Göndermeden önce sen okuyup onaylıyorsun; sistem kendiliğinden mesaj atmaz. Telefonu Öğrenci bilgileri sekmesine gir.</div>
+    </div>
+  </div></div>`;
+}
+function veliMetin(st){
+  const V=veliVeri(st);
+  const el=document.getElementById('veliNot');
+  const not=el?el.value:veliNotTaslak(st,V);
+  const L=[];
+  L.push('*'+st.name+' — Haftalık Bilgilendirme*');
+  if(st.dept) L.push('Hedef: '+st.dept);
+  L.push('Hafta: '+V.wk); L.push('');
+  L.push('Ödev uyumu: '+(V.ws.rate==null?'—':'%'+V.ws.rate));
+  L.push('Çözülen soru: '+(V.cozulen||0));
+  L.push('Çalışma süresi: '+(V.sure?sa(V.sure):'—'));
+  if(V.d.net!=null) L.push('Son deneme: '+n1(V.d.net)+' net'+(V.d.trend!=null?(' ('+(V.d.trend>=0?'+':'')+n1(V.d.trend)+')'):''));
+  L.push('');
+  if(V.yapilan.length){ L.push('Bu hafta yapılanlar:'); V.yapilan.forEach(t=>L.push('• '+subName(t.sub)+' – '+t.konu)); L.push(''); }
+  if(V.eksik.length||V.dev.length){ L.push('Dikkat edilmesi gerekenler:'); V.eksik.slice(0,4).forEach(t=>L.push('• '+subName(t.sub)+' – '+t.konu)); if(V.dev.length) L.push('• '+V.dev.length+' devreden ödev'); L.push(''); }
+  L.push('Koçun notu:'); L.push(not);
+  const plan=veliPlan(st); if(plan){ L.push(''); L.push('Önümüzdeki hafta:'); plan.forEach(x=>L.push(x)); }
+  return L.join('\n');
+}
+function veliWaGonder(){
+  const st=cur(); if(!st) return;
+  const metin=veliMetin(st);
+  let tel=String(st.tel||st.veliTel||'').replace(/\D/g,'');
+  if(tel.startsWith('0')) tel='90'+tel.slice(1);
+  else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
+  const url = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(metin)}` : `https://wa.me/?text=${encodeURIComponent(metin)}`;
+  if(!tel&&!confirm('Öğrenci/veli telefonu kayıtlı değil. WhatsApp açılacak, kişiyi sen seçeceksin. Devam?')) return;
+  window.open(url,'_blank','noopener');
+}
+function veliYazdir(){
+  const st=cur(); if(!st) return;
+  const V=veliVeri(st);
+  const el=document.getElementById('veliNot'); const not=el?el.value:veliNotTaslak(st,V);
+  const w=window.open('','_blank'); if(!w){alert('Tarayıcı yeni sekmeyi engelledi.');return;}
+  const satir=(a,b)=>`<tr><td style="color:#667">${a}</td><td style="text-align:right;font-weight:600">${b}</td></tr>`;
+  const yap = V.yapilan.length?V.yapilan.map(t=>'<li>'+subName(t.sub)+' – '+esc(t.konu)+'</li>').join(''):'<li>—</li>';
+  let eks = V.eksik.slice(0,5).map(t=>'<li>'+subName(t.sub)+' – '+esc(t.konu)+'</li>').join('');
+  if(V.dev.length) eks += '<li>'+V.dev.length+' devreden ödev</li>';
+  if(!eks) eks='<li>—</li>';
+  const plan=veliPlan(st);
+  const planHtml = plan?('<ul>'+plan.map(x=>'<li>'+esc(x.replace(/^\d+\.\s*/,''))+'</li>').join('')+'</ul>'):'';
+  const html = `<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Veli Raporu — ${esc(st.name)}</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;color:#122430;max-width:640px;margin:28px auto;padding:0 22px;line-height:1.6}
+h1{font-size:20px;margin:0 0 2px} .muted{color:#667;font-size:12.5px;font-family:monospace}
+table{width:100%;border-collapse:collapse;margin:14px 0}td{padding:6px 0;border-bottom:1px solid #eee;font-size:14px}
+h3{font-size:14px;margin:18px 0 6px;color:#0f4a47;border-bottom:2px solid #186C68;display:inline-block;padding-bottom:2px}
+ul{margin:6px 0 0;padding-left:20px}li{margin:3px 0;font-size:14px}
+.note{background:#f2f5f6;border-radius:6px;padding:12px 14px;font-size:14px;white-space:pre-wrap;margin-top:6px}
+.bar{background:#186C68;color:#fff;padding:12px 16px;border-radius:6px;margin-bottom:6px}
+@media print{.noprint{display:none}}</style></head><body>
+<div class="bar"><div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.85">BİYOSER Koçluk · Haftalık Veli Bilgilendirmesi</div>
+<div style="font-size:18px;font-weight:700">${esc(st.name)} — ${st.grade}. Sınıf ${trLabel(st.track)}</div></div>
+<div class="muted">${st.dept?esc(st.dept)+' · ':''}Hafta ${V.wk}</div>
+<table>${satir('Ödev uyumu', V.ws.rate==null?'—':'%'+V.ws.rate)}${satir('Çözülen soru', V.cozulen||0)}${satir('Çalışma süresi', V.sure?sa(V.sure):'—')}${V.d.net!=null?satir('Son deneme', n1(V.d.net)+' net'+(V.d.trend!=null?' ('+(V.d.trend>=0?'+':'')+n1(V.d.trend)+')':'')):''}</table>
+<h3>Bu hafta ne yaptı</h3><ul>${yap}</ul>
+<h3>Dikkat edilmesi gereken</h3><ul>${eks}</ul>
+<h3>Koçun notu</h3><div class="note">${esc(not)}</div>
+${planHtml?'<h3>Önümüzdeki hafta planı</h3>'+planHtml:''}
+<p class="noprint" style="margin-top:22px;color:#667;font-size:12px">Yazdır penceresi birazdan açılacak. PDF için "Hedef: PDF olarak kaydet" seç.</p>
+</body></html>`;
+  w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>{try{w.print();}catch(e){}},350);
+}
+
 /* ---------- HAFTALIK RAPOR ---------- */
 function blokAyir(st){
   const l=subs(st);
@@ -2559,7 +2849,8 @@ function blokAyir(st){
 function vHafta(st){
   const a=avgNets(st,3), bl=blokAyir(st);
   const ex=[...st.exams].sort((x,y)=>y.date.localeCompare(x.date)).slice(0,3);
-  const wk=weekKey(today()), ws=weekStats(st,wk), hs=haftaSure(st,wk);
+  const wk = st.ornek ? sonDoluHafta(st) : weekKey(today());
+  const ws=weekStats(st,wk), hs=haftaSure(st,wk);
   const tasks=st.tasks.filter(t=>weekKey(t.date)===wk).sort((x,y)=>x.date.localeCompare(y.date));
 
 
@@ -2578,7 +2869,7 @@ function vHafta(st){
 
   ${devredenKart(st)}
 
-  ${rutinKart(st)}
+  ${rutinKart(st, wk)}
 
   <div class="card"><h2>Bu haftanın ödevleri — ${wk}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri buraya anında yansır.</small></h2><div class="body" style="padding:0">
     ${tasks.filter(t=>!t.rutin).length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th></tr></thead><tbody>
@@ -2595,18 +2886,6 @@ function vHafta(st){
         <td class="num" style="color:var(--ink-3)">${t.konu?Math.round(sureOf(t.sub,t.konu))+' dk':'—'}</td>
         <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td></tr>`;}).join('')}
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
-  </div></div>
-
-  ${aiKart(st)}
-
-  <div class="card"><h2>Öğrenciye hafta notu <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(isteğe bağlı)</span><small>Öğrenci ödevlerini zaten panelinde görüyor. Bu not, yönlendirme eklemek istersen içindir.</small></h2><div class="body">
-    <textarea id="hfMetin" rows="16" style="font-family:var(--mono);font-size:12.5px;line-height:1.6;resize:vertical">${esc(haftaMetni(st))}</textarea>
-    <div style="margin-top:10px">
-      <button class="btn" onclick="waGonder()">WhatsApp'ta aç</button>
-      <button class="btn ghost" style="margin-left:8px" onclick="kopyala('hfMetin')">Metni kopyala</button>
-      <button class="btn ghost" style="margin-left:8px" onclick="render()">Yeniden üret</button>
-    </div>
-    <div class="hint" style="margin-top:8px">WhatsApp butonu, mesajı hazır şekilde sohbette açar — <b>göndermeyi sen onaylarsın</b>, sistem kendiliğinden mesaj atmaz. Telefon numarasını Hedef sekmesine gir.</div>
   </div></div>`;
 }
 function waGonder(){
