@@ -3005,11 +3005,13 @@ function tavsiyeHesap(st){
       if(x.oncelik==='cekirdek') cekDk += dk;
       if(!verilmis.has(x.konu))
         havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
-                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, dk});
+                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, mufredat:x.mufredat, dk});
     });
   }
   const haftalikDk = kapsamDk / hk;              // gerekli tempo (dk/hafta)
-  havuz.sort((a,b)=> (a.grup-b.grup) || (b.agirlik-a.agirlik));
+  // Kademe (ön koşul→çekirdek→güvenlik), kademe içinde MÜFREDAT sırası;
+  // ağırlık yalnızca dersler arası eşitlikte bozucu (aynı müfredat indeksi çakışırsa).
+  havuz.sort((a,b)=> (a.grup-b.grup) || (a.mufredat-b.mufredat) || (b.agirlik-a.agirlik));
   const secim=[]; let topla=0;
   for(const x of havuz){ if(secim.length && topla>=haftalikDk) break; secim.push(x); topla+=x.dk; }
   const beyanDk = (+st.haftalikSaat||0)*60;
