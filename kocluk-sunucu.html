@@ -2020,8 +2020,8 @@ function durumBul(L){
   return null;
 }
 let RAPOR_ON=null, GERIKORU=true;
-const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['veli','Veli raporu'],['deneme','Denemeler'],['odev','Ödevler'],
-                  ['konu','Konular'],['hedef','Hedef'],['ogrenci','Öğrenci bilgileri'],
+const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],
+                  ['konu','Konular'],['hedef','Hedef'],['veli','Veli raporu'],['ogrenci','Öğrenci bilgileri'],
                   ['davet','Davet ve kullanım'],['hesap','Hesap']];
 function TABSAL(){ return (LISANS&&LISANS.yonetici) ? TABS_TEMEL.concat([['yonetim','Yönetim']]) : TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
@@ -3146,6 +3146,21 @@ function vDeneme(st){
   return `
   ${ornekUyari(st)}
 
+  <div class="card"><h2>Karneden okut<small>Karnenin konu analizi tablosunu okur: netleri hesaplar, yanlış ve boş konuları çıkarır.</small></h2><div class="body">
+    <div class="hint" style="margin:0 0 10px">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. Sistem karnenin <b>konu analizi tablosunu</b> okur: ders netlerini hesaplar, yanlış ve boş bıraktığı konuları çıkarır. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
+    <div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>
+      <b>Karne, metni seçilebilen bir PDF olmalı.</b> Fotoğraf ya da taranmış görüntüden okuma yapılamaz.
+      Denemek için: PDF'i aç, bir kelimenin üstüne çift tıkla — <b>seçiliyorsa</b> okunur, seçilmiyorsa görüntüdür.<br>
+      Yayınevinin öğrenci panelinden indirilen PDF genelde seçilebilir olur; WhatsApp'tan gelen ekran görüntüsü olmaz.</span></div>
+    <textarea id="kzText" rows="7" placeholder="Karne metnini buraya yapıştır..." style="resize:vertical"></textarea>
+    <div style="margin-top:10px"><button class="btn" onclick="applyKarne()">Karneyi oku ve formu doldur</button>
+      <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('kzText').value='';document.getElementById('kzOut').innerHTML=''">Temizle</button>
+      <button class="btn ghost" style="margin-left:8px" onclick="karneTalep()">Karne okunmadı — destek iste</button></div>
+    <div class="hint" style="margin-top:8px">Karne düzgün okunmadıysa <b>destek iste</b> butonuna bas.
+      Karneyi bize gönder, o yayınevinin düzeni sisteme tanıtılsın — bir sonraki güncellemede okunur hale gelir.</div>
+    <div id="kzOut" style="margin-top:14px"></div>
+  </div></div>
+
   ${aex?`<div class="card"><h2>Yanlış ve boş konular — ${esc(aex.name||aex.date)} · ${aex.date}</h2><div class="body">
     <div class="fr">
       <div><label class="f">Ders</label><select onchange="setAnDers(this.value)">
@@ -3208,21 +3223,6 @@ function vDeneme(st){
     </tbody></table>
     <div style="margin-top:14px"><button class="btn" onclick="saveExam()">Denemeyi kaydet</button>
     <span class="hint" style="margin-left:12px">Boş bıraktığın ders o denemeye girmez. Net otomatik hesaplanır (D − Y/4).</span></div>
-  </div></div>
-
-  <div class="card"><h2>Karneden okut<small>Karnenin konu analizi tablosunu okur: netleri hesaplar, yanlış ve boş konuları çıkarır.</small></h2><div class="body">
-    <div class="hint" style="margin:0 0 10px">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. Sistem karnenin <b>konu analizi tablosunu</b> okur: ders netlerini hesaplar, yanlış ve boş bıraktığı konuları çıkarır. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
-    <div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>
-      <b>Karne, metni seçilebilen bir PDF olmalı.</b> Fotoğraf ya da taranmış görüntüden okuma yapılamaz.
-      Denemek için: PDF'i aç, bir kelimenin üstüne çift tıkla — <b>seçiliyorsa</b> okunur, seçilmiyorsa görüntüdür.<br>
-      Yayınevinin öğrenci panelinden indirilen PDF genelde seçilebilir olur; WhatsApp'tan gelen ekran görüntüsü olmaz.</span></div>
-    <textarea id="kzText" rows="7" placeholder="Karne metnini buraya yapıştır..." style="resize:vertical"></textarea>
-    <div style="margin-top:10px"><button class="btn" onclick="applyKarne()">Karneyi oku ve formu doldur</button>
-      <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('kzText').value='';document.getElementById('kzOut').innerHTML=''">Temizle</button>
-      <button class="btn ghost" style="margin-left:8px" onclick="karneTalep()">Karne okunmadı — destek iste</button></div>
-    <div class="hint" style="margin-top:8px">Karne düzgün okunmadıysa <b>destek iste</b> butonuna bas.
-      Karneyi bize gönder, o yayınevinin düzeni sisteme tanıtılsın — bir sonraki güncellemede okunur hale gelir.</div>
-    <div id="kzOut" style="margin-top:14px"></div>
   </div></div>
 
   <div class="card"><h2>Geçmiş denemeler (${ex.length})</h2><div class="body" style="padding:0;overflow:auto">
@@ -3381,6 +3381,8 @@ function vOdev(st){
 
   ${tavsiyeHaftalikKart(st)}
 
+  ${hizliKart(st)}
+
   <div class="card"><h2>Ödev ver<small>Ders → ünite → konu seç. Parantez içindeki süreler konu anlatımı + soru çözümünü birlikte kapsar.</small></h2><div class="body">
     <div class="fr">
       <div><label class="f">Tarih</label><input type="date" id="tkD" value="${today()}"></div>
@@ -3425,8 +3427,6 @@ function vOdev(st){
         ${hafta?` · öğrencinin beyanı ${sa(hafta)}${asim?' <b>— AŞILDI</b>':''}`:''}</span>`;})()}
 
   </div></div>
-
-  ${hizliKart(st)}
 
   <div class="card"><h2>Rutin tanımı — tüm öğrenciler için geçerli<small>Konudan bağımsız, her hafta tekrar eden iş. Buradaki değişiklik bütün öğrencileri etkiler.</small></h2><div class="body" style="padding:0">
     <table><thead><tr><th>Adı</th><th>Ders</th><th class="num">Adet</th><th style="width:230px">Konu (isteğe bağlı)</th><th class="num">Dk/soru</th><th class="num">Süre</th><th></th></tr></thead><tbody>
@@ -3811,8 +3811,6 @@ function vKonu(st){
     <div class="hint">Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise plan çok gergin demektir; küçük bir aksama sınava yetişmemeye döner. Üçü de "Yetişir" ise öğrencinin ekstra soru çözecek rahat alanı var.</div>
   </div></div>
 
-  ${sureKart()}
-
   <div class="card"><h2>Konu ilerlemesi — genel<small>Bir derse tıklayınca aşağıda o dersin konuları açılır.</small></h2><div class="body" style="padding:0">
     <table><thead><tr><th>Ders</th><th class="num">Toplam</th><th class="num">Bitti</th><th class="num">İşleniyor</th><th class="num">Eksik</th><th class="num">Tamamlanma</th><th class="num">Kalan süre</th></tr></thead><tbody>
     ${stats.map(s=>`<tr style="cursor:pointer" onclick="KSUB='${s.k}';render()"><td>${s.nm}</td>
@@ -3852,7 +3850,9 @@ function vKonu(st){
         </div>`;}).join('')}
         </div></div>`;
     }).join('')}
-  </div></div>`;
+  </div></div>
+
+  ${sureKart()}`;
 }
 function uniteAll(sk,u,v){
   const st=cur(); st.topics[sk]=st.topics[sk]||{};
@@ -4257,10 +4257,6 @@ function vHedef(st){
   return `
   ${ornekUyari(st)}
 
-  ${hedefeUzaklik(st)}
-
-  ${lisansUyarisi()}
-
   <div class="card"><h2>YÖK verisinden bölüm seç<small>Seçtiğinde taban puan, sıralama, kontenjan ve ders ders hedef netler otomatik dolar.</small></h2><div class="body">
     ${!ATLAS?`<button class="btn" onclick="atlasYukle()">Bölüm veritabanını yükle</button>
       <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('atlasF').click()">Dosyadan yükle</button>
@@ -4292,6 +4288,10 @@ function vHedef(st){
         &nbsp;·&nbsp; ${ATLAS.length.toLocaleString('tr-TR')} program yüklü
         &nbsp;·&nbsp; <a href="#" onclick="atlasSil();return false" style="color:var(--accent)">veritabanını güncelle</a></div>`}
   </div></div>
+
+  ${hedefeUzaklik(st)}
+
+  ${lisansUyarisi()}
 
   <div class="card"><h2>Hedef bölüm</h2><div class="body">
     ${st.kontenjan!==undefined&&st.kontenjan!==''?`<div class="stats" style="margin:-18px -18px 16px;border-bottom:1px solid var(--line-soft)">
