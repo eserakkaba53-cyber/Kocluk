@@ -384,6 +384,11 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .qbtn .ico.sec{background:var(--accent)}
 @media(max-width:760px){.vd-drawer{width:100%;max-width:100%}}
 
+/* ders ders mini grafik ızgarası — geniş ekranda 3-4 sütun */
+.grid-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:18px}
+.grid-mini .card{margin-bottom:0}
+@media(max-width:520px){.grid-mini{grid-template-columns:repeat(2,1fr)}}
+
 </style>
 
 <div class="app">
@@ -2035,7 +2040,7 @@ function durumBul(L){
 }
 let RAPOR_ON=null, GERIKORU=true;
 const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],
-                  ['konu','Konular'],['hedef','Hedef'],['veli','Veli raporu'],['ogrenci','Öğrenci bilgileri'],
+                  ['konu','Konular'],['hedef','Hedef'],['puan','Puan hesaplayıcı'],['veli','Veli raporu'],['ogrenci','Öğrenci bilgileri'],
                   ['davet','Davet ve kullanım'],['hesap','Hesap']];
 function TABSAL(){ return (LISANS&&LISANS.yonetici) ? TABS_TEMEL.concat([['yonetim','Yönetim']]) : TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
@@ -2377,7 +2382,7 @@ function render(){
       if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
     return;
   }
-  v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,veli:vVeli,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef,ogrenci:vOgrenciBilgi,hesap:vHesap})[TAB](st);
+  v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,veli:vVeli,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef,puan:vPuanSekme,ogrenci:vOgrenciBilgi,hesap:vHesap})[TAB](st);
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
 }
@@ -2431,6 +2436,14 @@ function vDurum(st){
     ${grafikKarti(st,'TYT net seyri',true,'#186C68')}
     ${grafikKarti(st,trLabel(st.track)+' AYT net seyri',false,'#B5651D')}
   </div>
+
+  ${(()=>{const withData=subs(st).filter(([k])=>st.exams.some(e=>e.n&&e.n[k]));
+    if(!withData.length) return '';
+    return `<div class="sec-h" style="margin:2px 0 10px"><h3>Ders ders net seyri</h3>
+      <span style="color:var(--ink-3);font-size:12px;font-weight:400">Her dersin deneme deneme neti — hedef netle birlikte.</span></div>
+    <div class="grid-mini">
+      ${withData.map(([k,nm])=>dersGrafikKarti(st,k,nm,k.startsWith('tyt_')?'#186C68':'#B5651D')).join('')}
+    </div>`;})()}
 
   <div class="grid2">
     <div class="card"><h2>Uyarılar<small>Panelin otomatik teşhisleri. Haftalık görüşmeye buradan başla.</small></h2><div class="body">
@@ -2507,6 +2520,40 @@ function grafikKarti(st,bas,tytMi,renk){
       ${hedef?` · hedef ${n1(hedef)} <b style="color:${fark<0?'var(--bad)':'var(--ok)'}">(${fark>0?'+':''}${n1(fark)})</b>`:''}
     </div>`:''}
     ${netGrafik(s,renk)}
+  </div></div>`;
+}
+/* Tek dersin deneme deneme net seyri */
+function dersSerisi(st, sk){
+  return [...st.exams].filter(e=>e.n && e.n[sk]).sort((a,b)=>a.date.localeCompare(b.date))
+    .map(e=>({x:e.date.slice(5).replace('-','/'), y:net(e.n[sk].d||0,e.n[sk].y||0), ad:e.name||''}));
+}
+// Küçük ölçekli net grafiği (ders ders ızgarası için)
+function netGrafikMini(veri,renk){
+  if(!veri.length) return '<div style="height:96px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:11.5px">Deneme yok</div>';
+  const w=280,hh=120,sol=8,sag=10,ust=18,alt=12;
+  const mx=Math.max(...veri.map(v=>v.y))*1.15||1;
+  const mn=Math.min(0,...veri.map(v=>v.y));
+  const rg=(mx-mn)||1;
+  const X=i=>veri.length===1?w/2:sol+i*(w-sol-sag)/(veri.length-1);
+  const Y=v=>hh-alt-((v-mn)/rg)*(hh-ust-alt);
+  const pts=veri.map((v,i)=>[X(i),Y(v.y)]);
+  const alan=veri.length>1?`<polygon points="${pts.map(p=>p.join(',')).join(' ')} ${pts[pts.length-1][0]},${hh-alt} ${pts[0][0]},${hh-alt}" fill="${renk}" opacity=".10"/>`:'';
+  const son=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${hh}" width="100%" height="96" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Net seyri">
+    ${alan}
+    ${veri.length>1?`<polyline fill="none" stroke="${renk}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p=>p.join(',')).join(' ')}"/>`:''}
+    ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#fff" stroke="${renk}" stroke-width="1.8"/>`).join('')}
+    <text x="${son[0]}" y="${son[1]-6}" text-anchor="end" font-family="var(--mono)" font-size="11" font-weight="700" fill="${renk}">${n1(veri[veri.length-1].y)}</text>
+  </svg>`;
+}
+function dersGrafikKarti(st, sk, nm, renk){
+  const s=dersSerisi(st, sk);
+  const hedef=+st.refNets[sk]||0;
+  const son=s.length?s[s.length-1].y:null;
+  return `<div class="card"><div class="body" style="padding:10px 12px">
+    <div style="font-size:11px;letter-spacing:.03em;font-weight:650;color:var(--ink-2)">${esc(nm)}</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ink-3);margin:1px 0 1px">${s.length?`son <b style="color:${renk}">${n1(son)}</b>${hedef?` · hedef ${n1(hedef)} <b style="color:${son-hedef<0?'var(--bad)':'var(--ok)'}">(${son-hedef>0?'+':''}${n1(son-hedef)})</b>`:''}`:'deneme yok'}</div>
+    ${netGrafikMini(s,renk)}
   </div></div>`;
 }
 
@@ -4339,10 +4386,6 @@ function vHedef(st){
         &nbsp;·&nbsp; <a href="#" onclick="atlasSil();return false" style="color:var(--accent)">veritabanını güncelle</a></div>`}
   </div></div>
 
-  ${hedefeUzaklik(st)}
-
-  ${lisansUyarisi()}
-
   <div class="card"><h2>Hedef bölüm</h2><div class="body">
     ${st.kontenjan!==undefined&&st.kontenjan!==''?`<div class="stats" style="margin:-18px -18px 16px;border-bottom:1px solid var(--line-soft)">
       <div class="stat"><div class="k">Kontenjan</div><div class="v">${st.kontenjan}</div><div class="n">yerleşen ${st.yerlesen||'—'}</div></div>
@@ -4381,13 +4424,21 @@ function vHedef(st){
     <div class="hint">Bu değerleri ÖSYM/YÖK Atlas verisinden ya da hedef sıralamaya karşılık gelen net dağılımından elle gireceksin. Durum sekmesindeki tüm karşılaştırma bu satırlara dayanır.</div>
   </div></div>
 
-  <div style="margin:26px 0 10px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650;border-top:1px solid var(--line);padding-top:18px">
+  ${hedefeUzaklik(st)}
+
+  ${lisansUyarisi()}
+
+`;
+}
+/* Puan hesaplayıcı — ayrı sekme (Hedef'ten sonra) */
+function vPuanSekme(st){
+  return `
+  ${ornekUyari(st)}
+  <div style="margin:2px 0 12px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650">
     Puan hesaplayıcı
     <div style="text-transform:none;letter-spacing:0;font-weight:400;font-size:12px;margin-top:3px">Net dağılımını değiştirerek hedef puana hangi dağılımla ulaşılacağını bul, sonra "hedef net olarak kaydet" de.</div>
   </div>
-  ${vPuan(st)}
-
-`;
+  ${vPuan(st)}`;
 }
 function saveGoal(){const st=cur();st.dept=document.getElementById('hD').value.trim();st.rank=document.getElementById('hR').value.trim();st.score=document.getElementById('hS').value.trim();
   st.tabanPuan=document.getElementById('hTP').value.trim();st.tabanSira=document.getElementById('hTS').value.trim();st.tabanYil=document.getElementById('hTY').value.trim();

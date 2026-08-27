@@ -241,6 +241,13 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .qbtn .ico.sec{background:var(--accent)}
 @media(max-width:520px){.vd-drawer{width:100%;max-width:100%}}
 
+/* ders ders grafik ızgarası */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.grid-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.grid-mini .card{margin-bottom:0}
+@media(max-width:480px){.grid-mini{grid-template-columns:repeat(2,1fr)}}
+
 </style>
 
 <div class="hdr"><div class="in">
@@ -1850,6 +1857,59 @@ function vGelisim(){
   </div>`:''}
   ${!ex.length?`<div class="card"><div class="empty">Deneme girdikçe grafiklerin burada oluşacak. <b>Denememi gir</b> sekmesinden başla.</div></div>`:''}`;
 }
+/* ---------- Hedefe uzaklık için net grafikleri (TYT/AYT + ders ders) ---------- */
+function ogrNetSerisi(tur){
+  return [...D.exams].filter(e=>((e.tur||'tyt')===tur)).sort((a,b)=>a.date.localeCompare(b.date))
+    .map(e=>({x:e.date.slice(5).replace('-','/'), y:toplamNet(e), ad:e.name||''}));
+}
+function ogrDersSerisi(sk){
+  return [...D.exams].filter(e=>e.n && netOf(e,sk)!==null).sort((a,b)=>a.date.localeCompare(b.date))
+    .map(e=>({x:e.date.slice(5).replace('-','/'), y:netOf(e,sk), ad:e.name||''}));
+}
+function cizgiMini(veri,renk){
+  if(veri.length<1) return '<div style="height:96px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:11.5px">Deneme yok</div>';
+  const w=280,hh=120,sol=8,sag=10,ust=18,alt=12;
+  const mx=Math.max(...veri.map(v=>v.y))*1.15||1;
+  const mn=Math.min(0,...veri.map(v=>v.y));
+  const rg=(mx-mn)||1;
+  const X=i=>veri.length===1?w/2:sol+i*(w-sol-sag)/(veri.length-1);
+  const Y=v=>hh-alt-((v-mn)/rg)*(hh-ust-alt);
+  const pts=veri.map((v,i)=>[X(i),Y(v.y)]);
+  const alan=veri.length>1?`<polygon points="${pts.map(p=>p.join(',')).join(' ')} ${pts[pts.length-1][0]},${hh-alt} ${pts[0][0]},${hh-alt}" fill="${renk}" opacity=".10"/>`:'';
+  const son=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${hh}" width="100%" height="96" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Net seyri">
+    ${alan}
+    ${veri.length>1?`<polyline fill="none" stroke="${renk}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p=>p.join(',')).join(' ')}"/>`:''}
+    ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="#fff" stroke="${renk}" stroke-width="1.8"/>`).join('')}
+    <text x="${son[0]}" y="${son[1]-6}" text-anchor="end" font-family="var(--mono)" font-size="11" font-weight="700" fill="${renk}">${n1(veri[veri.length-1].y)}</text>
+  </svg>`;
+}
+function ogrDersGrafikKarti(sk,nm,renk){
+  const s=ogrDersSerisi(sk); const hedef=+hedefNet(sk)||0;
+  const son=s.length?s[s.length-1].y:null;
+  return `<div class="card"><div class="body" style="padding:10px 12px">
+    <div style="font-size:11px;letter-spacing:.03em;font-weight:650;color:var(--ink-2)">${esc(nm)}</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ink-3);margin:1px 0 1px">${s.length?`son <b style="color:${renk}">${n1(son)}</b>${hedef?` · hedef ${n1(hedef)} <b style="color:${son-hedef<0?'var(--bad)':'var(--ok)'}">(${son-hedef>0?'+':''}${n1(son-hedef)})</b>`:''}`:'deneme yok'}</div>
+    ${cizgiMini(s,renk)}
+  </div></div>`;
+}
+function ogrGrafikBloklari(){
+  if(!D.exams.length) return '';
+  const tyt=ogrNetSerisi('tyt'), ayt=ogrNetSerisi('ayt');
+  const withData=subs(D).filter(([k])=>D.exams.some(e=>e.n&&netOf(e,k)!==null));
+  return `
+  <div class="card"><h2>TYT net seyri</h2><div class="body">
+    ${tyt.length?`<div style="font-family:var(--mono);font-size:12.5px;color:var(--ink-2);margin-bottom:6px">${tyt.length} deneme · son <b style="color:#2E4A7D">${n1(tyt[tyt.length-1].y)}</b></div>`:''}
+    ${cizgi(tyt,'#2E4A7D',120)}
+  </div></div>
+  <div class="card"><h2>${trLabel(D.track)} AYT net seyri</h2><div class="body">
+    ${ayt.length?`<div style="font-family:var(--mono);font-size:12.5px;color:var(--ink-2);margin-bottom:6px">${ayt.length} deneme · son <b style="color:#E8873A">${n1(ayt[ayt.length-1].y)}</b></div>`:''}
+    ${cizgi(ayt,'#E8873A',80)}
+  </div></div>
+  ${withData.length?`<div class="sec-h" style="margin:2px 0 10px"><h3>Ders ders net seyri</h3>
+    <span style="color:var(--ink-3);font-size:12px;font-weight:400">Her dersin deneme deneme neti — hedefinle birlikte.</span></div>
+    <div class="grid-mini">${withData.map(([k,nm])=>ogrDersGrafikKarti(k,nm,(k.indexOf('tyt_')===0)?'#2E4A7D':'#E8873A')).join('')}</div>`:''}`;
+}
 
 /* ---------- puan hesabı (yaklaşık ham puan modeli) ---------- */
 const KTYT={tyt_tur:3.3,tyt_mat:3.3,tyt_geo:3.3,tyt_fiz:3.4,tyt_kim:3.4,tyt_biy:3.4,tyt_tar:3.4,tyt_cog:3.4,tyt_fel:3.4,tyt_din:3.4};
@@ -2000,7 +2060,7 @@ function vHedef(){
         <b style="color:${d===null?'var(--ink-3)':d<0?'var(--bad)':'var(--ok)'}"> ${d===null?'':(d>0?'+':'')+n1(d)}</b></div>
     </div>`;
   };
-  return `
+  const altBlok = `
   <div class="card"><div class="stats">
     <div class="stat"><div class="k">Şu anki puanın</div><div class="v" style="font-size:22px">${su?n1(su.yer):'—'}</div><div class="n">${a.adet?a.adet+' deneme ort.':'deneme gir'}</div></div>
     <div class="stat"><div class="k">Hedef puan</div><div class="v" style="font-size:22px">${isFinite(hp)?n1(hp):'—'}</div><div class="n">${esc((hedefBolum()||'').slice(0,26))||'bölüm seç'}</div></div>
@@ -2011,8 +2071,8 @@ function vHedef(){
   <div class="card"><h2>Ders ders hedefe uzaklık</h2><div class="body">
     ${a.adet?list.map(bar).join('')||'<div class="empty">Hedef net girilmemiş.</div>':'<div class="empty">Deneme girdiğinde bu tablo dolar.</div>'}
     <div class="hint" style="margin-top:10px">Mavi çubuk son ${a.adet||3} denemenin ortalaması, turuncu çizgi hedefin. Sağdaki üçüncü sayı aradaki fark.</div>
-  </div></div>
-
+  </div></div>`;
+  return `
   <div class="card"><h2>Bölüm seç — YÖK verisinden</h2><div class="body">
     ${!ATLAS?`<button class="btn wide" onclick="atlasYukle()">Bölüm listesini yükle</button>
       ${ATLASDURUM==='YOK'?`<div class="flag warn" style="margin-top:10px"><span class="ic">i</span><span>Bölüm listesi bulunamadı. Aşağıdan hedefini elle yazabilirsin.</span></div>`
@@ -2047,14 +2107,20 @@ function vHedef(){
           onchange="setHaftalik(this.value)">
         <div class="hint" style="margin-top:4px">Ders dışında, haftada kaç saat çalışıyorsun.</div></div>
     </div>
-    <button class="btn ghost wide" onclick="HDUZEN=!HDUZEN;render()">${HDUZEN?'Hedef netleri gizle':'Ders ders hedef net gir'}</button>
-    ${HDUZEN?`<div style="margin-top:12px">
-      <table><thead><tr><th>Ders</th><th class="num">Soru</th><th class="num">Hedef net</th></tr></thead><tbody>
-      ${list.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
-        <td class="num" style="width:110px"><input type="number" step="0.25" min="0" max="${q}" value="${hedefNet(k)??''}" placeholder="—" onchange="setHedefNet('${k}',this.value);render()"></td></tr>`).join('')}
-      </tbody></table></div>`:''}
     <div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>Burada yaptığın değişiklikler <b>rapor gönderdiğinde</b> öğretmenine iletilir. O onaylayınca onun sisteminde de güncellenir.</span></div>
-  </div></div>`;
+  </div></div>
+
+  <div class="card"><h2>Ders ders hedef net</h2><div class="body">
+    <div class="hint" style="margin:0 0 10px">Hedeflediğin bölüme göre her dersten kaç net gerektiğini buradan görür ve düzenlersin. Bölüm seçince otomatik dolar; elle de değiştirebilirsin.</div>
+    <table><thead><tr><th>Ders</th><th class="num">Soru</th><th class="num">Hedef net</th></tr></thead><tbody>
+    ${list.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
+      <td class="num" style="width:110px"><input type="number" step="0.25" min="0" max="${q}" value="${hedefNet(k)??''}" placeholder="—" onchange="setHedefNet('${k}',this.value);render()"></td></tr>`).join('')}
+    </tbody></table>
+  </div></div>
+
+  ${ogrGrafikBloklari()}
+
+  ${altBlok}`;
 }
 
 /* ---------- puan hesapla ---------- */
