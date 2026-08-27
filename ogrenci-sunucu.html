@@ -1295,11 +1295,12 @@ function tavsiyeHesap(){
       if(x.oncelik==='once') cekDk+=dk;
       if(!verilmis.has(x.konu))
         havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
-                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, dk});
+                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, mufredat:x.mufredat, dk});
     });
   }
   const haftalikDk = kapsamDk/hk;
-  havuz.sort((a,b)=> (a.grup-b.grup) || (b.agirlik-a.agirlik));
+  // Kademe içinde MÜFREDAT sırası; ağırlık yalnızca dersler arası eşitlik bozucu.
+  havuz.sort((a,b)=> (a.grup-b.grup) || (a.mufredat-b.mufredat) || (b.agirlik-a.agirlik));
   const secim=[]; let topla=0;
   for(const x of havuz){ if(secim.length && topla>=haftalikDk) break; secim.push(x); topla+=x.dk; }
   const beyanDk=(+D.haftalikSaat||0)*60;
