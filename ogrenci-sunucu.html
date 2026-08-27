@@ -42,29 +42,30 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .wrap{max-width:860px;margin:0 auto;padding:0 14px 70px}
 /* ===== SOL SEKME SÜTUNU (banner rengi) ===== */
-.app{display:flex;align-items:stretch;min-height:100vh}
-.snav{width:212px;flex:none;background:#03182B;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:auto}
-.snav-top{padding:16px 12px 14px;text-align:center;border-bottom:1px solid #0A2942}
+.app{display:flex;min-height:100vh}
+.snav{width:212px;flex:none;background:#03182B;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:10}
+.snav-top{padding:16px 12px 14px;text-align:center;border-bottom:1px solid #0A2942;flex:none}
 .snav-logo{width:118px;height:auto;max-width:100%}
 .snav .tabs{display:flex;flex-direction:column;gap:0;margin:0;padding:8px 0;overflow:visible}
 .snav .tab{display:block;width:100%;text-align:left;padding:11px 16px;color:#9DB4CC;border:0;border-left:3px solid transparent;font-size:14px;font-weight:550;white-space:nowrap;background:none}
 .snav .tab:hover{background:rgba(255,255,255,.06);color:#fff}
 .snav .tab.on{color:#fff;background:rgba(255,255,255,.10);border-left-color:var(--vurgu)}
-.snav-bot{margin-top:auto;padding:12px}
-.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.snav-bot{margin-top:auto;padding:12px;flex:none}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;margin-left:212px}
 .topbar{background:#03182B;padding:12px 20px;position:sticky;top:0;z-index:5}
 .topbar h1{margin:0;font-size:19px;font-weight:650;letter-spacing:-.01em;color:#fff}
 .topbar .meta{font-family:var(--mono);font-size:11.5px;color:#7E9BB8;margin-top:2px}
 .main .wrap{max-width:900px;width:100%}
 @media(max-width:760px){
   .app{flex-direction:column}
-  .snav{width:100%;height:auto;position:static;flex-direction:column}
+  .snav{position:static;width:100%;bottom:auto;flex-direction:column;overflow:visible}
   .snav-top{padding:8px;border-bottom:0}
   .snav-logo{width:84px}
-  .snav .tabs{flex-direction:row;overflow-x:auto;padding:2px 6px 0}
+  .snav .tabs{flex-direction:row;flex-wrap:wrap;padding:2px 6px 0}
   .snav .tab{width:auto;border-left:0;border-bottom:2px solid transparent;padding:9px 12px}
   .snav .tab.on{background:none;border-left:0;border-bottom-color:var(--vurgu)}
   .snav-bot{display:none}
+  .main{margin-left:0}
   .topbar{padding:10px 14px}
 }
 .hdr{background:#03182B;border-bottom:1px solid #0A2942;position:sticky;top:0;z-index:5}
@@ -1071,7 +1072,10 @@ function birlestir(p){
   D.tasks=D.tasks||[];
   (p.arsiv||[]).forEach(t=>{ if(!D.tasks.some(x=>x.id===t.id)) D.tasks.push(t); });
 }
-function haftaKalan(){ if(!D.sinav) return null; const d=(new Date(D.sinav)-new Date())/86400000; return d>0?Math.floor(d/7):0; }
+/* ===== ORTAK SINAV TARİHİ — tüm öğrencilere işlenir (sunucu.js'ten ayarlanır) ===== */
+const SINAV_TARIHI_VARSAYILAN='2027-06-20';
+function genelSinav(){ try{ return (window.SUNUCU_AYAR&&window.SUNUCU_AYAR.sinavTarihi)||SINAV_TARIHI_VARSAYILAN; }catch(e){ return SINAV_TARIHI_VARSAYILAN; } }
+function haftaKalan(){ const t=genelSinav()||(typeof D!=='undefined'&&D&&D.sinav); if(!t) return null; const d=(new Date(t)-new Date())/86400000; return d>0?Math.floor(d/7):0; }
 
 // Yetişir mi — üç senaryo (zaman tamponu kademeleri).
 // gerekli: haftada gereken saat, hs: haftalık çalışma saati.
@@ -1211,7 +1215,7 @@ function odevSatiri(t,devreden){
   const net = v.d - v.y/4;
   return `<div style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
     <div style="font-size:11px;color:${devreden?'var(--bad)':'var(--ink-3)'};font-family:var(--mono)">
-      ${devreden?`⚠ ${hf} hafta önce verildi · `:''}${t.date} · ${subName(t.sub)}${t.q?' · '+t.q+' soru':''}${t.konu?' · tahmini '+sa(sureOf(t.sub,t.konu)):''}</div>
+      ${devreden?`⚠ ${hf} hafta önce verildi · `:''}${t.date} · ${subName(t.sub)}${(t.konu||t.q)?' · '+[t.konu?'tahmini '+sa(sureOf(t.sub,t.konu)):null, t.q?t.q+' soru':null].filter(Boolean).join(' + '):''}</div>
     <div style="font-weight:600;margin:3px 0 8px">${esc(t.konu||'—')}</div>
     ${t.txt&&t.txt!=='Sabit haftalık rutin'?`<div style="font-size:13px;color:var(--ink-2);margin-bottom:8px">${esc(t.txt)}</div>`:''}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1402,9 +1406,9 @@ function tavsiyeHaftalikKart(){
   const bySub={}; r.secim.forEach(x=>{(bySub[x.sub]=bySub[x.sub]||[]).push(x);});
   const liste=Object.keys(bySub).map(sk=>`
     <div style="margin-top:10px"><div style="font-weight:650;font-size:13px;margin-bottom:4px">${esc(ADMAP[sk]||sk)}
-      <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))}</span></div>
+      <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))} + ${bySub[sk].reduce((a,x)=>a+(+x.soru||0),0)} soru</span></div>
       ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
-        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} · <b style="color:var(--vurgu)">${x.soru} soru</b>)</span></span>
+        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} + <b style="color:var(--vurgu)">${x.soru} soru</b>)</span></span>
         ${oncRozet(x.oncelik, x.kilit)}</div>`).join('')}
     </div>`).join('');
 
@@ -1413,7 +1417,7 @@ function tavsiyeHaftalikKart(){
       <div class="stat"><div class="k">Sınava kalan</div><div class="v">${r.hk}</div><div class="n">hafta</div></div>
       <div class="stat"><div class="k">Kalan kapsam</div><div class="v">${Math.round(r.kapsamDk/60)}</div><div class="n">saat</div></div>
       <div class="stat"><div class="k">Bu hafta hedef</div><div class="v" style="color:var(--vurgu)">${saatY(r.haftalikDk/60)}</div><div class="n">gerekli tempo</div></div>
-      <div class="stat"><div class="k">Bu haftaki plan</div><div class="v">${r.secim.length}</div><div class="n">konu · ${sa(r.secimDk)}</div></div>
+      <div class="stat"><div class="k">Bu haftaki plan</div><div class="v">${r.secim.length}</div><div class="n">konu · ${sa(r.secimDk)} + ${r.secim.reduce((a,x)=>a+(+x.soru||0),0)} soru</div></div>
     </div>
     ${valf}
     <div style="margin-top:6px">${liste}</div>
@@ -2134,9 +2138,9 @@ function vHedef(){
       <div><label class="f">Hedef sıralama</label><input type="text" value="${esc((D.hedef&&D.hedef.rank)||D.rank||'')}" placeholder="ör. 12.000" onchange="setHedef('rank',this.value);render()"></div>
     </div>
     <div class="fr">
-      <div><label class="f">Sınav tarihi</label>
-        <input type="date" value="${esc(D.sinav||'')}" onchange="setSinav(this.value)">
-        <div class="hint" style="margin-top:4px">Kalan hafta buradan hesaplanır.</div></div>
+      <div><label class="f">Sınav tarihi <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(ortak)</span></label>
+        <input type="date" value="${genelSinav()}" readonly style="background:#F1F5F6">
+        <div class="hint" style="margin-top:4px">Sınav tarihi tüm öğrenciler için ortaktır; öğretmenin belirler. Kalan hafta buradan hesaplanır.</div></div>
       <div><label class="f">Haftalık çalışma sürem</label>
         <input type="number" min="0" max="90" step="1" value="${D.haftalikSaat||''}" placeholder="ör. 20"
           onchange="setHaftalik(this.value)">
@@ -2822,9 +2826,10 @@ async function gGiris(){
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(m)){ GHATA='E-posta adresi geçerli görünmüyor.'; render(); return; }
     const s2=(document.getElementById('gSifre2')?.value||'');
     if(s!==s2){ GHATA='İki şifre aynı değil.'; render(); return; }
+    // Öğretmen kodu İSTEĞE BAĞLI: koçsuz (solo) öğrenci kod olmadan kayıt olabilir.
+    // Kod boşsa hesap açılır, sonraki ekranda "Kendi başıma başla" seçeneği gelir.
     const kod=(document.getElementById('gKodK')?.value||'').trim();
-    if(!kod){ GHATA='Öğretmeninin verdiği 6 haneli kodu yaz.'; render(); return; }
-    BEKLEYENKOD=kod.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    BEKLEYENKOD = kod ? kod.toUpperCase().replace(/[^A-Z0-9]/g,'') : '';
   }
   GBEKLE=true; GHATA=''; render();
   try{
@@ -2910,7 +2915,7 @@ async function sunucuAc(){
   const d=await ogrSunucudanOku();
   if(!d){
     GMOD='kod';
-    if(!GHATA) GHATA='Hesabın açıldı. Şimdi öğretmeninin verdiği kodu gir.';
+    if(!GHATA) GHATA='OK|Hesabın açıldı. Öğretmenin varsa kodunu gir; öğretmenin yoksa aşağıdan "Kendi başıma başla" de.';
     render(); return;
   }
   if(SONKIM && SONKIM.lisans===false){

@@ -1158,9 +1158,16 @@ function kalanSure(st,sk){
   }));
   return {dk,ad};
 }
+/* ===== ORTAK SINAV TARİHİ =====
+   Tüm koç ve öğrencilere işlenir; kişisel tarihler yok sayılır (zorla uygula).
+   Değiştirmek için: sunucu.js içindeki SUNUCU_AYAR'a  sinavTarihi:'YYYY-MM-DD'  ekle.
+   sunucu.js'te yoksa aşağıdaki varsayılan kullanılır. */
+const SINAV_TARIHI_VARSAYILAN='2027-06-20';
+function genelSinav(){ try{ return (window.SUNUCU_AYAR&&window.SUNUCU_AYAR.sinavTarihi)||SINAV_TARIHI_VARSAYILAN; }catch(e){ return SINAV_TARIHI_VARSAYILAN; } }
 function haftaKalan(st){
-  if(!st.sinavTarihi) return null;
-  const d=(new Date(st.sinavTarihi)-new Date())/86400000;
+  const t=genelSinav()||(st&&st.sinavTarihi);
+  if(!t) return null;
+  const d=(new Date(t)-new Date())/86400000;
   return d>0?Math.floor(d/7):0;
 }
 
@@ -3414,9 +3421,9 @@ function tavsiyeHaftalikKart(st){
   const bySub={}; r.secim.forEach(x=>{(bySub[x.sub]=bySub[x.sub]||[]).push(x);});
   const liste=Object.keys(bySub).map(sk=>`
     <div style="margin-top:10px"><div style="font-weight:650;font-size:13px;margin-bottom:4px">${subName(sk)}
-      <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))}</span></div>
+      <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))} + ${bySub[sk].reduce((a,x)=>a+(+x.soru||0),0)} soru</span></div>
       ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
-        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} · <b style="color:var(--accent)">${x.soru} soru</b>)</span></span>
+        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} + <b style="color:var(--accent)">${x.soru} soru</b>)</span></span>
         ${oncelikRozet(x.oncelik, x.kilit)}</div>`).join('')}
     </div>`).join('');
 
@@ -3425,7 +3432,7 @@ function tavsiyeHaftalikKart(st){
       <div class="stat"><div class="k">Sınava kalan</div><div class="v">${r.hk}</div><div class="n">hafta</div></div>
       <div class="stat"><div class="k">Kalan kapsam</div><div class="v">${Math.round(r.kapsamDk/60)}</div><div class="n">saat · ön koşul+çekirdek+güvenlik</div></div>
       <div class="stat"><div class="k">Bu hafta hedef</div><div class="v" style="color:var(--accent)">${saatY(r.haftalikDk/60)}</div><div class="n">gerekli tempo</div></div>
-      <div class="stat"><div class="k">Bu haftaki plan</div><div class="v">${r.secim.length}</div><div class="n">konu · ${sa(r.secimDk)}</div></div>
+      <div class="stat"><div class="k">Bu haftaki plan</div><div class="v">${r.secim.length}</div><div class="n">konu · ${sa(r.secimDk)} + ${r.secim.reduce((a,x)=>a+(+x.soru||0),0)} soru</div></div>
     </div>
     ${valf}
     <div style="margin-top:6px">${liste}</div>
@@ -4414,7 +4421,7 @@ function vHedef(st){
       <div><label class="f">Veri yılı</label><input type="text" id="hTY" value="${esc(st.tabanYil)}" placeholder="ör. 2025"></div>
     </div>
     <div class="fr">
-      <div><label class="f">Sınav tarihi</label><input type="date" id="hSD" value="${esc(st.sinavTarihi)}"></div>
+      <div><label class="f">Sınav tarihi <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(tüm öğrenciler için ortak)</span></label><input type="date" id="hSD" value="${genelSinav()}" readonly title="Ortak sınav tarihi — sunucu.js'ten ayarlanır, tüm öğrencilere işlenir" style="background:#F1F5F6"></div>
       <div><label class="f">Haftalık çalışma saati (beyan)</label><input type="number" id="hHS" min="0" max="80" value="${st.haftalikSaat??''}" placeholder="ör. 25"></div>
       <div><label class="f">WhatsApp numarası</label><input type="text" id="hTel" value="${esc(st.tel)}" placeholder="05XX XXX XX XX"></div>
     </div>
