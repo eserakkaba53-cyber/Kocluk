@@ -3106,7 +3106,7 @@ function vOdev(st){
     <div class="fr">
       <div><label class="f">Tarih</label><input type="date" id="tkD" value="${today()}"></div>
       <div><label class="f">Tür</label><select id="tkT"><option value="h" ${ODEVTUR==='h'?'selected':''}>Haftalık</option><option value="g" ${ODEVTUR==='g'?'selected':''}>Günlük</option></select></div>
-      <div><label class="f">Soru hedefi</label><input type="number" id="tkQ" min="0" placeholder="—"></div>
+      <div><label class="f">Soru hedefi <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(boş = otomatik)</span></label><input type="number" id="tkQ" min="0" placeholder="otomatik"></div>
     </div>
     <div class="fr">
       <div><label class="f">Ders</label><select onchange="setOdevDers(this.value)">
@@ -3324,7 +3324,7 @@ function siradakiKonular(st,sk,adet){
 }
 function hizliAta(sk,konu,unite){
   const st=cur();
-  const q=+document.getElementById('hzQ')?.value||0;
+  const q=+document.getElementById('hzQ')?.value||hedefSoru(sk,konu);
   const tr=document.getElementById('hzT')?.value||'h';
   st.tasks.push({id:uid(),date:today(),type:tr,sub:sk,konu,q,txt:'',s:0,yap:0});
   save(); render();
@@ -3354,7 +3354,7 @@ function hizliKart(st){
     ? 'Öğrencinin hedef netine en hızlı götüren konu önce gelir. Sıralamayı aşağıdan değiştirebilirsin.'
     : 'Konu listesindeki sırayla, bitmemiş ve henüz ödev verilmemiş ilk konu.'}</small></h2><div class="body">
     <div class="fr">
-      <div style="max-width:150px"><label class="f">Soru hedefi</label><input type="number" id="hzQ" min="0" value="30"></div>
+      <div style="max-width:180px"><label class="f">Soru hedefi <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(boş = otomatik)</span></label><input type="number" id="hzQ" min="0" placeholder="otomatik"></div>
       <div style="max-width:150px"><label class="f">Tür</label><select id="hzT"><option value="h">Haftalık</option><option value="g">Günlük</option></select></div>
       <div></div>
     </div>
@@ -3425,7 +3425,7 @@ function addTask(){
   if(!konu){alert('Konu seç.');return;}
   ODEVTUR=document.getElementById('tkT').value;
   st.tasks.push({id:uid(),date:document.getElementById('tkD').value||today(),type:ODEVTUR,
-    sub:odevDers(st),konu,q:+document.getElementById('tkQ').value||0,txt:document.getElementById('tkX').value.trim(),s:0});
+    sub:odevDers(st),konu,q:(+document.getElementById('tkQ').value||hedefSoru(odevDers(st),konu)),txt:document.getElementById('tkX').value.trim(),s:0});
   save(); render();
 }
 /* "Yapıldı" işaretlenen konu-ödevi, ilgili konuyu otomatik "Bitti"ye (durum=2) taşır;
