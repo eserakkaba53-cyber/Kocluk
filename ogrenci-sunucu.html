@@ -1273,6 +1273,14 @@ function soloOdevVer(sub, konu){
   save(); render();
 }
 
+/* Konu başına hedef soru sayısı: konunun ÖSYM'de (2018-2025) yılda getirdiği
+   ortalama soruya göre ölçekli. Aralık 120–600. */
+function hedefSoru(sk, konu){
+  var sy = (AGIRLIK && AGIRLIK.agirlik && AGIRLIK.agirlik[sk] && AGIRLIK.agirlik[sk][konu])
+             ? (+AGIRLIK.agirlik[sk][konu].soru_yil||0) : 0;
+  var v = Math.round((120 + 72*sy)/10)*10;
+  return Math.max(120, Math.min(600, v));
+}
 /* ===== TAVSİYE EDİLEN HAFTALIK ÖDEV (yalnızca koçsuz / solo öğrenci) =====
    Kapsam: ön koşul + çekirdek + güvenlik payı (genişleme HARİÇ).
    Haftalık yük = kalan kapsam süresi / sınava kalan hafta. Çalışma beyanı yükü
@@ -1297,7 +1305,8 @@ function tavsiyeHesap(){
         // faz: 0 TYT çekirdek(+ön koşul) · 1 AYT çekirdek · 2 TYT güvenlik · 3 AYT güvenlik
         havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
                     kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, mufredat:x.mufredat,
-                    faz:(x.grup<=1?0:1)*2 + (sk.indexOf('ayt_')===0?1:0), dk});
+                    faz:(x.grup<=1?0:1)*2 + (sk.indexOf('ayt_')===0?1:0),
+                    soru:hedefSoru(sk, x.konu), dk});
     });
   }
   const haftalikDk = kapsamDk/hk;
@@ -1314,7 +1323,7 @@ function tavsiyeUygula(){
   if(r.durum!=='ok' || !r.secim.length){ alert('Verilecek uygun konu bulunamadı.'); return; }
   const gun=today();
   r.secim.forEach((x,i)=>{ D.tasks.push({ id:'s'+Date.now().toString(36)+i, date:gun, sub:x.sub,
-    konu:x.konu, q:30, yap:0, s:0, rutin:false, txt:'Haftalık plan', kendi:true }); });
+    konu:x.konu, q:(x.soru||hedefSoru(x.sub,x.konu)), yap:0, s:0, rutin:false, txt:'Haftalık plan', kendi:true }); });
   save(); render();
 }
 function tavsiyeHaftalikKart(){
@@ -1343,7 +1352,7 @@ function tavsiyeHaftalikKart(){
     <div style="margin-top:10px"><div style="font-weight:650;font-size:13px;margin-bottom:4px">${esc(ADMAP[sk]||sk)}
       <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))}</span></div>
       ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
-        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)})</span></span>
+        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} · <b style="color:var(--vurgu)">${x.soru} soru</b>)</span></span>
         ${oncRozet(x.oncelik, x.kilit)}</div>`).join('')}
     </div>`).join('');
 

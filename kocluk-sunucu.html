@@ -2983,6 +2983,14 @@ function odevDers(st){const l=subs(st); if(!OS||!l.find(x=>x[0]===OS)) OS=l[0][0
 function setOdevDers(k){OS=k;OU='';render();}
 function setOdevUnite(u){OU=u;render();}
 function toggleHide(b){OHIDE=b;render();}
+/* Konu başına hedef soru sayısı: konunun ÖSYM'de (2018-2025) yılda getirdiği
+   ortalama soruya göre ölçekli. Aralık 120–600 (çok getiren konuya daha çok pratik). */
+function hedefSoru(sk, konu){
+  var sy = (AGIRLIK && AGIRLIK.agirlik && AGIRLIK.agirlik[sk] && AGIRLIK.agirlik[sk][konu])
+             ? (+AGIRLIK.agirlik[sk][konu].soru_yil||0) : 0;
+  var v = Math.round((120 + 72*sy)/10)*10;
+  return Math.max(120, Math.min(600, v));
+}
 /* ===== TAVSİYE EDİLEN HAFTALIK ÖDEV =====
    Hedef kapsam: ön koşul + çekirdek + güvenlik payı (genişleme HARİÇ).
    Haftalık yük = kalan kapsam süresi / sınava kalan hafta.
@@ -3007,7 +3015,8 @@ function tavsiyeHesap(st){
         // faz: 0 TYT çekirdek(+ön koşul) · 1 AYT çekirdek · 2 TYT güvenlik · 3 AYT güvenlik
         havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
                     kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, mufredat:x.mufredat,
-                    faz:(x.grup<=1?0:1)*2 + (sk.indexOf('ayt_')===0?1:0), dk});
+                    faz:(x.grup<=1?0:1)*2 + (sk.indexOf('ayt_')===0?1:0),
+                    soru:hedefSoru(sk, x.konu), dk});
     });
   }
   const haftalikDk = kapsamDk / hk;              // gerekli tempo (dk/hafta)
@@ -3026,7 +3035,7 @@ function tavsiyeUygula(){
   if(r.durum!=='ok' || !r.secim.length){ alert('Verilecek uygun konu bulunamadı.'); return; }
   const gun=today();
   r.secim.forEach(x=>{ st.tasks.push({id:uid(), date:gun, type:'h', sub:x.sub, konu:x.konu,
-                        q:0, txt:'Tavsiye edilen haftalık plan', s:0}); });
+                        q:x.soru||hedefSoru(x.sub,x.konu), txt:'Tavsiye edilen haftalık plan', s:0}); });
   save(); render();
 }
 function tavsiyeHaftalikKart(st){
@@ -3057,7 +3066,7 @@ function tavsiyeHaftalikKart(st){
     <div style="margin-top:10px"><div style="font-weight:650;font-size:13px;margin-bottom:4px">${subName(sk)}
       <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))}</span></div>
       ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
-        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)})</span></span>
+        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} · <b style="color:var(--accent)">${x.soru} soru</b>)</span></span>
         ${oncelikRozet(x.oncelik, x.kilit)}</div>`).join('')}
     </div>`).join('');
 
