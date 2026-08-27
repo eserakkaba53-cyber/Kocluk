@@ -363,10 +363,18 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .ufill{height:100%;border-radius:4px}
 .trend{font-family:var(--mono);font-weight:650;font-size:12.5px}
 .badge-new{background:var(--accent);color:#fff;font-size:9.5px;letter-spacing:.06em;padding:1px 6px;border-radius:3px;vertical-align:2px;font-weight:700}
-.kok-row{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--line-soft)}
+.kok-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
 .kok-row:last-child{border-bottom:0}
+.kok-info{flex:1;min-width:150px}
+.kok-meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);text-align:right;white-space:nowrap}
+.kok-acts{display:flex;gap:6px;flex:none}
+@media(max-width:640px){
+  .kok-info{flex:1 1 100%;order:1;min-width:0}
+  .kok-meta{order:2;text-align:left;flex:1 1 100%;white-space:normal}
+  .kok-acts{order:3;flex:1 1 100%}
+  .kok-acts .btn{flex:1;text-align:center}
+}
 @media(max-width:760px){
-  .kok-row{flex-wrap:wrap;gap:8px}
   .kokpit-tablo{display:block;overflow-x:auto}
 }
 
@@ -2719,11 +2727,13 @@ function vKokpit(){
   const oncelik = rows.filter(x=>x.r.sev!=='g').map(({s,r})=>`
     <div class="kok-row">
       <span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span>
-      <div style="flex:1;min-width:0"><div style="font-weight:650">${esc(s.name)} <span style="color:var(--ink-3);font-weight:400;font-size:12px">· ${s.grade}. sınıf · ${trLabel(s.track)}${s.dept?' · '+esc(s.dept):''}</span></div>
+      <div class="kok-info"><div style="font-weight:650">${esc(s.name)} <span style="color:var(--ink-3);font-weight:400;font-size:12px">· ${s.grade}. sınıf · ${trLabel(s.track)}${s.dept?' · '+esc(s.dept):''}</span></div>
         <div style="color:var(--ink-3);font-size:12px;margin-top:2px">${r.sebep.slice(0,3).join(' · ')||'—'}</div></div>
-      <div style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--ink-3)">uyum ${r.uyum==null?'—':'%'+r.uyum}<br>${r.dev} devreden</div>
-      <button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Öğrenciyi aç</button>
-      <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli raporu</button>
+      <div class="kok-meta">uyum ${r.uyum==null?'—':'%'+r.uyum} · ${r.dev} devreden</div>
+      <div class="kok-acts">
+        <button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Öğrenciyi aç</button>
+        <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli raporu</button>
+      </div>
     </div>`).join('');
 
   const tablo = rows.map(({s,r})=>`
