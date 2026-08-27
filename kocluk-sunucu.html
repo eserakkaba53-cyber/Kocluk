@@ -3004,14 +3004,16 @@ function tavsiyeHesap(st){
       kapsamDk += dk;
       if(x.oncelik==='cekirdek') cekDk += dk;
       if(!verilmis.has(x.konu))
+        // faz: 0 TYT çekirdek(+ön koşul) · 1 AYT çekirdek · 2 TYT güvenlik · 3 AYT güvenlik
         havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
-                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, mufredat:x.mufredat, dk});
+                    kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, mufredat:x.mufredat,
+                    faz:(x.grup<=1?0:1)*2 + (sk.indexOf('ayt_')===0?1:0), dk});
     });
   }
   const haftalikDk = kapsamDk / hk;              // gerekli tempo (dk/hafta)
-  // Kademe (ön koşul→çekirdek→güvenlik), kademe içinde MÜFREDAT sırası;
-  // ağırlık yalnızca dersler arası eşitlikte bozucu (aynı müfredat indeksi çakışırsa).
-  havuz.sort((a,b)=> (a.grup-b.grup) || (a.mufredat-b.mufredat) || (b.agirlik-a.agirlik));
+  // Önce TYT çekirdeği bitsin, sonra AYT çekirdeği, sonra güvenlik payları (TYT→AYT).
+  // Her faz KENDİ İÇİNDE müfredat sırasına göre; ağırlık yalnızca dersler arası eşitlik bozucu.
+  havuz.sort((a,b)=> (a.faz-b.faz) || (a.mufredat-b.mufredat) || (b.agirlik-a.agirlik));
   const secim=[]; let topla=0;
   for(const x of havuz){ if(secim.length && topla>=haftalikDk) break; secim.push(x); topla+=x.dk; }
   const beyanDk = (+st.haftalikSaat||0)*60;
