@@ -39,9 +39,10 @@
   "url":"https://biyoser.com.tr/",
   "author":{"@type":"Person","name":"Eser Akkaba"},
   "offers":[
-    {"@type":"Offer","name":"Koç Paketi","price":"1000","priceCurrency":"TRY","description":"10 öğrenciye kadar, 1 yıl"},
-    {"@type":"Offer","name":"Sınıf Paketi","price":"3000","priceCurrency":"TRY","description":"40 öğrenciye kadar, 1 yıl"},
-    {"@type":"Offer","name":"Okul Paketi","price":"10000","priceCurrency":"TRY","description":"200 öğrenciye kadar, 1 yıl"}
+    {"@type":"Offer","name":"Öğrenci Paketi","price":"99","priceCurrency":"TRY","description":"1 öğrenci, 1 yıl"},
+    {"@type":"Offer","name":"Koç Paketi","price":"449","priceCurrency":"TRY","description":"10 öğrenciye kadar, 1 yıl"},
+    {"@type":"Offer","name":"Öğretmen Paketi","price":"2999","priceCurrency":"TRY","description":"40 öğrenciye kadar, 1 yıl"},
+    {"@type":"Offer","name":"Okul Paketi","price":"19999","priceCurrency":"TRY","description":"200 öğrenciye kadar, 1 yıl"}
   ]
 }
 </script>
@@ -121,6 +122,20 @@ footer a{color:#C6DAE6}
 /* Kullanım videoları — tek sıra, dar ekranda kırılır */
 @media(max-width:1000px){ .vsira{grid-template-columns:repeat(3,minmax(0,1fr))!important} }
 @media(max-width:620px){  .vsira{grid-template-columns:repeat(2,minmax(0,1fr))!important} }
+
+.paketgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.pk{position:relative;display:flex;flex-direction:column;text-align:center;background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:20px 16px;transition:box-shadow .15s,transform .15s}
+.pk:hover{box-shadow:0 8px 24px rgba(3,24,43,.10);transform:translateY(-2px)}
+.pk .pad{font-weight:700;font-size:16px;color:var(--lacivert)}
+.pk .lim{color:var(--ink-3);font-size:12.5px;margin:2px 0 12px;min-height:32px}
+.pk .fiy{font-family:var(--mono);font-size:29px;font-weight:800;color:var(--turuncu);line-height:1}
+.pk .yil{font-size:12px;color:var(--ink-3);margin-top:2px}
+.pk .basi{font-size:11.5px;color:var(--accent);margin-top:6px}
+.pk .dugme{margin-top:14px;width:100%;padding:11px 0;font-size:14px}
+.pk.one{border:2px solid var(--turuncu)}
+.pk .rozet{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--turuncu);color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:20px;white-space:nowrap}
+@media(max-width:760px){.paketgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:430px){.paketgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -139,6 +154,45 @@ footer a{color:#C6DAE6}
   <div class="not">Kredi kartı istenmez · Kurulum yok · Tarayıcıdan çalışır</div>
   <div id="sayaclar" style="margin-top:30px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap"></div>
 </div></div>
+
+<section style="padding:34px 0 6px"><div class="kap">
+  <div style="text-align:center">
+    <h2 style="margin:0 0 4px">Paketini seç, hemen başla</h2>
+    <p class="alt" style="margin:0 0 24px">Hepsi yıllık · kredi kartı yok · WhatsApp'tan paketini söyle, hesabına tanımlansın.</p>
+  </div>
+  <div class="paketgrid">
+    <div class="pk">
+      <div class="pad">Öğrenci Paketi</div>
+      <div class="lim">1 öğrenci · kendi hesabı, öğretmene bağlı değil</div>
+      <div class="fiy">99&nbsp;TL</div><div class="yil">yıllık</div>
+      <div class="basi">öğrenci kendi alır</div>
+      <a class="dugme" href="ogrenci-sunucu.html">Hemen başla</a>
+    </div>
+    <div class="pk one">
+      <span class="rozet">EN ÇOK TERCİH EDİLEN</span>
+      <div class="pad">Koç Paketi</div>
+      <div class="lim">10 öğrenciye kadar takip</div>
+      <div class="fiy">449&nbsp;TL</div><div class="yil">yıllık</div>
+      <div class="basi">öğrenci başı ~45 TL</div>
+      <a class="dugme" href="https://wa.me/905325874992?text=Merhaba%2C%20Biyoser%20Ko%C3%A7%20Paketi%20%2810%20%C3%B6%C4%9Frenci%2C%20449%20TL/y%C4%B1l%29%20almak%20istiyorum." target="_blank" rel="noopener">Bu paketi al</a>
+    </div>
+    <div class="pk">
+      <div class="pad">Öğretmen Paketi</div>
+      <div class="lim">40 öğrenciye kadar takip</div>
+      <div class="fiy">2.999&nbsp;TL</div><div class="yil">yıllık</div>
+      <div class="basi">öğrenci başı ~75 TL</div>
+      <a class="dugme" href="https://wa.me/905325874992?text=Merhaba%2C%20Biyoser%20%C3%96%C4%9Fretmen%20Paketi%20%2840%20%C3%B6%C4%9Frenci%2C%202.999%20TL/y%C4%B1l%29%20almak%20istiyorum." target="_blank" rel="noopener">Bu paketi al</a>
+    </div>
+    <div class="pk">
+      <div class="pad">Okul Paketi</div>
+      <div class="lim">200 öğrenciye kadar takip</div>
+      <div class="fiy">19.999&nbsp;TL</div><div class="yil">yıllık</div>
+      <div class="basi">öğrenci başı ~100 TL</div>
+      <a class="dugme" href="https://wa.me/905325874992?text=Merhaba%2C%20Biyoser%20Okul%20Paketi%20%28200%20%C3%B6%C4%9Frenci%2C%2019.999%20TL/y%C4%B1l%29%20almak%20istiyorum." target="_blank" rel="noopener">Bu paketi al</a>
+    </div>
+  </div>
+  <div class="not" style="text-align:center;margin-top:16px">Kararsız mısın? <a href="kocluk-sunucu.html" style="color:var(--turuncu);font-weight:600">7 gün ücretsiz dene</a> — 2 öğrenciye kadar, kayıtla.</div>
+</div></section>
 
 <section id="videolar" style="padding:38px 0"><div class="kap">
   <div style="text-align:center;margin-bottom:22px">
@@ -207,9 +261,10 @@ footer a{color:#C6DAE6}
     <thead><tr><th>Paket</th><th>Öğrenci</th><th>Yıllık ücret</th><th>Öğrenci başı</th></tr></thead>
     <tbody>
       <tr><td><b>Deneme</b></td><td>2 öğrenci</td><td class="sag">Ücretsiz</td><td class="sag">7 gün</td></tr>
-      <tr><td><b>Koç Paketi</b></td><td>10 öğrenciye kadar</td><td class="sag">1.000 TL</td><td class="sag">100 TL</td></tr>
-      <tr><td><b>Sınıf Paketi</b></td><td>40 öğrenciye kadar</td><td class="sag">3.000 TL</td><td class="sag">75 TL</td></tr>
-      <tr><td><b>Okul Paketi</b></td><td>200 öğrenciye kadar</td><td class="sag">10.000 TL</td><td class="sag">50 TL</td></tr>
+      <tr><td><b>Öğrenci Paketi</b></td><td>1 öğrenci (kendi hesabı)</td><td class="sag">99 TL</td><td class="sag">99 TL</td></tr>
+      <tr><td><b>Koç Paketi</b></td><td>10 öğrenciye kadar</td><td class="sag">449 TL</td><td class="sag">~45 TL</td></tr>
+      <tr><td><b>Öğretmen Paketi</b></td><td>40 öğrenciye kadar</td><td class="sag">2.999 TL</td><td class="sag">~75 TL</td></tr>
+      <tr><td><b>Okul Paketi</b></td><td>200 öğrenciye kadar</td><td class="sag">19.999 TL</td><td class="sag">~100 TL</td></tr>
     </tbody>
   </table>
   <div class="orta" style="margin-top:28px">
