@@ -893,6 +893,12 @@ function applyKarne(){
     box.innerHTML='<div class="flag bad"><span class="ic">!</span><span>Karne okunamadı. Taranmış görüntü olabilir (metin kopyalanamıyorsa öyledir) ya da düzeni tanınmadı. Netleri elle gir.</span></div>';
     return;
   }
+  // GEOMETRİ UYARISI: matematik okundu ama geometri ayrı gelmediyse (öğrencinin alanında geometri varken)
+  const alan=new Set(subs(st).map(x=>x[0]));
+  if(alan.has('tyt_geo') && out.tyt_mat && !out.tyt_geo)
+    uyari.push('Bu karnede TYT Geometri ayrı verilmemiş; TYT Matematik neti geometriyi de içeriyor olabilir. Grafikte matematik yüksek, geometri boş görünebilir — istersen geometri netini elle ayır.');
+  if(alan.has('ayt_geo') && out.ayt_mat && !out.ayt_geo)
+    uyari.push('Bu karnede AYT Geometri ayrı verilmemiş; AYT Matematik neti geometriyi de içeriyor olabilir. Grafikte matematik yüksek, geometri boş görünebilir — istersen geometri netini elle ayır.');
   subs(st).forEach(([k])=>{
     const di=document.getElementById('d_'+k), yi=document.getElementById('y_'+k);
     if(!di) return;
@@ -2801,7 +2807,7 @@ function vKokpit(){
       <td><div style="display:flex;align-items:center;gap:8px;min-width:120px"><div class="ubar"><div class="ufill" style="width:${r.uyum==null?0:r.uyum}%;background:${uyumRenk(r.uyum)}"></div></div><span style="font-family:var(--mono);font-weight:650;color:${uyumRenk(r.uyum)}">${r.uyum==null?'—':'%'+r.uyum}</span></div></td>
       <td class="num" style="font-weight:650;color:${r.dev>=6?'var(--bad)':r.dev>=4?'var(--warn)':'var(--ink-2)'}">${r.dev}</td>
       <td><span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span>${gerekce}</td>
-      <td style="white-space:nowrap"><button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Aç</button> <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli</button></td>
+      <td style="white-space:nowrap"><button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Öğrenciyi gör</button> <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli raporu</button></td>
     </tr>`;}).join('');
 
   return `
@@ -2811,7 +2817,6 @@ function vKokpit(){
     <div class="stat"><div class="k">İzlenecek</div><div class="v" style="color:var(--warn)">${izle}</div><div class="n">yakın takip</div></div>
     <div class="stat"><div class="k">Yolunda</div><div class="v" style="color:var(--ok)">${iyi}</div><div class="n">plan tutuyor</div></div>
   </div></div>
-  ${oncelik ? `<div class="card" style="border-color:var(--warn)"><h2>Bugün önce bunlara bak<small>Risk eşiğini aşan öğrenciler. Sıralama otomatik; en kritik en üstte.</small></h2><div class="body" style="padding:6px 18px">${oncelik}</div></div>` : `<div class="card" style="border-color:var(--ok)"><div class="body"><div class="flag ok" style="margin:0"><span class="ic">✓</span><span>Şu an acil ya da izlenecek öğrenci yok — herkes planında.</span></div></div></div>`}
   <div class="card"><h2>Tüm öğrenciler<small>Renk = risk durumu. Risk; ödev uyumu, biriken devreden ödev, deneme trendi ve "yetişir mi" hesabından üretilir.</small></h2>
     <div class="body" style="padding:0 0 6px">
       <div style="padding:12px 18px 4px"><span class="chip on">Tümü (${list.length})</span> <span class="chip">Acil ${acil}</span> <span class="chip">İzlenecek ${izle}</span> <span class="chip">Yolunda ${iyi}</span></div>
@@ -4812,6 +4817,20 @@ function ornekOgrenciler(){
   liste.forEach((o,k)=>{
     o.id=ORNEK_ONEK+(k+1); o.ornek=true;
     o.sinavTarihi=new Date(anchorTs+23*7*86400000).toISOString().slice(0,10); // görsel tutarlılık
+
+    // 0) GEOMETRİ EKLE — örnek denemelerde matematik, geometriyi de içeriyordu (mat 30'u aşıyor,
+    // geometri boş kalıyordu). Hedef oranıyla ayır: toplam net AYNI kalır, geometri dolar, matematik ≤ hedef.
+    (o.exams||[]).forEach(e=>{
+      if(!e.n) return;
+      const bol=(matK,geoK,pay)=>{
+        const m=e.n[matK]; if(!m || e.n[geoK]) return;
+        const gd=Math.round((+m.d||0)*pay), gy=Math.round((+m.y||0)*pay);
+        e.n[geoK]={d:gd, y:gy};
+        e.n[matK]={d:(+m.d||0)-gd, y:(+m.y||0)-gy};
+      };
+      bol('tyt_mat','tyt_geo',0.237);   // TYT: geo 9 / (mat 29 + geo 9)
+      bol('ayt_mat','ayt_geo',0.222);   // AYT: geo 8 / (mat 28 + geo 8)
+    });
 
     // 1) TARİH SABİTLE — en yeni ödev bu haftaya gelsin; devreden yaşları sabit kalsın
     const ts=(o.tasks||[]).map(t=>t.date?new Date(t.date+'T00:00').getTime():null).filter(x=>x!=null);
