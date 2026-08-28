@@ -68,3 +68,5 @@ window.OGRENCI_VIDEOLAR = [
 window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
 
 window.BIYOSER_WP = '905325874492';   // ülke kodu, başında + ve boşluk yok
+
+gc: "https://biyoser.goatcounter.com/count"
