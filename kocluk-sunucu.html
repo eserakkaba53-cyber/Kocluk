@@ -3464,23 +3464,55 @@ function tavsiyeHesap(st){
                     soru:hedefSoru(sk, x.konu), dk});
     });
   }
+  // NOT: kapsamDk devreden konuları ZATEN içerir (bitmemiş her konu sayılır),
+  // bu yüzden aşağıdaki "devreden önce" seçeneği kalan kapsamı ve tempoyu DEĞİŞTİRMEZ;
+  // yalnızca bu haftaki planın İÇERİĞİNİ (önce devredenler) değiştirir.
   const haftalikDk = kapsamDk / hk;              // gerekli tempo (dk/hafta)
   // Önce TYT çekirdeği bitsin, sonra AYT çekirdeği, sonra güvenlik payları (TYT→AYT).
   // Her faz KENDİ İÇİNDE müfredat sırasına göre; ağırlık yalnızca dersler arası eşitlik bozucu.
   havuz.sort((a,b)=> (a.faz-b.faz) || (a.mufredat-b.mufredat) || (b.agirlik-a.agirlik));
+  // DEVREDEN ÖNCE: seçenek açıksa, geçmiş haftalardan yapılmamış (s!==1) konuları
+  // en eski önce olacak şekilde planın başına al. Bunlar zaten "verilmiş" olduğu için
+  // havuzda yoktur; çakışma olmaz.
+  const devrSecim=[];
+  if(devredenOnceAcik()){
+    const wkn=weekKey(today()), grld=new Set();
+    (st.tasks||[]).filter(t=>!t.rutin && t.konu && t.sub && t.s!==1 && weekKey(t.date)<wkn)
+      .sort((a,b)=>a.date.localeCompare(b.date))
+      .forEach(t=>{
+        const key=t.sub+'|'+t.konu; if(grld.has(key)) return; grld.add(key);
+        const durum=((st.topics||{})[t.sub]||{})[t.konu]||0; if(durum===2) return; // aslında bitmiş
+        devrSecim.push({sub:t.sub, konu:t.konu, unite:(uniteOf[t.sub]||{})[t.konu]||'',
+          oncelik:'devreden', kilit:false, devreden:true, taskId:t.id, hafta:haftaFarki(t.date),
+          soru:(+t.q||hedefSoru(t.sub,t.konu)), dk:sureOf(t.sub,t.konu)*mult(durum)});
+      });
+  }
+  const sirali = devrSecim.concat(havuz);
   const secim=[]; let topla=0;
-  for(const x of havuz){ if(secim.length && topla>=haftalikDk) break; secim.push(x); topla+=x.dk; }
+  for(const x of sirali){ if(secim.length && topla>=haftalikDk) break; secim.push(x); topla+=x.dk; }
+  const devrSayi = secim.filter(x=>x.devreden).length;
   const beyanDk = (+st.haftalikSaat||0)*60;
   const gercekci = beyanDk>0 ? (haftalikDk<=beyanDk) : null;
-  return {durum:'ok', hk, kapsamDk, cekDk, haftalikDk, beyanDk, gercekci, secim, secimDk:topla};
+  return {durum:'ok', hk, kapsamDk, cekDk, haftalikDk, beyanDk, gercekci, secim, secimDk:topla,
+          devrSayi, devrToplam:devrSecim.length};
 }
+/* "Önce devreden ödevleri kapat" seçeneği — cihaza özel (localStorage), varsayılan AÇIK. */
+function devredenOnceAcik(){ try{ return localStorage.getItem('biyoser_devreden_once')!=='0'; }catch(e){ return true; } }
+function devredenOnceSet(v){ try{ localStorage.setItem('biyoser_devreden_once', v?'1':'0'); }catch(e){} render(); }
 function tavsiyeUygula(){
   const st=cur(); if(!st) return;
   const r=tavsiyeHesap(st);
   if(r.durum!=='ok' || !r.secim.length){ alert('Verilecek uygun konu bulunamadı.'); return; }
   const gun=today();
-  r.secim.forEach(x=>{ st.tasks.push({id:uid(), date:gun, type:'h', sub:x.sub, konu:x.konu,
-                        q:x.soru||hedefSoru(x.sub,x.konu), txt:'Tavsiye edilen haftalık plan', s:0}); });
+  r.secim.forEach(x=>{
+    // Devreden konu: yeni ödev OLUŞTURMA — mevcut ödevi bu haftaya taşı (kopya birikmesin).
+    if(x.devreden && x.taskId){
+      const old=(st.tasks||[]).find(t=>t.id===x.taskId);
+      if(old){ old.date=gun; old.s=0; return; }
+    }
+    st.tasks.push({id:uid(), date:gun, type:'h', sub:x.sub, konu:x.konu,
+                   q:x.soru||hedefSoru(x.sub,x.konu), txt:'Tavsiye edilen haftalık plan', s:0});
+  });
   save(); render();
 }
 function tavsiyeHaftalikKart(st){
@@ -3506,17 +3538,25 @@ function tavsiyeHaftalikKart(st){
     valf=`<div class="flag warn" style="margin-top:2px"><span class="ic">i</span><span>Öğrencinin haftalık çalışma süresi girilmemiş; gerçekçilik kontrolü yapılamadı. Hedef sekmesinden gir.</span></div>`;
   }
 
+  const devrAcik=devredenOnceAcik();
+  const devrNot = (devrAcik && r.devrSayi>0)
+    ? `<div class="flag warn" style="margin-top:2px"><span class="ic">↻</span><span><b>${r.devrSayi} devreden konu</b> planın başına alındı${r.devrToplam>r.devrSayi?` (${r.devrToplam-r.devrSayi} tanesi bu haftaya sığmadı, gelecek haftaya kaldı)`:''}. Bunları vermek <b>yeni ödev oluşturmaz</b> — mevcut ödevi bu haftaya taşır.</span></div>`
+    : '';
+  const devrToggle = `<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--ink-2);margin:-2px 0 12px;cursor:pointer">
+      <input type="checkbox" ${devrAcik?'checked':''} onchange="devredenOnceSet(this.checked)" style="width:16px;height:16px;flex:none;margin-top:1px;accent-color:var(--accent)">
+      <span><b>Önce devreden ödevleri kapat</b> — geçmiş haftalardan yapılmamış konular, yeni konu eklenmeden planın başına konur. (Bu ayar sana özeldir.)</span></label>`;
   const bySub={}; r.secim.forEach(x=>{(bySub[x.sub]=bySub[x.sub]||[]).push(x);});
   const liste=Object.keys(bySub).map(sk=>`
     <div style="margin-top:10px"><div style="font-weight:650;font-size:13px;margin-bottom:4px">${subName(sk)}
       <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))} + ${bySub[sk].reduce((a,x)=>a+(+x.soru||0),0)} soru</span></div>
       ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
-        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} + <b style="color:var(--accent)">${x.soru} soru</b>)</span></span>
+        <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} + <b style="color:var(--accent)">${x.soru} soru</b>)${x.devreden?` <span style="color:var(--bad)">· ${x.hafta} hafta geçti</span>`:''}</span></span>
         ${oncelikRozet(x.oncelik, x.kilit)}</div>`).join('')}
     </div>`).join('');
 
   return sar(`
-    <div class="stats" style="margin:-4px -4px 4px">
+    ${devrToggle}
+    <div class="stats uc" style="margin:-4px -4px 4px">
       <div class="stat"><div class="k">Sınava kalan</div><div class="v">${r.hk}</div><div class="n">hafta</div></div>
       <div class="stat"><div class="k">Kalan kapsam</div><div class="v">${Math.round(r.kapsamDk/60)}</div><div class="n">saat · ön koşul+çekirdek+güvenlik</div></div>
       <div class="stat"><div class="k">Bu haftaki plan</div>
@@ -3524,6 +3564,7 @@ function tavsiyeHaftalikKart(st){
         <div style="font-size:14.5px;font-weight:600;color:var(--accent);line-height:1.45">${sa(r.secimDk)} çalışma</div>
         <div style="font-size:14.5px;font-weight:600;line-height:1.45">${r.secim.reduce((a,x)=>a+(+x.soru||0),0)} soru</div></div>
     </div>
+    ${devrNot}
     ${valf}
     <div style="margin-top:6px">${liste}</div>
     <button class="btn wide" style="margin-top:14px" onclick="tavsiyeUygula()">Bu haftanın ödevlerini ver (${r.secim.length} konu)</button>
@@ -3729,9 +3770,9 @@ function konuOncelik(st, sk){
   return {kalem, sira, hedef, toplam};
 }
 
-const ONCELIK_AD={cekirdek:'ÇEKİRDEK', guvenlik:'GÜVENLİK PAYI', genisleme:'GENİŞLEME'};
+const ONCELIK_AD={cekirdek:'ÇEKİRDEK', guvenlik:'GÜVENLİK PAYI', genisleme:'GENİŞLEME', devreden:'DEVREDEN'};
 function oncelikRozet(o, kilit){
-  const renk={cekirdek:'#B3261E', guvenlik:'#D68A2E', genisleme:'#5A7794'}[o]||'#5A7794';
+  const renk={cekirdek:'#B3261E', guvenlik:'#D68A2E', genisleme:'#5A7794', devreden:'#C2410C'}[o]||'#5A7794';
   return `<span style="display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.05em;
     padding:1px 6px;border-radius:4px;background:${renk}1F;color:${renk};border:1px solid ${renk}55;
     white-space:nowrap">${ONCELIK_AD[o]||''}</span>` +
