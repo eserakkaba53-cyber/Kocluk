@@ -39,7 +39,7 @@
   "url":"https://biyoser.com.tr/",
   "author":{"@type":"Person","name":"Eser Akkaba"},
   "offers":[
-    {"@type":"Offer","name":"Koçsuz Öğrenci Paketi","price":"99","priceCurrency":"TRY","description":"1 öğrenci, 1 yıl"},
+    {"@type":"Offer","name":"Öğrenci Paketi","price":"99","priceCurrency":"TRY","description":"1 öğrenci, 1 yıl"},
     {"@type":"Offer","name":"Koç Paketi","price":"449","priceCurrency":"TRY","description":"10 öğrenciye kadar, 1 yıl"},
     {"@type":"Offer","name":"Öğretmen Paketi","price":"2999","priceCurrency":"TRY","description":"40 öğrenciye kadar, 1 yıl"},
     {"@type":"Offer","name":"Okul Paketi","price":"19999","priceCurrency":"TRY","description":"200 öğrenciye kadar, 1 yıl"}
@@ -457,6 +457,18 @@ footer a{color:#C6DAE6}
   document.body.appendChild(kutu);
   document.getElementById('_kp').href = 'kocluk-sunucu.html' + h;
   document.getElementById('_op').href = 'ogrenci-sunucu.html' + h;
+})();
+</script>
+
+<!-- ZİYARET SAYACI (GoatCounter) — sunucu.js'teki gc adresi doluysa çalışır; boşsa hiçbir şey yapmaz -->
+<script>
+(function(){
+  try{
+    var gc=(window.SUNUCU_AYAR&&window.SUNUCU_AYAR.gc)||''; if(!gc) return;
+    var s=document.createElement('script'); s.async=true; s.src='//gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', gc);
+    document.head.appendChild(s);   // ana sayfa görüntülemesini otomatik sayar
+  }catch(e){}
 })();
 </script>
 </body>
