@@ -2350,13 +2350,10 @@ function render(){
     ? TABSAL().map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('') : '';
 
   const v=document.getElementById('view');
-  // İlk girişte karşılama notu
+  // İlk girişte: yeni koça DETAYLI karşılama rehberi (panel arkada normal açılır,
+  // modal üstte gösterilir). Kapatılınca hem cihaza hem hesaba işaretlenir.
   if(DENEME && !DENEME.karsilama && LISANS && LISANS.kvkk_onay){
-    document.getElementById('railList').innerHTML='';
-    document.getElementById('tabs').innerHTML='';
-    document.getElementById('stName').textContent='Koçluk Paneli';
-    document.getElementById('stMeta').textContent='';
-    v.innerHTML=karsilamaEkrani(); rayDurum(); return;
+    setTimeout(()=>{ if(!document.getElementById('kmWrap')) karsilamaAc(); }, 40);
   }
   // Abonelik / paketler ekranı
   if(ABONE){
@@ -3964,7 +3961,18 @@ function cycleTopic(sk,tn){
   st.topics[sk][tn]=((st.topics[sk][tn]||0)+1)%4; save(); render();
 }
 /* ---------- KARŞILAMA KUTUSU (ilk girişte bir kez) ---------- */
-function kmKapat(){ try{localStorage.setItem('biyoser_karsilama_koc','1');}catch(e){} const w=document.getElementById('kmWrap'); if(w) w.remove(); document.removeEventListener('keydown',kmEsc); }
+function kmKapat(){
+  try{localStorage.setItem('biyoser_karsilama_koc','1');}catch(e){}
+  const w=document.getElementById('kmWrap'); if(w) w.remove();
+  document.removeEventListener('keydown',kmEsc);
+  // Hesaba da işaretle: başka cihazda / sonraki girişte ilk-giriş akışı bunu tekrar açmasın.
+  try{
+    if(!DEMO && typeof DENEME!=='undefined' && DENEME && !DENEME.karsilama && typeof sbOturum==='function' && sbOturum()){
+      DENEME.karsilama=true;
+      sbGuvenli(()=>sbCagri('/rest/v1/rpc/karsilama_gorundu',{method:'POST',body:{}}));
+    }
+  }catch(e){}
+}
 function kmEsc(e){ if(e.key==='Escape') kmKapat(); }
 function karsilamaAc(){
   if(document.getElementById('kmWrap')) return;
@@ -5481,6 +5489,9 @@ function videoBolumu(tekSira,grup,baslik,altyazi){
 /* ---------- SUNUCU: giriş ve kurulum ekranı ---------- */
 let GIRISMOD='giris', GIRISHATA='', GIRISBEKLE=false, AKTARDURUM='';
 let KVKK_ONAY=false, KVKK_AC=false;
+/* Kayıt formu alanları: KVKK kutusu tıklanınca (render) yazılanlar silinmesin diye
+   her alan bu nesnede tutulur; kayıt başarılı olunca temizlenir. */
+let KAYIT={};
 /* Ödev sıralaması: 'hedef' = hedefe katkıya göre · 'mufredat' = konu listesi sırası.
    Tercih tarayıcıda saklanır, koç her açtığında aynı kalır. */
 let ODEV_SIRA = (function(){ try{ return localStorage.getItem('kocluk_odev_sira')||'mufredat'; }catch(e){ return 'mufredat'; } })();
@@ -5616,6 +5627,7 @@ async function girisYap(){
       const ad=document.getElementById('gAd').value.trim();
       if(s.length<8){ throw new Error('Şifre en az 8 karakter olmalı'); }
       const r=await sbKayit(m,s,ad);
+      KAYIT={};   // kayıt başarılı: form alanlarını temizle
       if(!r.giris){ GIRISBEKLE=false; GIRISHATA='OK|Hesap açıldı. E-postana gelen bağlantıya tıkla, sonra giriş yap.'; GIRISMOD='giris'; render(); return; }
     } else {
       await sbGiris(m,s);
@@ -5820,25 +5832,25 @@ function girisEkrani(){
             deneme analizi, konu haritası, öğrenci paneli.<br>
             Süre bitince verilerin durur ve okunabilir kalır; devam etmek istersen paket seçersin.</span></div>
           <div class="fr"><div style="flex:1"><label class="f">Adın</label>
-          <input type="text" id="gAd" placeholder="Ad Soyad"></div></div>`:''}
+          <input type="text" id="gAd" placeholder="Ad Soyad" value="${esc(KAYIT.ad||'')}" oninput="KAYIT.ad=this.value"></div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
-          <input type="text" id="gMail" placeholder="ornek@eposta.com"></div></div>
+          <input type="text" id="gMail" placeholder="ornek@eposta.com" value="${esc(KAYIT.mail||'')}" oninput="KAYIT.mail=this.value"></div></div>
         ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">E-postanı tekrar yaz</label>
-          <input type="text" id="gMail2" placeholder="aynısını yaz" autocomplete="off"
+          <input type="text" id="gMail2" placeholder="aynısını yaz" autocomplete="off" value="${esc(KAYIT.mail2||'')}" oninput="KAYIT.mail2=this.value"
             onpaste="event.preventDefault();alert('Yapıştırma kapalı — yazım hatasını yakalamak için elle yazman gerekiyor.')"></div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">Şifre</label>
-          <input type="password" id="gSifre" placeholder="${GIRISMOD==='kayit'?'en az 8 karakter':'••••••••'}"
+          <input type="password" id="gSifre" placeholder="${GIRISMOD==='kayit'?'en az 8 karakter':'••••••••'}" value="${esc(KAYIT.sifre||'')}" oninput="KAYIT.sifre=this.value"
             onkeydown="if(event.key==='Enter')girisYap()"></div></div>
         ${GIRISMOD==='kayit'?`
           <div class="fr"><div style="flex:1"><label class="f">Şifreni tekrar yaz</label>
-          <input type="password" id="gSifre2" placeholder="aynısını yaz"
+          <input type="password" id="gSifre2" placeholder="aynısını yaz" value="${esc(KAYIT.sifre2||'')}" oninput="KAYIT.sifre2=this.value"
             onkeydown="if(event.key==='Enter')girisYap()"></div></div>
           <div class="hint" style="margin:-4px 0 12px">E-postanı iki kez soruyoruz çünkü
             <b>şifreni unutursan sıfırlama bağlantısı oraya gidecek.</b></div>
           ${(()=>{ let bk=''; try{ bk=localStorage.getItem('bekleyen_referans')||''; }catch(e){}
             return `<div class="fr"><div style="flex:1">
               <label class="f">Referans kodu <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(varsa)</span></label>
-              <input type="text" id="gRef" value="${esc(bk)}" placeholder="ABC123" autocomplete="off"
+              <input type="text" id="gRef" value="${esc(KAYIT.ref!==undefined?KAYIT.ref:bk)}" oninput="KAYIT.ref=this.value" placeholder="ABC123" autocomplete="off"
                 style="text-transform:uppercase;font-family:var(--mono);font-size:16px;letter-spacing:2px;text-align:center">
               <div class="hint" style="margin-top:4px">${bk
                 ? 'Davet bağlantısıyla geldin, kodun yazıldı. Boş bırakırsan da kayıt olabilirsin.'
