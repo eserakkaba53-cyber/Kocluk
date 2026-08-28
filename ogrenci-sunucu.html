@@ -1993,6 +1993,7 @@ function vGelisim(){
     </div></div>`;
   const TYTL=S.TYT, AYTL=S[D.track]||[];
   return `
+  ${ogrOzetSatir()}
   ${soruKarti()}
   ${kart('TYT gelişimin',tyt,'#2E4A7D',120,TYTL,'TYT denemelerinin toplam neti. 120 soru üzerinden.')}
   ${kart(trLabel(D.track)+' AYT gelişimin',ayt,'#E8873A',80,AYTL,'AYT denemelerinin toplam neti. Sadece kendi alanının dersleri.')}
@@ -2083,6 +2084,64 @@ function son3Ort(){
   ex.forEach(e=>{for(const k in e.n){const v=net(e.n[k].d||0,e.n[k].y||0);s[k]=(s[k]||0)+v;c[k]=(c[k]||0)+1;}});
   for(const k in s) s[k]=s[k]/c[k];
   return {nets:s,adet:ex.length};
+}
+/* ---- Öğrencinin kendi "kokpit satırı" için: uyum · devreden · risk ---- */
+function ogrHaftaRate(wk){
+  const t=(D.tasks||[]).filter(x=>weekKey(x.date)===wk);
+  if(!t.length) return null;
+  const done=t.filter(x=>x.s===1).length, part=t.filter(x=>x.s===2).length;
+  return Math.round((done+part*0.5)/t.length*100);
+}
+function ogrOrtUyum(){
+  const ks=[...new Set((D.tasks||[]).map(t=>weekKey(t.date)))].sort().reverse().slice(0,4);
+  const rs=ks.map(ogrHaftaRate).filter(x=>x!=null);
+  return rs.length?Math.round(rs.reduce((a,b)=>a+b,0)/rs.length):null;
+}
+function ogrDevreden(){
+  const wk=weekKey(today());
+  return (D.tasks||[]).filter(t=>!t.rutin && t.konu && t.s!==1 && weekKey(t.date)<wk).length;
+}
+function ogrTrend(){
+  const t=[...(D.exams||[])].filter(e=>(e.tur||'tyt')==='tyt').sort((a,b)=>b.date.localeCompare(a.date));
+  if(t.length<2) return null;
+  return toplamNet(t[0]) - toplamNet(t[1]);
+}
+function ogrRisk(){
+  const uyum=ogrOrtUyum(), dev=ogrDevreden(), trend=ogrTrend();
+  let yetisir=null; try{ const r=tavsiyeHesap(); if(r&&r.durum==='ok') yetisir=r.gercekci; }catch(e){}
+  let sev='g'; const sebep=[];
+  if(uyum!=null&&uyum<60){sev='r';sebep.push('Ödev uyumu düşük (%'+uyum+')');}
+  if(dev>=6){sev='r';sebep.push(dev+' devreden ödev birikmiş');}
+  if(trend!=null&&trend<=-2){sev='r';sebep.push('Deneme neti düşüşte');}
+  if(yetisir===false){sev='r';sebep.push('Bu tempoyla hedefe yetişmiyor');}
+  if(sev!=='r'){
+    if(uyum!=null&&uyum<80){sev='y';sebep.push('Ödev uyumu orta (%'+uyum+')');}
+    if(dev>=4){sev='y';sebep.push(dev+' devreden ödev');}
+    if(trend!=null&&trend<0){sev='y';sebep.push('Deneme neti hafif geriledi');}
+  }
+  return {sev,uyum,dev,trend,sebep};
+}
+/* Öğrencinin kendi tek satırlık özeti (koç kokpitindeki satırın aynısı) */
+function ogrOzetSatir(){
+  const a=son3Ort().nets||{};
+  let tyt=0,ayt=0,tv=false,av=false;
+  for(const k in a){ if(k.indexOf('tyt_')===0){tyt+=a[k];tv=true;} else if(k.indexOf('ayt_')===0){ayt+=a[k];av=true;} }
+  const R=ogrRisk();
+  const AD={r:'Acil',y:'İzle',g:'Yolunda'}, RENK={r:'var(--bad)',y:'var(--warn)',g:'var(--ok)'};
+  const uy=R.uyum, uyRenk=uy==null?'var(--ink-3)':uy>=80?'var(--ok)':uy>=60?'var(--warn)':'var(--bad)';
+  const hucre=(k,v,sub)=>`<div style="min-width:90px"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)">${k}</div><div style="font-weight:700;font-size:17px;margin-top:2px">${v}</div>${sub?`<div style="font-size:11px;color:var(--ink-3)">${sub}</div>`:''}</div>`;
+  return `<div class="card"><h2>Durumun<small>Öğretmeninin panelinde göründüğün tek satır. Renk = risk durumu.</small></h2><div class="body">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+      ${hucre('Son 3 TYT ort.', tv?n1(tyt):'—','net')}
+      ${hucre('Son 3 AYT ort.', av?n1(ayt):'—','net')}
+      <div style="min-width:140px"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)">Ödev uyumu</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><div style="flex:1;height:8px;border-radius:5px;background:var(--line-soft);overflow:hidden;min-width:70px"><div style="height:100%;width:${uy==null?0:uy}%;background:${uyRenk}"></div></div><span style="font-family:var(--mono);font-weight:700;color:${uyRenk}">${uy==null?'—':'%'+uy}</span></div></div>
+      ${hucre('Devreden', R.dev, R.dev?'ödev':'temiz')}
+      <div style="min-width:160px"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)">Durum</div>
+        <div style="margin-top:6px"><span style="display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px;color:${RENK[R.sev]}"><span style="width:9px;height:9px;border-radius:50%;background:${RENK[R.sev]}"></span>${AD[R.sev]}</span>
+        ${R.sev!=='g'&&R.sebep.length?`<div style="font-size:11px;color:var(--ink-3);margin-top:3px;max-width:230px;line-height:1.35">${esc(R.sebep.slice(0,2).join(' · '))}</div>`:''}</div></div>
+    </div>
+  </div></div>`;
 }
 /* ---------- YÖK bölüm veritabanı ---------- */
 let ATLAS=null, ATLASDURUM='', ATLASARA='', ATLASSON=[];
