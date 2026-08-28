@@ -2288,6 +2288,25 @@ function topicStats(st,sk){
 }
 
 /* ================= ÇİZİM ================= */
+/* ---- ZİYARET SAYACI (GoatCounter) — sunucu.js'teki gc doluysa çalışır ----
+   Panelde OTOMATİK sayfa sayımı KAPALI (giren koçları şişirmesin); yalnızca
+   "demo açıldı" ve "kayıt ekranı" olaylarını sayarız. */
+(function(){
+  try{
+    var gc=(window.SUNUCU_AYAR&&window.SUNUCU_AYAR.gc)||''; if(!gc) return;
+    window.goatcounter=window.goatcounter||{}; window.goatcounter.no_onload=true;
+    var s=document.createElement('script'); s.async=true; s.src='//gc.zgo.at/count.js'; s.setAttribute('data-goatcounter',gc);
+    document.head.appendChild(s);
+  }catch(e){}
+})();
+function gcOlay(ad){
+  try{ if(!(window.SUNUCU_AYAR&&window.SUNUCU_AYAR.gc)) return;
+    var n=0,f=function(){ if(window.goatcounter&&window.goatcounter.count){ window.goatcounter.count({path:ad,title:ad,event:true}); } else if(n++<20){ setTimeout(f,300); } };
+    f();
+  }catch(e){}
+}
+var _gcSayildi={};
+function gcKayitSay(ad){ if(_gcSayildi[ad]) return; _gcSayildi[ad]=true; gcOlay(ad); }
 function render(){
   const _af0=document.activeElement, _aid0=_af0&&_af0.id;
   let _s0=null,_e0=null;
@@ -2301,6 +2320,7 @@ function render(){
     document.getElementById('stMeta').textContent='';
     document.getElementById('tabs').innerHTML='';
     document.getElementById('view').innerHTML=girisEkrani();
+    if(GIRISMOD==='kayit') gcKayitSay('kayit-koc');   // kaç kişi koç kayıt ekranına geldi
     rayDurum();
     if(_aid0){ const _e=document.getElementById(_aid0);
       if(_e){ try{ _e.focus({preventScroll:true}); if(_s0!==null&&('setSelectionRange' in _e)) _e.setSelectionRange(_s0,_e0); }catch(x){} } }
@@ -4838,6 +4858,7 @@ function demoBaslat(hedefId){
   DB={students:[],sel:hedefId||ilk,siteUrl:'',kocTel:'',kocAd:'Örnek Koç',sureler:{},rutin:RUTIN_VAR};
   LISANS=null; DENEME=null; TAB='durum';
   try{ localStorage.removeItem('ornek_gizli'); }catch(e){}
+  gcOlay('demo');   // "sistemi gez" — kaç kişi demoyu açtı
   render();
 }
 function demoBitir(){
