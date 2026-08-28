@@ -2815,6 +2815,8 @@ function veliNotTaslak(st,V){
   else if(V.d.trend!==null && V.d.trend<0) p.push('Son denemede hafif bir gerileme var; önümüzdeki hafta odağı buna göre ayarlıyoruz.');
   if(V.eksik.length) p.push('Öncelikli açık: '+V.eksik.slice(0,2).map(t=>subName(t.sub)+' – '+t.konu).join(', ')+(V.eksik.length>2?' ve diğerleri.':'.'));
   if(V.dev.length>=4) p.push('Geçmiş haftalardan '+V.dev.length+' ödev birikti; bunları kademeli kapatacağız.');
+  const ko=veliKonuOzet(st);
+  if(ko.t) p.push(ad+' şu ana kadar tüm konuların %'+ko.yuzde+"'ini tamamladı ("+ko.b+'/'+ko.t+' konu); kalanları planlı şekilde ilerletiyoruz.');
   p.push('Evde '+ad+"'e destek olmanız için önümüzdeki hafta önceliklerini aşağıda paylaştım.");
   return p.join(' ');
 }
@@ -2824,9 +2826,56 @@ function veliPlan(st){
   }catch(e){}
   return null;
 }
+// Konu haritası özeti: tüm derslerdeki konuların durum dağılımı (veli raporunu zenginleştirir)
+function veliKonuOzet(st){
+  let t=0,b=0,i=0,e=0;
+  for(const [sk] of subs(st)){
+    const m=st.topics[sk]||{};
+    (KONU[sk]||[]).forEach(([,ks])=>ks.forEach(k=>{
+      t++; const d=m[k]||0;
+      if(d===2)b++; else if(d===1)i++; else if(d===3)e++;
+    }));
+  }
+  return {t,b,i,e, gor:t-b-i-e, yuzde: t?Math.round(b/t*100):0};
+}
+// Sınava hazırlık genel durumu (yetişir mi + kalan hafta)
+function veliGenel(st){
+  const ko=veliKonuOzet(st);
+  const hk=haftaKalan(st);
+  let hazir=null, hazirRenk='var(--ink-3)';
+  try{ const r=tavsiyeHesap(st);
+    if(r&&r.durum==='ok'){
+      if(r.gercekci===true){ hazir='Yolunda'; hazirRenk='var(--ok)'; }
+      else if(r.gercekci===false){ hazir='Tempo artmalı'; hazirRenk='var(--bad)'; }
+      else { hazir='Süre bekleniyor'; hazirRenk='var(--warn)'; }
+    }
+  }catch(e){}
+  return {ko, hk, hazir, hazirRenk};
+}
+// Evde nasıl destek olunur — duruma göre uyarlanan 3-4 madde
+function veliDestek(st,V){
+  const t=[]; const uyum=V.ws.rate;
+  if(uyum!==null && uyum<60)
+    t.push('<b>Çalışma düzeni:</b> Her gün aynı saatte, telefon uzakta, 40–45 dakikalık kısa bloklar en çok işe yarıyor. Uzun süre değil, düzenli tekrar hedefleyin.');
+  else
+    t.push('<b>Düzeni koruyun:</b> İşleyen bir çalışma temposu var; evde sessiz, düzenli bir ortam bu ritmi korumaya yeter.');
+  if(V.d.trend!==null && V.d.trend<0)
+    t.push('<b>Deneme sonucu:</b> Bu dönem net biraz geriledi. Sonucun üzerine gitmek yerine "hangi konuda zorlandın" diye sormak öğrenciyi daha çok açar.');
+  else
+    t.push('<b>Motivasyon:</b> Küçük de olsa ilerlemeyi fark ettirmek, çalışmayı sürdürmenin en güçlü yakıtıdır.');
+  t.push('<b>İletişim:</b> Bu raporla ilgili sorunuz olursa bana yazabilirsiniz; öğrencinin planını birlikte ayarlarız.');
+  return t;
+}
 function vVeli(st){
   if(!st) return '';
   const V=veliVeri(st); const uyum=V.ws.rate;
+  const G=veliGenel(st); const destek=veliDestek(st,V);
+  const konuHarita = `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);margin-top:8px">
+    <span><b style="color:var(--ok)">${G.ko.b}</b> bitti</span>
+    <span><b style="color:var(--warn)">${G.ko.i}</b> işleniyor</span>
+    <span><b style="color:var(--bad)">${G.ko.e}</b> eksik</span>
+    <span><b style="color:var(--ink-3)">${G.ko.gor}</b> henüz görülmedi</span>
+    <span style="color:var(--ink-3)">· toplam ${G.ko.t} konu</span></div>`;
   const trendFlag = V.d.trend===null
     ? `<div class="flag warn"><span class="ic">i</span><span>Henüz iki deneme yok; gidişat karşılaştırması bir sonraki denemeden sonra gelir.</span></div>`
     : V.d.trend>=0
@@ -2858,6 +2907,13 @@ function vVeli(st){
         <div class="stat"><div class="k">Çalışma süresi</div><div class="v" style="font-size:21px">${V.sure?sa(V.sure):'—'}</div><div class="n">kayda geçen</div></div>
       </div>
       <div style="margin-top:12px">${trendFlag}</div>
+      <div class="sec-h" style="margin-top:16px"><h3>Sınava hazırlık — genel durum</h3></div>
+      <div class="stats uc" style="margin:-4px -4px 0">
+        <div class="stat"><div class="k">Konu tamamlanma</div><div class="v" style="color:var(--accent)">%${G.ko.yuzde}</div><div class="n">${G.ko.b}/${G.ko.t} konu bitti</div></div>
+        <div class="stat"><div class="k">Sınava kalan</div><div class="v">${G.hk==null?'—':G.hk}</div><div class="n">hafta</div></div>
+        <div class="stat"><div class="k">Hazırlık gidişatı</div><div class="v" style="font-size:20px;color:${G.hazirRenk}">${G.hazir||'—'}</div><div class="n">plana göre</div></div>
+      </div>
+      ${konuHarita}
       <div class="sec-h" style="margin-top:16px"><h3>Bu hafta ne yaptı</h3></div>
       ${yapilanHtml}
       <div class="sec-h" style="margin-top:16px"><h3>Dikkat edilmesi gereken</h3></div>
@@ -2866,6 +2922,8 @@ function vVeli(st){
       <textarea id="veliNot" rows="6" style="line-height:1.6">${esc(not)}</textarea>
       <div class="sec-h" style="margin-top:16px"><h3>Önümüzdeki hafta planı</h3></div>
       <div style="color:var(--ink-2);font-size:13px;line-height:1.9">${planHtml}</div>
+      <div class="sec-h" style="margin-top:16px"><h3>Evde nasıl destek olabilirsiniz</h3></div>
+      <div>${destek.map(x=>`<div class="topic" style="margin-bottom:6px"><span class="dot t2"></span><span class="tn">${x}</span></div>`).join('')}</div>
       <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
         <button class="btn" onclick="veliWaGonder()">WhatsApp'ta gönder</button>
         <button class="btn ghost" onclick="veliYazdir()">PDF / Yazdır</button>
@@ -2887,10 +2945,18 @@ function veliMetin(st){
   L.push('Çalışma süresi: '+(V.sure?sa(V.sure):'—'));
   if(V.d.net!=null) L.push('Son deneme: '+n1(V.d.net)+' net'+(V.d.trend!=null?(' ('+(V.d.trend>=0?'+':'')+n1(V.d.trend)+')'):''));
   L.push('');
+  const G=veliGenel(st);
+  L.push('Genel durum:');
+  L.push('• Konu tamamlanma: %'+G.ko.yuzde+' ('+G.ko.b+'/'+G.ko.t+' konu)');
+  L.push('• Konu haritası: '+G.ko.b+' bitti · '+G.ko.i+' işleniyor · '+G.ko.e+' eksik · '+G.ko.gor+' görülmedi');
+  if(G.hk!=null) L.push('• Sınava kalan: '+G.hk+' hafta'+(G.hazir?(' · '+G.hazir):''));
+  L.push('');
   if(V.yapilan.length){ L.push('Bu hafta yapılanlar:'); V.yapilan.forEach(t=>L.push('• '+subName(t.sub)+' – '+t.konu)); L.push(''); }
   if(V.eksik.length||V.dev.length){ L.push('Dikkat edilmesi gerekenler:'); V.eksik.slice(0,4).forEach(t=>L.push('• '+subName(t.sub)+' – '+t.konu)); if(V.dev.length) L.push('• '+V.dev.length+' devreden ödev'); L.push(''); }
   L.push('Koçun notu:'); L.push(not);
   const plan=veliPlan(st); if(plan){ L.push(''); L.push('Önümüzdeki hafta:'); plan.forEach(x=>L.push(x)); }
+  L.push(''); L.push('Evde nasıl destek olabilirsiniz:');
+  veliDestek(st,V).forEach(x=>L.push('• '+x.replace(/<[^>]+>/g,'')));
   return L.join('\n');
 }
 function veliWaGonder(){
@@ -2906,6 +2972,7 @@ function veliWaGonder(){
 function veliYazdir(){
   const st=cur(); if(!st) return;
   const V=veliVeri(st);
+  const G=veliGenel(st); const destekL=veliDestek(st,V);
   const el=document.getElementById('veliNot'); const not=el?el.value:veliNotTaslak(st,V);
   const w=window.open('','_blank'); if(!w){alert('Tarayıcı yeni sekmeyi engelledi.');return;}
   const satir=(a,b)=>`<tr><td style="color:#667">${a}</td><td style="text-align:right;font-weight:600">${b}</td></tr>`;
@@ -2928,10 +2995,13 @@ ul{margin:6px 0 0;padding-left:20px}li{margin:3px 0;font-size:14px}
 <div style="font-size:18px;font-weight:700">${esc(st.name)} — ${st.grade}. Sınıf ${trLabel(st.track)}</div></div>
 <div class="muted">${st.dept?esc(st.dept)+' · ':''}Hafta ${V.wk}</div>
 <table>${satir('Ödev uyumu', V.ws.rate==null?'—':'%'+V.ws.rate)}${satir('Çözülen soru', V.cozulen||0)}${satir('Çalışma süresi', V.sure?sa(V.sure):'—')}${V.d.net!=null?satir('Son deneme', n1(V.d.net)+' net'+(V.d.trend!=null?' ('+(V.d.trend>=0?'+':'')+n1(V.d.trend)+')':'')):''}</table>
+<h3>Sınava hazırlık — genel durum</h3>
+<table>${satir('Konu tamamlanma','%'+G.ko.yuzde+' ('+G.ko.b+'/'+G.ko.t+' konu)')}${satir('Konu haritası',G.ko.b+' bitti · '+G.ko.i+' işleniyor · '+G.ko.e+' eksik · '+G.ko.gor+' görülmedi')}${G.hk!=null?satir('Sınava kalan',G.hk+' hafta'+(G.hazir?(' · '+G.hazir):'')):''}</table>
 <h3>Bu hafta ne yaptı</h3><ul>${yap}</ul>
 <h3>Dikkat edilmesi gereken</h3><ul>${eks}</ul>
 <h3>Koçun notu</h3><div class="note">${esc(not)}</div>
 ${planHtml?'<h3>Önümüzdeki hafta planı</h3>'+planHtml:''}
+<h3>Evde nasıl destek olabilirsiniz</h3><ul>${destekL.map(x=>'<li>'+x+'</li>').join('')}</ul>
 <p class="noprint" style="margin-top:22px;color:#667;font-size:12px">Yazdır penceresi birazdan açılacak. PDF için "Hedef: PDF olarak kaydet" seç.</p>
 </body></html>`;
   w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>{try{w.print();}catch(e){}},350);
@@ -3449,8 +3519,10 @@ function tavsiyeHaftalikKart(st){
     <div class="stats" style="margin:-4px -4px 4px">
       <div class="stat"><div class="k">Sınava kalan</div><div class="v">${r.hk}</div><div class="n">hafta</div></div>
       <div class="stat"><div class="k">Kalan kapsam</div><div class="v">${Math.round(r.kapsamDk/60)}</div><div class="n">saat · ön koşul+çekirdek+güvenlik</div></div>
-      <div class="stat"><div class="k">Bu hafta hedef</div><div class="v" style="color:var(--accent)">${saatY(r.haftalikDk/60)}</div><div class="n">gerekli tempo</div></div>
-      <div class="stat"><div class="k">Bu haftaki plan</div><div class="v">${r.secim.length}</div><div class="n">konu · ${sa(r.secimDk)} + ${r.secim.reduce((a,x)=>a+(+x.soru||0),0)} soru</div></div>
+      <div class="stat"><div class="k">Bu haftaki plan</div>
+        <div style="font-size:18px;font-weight:750;line-height:1.35;margin-top:3px">${r.secim.length} konu =</div>
+        <div style="font-size:14.5px;font-weight:600;color:var(--accent);line-height:1.45">${sa(r.secimDk)} çalışma</div>
+        <div style="font-size:14.5px;font-weight:600;line-height:1.45">${r.secim.reduce((a,x)=>a+(+x.soru||0),0)} soru</div></div>
     </div>
     ${valf}
     <div style="margin-top:6px">${liste}</div>
