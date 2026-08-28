@@ -2806,19 +2806,104 @@ function veliVeri(st){
   return {wk, ws, cozulen:veliCozulen(st,wk), sure:veliHaftaSure(st,wk), d:sonDeneme(st),
           yapilan:wkTasks.filter(t=>t.s===1), eksik:wkTasks.filter(t=>t.s!==1), dev:devredenler(st)};
 }
+/* ---------- VELİ NOTU CÜMLE HAVUZLARI ----------
+   Her anlam için >=5 farklı ifade. Öğrenciye (ve gerçek öğrencide haftaya) göre
+   sabit ama FARKLI biri seçilir → iki öğrencinin notu benzemez, örnekler donuk kalır. */
+function _vHash(s){ s=String(s==null?'':s); let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
+function _vSec(arr, key, repl){
+  let s=arr[_vHash(key)%arr.length];
+  if(repl) for(const k in repl) s=s.split('{'+k+'}').join(repl[k]);
+  return s;
+}
+const VELI_CUMLE={
+  uyumHi:[
+    "{ad} bu hafta ödev planını büyük ölçüde tamamladı; bu istikrar en değerli şey.",
+    "{ad} bu hafta verilen ödevlerin neredeyse tamamını bitirdi; bu düzen çok kıymetli.",
+    "Bu hafta {ad} planına sadık kaldı ve ödevlerin büyük kısmını tamamladı; tam da istediğimiz tempo.",
+    "{ad} bu haftaki ödevleri büyük oranda tamamladı; bu istikrarı korumak en önemlisi.",
+    "{ad} bu hafta üzerine düşeni fazlasıyla yaptı; ödevlerin çoğu tamam, tempo yerinde.",
+    "Bu hafta {ad}'in ödev uyumu çok iyiydi; planın neredeyse hepsi tamamlandı."],
+  uyumOrta:[
+    "{ad} bu hafta planın bir kısmını tamamladı, bir kısmı açık kaldı.",
+    "{ad} bu hafta ödevlerin bir bölümünü bitirdi; kalanları önümüzdeki hafta toparlayacağız.",
+    "Bu hafta {ad} ödevlerin bir kısmını yaptı; geri kalanına birlikte odaklanacağız.",
+    "{ad} bu hafta kısmen ilerledi; birkaç ödev yarım kaldı, onları tamamlayacağız.",
+    "{ad}'in bu haftaki uyumu ortalamaydı; bazı ödevler tamam, bazıları eksik kaldı.",
+    "Bu hafta {ad} bir kısım ödevi tamamladı; açık kalanları planlı şekilde kapatacağız."],
+  uyumDusuk:[
+    "Bu hafta ödev uyumu beklenenin altında kaldı; nedenine birlikte bakacağız.",
+    "{ad} bu hafta ödevlerin çoğunu tamamlayamadı; sebebini konuşup yeniden planlayacağız.",
+    "Bu hafta {ad} için ödev temposu düşük kaldı; nerede zorlandığını birlikte anlamaya çalışacağız.",
+    "{ad}'in bu haftaki uyumu beklediğimizin altındaydı; önümüzdeki hafta daha gerçekçi bir plana geçiyoruz.",
+    "Bu hafta ödevler büyük ölçüde açık kaldı; nedenini anlamak için {ad} ile konuşacağız.",
+    "{ad} bu hafta planı takip etmekte zorlandı; birlikte engelin ne olduğuna bakacağız."],
+  trendUp:[
+    "Deneme neti yükselişte (yaklaşık {net} net artış) — emeğin karşılığını veriyor.",
+    "Son denemede net artışı sürüyor (~{net} net); çalışması sonuca dönüşüyor.",
+    "{ad}'in deneme neti bu dönem ~{net} arttı; gidişat olumlu.",
+    "Denemelerde yukarı yönlü ivme var (~{net} net); doğru yolda ilerliyor.",
+    "Net grafiği yukarı gidiyor (~{net} net) — emeğinin karşılığını almaya başladı.",
+    "Bu dönemki denemede ~{net} netlik artış var; istikrarlı bir yükseliş görüyoruz."],
+  trendDown:[
+    "Son denemede hafif bir gerileme var (~{net} net); önümüzdeki hafta odağı buna göre ayarlıyoruz.",
+    "Deneme netinde küçük bir düşüş oldu (~{net} net); telafisine odaklanacağız.",
+    "Bu denemede net biraz geriledi (~{net} net); nedenini bulup toparlayacağız.",
+    "Son denemede ~{net} netlik ufak bir gerileme gördük; planı buna göre güncelliyoruz.",
+    "Net grafiğinde geçici bir düşüş var (~{net} net); önümüzdeki hafta buna yükleneceğiz.",
+    "Bu dönem denemede ~{net} netlik gerileme oldu; odağı zayıf kalan yerlere çeviriyoruz."],
+  eksik:[
+    "Öncelikli açık: {liste}.",
+    "Bu hafta özellikle şu konulara ağırlık vereceğiz: {liste}.",
+    "En çok dikkat gereken konular: {liste}.",
+    "Öncelik verilecek eksikler: {liste}.",
+    "Şu konular öne çıkıyor, önce onları kapatacağız: {liste}.",
+    "Bu hafta odaklanılacak açıklar: {liste}."],
+  devreden:[
+    "Geçmiş haftalardan {n} ödev birikti; bunları kademeli kapatacağız.",
+    "Önceki haftalardan {n} tamamlanmamış ödev var; adım adım eritmeyi planlıyoruz.",
+    "{n} devreden ödev birikmiş durumda; öncelik sırasıyla bunları kapatacağız.",
+    "Geçmişten {n} ödev devretti; önümüzdeki haftalara yayarak tamamlatacağız.",
+    "Birikmiş {n} ödev var; bunları planlı biçimde geri kazanacağız.",
+    "{n} ödev geçmiş haftalardan kaldı; bunları kademeli olarak toparlıyoruz."],
+  konu:[
+    "{ad} şu ana kadar tüm konuların %{yuzde}'ini tamamladı ({b}/{t} konu); kalanları planlı şekilde ilerletiyoruz.",
+    "{ad} müfredatın %{yuzde}'ini bitirdi ({b}/{t} konu); geri kalanını sıraya koyduk.",
+    "Genel ilerleme %{yuzde} ({b}/{t} konu); {ad} istikrarlı biçimde yol alıyor.",
+    "{ad} konuların %{yuzde}'ini tamamlamış durumda ({b}/{t}); kalan konuları programa aldık.",
+    "Şu an {ad}'in konu tamamlanması %{yuzde} ({b}/{t} konu); eksikleri planlı kapatıyoruz.",
+    "{ad} bugüne dek konuların %{yuzde}'ini bitirdi ({b}/{t}); ilerleme düzenli."],
+  kapanis:[
+    "Evde {ad}'e destek olmanız için önümüzdeki hafta önceliklerini aşağıda paylaştım.",
+    "Önümüzdeki haftanın önceliklerini aşağıya ekledim; evde {ad}'e bu konularda destek olabilirsiniz.",
+    "Aşağıda gelecek haftanın önceliklerini bulacaksınız; evde {ad}'i bu yönde teşvik etmeniz çok değerli.",
+    "Gelecek haftanın öncelikli konularını aşağıda paylaşıyorum; {ad}'e evde destek olmanız süreci hızlandırır.",
+    "Önümüzdeki hafta odaklanacağımız konuları aşağıya yazdım; evde {ad}'e bu konularda göz kulak olabilirsiniz.",
+    "Aşağıdaki öncelikleri {ad} ile paylaşın; evdeki desteğiniz bu hafta fark yaratır."]
+};
 function veliNotTaslak(st,V){
   const ad=(st.name||'Öğrenci').split(' ')[0];
+  // Örnek öğrencilerde hafta katılmaz (donuk kalsın); gerçek öğrencide hafta katılır (her hafta farklı).
+  const taban=(st.id||st.name||'x')+(st.ornek?'':('|'+(V.wk||'')));
+  // Örnek öğrenciler için sıra no ile kaydırma → 5 örneğin HER kategoride farklı varyant alması garanti.
+  const ord=st.ornek?(parseInt(String(st.id).replace(/\D/g,''),10)||0):0;
+  const pick=(arr,cat,repl)=>{
+    const idx = st.ornek ? (_vHash(cat)+ord)%arr.length : _vHash(taban+'|'+cat)%arr.length;
+    let s=arr[idx]; if(repl) for(const k in repl) s=s.split('{'+k+'}').join(repl[k]); return s;
+  };
   const p=[]; const uyum=V.ws.rate;
-  if(uyum!==null && uyum>=80) p.push(ad+' bu hafta ödev planını büyük ölçüde tamamladı; bu istikrar en değerli şey.');
-  else if(uyum!==null && uyum>=50) p.push(ad+' bu hafta planın bir kısmını tamamladı, bir kısmı açık kaldı.');
-  else if(uyum!==null) p.push('Bu hafta ödev uyumu beklenenin altında kaldı; nedenine birlikte bakacağız.');
-  if(V.d.trend!==null && V.d.trend>0) p.push('Deneme neti yükselmeye devam ediyor (+'+n1(V.d.trend)+') — emeğin karşılığını veriyor.');
-  else if(V.d.trend!==null && V.d.trend<0) p.push('Son denemede hafif bir gerileme var; önümüzdeki hafta odağı buna göre ayarlıyoruz.');
-  if(V.eksik.length) p.push('Öncelikli açık: '+V.eksik.slice(0,2).map(t=>subName(t.sub)+' – '+t.konu).join(', ')+(V.eksik.length>2?' ve diğerleri.':'.'));
-  if(V.dev.length>=4) p.push('Geçmiş haftalardan '+V.dev.length+' ödev birikti; bunları kademeli kapatacağız.');
+  if(uyum!==null && uyum>=80) p.push(pick(VELI_CUMLE.uyumHi,'uh',{ad}));
+  else if(uyum!==null && uyum>=50) p.push(pick(VELI_CUMLE.uyumOrta,'uo',{ad}));
+  else if(uyum!==null) p.push(pick(VELI_CUMLE.uyumDusuk,'ud',{ad}));
+  if(V.d.trend!==null && V.d.trend>0) p.push(pick(VELI_CUMLE.trendUp,'tu',{ad, net:n1(Math.abs(V.d.trend))}));
+  else if(V.d.trend!==null && V.d.trend<0) p.push(pick(VELI_CUMLE.trendDown,'td',{ad, net:n1(Math.abs(V.d.trend))}));
+  if(V.eksik.length){
+    const liste=V.eksik.slice(0,2).map(t=>subName(t.sub)+' – '+t.konu).join(', ')+(V.eksik.length>2?' ve diğerleri':'');
+    p.push(pick(VELI_CUMLE.eksik,'ek',{liste}));
+  }
+  if(V.dev.length>=4) p.push(pick(VELI_CUMLE.devreden,'dv',{n:String(V.dev.length)}));
   const ko=veliKonuOzet(st);
-  if(ko.t) p.push(ad+' şu ana kadar tüm konuların %'+ko.yuzde+"'ini tamamladı ("+ko.b+'/'+ko.t+' konu); kalanları planlı şekilde ilerletiyoruz.');
-  p.push('Evde '+ad+"'e destek olmanız için önümüzdeki hafta önceliklerini aşağıda paylaştım.");
+  if(ko.t) p.push(pick(VELI_CUMLE.konu,'ko',{ad, yuzde:String(ko.yuzde), b:String(ko.b), t:String(ko.t)}));
+  p.push(pick(VELI_CUMLE.kapanis,'kp',{ad}));
   return p.join(' ');
 }
 function veliPlan(st){
