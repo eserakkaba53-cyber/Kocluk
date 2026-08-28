@@ -2760,6 +2760,13 @@ function uyumRenk(u){ return u==null?'var(--ink-3)':u>=80?'var(--ok)':u>=60?'var
 const KOK_AD={r:'Acil',y:'İzle',g:'Yolunda'};
 // Öğrenci aç: kokpitten çık, öğrenciyi seç, sekmeye git
 function kokpitAc(id,tab){ KOKPIT=false; DB.sel=id; TAB=tab||'hafta'; if(!ornekMi(id)) save(); render(); }
+/* Son 3 denemenin TYT ve AYT toplam net ortalaması */
+function son3Ort(st){
+  const a=avgNets(st,3).nets||{};
+  let tyt=0,ayt=0,tv=false,av=false;
+  for(const s in a){ if(s.indexOf('tyt_')===0){tyt+=a[s];tv=true;} else if(s.indexOf('ayt_')===0){ayt+=a[s];av=true;} }
+  return { tyt: tv?tyt:null, ayt: av?ayt:null };
+}
 function vKokpit(){
   const list=ogrListesi();
   if(!list.length) return '<div class="card"><div class="empty">Henüz öğrenci yok. Soldan ekleyince kokpit dolar.</div></div>';
@@ -2782,16 +2789,20 @@ function vKokpit(){
       </div>
     </div>`).join('');
 
-  const tablo = rows.map(({s,r})=>`
+  const tablo = rows.map(({s,r})=>{
+    const o3=son3Ort(s);
+    const gerekce = (r.sev!=='g' && r.sebep && r.sebep.length)
+      ? `<div style="color:var(--ink-3);font-size:11px;line-height:1.35;margin-top:3px;max-width:230px">${esc(r.sebep.slice(0,2).join(' · '))}</div>` : '';
+    return `
     <tr>
       <td><b>${esc(s.name)}</b><div style="color:var(--ink-3);font-size:12px">${s.grade}. sınıf · ${trLabel(s.track)}${s.dept?' · '+esc(s.dept):''}</div></td>
-      <td class="num">${r.hk==null?'—':r.hk}<div style="color:var(--ink-3);font-size:11.5px">hafta</div></td>
-      <td class="num">${r.net==null?'—':n1(r.net)+' net'}<div>${kokTrend(r.trend)}</div></td>
+      <td class="num">${o3.tyt==null?'—':n1(o3.tyt)}<div style="color:var(--ink-3);font-size:11px">TYT net</div></td>
+      <td class="num">${o3.ayt==null?'—':n1(o3.ayt)}<div style="color:var(--ink-3);font-size:11px">AYT net</div></td>
       <td><div style="display:flex;align-items:center;gap:8px;min-width:120px"><div class="ubar"><div class="ufill" style="width:${r.uyum==null?0:r.uyum}%;background:${uyumRenk(r.uyum)}"></div></div><span style="font-family:var(--mono);font-weight:650;color:${uyumRenk(r.uyum)}">${r.uyum==null?'—':'%'+r.uyum}</span></div></td>
       <td class="num" style="font-weight:650;color:${r.dev>=6?'var(--bad)':r.dev>=4?'var(--warn)':'var(--ink-2)'}">${r.dev}</td>
-      <td><span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span></td>
+      <td><span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span>${gerekce}</td>
       <td style="white-space:nowrap"><button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Aç</button> <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli</button></td>
-    </tr>`).join('');
+    </tr>`;}).join('');
 
   return `
   <div class="card"><div class="stats">
@@ -2804,7 +2815,7 @@ function vKokpit(){
   <div class="card"><h2>Tüm öğrenciler<small>Renk = risk durumu. Risk; ödev uyumu, biriken devreden ödev, deneme trendi ve "yetişir mi" hesabından üretilir.</small></h2>
     <div class="body" style="padding:0 0 6px">
       <div style="padding:12px 18px 4px"><span class="chip on">Tümü (${list.length})</span> <span class="chip">Acil ${acil}</span> <span class="chip">İzlenecek ${izle}</span> <span class="chip">Yolunda ${iyi}</span></div>
-      <div class="kokpit-tablo"><table><thead><tr><th>Öğrenci</th><th class="num">Sınava</th><th class="num">Son deneme</th><th>Ödev uyumu</th><th class="num">Devreden</th><th>Durum</th><th></th></tr></thead><tbody>${tablo}</tbody></table></div>
+      <div class="kokpit-tablo"><table><thead><tr><th>Öğrenci</th><th class="num">Son 3 TYT ort.</th><th class="num">Son 3 AYT ort.</th><th>Ödev uyumu</th><th class="num">Devreden</th><th>Durum · gerekçe</th><th></th></tr></thead><tbody>${tablo}</tbody></table></div>
     </div></div>
   <div class="hint">Risk eşikleri — Acil: uyum %60 altı <b>veya</b> 6+ devreden <b>veya</b> deneme düşüşü <b>veya</b> "yetişmiyor". İzle: uyum %60–79 <b>veya</b> 4–5 devreden <b>veya</b> hafif deneme gerilemesi. Kokpit hiçbir şey kaydetmez; yalnızca gösterir.</div>`;
 }
