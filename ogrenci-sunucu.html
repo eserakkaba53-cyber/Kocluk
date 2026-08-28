@@ -275,6 +275,25 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .grid-mini .card{margin-bottom:0}
 @media(max-width:480px){.grid-mini{grid-template-columns:repeat(2,1fr)}}
 
+/* ===== KARŞILAMA KUTUSU (ilk giriş) ===== */
+.km-overlay{position:fixed;inset:0;background:rgba(9,20,26,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:22px 14px}
+.km-modal{background:var(--panel);border-radius:12px;max-width:560px;width:100%;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);overflow:hidden;margin:auto;position:relative}
+.km-head{padding:17px 22px;color:#fff;background:#03182B}
+.km-x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);border:0;color:#fff;width:28px;height:28px;border-radius:6px;font-size:15px;cursor:pointer}
+.km-head .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+.km-head h2{margin:4px 0 0;font-size:20px;font-weight:750;letter-spacing:-.01em}
+.km-body{padding:20px 22px}
+.km-sec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--ink-3);margin:0 0 10px}
+ol.km-steps{margin:0;padding:0;list-style:none;counter-reset:s}
+ol.km-steps li{counter-increment:s;position:relative;padding:9px 0 9px 40px;border-bottom:1px solid var(--line-soft);font-size:13.5px;line-height:1.5}
+ol.km-steps li:last-child{border-bottom:0}
+ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;color:#fff;font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;background:var(--accent)}
+.km-how{margin-top:16px;background:var(--paper);border-radius:9px;padding:14px 16px}
+.km-how ul{margin:6px 0 0;padding-left:18px}
+.km-how li{font-size:13px;margin:5px 0}
+.km-btn{display:block;width:100%;margin-top:18px;background:var(--accent);color:#fff;border:0;padding:12px;border-radius:7px;font-weight:650;font-size:14px;cursor:pointer;text-align:center}
+.km-foot{font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px}
+
 </style>
 
 <div class="app">
@@ -1151,6 +1170,7 @@ function render(){
   v.innerHTML=uy+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,yardim:vYardim,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar,paket:vPaket})[TAB]();
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+  karsilamaKontrol();
 }
 
 /* ---------- ödevlerim ---------- */
@@ -1512,6 +1532,41 @@ function vOdev(){
 
 /* ---------- konularım ---------- */
 function cycleT(sk,t){D.topics[sk]=D.topics[sk]||{};D.topics[sk][t]=((D.topics[sk][t]||0)+1)%4;save();render();}
+/* ---------- KARŞILAMA KUTUSU (ilk girişte bir kez) ---------- */
+function karsilamaKapat(){ try{localStorage.setItem('biyoser_karsilama_ogr','1');}catch(e){} const w=document.getElementById('kmWrap'); if(w) w.remove(); document.removeEventListener('keydown',karsilamaEsc); }
+function karsilamaEsc(e){ if(e.key==='Escape') karsilamaKapat(); }
+function karsilamaAc(){
+  if(document.getElementById('kmWrap')) return;
+  const w=document.createElement('div'); w.id='kmWrap';
+  w.innerHTML =
+    '<div class="km-overlay" onclick="if(event.target===this)karsilamaKapat()">'+
+    '<div class="km-modal" role="dialog" aria-modal="true">'+
+      '<button class="km-x" onclick="karsilamaKapat()" title="Kapat">✕</button>'+
+      '<div class="km-head"><div class="k">Hoş geldin 👋</div><h2>Başlamadan önce 4 adım</h2></div>'+
+      '<div class="km-body">'+
+        '<div class="km-sec">Önce şunları yap</div>'+
+        '<ol class="km-steps">'+
+          '<li><b>Hedefini seç.</b> "Hedefe uzaklık" sekmesinden hayalindeki bölümü seç (YÖK verisinden). Sistem, o bölüm için hangi dersten kaç net gerektiğini senin için hesaplar.</li>'+
+          '<li><b>Konularını işaretle.</b> "Konularım" sekmesinde bildiğin/bilmediğin konuları işaretle (Bitirdim · İşliyorum · Eksiğim var · Görmedim). Böylece sistem nereden başlayacağını bilir.</li>'+
+          '<li><b>Son denemelerini gir.</b> "Denememi gir" sekmesinden karneyi yapıştır — netlerin ve zayıf konuların otomatik çıkar.</li>'+
+          '<li><b>Ödevlerini yap ve işaretle.</b> "Ödevlerim" sekmesinde sana verilen ödevleri gör; bitirince Yaptım / Yarım / Yapmadım işaretle, çözdüğün soruyu gir.</li>'+
+        '</ol>'+
+        '<div class="km-how"><div class="km-sec" style="margin:0">Sistem nasıl çalışır</div><ul>'+
+          '<li>Öğretmenin her hafta sana ödev verir; <b>öğretmenin yoksa</b> sistem senin için haftalık planı otomatik çıkarır.</li>'+
+          '<li>Sen işaretledikçe ve deneme girdikçe; hedefe ne kadar yaklaştığın, hangi konuda geride olduğun ve <b>sınava yetişip yetişmediğin</b> otomatik görünür.</li>'+
+          '<li>Net hesabı, hedef karşılaştırması, konu önceliği — hepsi otomatik. Sen sadece dürüstçe işaretle.</li>'+
+        '</ul></div>'+
+        '<button class="km-btn" onclick="karsilamaKapat()">Anladım, başlayalım</button>'+
+        '<div class="km-foot">Bu kutuya sonra "Yardım" sekmesinden tekrar ulaşabilirsin.</div>'+
+      '</div></div></div>';
+  document.body.appendChild(w);
+  document.addEventListener('keydown',karsilamaEsc);
+}
+function karsilamaKontrol(){
+  if(document.getElementById('kmWrap')) return;
+  let seen=false; try{ seen=!!localStorage.getItem('biyoser_karsilama_ogr'); }catch(e){}
+  if(!seen) karsilamaAc();
+}
 /* ---------- KONU ANLATIMI VİDEO ÇEKMECESİ ----------
    Panel içi çekmece; seçilmiş video yoksa YouTube aramasını yeni sekmede açar. */
 function konuVideoEsc(e){ if(e.key==='Escape') konuVideoKapat(); }
@@ -2693,6 +2748,10 @@ function gorunumKart(){
 function vYardim(){
   const v=videoListesi();
   return `
+  <div class="card"><h2>Başlangıç rehberi</h2><div class="body">
+    <div class="hint" style="margin:0 0 10px">Panele yeni başladıysan ya da adımları hatırlamak istersen aç.</div>
+    <button class="btn ghost wide" onclick="karsilamaAc()">Başlangıç rehberini aç</button>
+  </div></div>
   ${gorunumKart()}
   ${v.length?videoBolumu():`<div class="card"><h2>Kullanım videoları</h2><div class="body">
     <div class="empty">Videolar henüz eklenmemiş.</div></div></div>`}
