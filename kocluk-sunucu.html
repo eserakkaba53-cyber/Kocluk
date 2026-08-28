@@ -397,6 +397,25 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .grid-mini .card{margin-bottom:0}
 @media(max-width:520px){.grid-mini{grid-template-columns:repeat(2,1fr)}}
 
+/* ===== KARŞILAMA KUTUSU (ilk giriş) ===== */
+.km-overlay{position:fixed;inset:0;background:rgba(9,20,26,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:22px 14px}
+.km-modal{background:var(--panel);border-radius:12px;max-width:580px;width:100%;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);overflow:hidden;margin:auto;position:relative}
+.km-head{padding:17px 22px;color:#fff;background:#122430}
+.km-x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);border:0;color:#fff;width:28px;height:28px;border-radius:6px;font-size:15px;cursor:pointer}
+.km-head .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+.km-head h2{margin:4px 0 0;font-size:20px;font-weight:750;letter-spacing:-.01em}
+.km-body{padding:20px 22px}
+.km-sec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--ink-3);margin:0 0 10px}
+ol.km-steps{margin:0;padding:0;list-style:none;counter-reset:s}
+ol.km-steps li{counter-increment:s;position:relative;padding:9px 0 9px 40px;border-bottom:1px solid var(--line-soft);font-size:13.5px;line-height:1.5}
+ol.km-steps li:last-child{border-bottom:0}
+ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;color:#fff;font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;background:var(--accent)}
+.km-how{margin-top:16px;background:var(--paper);border-radius:9px;padding:14px 16px}
+.km-how ul{margin:6px 0 0;padding-left:18px}
+.km-how li{font-size:13px;margin:5px 0}
+.km-btn{display:block;width:100%;margin-top:18px;background:var(--accent);color:#fff;border:0;padding:12px;border-radius:7px;font-weight:650;font-size:14px;cursor:pointer;text-align:center}
+.km-foot{font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px}
+
 </style>
 
 <div class="app">
@@ -2375,9 +2394,10 @@ function render(){
     document.getElementById('stGoal').innerHTML='';
     document.getElementById('tabs').innerHTML='<button class="tab on">Kokpit</button>';
     v.innerHTML=kaynakUyarisi()+vKokpit();
+    karsilamaKontrol();
     return;
   }
-  if(!st && TAB!=='yonetim' && TAB!=='davet'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';return;}
+  if(!st && TAB!=='yonetim' && TAB!=='davet'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';karsilamaKontrol();return;}
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
@@ -2400,6 +2420,7 @@ function render(){
   v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,veli:vVeli,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef,puan:vPuanSekme,ogrenci:vOgrenciBilgi,hesap:vHesap})[TAB](st);
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+  karsilamaKontrol();
 }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -3942,6 +3963,49 @@ function cycleTopic(sk,tn){
   const st=cur(); st.topics[sk]=st.topics[sk]||{};
   st.topics[sk][tn]=((st.topics[sk][tn]||0)+1)%4; save(); render();
 }
+/* ---------- KARŞILAMA KUTUSU (ilk girişte bir kez) ---------- */
+function kmKapat(){ try{localStorage.setItem('biyoser_karsilama_koc','1');}catch(e){} const w=document.getElementById('kmWrap'); if(w) w.remove(); document.removeEventListener('keydown',kmEsc); }
+function kmEsc(e){ if(e.key==='Escape') kmKapat(); }
+function karsilamaAc(){
+  if(document.getElementById('kmWrap')) return;
+  const w=document.createElement('div'); w.id='kmWrap';
+  w.innerHTML =
+    '<div class="km-overlay" onclick="if(event.target===this)kmKapat()">'+
+    '<div class="km-modal" role="dialog" aria-modal="true">'+
+      '<button class="km-x" onclick="kmKapat()" title="Kapat">✕</button>'+
+      '<div class="km-head"><div class="k">Hoş geldin 👋</div><h2>İlk öğrencini 5 adımda ekle</h2></div>'+
+      '<div class="km-body">'+
+        '<div class="km-sec">Öğrenci nasıl eklenir, hangi bilgiler girilir</div>'+
+        '<ol class="km-steps">'+
+          '<li><b>Öğrenciyi oluştur.</b> Sol alttaki "+ Öğrenci ekle" ile başla; adını, sınıfını ve alanını (Sayısal / EA / Sözel / Dil) gir.</li>'+
+          '<li><b>Hedefini belirle.</b> "Hedef" sekmesinden YÖK verisiyle hedef bölümü seç. Taban puan, başarı sırası ve <b>ders ders hedef netler</b> otomatik dolar.</li>'+
+          '<li><b>Öğrenciyi davet et.</b> "Öğrenci bilgileri" sekmesinden <b>davet kodunu üret</b> ve WhatsApp\'la gönder — öğrenci tek tıkla kendi hesabını açar. Bunun için önce öğrencinin (ve velinin) <b>telefon numarasını gir</b>; davet ve haftalık raporlar bu numaradan gider. <span style="color:var(--ink-3)">(Sunucu, kod üretmeden önce veli onayı kartının dolmasını ister.)</span></li>'+
+          '<li><b>Ödev ver.</b> "Ödevler" sekmesinden üç yolla:<br>· <b>Tavsiye edilen haftalık ödev</b> — sistemin öğrenciye özel otomatik planını tek tuşla ver.<br>· <b>Ödev ver</b> — ders → ünite → konu seç, elle ver (soru sayısı otomatik önerilir).<br>· <b>Hızlı ödev ata</b> — sıradaki konuyu tek tıkla ver.<br>"Rutin" ile her hafta tekrarlayan işleri (paragraf, problem) tanımlarsın.</li>'+
+          '<li><b>Denemeleri gir.</b> "Denemeler" sekmesinden iki yol:<br>· <b>Karneden okut</b> (en kolayı) — deneme karnesinin (metni seçilebilen PDF) metnini yapıştır; netler ve yanlış/boş konular otomatik çıkar.<br>· <b>Yeni deneme gir</b> — her dersin doğru/yanlış sayısını elle yaz, net otomatik hesaplanır.<br>Başlangıç için son 3 denemeyi girmen önerilir.</li>'+
+        '</ol>'+
+        '<div class="km-how"><div class="km-sec" style="margin:0">Sistem nasıl çalışır</div><ul>'+
+          '<li><b>Kokpit:</b> Tüm öğrencilerini tek ekranda <b>risk sırasına göre</b> gösterir (Acil / İzle / Yolunda). Risk; ödev uyumu, biriken devreden ödev, deneme trendi ve "yetişir mi" hesabından üretilir — bugün önce kime bakman gerektiğini söyler.</li>'+
+          '<li><b>Otomatik haftalık plan:</b> Her öğrenci için ön koşul + çekirdek + güvenlik payı konularını müfredat sırasında (önce TYT çekirdek, sonra AYT, sonra güvenlik payı) sıralar; sınava kalan süreye göre haftalık tempoyu çıkarır ve planın öğrencinin çalışma süresine sığıp sığmadığını ("gerçekçilik" uyarısı) söyler.</li>'+
+          '<li><b>Yetişir mi:</b> Öncelikli / güvenlik payı / genişleme — kalan konuların sınava yetişip yetişmediğini üç tamponla gösterir.</li>'+
+          '<li><b>612 konuluk harita:</b> Öğrenci konu işaretledikçe (Bitti / İşliyor / Eksik) kalan süre ve konu önceliği kendiliğinden güncellenir; her konunun yanında konu anlatımı videosu vardır.</li>'+
+          '<li><b>Karne okuyucu:</b> Deneme karnesini yapıştır → netler, yanlış ve boş konular otomatik çıkar (yayınevi bağımsız).</li>'+
+          '<li><b>Hedef & net takibi:</b> Bölüm seçince hedef netler otomatik dolar; TYT/AYT ve ders ders net grafikleri, hedefe uzaklık ve puan hesaplayıcı hep güncel kalır.</li>'+
+          '<li><b>Veli raporu:</b> Tek tıkla, panelin verisinden veliye uygun haftalık rapor üretir; WhatsApp\'la gönderirsin (göndermeyi hep sen onaylarsın).</li>'+
+          '<li><b>Anlık senkron:</b> Öğrenci kendi panelinde ödev/deneme/konu işaretledikçe veriler sana <b>anında</b> yansır.</li>'+
+          '<li><b>Ortak ayarlar:</b> Konu süreleri ve sınav tarihi tüm öğrencilerde ortaktır — bir kez ayarlarsın, herkeste geçerli olur.</li>'+
+        '</ul></div>'+
+        '<button class="km-btn" onclick="kmKapat()">Anladım, başlayalım</button>'+
+        '<div class="km-foot">Bu rehbere sonra "Hesap" sekmesinden tekrar ulaşabilirsin.</div>'+
+      '</div></div></div>';
+  document.body.appendChild(w);
+  document.addEventListener('keydown',kmEsc);
+}
+function karsilamaKontrol(){
+  if(DEMO) return;                       // tanıtım modunda gösterme
+  if(document.getElementById('kmWrap')) return;
+  let seen=false; try{ seen=!!localStorage.getItem('biyoser_karsilama_koc'); }catch(e){}
+  if(!seen) karsilamaAc();
+}
 /* ---------- KONU ANLATIMI VİDEO ÇEKMECESİ ----------
    Panel içi çekmece açar. Seçilmiş video yoksa YouTube aramasını yeni sekmede
    açan fırlatıcılar gösterir. Sistem hiçbir sonucu kendisi seçmez. */
@@ -4315,6 +4379,11 @@ function vHesap(st){
     </div></div>`;
   return `
   ${lisansUyarisi()}
+
+  <div class="card"><h2>Başlangıç rehberi</h2><div class="body">
+    <div class="hint" style="margin:0 0 10px">Panele yeni başladıysan ya da öğrenci ekleme adımlarını hatırlamak istersen aç.</div>
+    <button class="btn ghost" onclick="karsilamaAc()">Başlangıç rehberini aç</button>
+  </div></div>
 
   ${hesapKarti()}
 
