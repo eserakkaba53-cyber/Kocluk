@@ -4,10 +4,16 @@
  */
 window.SUNUCU_AYAR = {
   url: 'https://hdcxmunvkxkffnsewfgp.supabase.co',
-  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkY3htdW52a3hrZmZuc2V3ZmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzA4MDMsImV4cCI6MjEwMjEwNjgwM30.SypEvxn5QXwyLtKdMorumeFhv1_ED-EPwghwjdMSYNw'
-// Tüm koç ve öğrencilerin geri sayımı / "yetişir mi" hesabı bu tarihe göre yapılır.
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkY3htdW52a3hrZmZuc2V3ZmdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzA4MDMsImV4cCI6MjEwMjEwNjgwM30.SypEvxn5QXwyLtKdMorumeFhv1_ED-EPwghwjdMSYNw',
+  // Tüm koç ve öğrencilerin geri sayımı / "yetişir mi" hesabı bu tarihe göre yapılır.
   // Değiştir → herkeste (mevcut ve sonradan kayıt olan) otomatik güncellenir. Biçim: YYYY-MM-DD
-  sinavTarihi: "2027-06-19"
+  sinavTarihi: "2027-06-20",
+
+  // ZİYARET SAYACI (GoatCounter) — kaç kişi girmiş görmek için.
+  // BOŞ bırakırsan sayaç çalışmaz. GoatCounter hesabını açıp kodunu buraya yapıştır, örnek:
+  //   gc: "https://biyoser.goatcounter.com/count"
+  // (Sadece "biyoser" kısmını kendi seçtiğin kodla değiştirirsin.)
+  gc: "https://biyoser.goatcounter.com/count"
 };
 
 
@@ -68,5 +74,3 @@ window.OGRENCI_VIDEOLAR = [
 window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
 
 window.BIYOSER_WP = '905325874492';   // ülke kodu, başında + ve boşluk yok
-
-gc: "https://biyoser.goatcounter.com/count"
