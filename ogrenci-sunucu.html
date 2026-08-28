@@ -1817,6 +1817,7 @@ function denemeKaydet(){
 function denemeSil(id){D.exams=D.exams.filter(e=>e.id!==id);save();render();}
 let KARNE_SONUC=null;      // son okunan karne
 let KARNE_HATA='';
+let KARNE_UYARI='';        // geometri ayrı gelmedi uyarısı
 
 /* Okunan değerleri ekrandaki doğru/yanlış kutularına yazar.
    Her render sonrası çağrılır; TYT↔AYT geçişinde de dolu kalır. */
@@ -1834,7 +1835,7 @@ function karneDoldur(){
 function karneOku(){
   const el=document.getElementById('kMetin');
   const t=(el?el.value:'').trim();
-  KARNE_HATA='';
+  KARNE_HATA=''; KARNE_UYARI='';
   if(t.length<40){ KARNE_HATA='Karne metni çok kısa. PDF’i açıp tümünü kopyaladığından emin ol.'; render(); return; }
   let r=null;
   try{ r=parseKarne(t, D); }catch(e){ r=null; }
@@ -1844,6 +1845,13 @@ function karneOku(){
     render(); return;
   }
   KARNE_SONUC=r.out;
+  // GEOMETRİ UYARISI: matematik okundu ama geometri ayrı gelmediyse (alanında geometri varken)
+  const alan=new Set(subs(D).map(x=>x[0])); const gu=[];
+  if(alan.has('tyt_geo') && r.out.tyt_mat && !r.out.tyt_geo)
+    gu.push('TYT Geometri ayrı gelmemiş; TYT Matematik netin geometriyi de içeriyor olabilir. Grafikte geometri boş görünürse şaşırma — istersen geometri netini elle ayır.');
+  if(alan.has('ayt_geo') && r.out.ayt_mat && !r.out.ayt_geo)
+    gu.push('AYT Geometri ayrı gelmemiş; AYT Matematik netin geometriyi de içeriyor olabilir. Grafikte geometri boş görünürse şaşırma — istersen geometri netini elle ayır.');
+  KARNE_UYARI = gu.join(' ');
   const anahtar=Object.keys(r.out);
   const tytN=anahtar.filter(k=>k.indexOf('tyt_')===0).length;
   const aytN=anahtar.filter(k=>k.indexOf('ayt_')===0).length;
@@ -1853,7 +1861,7 @@ function karneOku(){
 }
 
 function karneTemizle(){
-  KARNE_SONUC=null; KARNE_HATA='';
+  KARNE_SONUC=null; KARNE_HATA=''; KARNE_UYARI='';
   const el=document.getElementById('kMetin'); if(el) el.value='';
   render();
 }
@@ -1882,6 +1890,7 @@ function vDeneme(){
       Yanlış okunan varsa kutuyu elle düzelt.</span></div>
       <div style="margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);line-height:1.8">
       ${anahtar.map(k=>`${esc(subName(k))}: ${KARNE_SONUC[k].d} D / ${KARNE_SONUC[k].y} Y`).join(' · ')}</div>`:''}
+    ${KARNE_UYARI?`<div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>${esc(KARNE_UYARI)}</span></div>`:''}
   </div></div>
 
   <div class="card"><div class="body">
