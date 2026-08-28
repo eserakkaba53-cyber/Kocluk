@@ -1231,6 +1231,12 @@ function devredenKart(st){
 
 /* ================= ÇÖZÜLEN SORU İSTATİSTİĞİ ================= */
 function soruIstat(st){
+  // Örnek öğrencilerde çözülen soru dağılımı önceden hesaplanır (hem TYT hem AYT, orantılı)
+  if(st.__cozum){
+    const m={}; let top=0;
+    for(const k in st.__cozum){ m[k]=st.__cozum[k]; top+=st.__cozum[k]; }
+    return {m,top};
+  }
   const m={}; let top=0;
   (st.tasks||[]).forEach(t=>{
     const y=+t.yap||0; if(!y) return;
@@ -2496,6 +2502,8 @@ function vDurum(st){
     ${grafikKarti(st,'TYT net seyri',true,'#186C68')}
     ${grafikKarti(st,trLabel(st.track)+' AYT net seyri',false,'#B5651D')}
   </div>
+
+  ${hedefOzetKarti(st)}
 
   ${(()=>{const withData=subs(st).filter(([k])=>st.exams.some(e=>e.n&&e.n[k]));
     if(!withData.length) return '';
@@ -4414,6 +4422,23 @@ function hedefeUzaklik(st){
     </div></div>`;
 }
 
+/* ---------- HEDEFE UZAKLIK — SADECE ÖZET KARTI (4 kutu) ----------
+   Durum sekmesinde "TYT/AYT net seyri" ile "Ders ders net seyri" arasında gösterilir. */
+function hedefOzetKarti(st){
+  const a=avgNets(st,3), list=subs(st);
+  const hp=parseFloat(String(st.score||'').replace(',','.'));
+  const su=a.count?hesapla(st.track,a.nets,+st.obp||0,!!st.yerlesti):null;
+  let cN=0,hN=0,varH=false;
+  list.forEach(([k])=>{cN+=a.nets[k]||0; const t=+st.refNets[k]||0; if(t){hN+=t;varH=true;}});
+  return `<div class="card"><h2>Hedefe uzaklık — son ${a.count||3} deneme ortalaması</h2>
+    <div class="stats">
+      <div class="stat"><div class="k">Tahmini puanı</div><div class="v" style="font-size:22px">${su?n1(su.yerPuan):'—'}</div><div class="n">${a.count?a.count+' deneme ort. · OBP dahil':'deneme gir'}</div></div>
+      <div class="stat"><div class="k">Hedef puan</div><div class="v" style="font-size:22px">${isFinite(hp)?n1(hp):'—'}</div><div class="n">${esc((st.dept||'').slice(0,24))||'bölüm seç'}</div></div>
+      <div class="stat"><div class="k">Puan farkı</div><div class="v" style="font-size:22px;color:${(su&&isFinite(hp))?(su.yerPuan-hp<0?'var(--bad)':'var(--ok)'):'inherit'}">${(su&&isFinite(hp))?((su.yerPuan-hp>0?'+':'')+n1(su.yerPuan-hp)):'—'}</div><div class="n">hedefe uzaklık</div></div>
+      <div class="stat"><div class="k">Hedefin yüzdesi</div><div class="v" style="font-size:22px;color:${(varH&&a.count)?(cN/hN>=0.9?'var(--ok)':cN/hN>=0.6?'var(--warn)':'var(--bad)'):'inherit'}">${(varH&&a.count)?'%'+Math.round(Math.min(100,cN/hN*100)):'—'}</div><div class="n">${varH&&a.count?n1(cN)+' / '+n1(hN)+' net':'hedef net gir'}</div></div>
+    </div></div>`;
+}
+
 /* ---------- HEDEFE YAKLAŞMA (Hedef sekmesi üstü) ---------- */
 function yaklasmaKarti(st){
   const a=avgNets(st,3), list=subs(st);
@@ -4753,8 +4778,6 @@ function vHedef(st){
     <div class="hint">Bu değerleri ÖSYM/YÖK Atlas verisinden ya da hedef sıralamaya karşılık gelen net dağılımından elle gireceksin. Durum sekmesindeki tüm karşılaştırma bu satırlara dayanır.</div>
   </div></div>
 
-  ${hedefeUzaklik(st)}
-
   ${lisansUyarisi()}
 
 `;
@@ -4862,6 +4885,20 @@ function ornekOgrenciler(){
           break;
         }
       });
+    }
+
+    // 4) ÇÖZÜLEN SORU — ders bazında (örnek): TÜM dersler (TYT+AYT) görünsün, orantılı.
+    // Her dersin soru sayısıyla orantılı + öğrenciye özgü yoğunluk + derse özgü hafif sapma.
+    {
+      const taban=[34,28,41,31,45][k%5];   // öğrenciden öğrenciye çalışma yoğunluğu
+      const cz={};
+      subs(o).forEach(([sk,,q])=>{
+        const soru=(+q)||10;
+        let h=0; for(const ch of sk) h=(h*31+ch.charCodeAt(0))>>>0;   // deterministik sapma
+        const sapma=0.85+((h%34)/100);      // %85..%118 arası
+        cz[sk]=Math.round(soru*taban*sapma);
+      });
+      o.__cozum=cz;
     }
 
     o.tasks.forEach((t,i)=>{ t.id='or'+(k+1)+'-t'+i; });
