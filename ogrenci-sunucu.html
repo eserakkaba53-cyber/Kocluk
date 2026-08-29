@@ -87,7 +87,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .tab{background:none;border:0;border-bottom:2px solid transparent;padding:9px 13px;color:var(--ink-2);font-size:14px;font-weight:550;white-space:nowrap}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin:16px 0}
-.card>h2{margin:0;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:13px 16px;border-bottom:1px solid var(--line-soft);font-weight:650}
+.card>h2{margin:0;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);padding:13px 16px;border-bottom:1px solid var(--line-soft);font-weight:700}
 .card .body{padding:16px}
 .stats{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1px;background:var(--line-soft)}
 .stat{background:var(--panel);padding:14px 16px}
@@ -3353,6 +3353,11 @@ function kaynakUyarisi(){
     // öğrenci başkasının hesabına bağlanmasın.
     sbCikis(); OGRID=null; D=null;
     GMOD='kayit'; render(); return;
+  }
+  // Koç panelinden "Öğrenci kaydı oluştur" bağlantısı: doğrudan kayıt ekranını aç
+  if(/^kayit$/i.test(hs0)){
+    history.replaceState(null,'',location.pathname+location.search);
+    if(!sbOturum()){ GMOD='kayit'; render(); return; }
   }
   if(sbOturum()){
     try{ const dd=await ogrSunucudanOku();
