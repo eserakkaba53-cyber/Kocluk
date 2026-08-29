@@ -461,7 +461,7 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
    Gerçek yedek her zaman .json dosyasıdır. Haftada bir indir. */
 const KEY='kocluk_v1_sunucu';
 /* Panelin tüm verisi. Sunucudan yüklenir; buradaki değerler yalnızca ilk çizim içindir. */
-let DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:[]};
+let DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},sorular:{},rutin:[]};
 let TAB='hafta';
 let KOKPIT=false;   // koç kokpiti (tüm öğrenciler, risk sırası) modu açık mı
 /* Panellerin bulunduğu klasör. Ayar gerektirmez; panelin kendi adresinden türetilir.
@@ -1174,16 +1174,39 @@ function sureOf(sk,konu){
 function setSure(sk,konu,dk){
   DB.sureler=DB.sureler||{}; DB.sureler[sk]=DB.sureler[sk]||{};
   if(dk===''||dk===null) delete DB.sureler[sk][konu]; else DB.sureler[sk][konu]=+dk;
+  otomatikOdevYenile();
   save();
 }
-/* açık (bitmemiş) konuların toplam süresi, dakika */
+/* ===== EFEKTİF SÜRE (yetişir mi bütçesi) =====
+   "Yetişir mi" hesapları artık yalnızca konu çalışma süresini (sureOf) değil,
+   o konunun SORU ÇÖZÜM yükünü de içerir. Formül:
+       efektif dk = konu süresi + katsayı × hedef soru sayısı
+   Katsayı (dakika/soru):
+     · matematik TYT/AYT (geometri konuları dâhil — hepsi tyt_mat/ayt_mat altında) → 2
+     · fizik / kimya / biyoloji TYT/AYT (bütün konular)                              → 1.5
+     · TYT Türkçe "Paragraf Bilgisi" ünitesindeki konular                           → 1.5
+     · AYT Edebiyat "Paragrafta anlam ve yapı" konusu                               → 1.5
+     · diğer bütün ders/konular                                                     → 1
+   Not: soru sayısı elle değiştirilince (setSoru) veya süre değişince (setSure)
+   bu bütçe otomatik olarak yeniden hesaplanır ve otomatik ödevler yeniden kurulur. */
+function efektifKatsayi(sk,konu){
+  if(sk==='tyt_mat'||sk==='ayt_mat') return 2;
+  if(['tyt_fiz','ayt_fiz','tyt_kim','ayt_kim','tyt_biy','ayt_biy'].indexOf(sk)>=0) return 1.5;
+  if(sk==='tyt_tur' && norm((uniteOf[sk]||{})[konu]||'')==='paragraf bilgisi') return 1.5;
+  if(sk==='ayt_edb' && norm(konu)==='paragrafta anlam ve yapi') return 1.5;
+  return 1;
+}
+function efektifDk(sk,konu){
+  return sureOf(sk,konu) + efektifKatsayi(sk,konu)*hedefSoru(sk,konu);
+}
+/* açık (bitmemiş) konuların toplam efektif süresi, dakika */
 function kalanSure(st,sk){
   const m=st.topics[sk]||{}; let dk=0,ad=0;
   (KONU[sk]||[]).forEach(([,ks])=>ks.forEach(t=>{
     const d=m[t]||0;
     if(d===2) return;                       // bitti
     const carp=d===1?0.5:d===3?0.7:1;       // işleniyor yarım, eksik kısmi tekrar
-    dk+=sureOf(sk,t)*carp; ad++;
+    dk+=efektifDk(sk,t)*carp; ad++;
   }));
   return {dk,ad};
 }
@@ -1656,6 +1679,7 @@ async function sunucudanOku(){
     kocTel:  (k && k.telefon)  || '',
     kopru:   ((k && k.ayarlar && k.ayarlar.kopru) || ''),
     sureler: ((k && k.ayarlar && k.ayarlar.sureler) || {}),
+    sorular: ((k && k.ayarlar && k.ayarlar.sorular) || {}),
     rutin:   ((k && k.ayarlar && k.ayarlar.rutin)   || (typeof RUTIN_VAR!=='undefined'?RUTIN_VAR:[])),
     kocAd:   (k && k.ad) || '',
     kurum:   (k && k.kurum) || '',
@@ -1771,7 +1795,7 @@ async function kocYaz(){
     telefon: DB.kocTel || '',
     kurum: DB.kurum || '',
     site_url: DB.siteUrl || tabanAdres() || '',
-    ayarlar: { sureler: DB.sureler||{}, rutin: DB.rutin||[], kopru: DB.kopru||'', sonYedek: DB.sonYedek||null }
+    ayarlar: { sureler: DB.sureler||{}, sorular: DB.sorular||{}, rutin: DB.rutin||[], kopru: DB.kopru||'', sonYedek: DB.sonYedek||null }
   });
 }
 
@@ -1970,7 +1994,7 @@ function paketUret(st,zorla,limitEx,limitGor){
       return [t.date, t.sub, i>=0?i:t.konu, t.yap||0, t.q||0];});
   const p={v:2,id:st.id,ad:st.name,track:st.track,grade:st.grade,dept:st.dept,rank:st.rank,
     sinav:st.sinavTarihi||'',tel:st.tel||'',kocTel:DB.kocTel||'',url:tabanAdres(),kopru:kopruKimlik(),
-    k:konuIndeksle(st.topics||{}), sureler:DB.sureler||{}, zorla:!!zorla,
+    k:konuIndeksle(st.topics||{}), sureler:DB.sureler||{}, sorular:DB.sorular||{}, zorla:!!zorla,
     score:st.score||'',refNets:st.refNets||{},tabanPuan:st.tabanPuan||'',tabanSira:st.tabanSira||'',
     tabanYil:st.tabanYil||'',hsaat:st.haftalikSaat||'',dip:st.dip||'',obp:st.obp||'',yerlesti:!!st.yerlesti,
     e:denemeler, g:gorevler,
@@ -3571,10 +3595,18 @@ function toggleHide(b){OHIDE=b;render();}
 /* Konu başına hedef soru sayısı: konunun ÖSYM'de (2018-2025) yılda getirdiği
    ortalama soruya göre ölçekli. Aralık 60–300 (çok getiren konuya daha çok pratik). */
 function hedefSoru(sk, konu){
+  var ov=((DB.sorular||{})[sk]||{});
+  if(ov[konu]!==undefined) return ov[konu];        // koç elle değiştirdiyse onu kullan
   var sy = (AGIRLIK && AGIRLIK.agirlik && AGIRLIK.agirlik[sk] && AGIRLIK.agirlik[sk][konu])
              ? (+AGIRLIK.agirlik[sk][konu].soru_yil||0) : 0;
   var v = Math.round((60 + 36*sy)/10)*10;
   return Math.max(60, Math.min(300, v));
+}
+function setSoru(sk,konu,n){
+  DB.sorular=DB.sorular||{}; DB.sorular[sk]=DB.sorular[sk]||{};
+  if(n===''||n===null) delete DB.sorular[sk][konu]; else DB.sorular[sk][konu]=Math.max(0,+n||0);
+  otomatikOdevYenile();
+  save();
 }
 /* ===== TAVSİYE EDİLEN HAFTALIK ÖDEV =====
    Hedef kapsam: ön koşul + çekirdek + güvenlik payı (genişleme HARİÇ).
@@ -3593,7 +3625,7 @@ function tavsiyeHesap(st){
     oc.kalem.forEach(x=>{
       if(x.oncelik==='genisleme') return;        // kapsam dışı
       const durum = m[x.konu]||0; if(durum===2) return;   // bitti
-      const dk = sureOf(sk, x.konu)*mult(durum);
+      const dk = efektifDk(sk, x.konu)*mult(durum);
       kapsamDk += dk;
       if(x.oncelik==='cekirdek') cekDk += dk;
       if(!verilmis.has(x.konu))
@@ -3624,7 +3656,7 @@ function tavsiyeHesap(st){
         const durum=((st.topics||{})[t.sub]||{})[t.konu]||0; if(durum===2) return; // aslında bitmiş
         devrSecim.push({sub:t.sub, konu:t.konu, unite:(uniteOf[t.sub]||{})[t.konu]||'',
           oncelik:'devreden', kilit:false, devreden:true, taskId:t.id, hafta:haftaFarki(t.date),
-          soru:(+t.q||hedefSoru(t.sub,t.konu)), dk:sureOf(t.sub,t.konu)*mult(durum)});
+          soru:(+t.q||hedefSoru(t.sub,t.konu)), dk:efektifDk(t.sub,t.konu)*mult(durum)});
       });
   }
   const sirali = devrSecim.concat(havuz);
@@ -3654,6 +3686,33 @@ function tavsiyeUygula(){
                    q:x.soru||hedefSoru(x.sub,x.konu), txt:'Tavsiye edilen haftalık plan', s:0});
   });
   save(); render();
+}
+/* ===== OTOMATİK ÖDEV YENİLEME =====
+   Öğretmen bir konunun SÜRESİNİ (setSure) veya SORU SAYISINI (setSoru) değiştirdiğinde,
+   bu haftaya daha önce verilmiş OTOMATİK (tavsiye) ödevleri yeni değerlere göre yeniden kurar.
+   Korunanlar: elle verilen ödevler, rutinler ve "yapıldı" (s===1) işaretli otomatik ödevler.
+   Yalnızca gerçek öğrenciler işlenir (örnek/demo öğrenciler dokunulmaz). */
+function otomatikOdevYenile(){
+  const AUTO='Tavsiye edilen haftalık plan';
+  let wkn; try{ wkn=weekKey(today()); }catch(e){ return; }
+  (DB.students||[]).forEach(st=>{
+    if(!st || st.ornek) return;
+    const acikOto = t => t.txt===AUTO && t.s!==1 && (function(){try{return weekKey(t.date)===wkn;}catch(e){return false;}})();
+    const vardi = (st.tasks||[]).some(acikOto);
+    if(!vardi) return;                                   // bu hafta açık otomatik ödev yoksa dokunma
+    st.tasks = (st.tasks||[]).filter(t=>!acikOto(t));    // eski açık otomatik ödevleri temizle
+    const r = tavsiyeHesap(st);
+    if(r.durum!=='ok' || !r.secim.length) return;
+    const gun=today();
+    r.secim.forEach(x=>{
+      if(x.devreden && x.taskId){
+        const old=(st.tasks||[]).find(t=>t.id===x.taskId);
+        if(old){ old.date=gun; old.s=0; return; }
+      }
+      st.tasks.push({id:uid(), date:gun, type:'h', sub:x.sub, konu:x.konu,
+                     q:x.soru||hedefSoru(x.sub,x.konu), txt:AUTO, s:0});
+    });
+  });
 }
 function tavsiyeHaftalikKart(st){
   const r=tavsiyeHesap(st);
@@ -4197,6 +4256,10 @@ function vKonu(st){
             onchange="setSure('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')},this.value);render()"
             style="width:56px;padding:2px 4px;font-size:11.5px;text-align:right;border:1px solid var(--line-soft);background:var(--panel)">
           <span style="font-size:10.5px;color:var(--ink-3)">dk</span>
+          <input type="number" min="0" step="5" value="${hedefSoru(KSUB,t)}" title="Çözülmesi gereken soru sayısı"
+            onchange="setSoru('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')},this.value);render()"
+            style="width:52px;padding:2px 4px;font-size:11.5px;text-align:right;border:1px solid var(--line-soft);background:var(--panel);margin-left:6px">
+          <span style="font-size:10.5px;color:var(--ink-3)">soru</span>
         </div>`;}).join('')}
         </div></div>`;
     }).join('')}
