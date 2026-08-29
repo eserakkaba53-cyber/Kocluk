@@ -39,9 +39,9 @@
   "url":"https://biyoser.com.tr/",
   "author":{"@type":"Person","name":"Eser Akkaba"},
   "offers":[
-    {"@type":"Offer","name":"Öğrenci Paketi","price":"99","priceCurrency":"TRY","description":"1 öğrenci, 1 yıl"},
-    {"@type":"Offer","name":"Koç Paketi","price":"449","priceCurrency":"TRY","description":"10 öğrenciye kadar, 1 yıl"},
-    {"@type":"Offer","name":"Öğretmen Paketi","price":"2999","priceCurrency":"TRY","description":"40 öğrenciye kadar, 1 yıl"},
+    {"@type":"Offer","name":"Koçsuz Öğrenci Paketi","price":"99","priceCurrency":"TRY","description":"1 öğrenci, 1 yıl"},
+    {"@type":"Offer","name":"Öğretmen Paketi","price":"449","priceCurrency":"TRY","description":"10 öğrenciye kadar, 1 yıl"},
+    {"@type":"Offer","name":"Sınıf Paketi","price":"2999","priceCurrency":"TRY","description":"40 öğrenciye kadar, 1 yıl"},
     {"@type":"Offer","name":"Okul Paketi","price":"19999","priceCurrency":"TRY","description":"200 öğrenciye kadar, 1 yıl"}
   ]
 }
@@ -58,7 +58,7 @@
     {"@type":"Question","name":"Ücretsiz deneme var mı?",
      "acceptedAnswer":{"@type":"Answer","text":"Evet. Kayıt olan her koç 7 gün ücretsiz kullanıyor. Kredi kartı istenmiyor, otomatik ücretlendirme yok."}},
     {"@type":"Question","name":"Kaç öğrenci takip edebilirim?",
-     "acceptedAnswer":{"@type":"Answer","text":"Koç Paketi 10, Sınıf Paketi 40, Okul Paketi 200 öğrenciye kadar. Paketler yıllıktır."}}
+     "acceptedAnswer":{"@type":"Answer","text":"Öğretmen Paketi 10, Sınıf Paketi 40, Okul Paketi 200 öğrenciye kadar. Paketler yıllıktır."}}
   ]
 }
 </script>
@@ -161,7 +161,7 @@ footer a{color:#C6DAE6}
   </div>
   <div class="paketgrid">
     <div class="pk">
-      <div class="pad">Öğrenci Paketi</div>
+      <div class="pad">Koçsuz Öğrenci Paketi</div>
       <div class="lim">1 öğrenci · kendi hesabı, öğretmene bağlı değil</div>
       <div class="fiy">99&nbsp;TL</div><div class="yil">yıllık</div>
       <div class="basi">öğrenci kendi alır</div>
@@ -169,18 +169,18 @@ footer a{color:#C6DAE6}
     </div>
     <div class="pk one">
       <span class="rozet">EN ÇOK TERCİH EDİLEN</span>
-      <div class="pad">Koç Paketi</div>
+      <div class="pad">Öğretmen Paketi</div>
       <div class="lim">10 öğrenciye kadar takip</div>
       <div class="fiy">449&nbsp;TL</div><div class="yil">yıllık</div>
       <div class="basi">öğrenci başı ~45 TL</div>
-      <a class="dugme" href="https://wa.me/905325874992?text=Merhaba%2C%20Biyoser%20Ko%C3%A7%20Paketi%20%2810%20%C3%B6%C4%9Frenci%2C%20449%20TL/y%C4%B1l%29%20almak%20istiyorum." target="_blank" rel="noopener">Bu paketi al</a>
+      <a class="dugme" href="https://wa.me/905325874992?text=Merhaba%2C%20Biyoser%20%C3%96%C4%9Fretmen%20Paketi%20%2810%20%C3%B6%C4%9Frenci%2C%20449%20TL/y%C4%B1l%29%20almak%20istiyorum." target="_blank" rel="noopener">Bu paketi al</a>
     </div>
     <div class="pk">
-      <div class="pad">Öğretmen Paketi</div>
+      <div class="pad">Sınıf Paketi</div>
       <div class="lim">40 öğrenciye kadar takip</div>
       <div class="fiy">2.999&nbsp;TL</div><div class="yil">yıllık</div>
       <div class="basi">öğrenci başı ~75 TL</div>
-      <a class="dugme" href="https://wa.me/905325874992?text=Merhaba%2C%20Biyoser%20%C3%96%C4%9Fretmen%20Paketi%20%2840%20%C3%B6%C4%9Frenci%2C%202.999%20TL/y%C4%B1l%29%20almak%20istiyorum." target="_blank" rel="noopener">Bu paketi al</a>
+      <a class="dugme" href="https://wa.me/905325874992?text=Merhaba%2C%20Biyoser%20S%C4%B1n%C4%B1f%20Paketi%20%2840%20%C3%B6%C4%9Frenci%2C%202.999%20TL/y%C4%B1l%29%20almak%20istiyorum." target="_blank" rel="noopener">Bu paketi al</a>
     </div>
     <div class="pk">
       <div class="pad">Okul Paketi</div>
@@ -260,9 +260,9 @@ footer a{color:#C6DAE6}
     <thead><tr><th>Paket</th><th>Öğrenci</th><th>Yıllık ücret</th><th>Öğrenci başı</th></tr></thead>
     <tbody>
       <tr><td><b>Deneme</b></td><td>2 öğrenci</td><td class="sag">Ücretsiz</td><td class="sag">7 gün</td></tr>
-      <tr><td><b>Öğrenci Paketi</b></td><td>1 öğrenci (kendi hesabı)</td><td class="sag">99 TL</td><td class="sag">99 TL</td></tr>
-      <tr><td><b>Koç Paketi</b></td><td>10 öğrenciye kadar</td><td class="sag">449 TL</td><td class="sag">~45 TL</td></tr>
-      <tr><td><b>Öğretmen Paketi</b></td><td>40 öğrenciye kadar</td><td class="sag">2.999 TL</td><td class="sag">~75 TL</td></tr>
+      <tr><td><b>Koçsuz Öğrenci Paketi</b></td><td>1 öğrenci (kendi hesabı)</td><td class="sag">99 TL</td><td class="sag">99 TL</td></tr>
+      <tr><td><b>Öğretmen Paketi</b></td><td>10 öğrenciye kadar</td><td class="sag">449 TL</td><td class="sag">~45 TL</td></tr>
+      <tr><td><b>Sınıf Paketi</b></td><td>40 öğrenciye kadar</td><td class="sag">2.999 TL</td><td class="sag">~75 TL</td></tr>
       <tr><td><b>Okul Paketi</b></td><td>200 öğrenciye kadar</td><td class="sag">19.999 TL</td><td class="sag">~100 TL</td></tr>
     </tbody>
   </table>
@@ -324,7 +324,7 @@ footer a{color:#C6DAE6}
     <p>Panelde size özel bir davet bağlantısı bulunur. Bu bağlantıyla kayıt olan ve sonrasında ücretli
        pakete geçen her 2 öğretmen için lisansınıza 1 yıl eklenir.</p>
     <p>Kendiniz ücretsiz deneme süresindeyken de kazanabilirsiniz: 2 ücretli davet topladığınızda
-       denemeniz biter ve hesabınız doğrudan 1 yıllık Koç Paketi'ne geçer. Sonraki her 2 davet 1 yıl daha ekler.</p>
+       denemeniz biter ve hesabınız doğrudan 1 yıllık Öğretmen Paketi'ne geçer. Sonraki her 2 davet 1 yıl daha ekler.</p>
     <p>Sayaç, davet ettiğiniz kişi paket aldığında ilerler; hâlâ denemede olan davetliler paket aldıkları
        gün sayaca eklenir. Eklemeler kendiliğinden yapılır.</p></details>
   <details><summary>Bilgisayar bilgim yeterli mi?</summary>

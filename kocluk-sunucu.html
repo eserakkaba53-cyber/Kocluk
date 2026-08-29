@@ -2335,6 +2335,12 @@ function render(){
     document.getElementById('stName').textContent='Koçluk Paneli';
     document.getElementById('stMeta').textContent='';
     document.getElementById('tabs').innerHTML='';
+    // Giriş ekranında sol raydaki oturuma özel alt butonları/kalıntıları temizle
+    // (aksi halde çıkış/oturum kaybı sonrası "Abonelik / paketler" gibi ölü butonlar kalır).
+    { const _re=document.getElementById('railEk'); if(_re) _re.innerHTML='';
+      const _lr=document.getElementById('lisansRozet'); if(_lr) _lr.innerHTML='';
+      const _sg=document.getElementById('stGoal'); if(_sg) _sg.innerHTML='';
+      const _lk=document.getElementById('linkKutu'); if(_lk) _lk.innerHTML=''; }
     document.getElementById('view').innerHTML=girisEkrani();
     if(GIRISMOD==='kayit') gcKayitSay('kayit-koc');   // kaç kişi koç kayıt ekranına geldi
     rayDurum();
@@ -5079,7 +5085,7 @@ function vDavet(){
     <div class="topic"><span class="dot t2"></span><span class="tn">Yıl eklemesi kendiliğinden yapılır; bir şey talep etmene gerek yok.</span></div>
     <div class="flag ok" style="margin-top:12px"><span class="ic">★</span><span>
       <b>Kendin deneme süresindeyken de kazanabilirsin.</b> 2 ücretli davet toplarsan denemen biter,
-      hesabın doğrudan <b>1 yıllık Koç Paketi</b>'ne geçer. Sonraki her 2 davet 1 yıl daha ekler.</span></div>
+      hesabın doğrudan <b>1 yıllık Öğretmen Paketi</b>'ne geçer. Sonraki her 2 davet 1 yıl daha ekler.</span></div>
     <div class="hint" style="margin-top:10px">Sayaç, <b>davet ettiğin kişi paket aldığında</b> ilerler.
       Hâlâ denemede olan davetliler henüz sayılmaz — paket aldıkları gün sayaca eklenirler.</div>
   </div></div>
@@ -5107,9 +5113,9 @@ const SATIS_TEL='905325874992';   // paket talepleri buraya gelir
    değerler paket_adi()/paket_limiti() ve gelir hesabıyla birebir uyumlu olmalı. */
 const PAKETLER = [
   ['deneme',  'Deneme'],
-  ['ogrenci', 'Öğrenci Paketi'],
-  ['koc',     'Koç Paketi'],
-  ['sinif',   'Öğretmen Paketi'],
+  ['ogrenci', 'Koçsuz Öğrenci Paketi'],
+  ['koc',     'Öğretmen Paketi'],
+  ['sinif',   'Sınıf Paketi'],
   ['okul',    'Okul Paketi'],
   ['ozel',    'Özel']
 ];
@@ -5123,9 +5129,9 @@ async function karsilamaKapat(){
   render();
 }
 function paketTalep(paket){
-  const P={ogrenci:['Öğrenci Paketi','1 öğrenci','99 TL'],
-           koc:['Koç Paketi','10 öğrenci','449 TL'],
-           sinif:['Öğretmen Paketi','40 öğrenci','2.999 TL'],
+  const P={ogrenci:['Koçsuz Öğrenci Paketi','1 öğrenci','99 TL'],
+           koc:['Öğretmen Paketi','10 öğrenci','449 TL'],
+           sinif:['Sınıf Paketi','40 öğrenci','2.999 TL'],
            okul:['Okul Paketi','200 öğrenci','19.999 TL']}[paket];
   const mesaj=`Merhaba, Biyoser Koçluk Sistemi için abonelik almak istiyorum.\n\n`+
     `Paket: ${P[0]} (${P[1]})\nYıllık ücret: ${P[2]}\n\n`+
@@ -5237,14 +5243,14 @@ function vAbonelik(){
     <div class="hint" style="margin-top:10px">Sorularınızı da aynı WhatsApp numarasından sorabilirsiniz.</div></div></div>
 
   <div class="grid2">
-    ${kart('ogrenci','Öğrenci Paketi','1','99 TL','99 TL',false,
+    ${kart('ogrenci','Koçsuz Öğrenci Paketi','1','99 TL','99 TL',false,
       ['<b>Öğrencinin kendi hesabı</b> — koça bağlı değil',
        'Hedefe göre konu önceliği',
        'Deneme karnesi okuyucu',
        '612 konuluk takip haritası',
        'Kendine ödev verme'])}
-    ${kart('koc','Koç Paketi','10','449 TL','45 TL',false)}
-    ${kart('sinif','Öğretmen Paketi','40','2.999 TL','75 TL',true)}
+    ${kart('koc','Öğretmen Paketi','10','449 TL','45 TL',false)}
+    ${kart('sinif','Sınıf Paketi','40','2.999 TL','75 TL',true)}
     ${kart('okul','Okul Paketi','200','19.999 TL','100 TL',false)}
   </div>
 
@@ -5438,9 +5444,9 @@ function vYonetici(){
   <div class="card"><h2>Paketler ve fiyatlar</h2><div class="body" style="padding:0">
     <table><thead><tr><th>Paket</th><th class="num">Öğrenci</th><th class="num">Yıllık</th><th class="num">Öğrenci başı</th></tr></thead><tbody>
       <tr><td>Deneme</td><td class="num">2</td><td class="num">—</td><td class="num">30 gün</td></tr>
-      <tr><td><b>Öğrenci Paketi</b></td><td class="num">1</td><td class="num">99 TL</td><td class="num">99 TL</td></tr>
-      <tr><td><b>Koç Paketi</b></td><td class="num">10</td><td class="num">449 TL</td><td class="num">45 TL</td></tr>
-      <tr><td><b>Öğretmen Paketi</b></td><td class="num">40</td><td class="num">2.999 TL</td><td class="num">75 TL</td></tr>
+      <tr><td><b>Koçsuz Öğrenci Paketi</b></td><td class="num">1</td><td class="num">99 TL</td><td class="num">99 TL</td></tr>
+      <tr><td><b>Öğretmen Paketi</b></td><td class="num">10</td><td class="num">449 TL</td><td class="num">45 TL</td></tr>
+      <tr><td><b>Sınıf Paketi</b></td><td class="num">40</td><td class="num">2.999 TL</td><td class="num">75 TL</td></tr>
       <tr><td><b>Okul Paketi</b></td><td class="num">200</td><td class="num">19.999 TL</td><td class="num">100 TL</td></tr>
     </tbody></table>
   </div></div>`;
@@ -6148,8 +6154,15 @@ function ogrenciGirisKarti(){
           Bu ekran <b>koç ve öğretmenler</b> içindir. Öğrencinin paneli ayrıdır — ödevlerin,
           denemelerin ve hedefin oradan yönetilir. Koç hesabıyla değil, <b>kendi öğrenci
           hesabınla</b> girersin.</p>
+        <div style="display:flex;align-items:baseline;gap:8px;margin:0 0 12px;padding:10px 12px;background:var(--accent-soft);border-radius:8px">
+          <span style="font-size:13px;color:var(--ink-2);font-weight:600">Koçsuz Öğrenci Paketi</span>
+          <span style="font-family:var(--mono);font-size:20px;font-weight:800;color:var(--accent)">99 TL</span>
+          <span style="font-size:12px;color:var(--ink-3)">/ yıl</span>
+        </div>
         <a class="btn wide" style="${bstil}" href="${esc(oadr)}#kayit">Öğrenci kaydı oluştur</a>
         <a class="btn ghost wide" style="${bstil};margin-top:8px" href="${esc(oadr)}">Zaten hesabım var — öğrenci girişi</a>
+        <button class="btn ghost wide" style="${bstil};margin-top:8px;border:0;background:transparent;color:var(--ink-2)" onclick="demoBaslat()">Önce sistemi gezmek istiyorum</button>
+        <div class="hint" style="margin-top:6px;text-align:center">Örnek bir öğrenci üzerinden, kayıt olmadan.</div>
         <div class="hint" style="margin-top:12px">Koçun seni davet ettiyse, sana gönderdiği <b>bağlantıdan</b> gir — kodun kendiliğinden dolar.</div>
       </div>
     </div>
@@ -6171,7 +6184,7 @@ function girisEkrani(){
     ${kurulu?sayacSerit():''}
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
     <div style="flex:1 1 440px;min-width:0">
-    <div class="card"><h2>${kurulu?(GIRISMOD==='kayit'?'Koç hesabı oluştur':'Koç girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
+    <div class="card"><h2>${kurulu?(GIRISMOD==='kayit'?'Öğretmen hesabı oluştur':'Öğretmen girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
       kurulu?(GIRISMOD==='kayit'
         ? 'Kaydını tamamla, 7 günlük denemen hemen başlasın.'
         : 'Verilerin sunucuda saklanır; her cihazdan aynı veriye ulaşırsın.')
@@ -6251,8 +6264,8 @@ function girisEkrani(){
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)">
             <div style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650;margin-bottom:8px">Deneme sonrası paketler</div>
             <table style="font-size:13px"><tbody>
-              <tr><td>Koç Paketi</td><td class="num" style="color:var(--ink-3)">10 öğrenci</td><td class="num" style="font-weight:650">449 TL/yıl</td></tr>
-              <tr><td>Öğretmen Paketi</td><td class="num" style="color:var(--ink-3)">40 öğrenci</td><td class="num" style="font-weight:650">2.999 TL/yıl</td></tr>
+              <tr><td>Öğretmen Paketi</td><td class="num" style="color:var(--ink-3)">10 öğrenci</td><td class="num" style="font-weight:650">449 TL/yıl</td></tr>
+              <tr><td>Sınıf Paketi</td><td class="num" style="color:var(--ink-3)">40 öğrenci</td><td class="num" style="font-weight:650">2.999 TL/yıl</td></tr>
               <tr><td>Okul Paketi</td><td class="num" style="color:var(--ink-3)">200 öğrenci</td><td class="num" style="font-weight:650">19.999 TL/yıl</td></tr>
             </tbody></table>
             <div class="hint" style="margin-top:8px">Paket almak zorunlu değil; deneme kendiliğinden ücretli hâle gelmez.</div>
