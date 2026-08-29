@@ -495,6 +495,7 @@ async function ogrSunucudanOku(){
     refNets:o.hedef_netler||{},
     kocTel:koc.telefon||'', url:koc.site_url||'', kopru:(koc.ayarlar&&koc.ayarlar.kopru)||'',
     sureler:(koc.ayarlar&&koc.ayarlar.sureler)||{},
+    sorular:(koc.ayarlar&&koc.ayarlar.sorular)||{},
     kocAd:koc.ad||'',
     tasks:[], exams:[], topics:{}, ekstra:[], hedef:null, not:'', sunucu:true
   };
@@ -1015,10 +1016,25 @@ function sureOf(sk,konu){
   const t=SURE_VAR[sk]||90, n=norm(konu);
   return AGIR.some(a=>n.includes(a))?Math.round(t*1.5/15)*15:t;
 }
+/* ===== EFEKTİF SÜRE (yetişir mi bütçesi) — koç paneliyle birebir aynı formül =====
+   efektif dk = konu süresi + katsayı × hedef soru sayısı
+   Katsayı: matematik TYT/AYT (geometri dâhil) 2 · fizik/kimya/biyoloji TYT/AYT 1.5 ·
+   TYT Türkçe "Paragraf Bilgisi" konuları 1.5 · AYT Edebiyat "Paragrafta anlam ve yapı" 1.5 ·
+   diğer bütün ders/konular 1. */
+function efektifKatsayi(sk,konu){
+  if(sk==='tyt_mat'||sk==='ayt_mat') return 2;
+  if(['tyt_fiz','ayt_fiz','tyt_kim','ayt_kim','tyt_biy','ayt_biy'].indexOf(sk)>=0) return 1.5;
+  if(sk==='tyt_tur' && norm((uniteOf[sk]||{})[konu]||'')==='paragraf bilgisi') return 1.5;
+  if(sk==='ayt_edb' && norm(konu)==='paragrafta anlam ve yapi') return 1.5;
+  return 1;
+}
+function efektifDk(sk,konu){
+  return sureOf(sk,konu) + efektifKatsayi(sk,konu)*hedefSoru(sk,konu);
+}
 function kalanSure(sk){
   const m=(D.topics||{})[sk]||{}; let dk=0;
   (KONU[sk]||[]).forEach(([,ks])=>ks.forEach(t=>{const v=m[t]||0;
-    if(v===2)return; dk+=sureOf(sk,t)*(v===1?0.5:v===3?0.7:1);}));
+    if(v===2)return; dk+=efektifDk(sk,t)*(v===1?0.5:v===3?0.7:1);}));
   return dk;
 }
 function sa(dk){const h=Math.floor(dk/60),m=Math.round(dk%60);return h?`${h} sa${m?' '+m+' dk':''}`:`${m} dk`;}
@@ -1066,18 +1082,18 @@ function paketYukle(metin){
     const p=paketNormalle(JSON.parse(sikma?ac(m[1]):b64d(m[1])));
     if(D&&D.id===p.id&&!p.zorla){ // güncelleme: kendi işaretlerini koru, ödevleri tazele
       D.tasks=p.tasks; D.ad=p.ad; D.track=p.track; D.grade=p.grade;
-      D.dept=p.dept; D.rank=p.rank; D.sinav=p.sinav; D.tel=p.tel; D.kocTel=p.kocTel||D.kocTel; D.kopru=p.kopru||D.kopru||''; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
+      D.dept=p.dept; D.rank=p.rank; D.sinav=p.sinav; D.tel=p.tel; D.kocTel=p.kocTel||D.kocTel; D.kopru=p.kopru||D.kopru||''; D.sureler=p.sureler||D.sureler||{}; D.sorular=p.sorular||D.sorular||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
       D.tabanPuan=p.tabanPuan||D.tabanPuan; D.tabanSira=p.tabanSira||D.tabanSira; D.tabanYil=p.tabanYil||D.tabanYil;
       birlestir(p);
     }else{
-      D={id:p.id,ad:p.ad,track:p.track,grade:p.grade,dept:p.dept,rank:p.rank,sinav:p.sinav,tel:p.tel,kocTel:p.kocTel||'',kopru:p.kopru||'',sureler:p.sureler||{},score:p.score||'',refNets:p.refNets||{},obp:p.obp||'',yerlesti:!!p.yerlesti,
+      D={id:p.id,ad:p.ad,track:p.track,grade:p.grade,dept:p.dept,rank:p.rank,sinav:p.sinav,tel:p.tel,kocTel:p.kocTel||'',kopru:p.kopru||'',sureler:p.sureler||{},sorular:p.sorular||{},score:p.score||'',refNets:p.refNets||{},obp:p.obp||'',yerlesti:!!p.yerlesti,
          tabanPuan:p.tabanPuan||'',tabanSira:p.tabanSira||'',tabanYil:p.tabanYil||'',ekstra:[],hedef:null,
          tasks:p.tasks||[],topics:p.topics||{},exams:[],not:''};
       birlestir(p);
     }
     if(p.zorla&&D) D.kurtarma=today();
     if(D&&D.kopru&&D.kopru.includes('/macros/s/')){ const mm=D.kopru.match(/\/macros\/s\/([A-Za-z0-9_\-]+)\//); if(mm) D.kopru=mm[1]; }
-    D.sonPaket=hk; D.sonPaketT=today(); D.url=p.url||D.url||''; D.kocTel=p.kocTel||D.kocTel||''; D.kopru=p.kopru||D.kopru||''; D.sureler=p.sureler||D.sureler||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
+    D.sonPaket=hk; D.sonPaketT=today(); D.url=p.url||D.url||''; D.kocTel=p.kocTel||D.kocTel||''; D.kopru=p.kopru||D.kopru||''; D.sureler=p.sureler||D.sureler||{}; D.sorular=p.sorular||D.sorular||{}; D.score=p.score??D.score; D.refNets=p.refNets||D.refNets||{}; D.obp=p.obp??D.obp; D.yerlesti=!!p.yerlesti;
     save(); TAB='odev'; render();
     alert(p.zorla ? 'Kurtarma paketi yüklendi. Konu durumların öğretmenindeki son kayda göre geri getirildi.'
                   : 'Paket yüklendi. '+(D.tasks.length)+' ödev var.');
@@ -1376,6 +1392,8 @@ function soloOdevVer(sub, konu){
 /* Konu başına hedef soru sayısı: konunun ÖSYM'de (2018-2025) yılda getirdiği
    ortalama soruya göre ölçekli. Aralık 60–300. */
 function hedefSoru(sk, konu){
+  var ov=((D&&D.sorular)||{})[sk]||{};
+  if(ov[konu]!==undefined) return ov[konu];        // koçun (ya da solo öğrencinin) elle girdiği değer
   var sy = (AGIRLIK && AGIRLIK.agirlik && AGIRLIK.agirlik[sk] && AGIRLIK.agirlik[sk][konu])
              ? (+AGIRLIK.agirlik[sk][konu].soru_yil||0) : 0;
   var v = Math.round((60 + 36*sy)/10)*10;
@@ -1398,7 +1416,7 @@ function tavsiyeHesap(){
     oc.sirali.forEach(x=>{
       if(x.oncelik==='ensons') return;           // genişleme kapsam dışı
       const durum=m[x.konu]||0; if(durum===2) return;    // bitti
-      const dk=sureOf(sk,x.konu)*(durum===1?0.5:durum===3?0.7:1);
+      const dk=efektifDk(sk,x.konu)*(durum===1?0.5:durum===3?0.7:1);
       kapsamDk+=dk;
       if(x.oncelik==='once') cekDk+=dk;
       if(!verilmis.has(x.konu))
@@ -1425,7 +1443,7 @@ function tavsiyeHesap(){
         const durum=((D.topics||{})[t.sub]||{})[t.konu]||0; if(durum===2) return;
         devrSecim.push({sub:t.sub, konu:t.konu, unite:(uniteOf[t.sub]||{})[t.konu]||'',
           oncelik:'devreden', kilit:false, devreden:true, taskId:t.id, hafta:haftaFarki(t.date),
-          soru:(+t.q||hedefSoru(t.sub,t.konu)), dk:sureOf(t.sub,t.konu)*(durum===1?0.5:durum===3?0.7:1)});
+          soru:(+t.q||hedefSoru(t.sub,t.konu)), dk:efektifDk(t.sub,t.konu)*(durum===1?0.5:durum===3?0.7:1)});
       });
   }
   const sirali=devrSecim.concat(havuz);
@@ -1789,7 +1807,7 @@ function vKonu(){
     ${ks.map(t=>{const o=_onc&&_onc.bilgi[t];return `<div class="topic"><span class="dot t${m[t]||0}"></span>
       <span class="tn">${esc(t)}
         ${o?`<span class="onc-sat">${oncRozet(o.oncelik,o.kilit)}</span>`:''}
-        <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono)">${sa(sureOf(KSUB,t))}${
+        <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono)">${sa(sureOf(KSUB,t))} · <b style="color:var(--accent)">${hedefSoru(KSUB,t)} soru</b>${
           o&&o.agirlik>0?` · ${o.agirlik.toFixed(1)} soru/yıl`:''}</div></span>
       <button class="vidbtn" title="Konu anlatımı videoları" onclick="konuVideoAc('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">▶</button>
       <button class="btn ghost mini" onclick="cycleT('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">${TL[m[t]||0]}</button>
