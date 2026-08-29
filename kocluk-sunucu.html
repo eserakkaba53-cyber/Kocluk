@@ -4246,20 +4246,24 @@ function vKonu(st){
           <button class="btn ghost mini" style="margin-left:auto" onclick="uniteAll('${KSUB}',${JSON.stringify(u).replace(/"/g,'&quot;')},2)">Üniteyi bitti işaretle</button>
           <button class="btn ghost mini" onclick="uniteAll('${KSUB}',${JSON.stringify(u).replace(/"/g,'&quot;')},0)">Sıfırla</button></div>
         <div class="topic-grid">
-        ${ks.map(t=>{const _o=_ONC&&_ONC.bilgi[t];return `<div class="topic">
-          <button style="background:none;border:0;padding:0;display:flex;align-items:flex-start;gap:9px;flex:1;min-width:0;cursor:pointer;text-align:left;font:inherit;color:inherit"
-            onclick="cycleTopic('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">
-            <span class="dot t${m[t]||0}" style="margin-top:4px;flex:none"></span>
-            <span class="tn">${esc(t)}${_o?`<span class="onc-sat">${oncelikRozet(_o.oncelik,_o.kilit)}</span>`:''}</span></button>
-          <button class="vidbtn" title="Konu anlatımı videoları" onclick="konuVideoAc('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">▶</button>
-          <input type="number" min="0" step="15" value="${sureOf(KSUB,t)}" title="Optimum öğrenme süresi (dakika)"
-            onchange="setSure('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')},this.value);render()"
-            style="width:56px;padding:2px 4px;font-size:11.5px;text-align:right;border:1px solid var(--line-soft);background:var(--panel)">
-          <span style="font-size:10.5px;color:var(--ink-3)">dk</span>
-          <input type="number" min="0" step="5" value="${hedefSoru(KSUB,t)}" title="Çözülmesi gereken soru sayısı"
-            onchange="setSoru('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')},this.value);render()"
-            style="width:52px;padding:2px 4px;font-size:11.5px;text-align:right;border:1px solid var(--line-soft);background:var(--panel);margin-left:6px">
-          <span style="font-size:10.5px;color:var(--ink-3)">soru</span>
+        ${ks.map(t=>{const _o=_ONC&&_ONC.bilgi[t];return `<div class="topic" style="flex-direction:column;align-items:stretch;gap:7px">
+          <div style="display:flex;align-items:flex-start;gap:9px;width:100%;min-width:0">
+            <button style="background:none;border:0;padding:0;display:flex;align-items:flex-start;gap:9px;flex:1;min-width:0;cursor:pointer;text-align:left;font:inherit;color:inherit"
+              onclick="cycleTopic('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">
+              <span class="dot t${m[t]||0}" style="margin-top:4px;flex:none"></span>
+              <span class="tn">${esc(t)}${_o?`<span class="onc-sat">${oncelikRozet(_o.oncelik,_o.kilit)}</span>`:''}</span></button>
+            <button class="vidbtn" title="Konu anlatımı videoları" style="flex:none" onclick="konuVideoAc('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')})">▶</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;padding-left:18px">
+            <input type="number" min="0" step="15" value="${sureOf(KSUB,t)}" title="Optimum öğrenme süresi (dakika)"
+              onchange="setSure('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')},this.value);render()"
+              style="width:56px;padding:2px 4px;font-size:11.5px;text-align:right;border:1px solid var(--line-soft);background:var(--panel)">
+            <span style="font-size:10.5px;color:var(--ink-3);width:14px">dk</span>
+            <input type="number" min="0" step="5" value="${hedefSoru(KSUB,t)}" title="Çözülmesi gereken soru sayısı"
+              onchange="setSoru('${KSUB}',${JSON.stringify(t).replace(/"/g,'&quot;')},this.value);render()"
+              style="width:56px;padding:2px 4px;font-size:11.5px;text-align:right;border:1px solid var(--line-soft);background:var(--panel);margin-left:6px">
+            <span style="font-size:10.5px;color:var(--ink-3);width:26px">soru</span>
+          </div>
         </div>`;}).join('')}
         </div></div>`;
     }).join('')}
