@@ -6407,6 +6407,10 @@ function kaynakUyarisi(){
     history.replaceState(null,'',location.pathname+location.search);
     demoBaslat(); return;
   }
+  if(/^kayit$/i.test(hs)){                       // index.html'den "Yeni hesap"
+    history.replaceState(null,'',location.pathname+location.search);
+    if(!sbOturum()) GIRISMOD='kayit';
+  }
   if(/KOCRAPOR[12]:/.test(hs)){
     history.replaceState(null,'',location.pathname+location.search);
     const m=hs.match(/KOCRAPOR[12]:([A-Za-z0-9+/=_\-]+)/);
