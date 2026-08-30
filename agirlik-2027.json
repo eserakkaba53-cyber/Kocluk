@@ -738,16 +738,6 @@
     "soru_yil": 0.38,
     "kilit": false
    },
-   "CANLILARIN YAPISINDA BULUNAN TEMEL BİLEŞİKLER": {
-    "kademe": "A",
-    "soru_yil": 0.75,
-    "kilit": true
-   },
-   "HÜCRE": {
-    "kademe": "A",
-    "soru_yil": 0.62,
-    "kilit": true
-   },
    "CANLILARIN ÇEŞİTLİLİĞİ VE SINIFLANDIRILMASI": {
     "kademe": "B",
     "soru_yil": 0.6,
@@ -758,19 +748,9 @@
     "soru_yil": 0.4,
     "kilit": false
    },
-   "MİTOZ VE ŞEYSİZ ÜREME": {
-    "kademe": "B",
-    "soru_yil": 0.5,
-    "kilit": true
-   },
    "MAYOZ VE EŞEYLİ ÜREME": {
     "kademe": "B",
     "soru_yil": 0.5,
-    "kilit": false
-   },
-   "KALITIM VE BİYOLOJİK ÇEŞİTLİLİK": {
-    "kademe": "A",
-    "soru_yil": 1.0,
     "kilit": false
    },
    "EKOSİSTEM EKOLOJİSİ": {
@@ -785,6 +765,86 @@
    },
    "DOĞAL KAYNAKLAR VE BİYOLOJİK ÇEŞİTLİLİĞİN KORUNMASI": {
     "kademe": "C",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "MİTOZ VE EŞEYSİZ ÜREME": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": true
+   },
+   "İNORGANİK MADDELER": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": true
+   },
+   "KARBONHİDRATLAR": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "YAĞLAR (LİPİTLER)": {
+    "kademe": "B",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "PROTEİNLER": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "ENZİMLER": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": true
+   },
+   "NÜKLEİK ASİTLER": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "VİTAMİNLER": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "HÜCRE BİLİMİNE GİRİŞ": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": true
+   },
+   "HÜCRE ZARI VE MADDE GEÇİŞLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.3,
+    "kilit": true
+   },
+   "ORGANELLER": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "TEMEL KAVRAMLAR": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": true
+   },
+   "GAMET BULMA VE ÇEŞİTLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "MENDEL GENETİĞİ": {
+    "kademe": "A",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "GENİŞLETİLMİŞ MENDEL GENETİĞİ": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "EŞEYE BAĞLI KALITIM": {
+    "kademe": "A",
     "soru_yil": 0.2,
     "kilit": false
    }
@@ -1082,11 +1142,6 @@
     "soru_yil": 0.23,
     "kilit": false
    },
-   "TÜRKİYENİN YER ŞEKİLLERİ": {
-    "kademe": "C",
-    "soru_yil": 0.05,
-    "kilit": false
-   },
    "SU KAYNAKLARI": {
     "kademe": "B",
     "soru_yil": 0.08,
@@ -1098,11 +1153,6 @@
     "kilit": false
    },
    "YERYÜZÜNÜN ÖRTÜSÜ BİTKİLER": {
-    "kademe": "B",
-    "soru_yil": 0.08,
-    "kilit": false
-   },
-   "TÜRKİYE'Nİ TOPRAK, SU, BİTKİ VARLIĞI": {
     "kademe": "B",
     "soru_yil": 0.08,
     "kilit": false
@@ -1167,11 +1217,6 @@
     "soru_yil": 0.06,
     "kilit": false
    },
-   "TÜRKİYE'DE SANATİ": {
-    "kademe": "C",
-    "soru_yil": 0.06,
-    "kilit": false
-   },
    "TÜRKİYE'DE TİCARET": {
     "kademe": "C",
     "soru_yil": 0.03,
@@ -1200,6 +1245,21 @@
    "GEÇMİŞTEN GELECEĞE TÜRKİYE'NİN JEOPOLİTİĞİ VE TÜRKİYE'NİN ÇEVRESİNDE BÖLGESEL SORUNLAR": {
     "kademe": "C",
     "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE'DE SANAYİ": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE'NİN TOPRAK, SU, BİTKİ VARLIĞI": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "TÜRKİYE'NİN YER ŞEKİLLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.05,
     "kilit": false
    }
   },
@@ -1396,11 +1456,6 @@
     "soru_yil": 0.0,
     "kilit": false
    },
-   "Anadolu’da İslam": {
-    "kademe": "C",
-    "soru_yil": 0.15,
-    "kilit": false
-   },
    "İslam Düşüncesinde Tasavvufi Yorumlar": {
     "kademe": "C",
     "soru_yil": 0.12,
@@ -1414,6 +1469,11 @@
    "Hint ve Çin Dinleri": {
     "kademe": "C",
     "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Anadolu'da İslam": {
+    "kademe": "C",
+    "soru_yil": 0.15,
     "kilit": false
    }
   },
@@ -1452,11 +1512,6 @@
     "kademe": "A",
     "soru_yil": 1.27,
     "kilit": true
-   },
-   "LOGARİTMİK DENKLEM VE EŞİTLİKLER": {
-    "kademe": "B",
-    "soru_yil": 0.85,
-    "kilit": false
    },
    "DİZİ ÇEŞİTLERİ": {
     "kademe": "C",
@@ -1503,11 +1558,6 @@
     "soru_yil": 0.45,
     "kilit": false
    },
-   "BİR FONKSİYONUN ARTAN AZALAN ARALIKLARI VE EKSTRAMUM NOKTALARI": {
-    "kademe": "C",
-    "soru_yil": 0.67,
-    "kilit": false
-   },
    "BELİRSİZ İNTEGRAL": {
     "kademe": "B",
     "soru_yil": 0.72,
@@ -1526,6 +1576,16 @@
    "BELİRLİ İNTEGRALİN UYGULAMALARI": {
     "kademe": "C",
     "soru_yil": 0.58,
+    "kilit": false
+   },
+   "BİR FONKSİYONUN ARTAN AZALAN ARALIKLARI VE EKSTREMUM NOKTALARI": {
+    "kademe": "C",
+    "soru_yil": 0.67,
+    "kilit": false
+   },
+   "LOGARİTMİK DENKLEM VE EŞİTSİZLİKLER": {
+    "kademe": "B",
+    "soru_yil": 0.85,
     "kilit": false
    }
   },
@@ -1944,19 +2004,9 @@
    }
   },
   "ayt_biy": {
-   "DENETLEYİCİ VE DÜZENLEYİCİ SİSTEM DUYU ORGANLARI": {
-    "kademe": "A",
-    "soru_yil": 1.43,
-    "kilit": true
-   },
    "DESTEK VE HAREKET SİSTEMİ": {
     "kademe": "C",
     "soru_yil": 0.29,
-    "kilit": false
-   },
-   "SİNDİRİM SİTEMİ": {
-    "kademe": "B",
-    "soru_yil": 0.71,
     "kilit": false
    },
    "DOLAŞIM SİSTEMLERİ": {
@@ -2037,6 +2087,41 @@
    "CANLILAR VE ÇEVRE": {
     "kademe": "C",
     "soru_yil": 0.57,
+    "kilit": false
+   },
+   "SİNDİRİM SİSTEMİ": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "SİNİR SİSTEMİ": {
+    "kademe": "A",
+    "soru_yil": 0.7,
+    "kilit": true
+   },
+   "DUYU ORGANLARI": {
+    "kademe": "B",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "HORMONAL SİSTEM": {
+    "kademe": "A",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "REPLİKASYON": {
+    "kademe": "A",
+    "soru_yil": 0.7,
+    "kilit": true
+   },
+   "BİYOTEKNOLOJİ VE GENETİK MÜHENDİSLİĞİ": {
+    "kademe": "B",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "BİTKİSEL HORMONLAR": {
+    "kademe": "B",
+    "soru_yil": 0.35,
     "kilit": false
    }
   },
@@ -2485,7 +2570,7 @@
     "soru_yil": 0.0,
     "kilit": false
    },
-   "ORTA DOĞU VE AFGANİSTAN'DAKİ GELİŞMELER, DÜNYADAKİ GELİŞMELER, DEĞİŞEN DÜNYA VE TÜRK DIŞ POLİTİKASI, 1980 SONRASI TÜKİYE, KÜRESEL SORUNLAR": {
+   "ORTA DOĞU VE AFGANİSTAN'DAKİ GELİŞMELER, DÜNYADAKİ GELİŞMELER, DEĞİŞEN DÜNYA VE TÜRK DIŞ POLİTİKASI, 1980 SONRASI TÜRKİYE, KÜRESEL SORUNLAR": {
     "kademe": "C",
     "soru_yil": 0.0,
     "kilit": false
@@ -2527,11 +2612,6 @@
     "soru_yil": 0.7,
     "kilit": false
    },
-   "KÜRESAEL TİCARETİN ÜÇ ÖNEMLİ ELEMANI, HAM MADDE, ÜRETİM, PAZAR": {
-    "kademe": "C",
-    "soru_yil": 0.43,
-    "kilit": false
-   },
    "JAPONYA, İNGİLTERE, HOLLANDA, HİNDİSTAN, FRANSA, İTALYA": {
     "kademe": "C",
     "soru_yil": 0.29,
@@ -2545,6 +2625,11 @@
    "KÜRESEL VE BÖLGESEL ÖRGÜTLER SICAK ÇATIŞMA BÖLGELERİ": {
     "kademe": "A",
     "soru_yil": 0.86,
+    "kilit": false
+   },
+   "KÜRESEL TİCARETİN ÜÇ ÖNEMLİ ELEMANI, HAM MADDE, ÜRETİM, PAZAR": {
+    "kademe": "C",
+    "soru_yil": 0.43,
     "kilit": false
    }
   },
@@ -2813,11 +2898,6 @@
     "soru_yil": 1.43,
     "kilit": false
    },
-   "Anadolu’da İslam": {
-    "kademe": "B",
-    "soru_yil": 0.43,
-    "kilit": false
-   },
    "İslam Düşüncesinde Tasavvufi Yorumlar": {
     "kademe": "B",
     "soru_yil": 0.51,
@@ -2831,6 +2911,11 @@
    "Hint ve Çin Dinleri": {
     "kademe": "C",
     "soru_yil": 0.11,
+    "kilit": false
+   },
+   "Anadolu'da İslam": {
+    "kademe": "B",
+    "soru_yil": 0.43,
     "kilit": false
    }
   },
@@ -2937,16 +3022,6 @@
    }
   },
   "tyt_geo": {
-   "AÇILAR ÜÇGENDE AÇILAR": {
-    "kademe": "A",
-    "soru_yil": 1.12,
-    "kilit": true
-   },
-   "ÜÇGENLERİ EŞİTLİĞİ VE ÖZEL ÜÇGENLER": {
-    "kademe": "A",
-    "soru_yil": 0.84,
-    "kilit": true
-   },
    "ÜÇGENDE AÇI KENAR BAĞINTILARI": {
     "kademe": "C",
     "soru_yil": 0.28,
@@ -2966,16 +3041,6 @@
     "kademe": "B",
     "soru_yil": 0.49,
     "kilit": true
-   },
-   "ÇOKGEN DÜZGÜN ÇOKGEN": {
-    "kademe": "A",
-    "soru_yil": 1.0,
-    "kilit": false
-   },
-   "DÖRTGENLER DELTOİD": {
-    "kademe": "C",
-    "soru_yil": 0.0,
-    "kilit": false
    },
    "YAMUK": {
     "kademe": "A",
@@ -3017,14 +3082,34 @@
     "soru_yil": 0.38,
     "kilit": false
    },
-   "DİK DAİRESEL KONT": {
-    "kademe": "C",
-    "soru_yil": 0.28,
-    "kilit": false
-   },
    "KÜRE": {
     "kademe": "C",
     "soru_yil": 0.19,
+    "kilit": false
+   },
+   "ÜÇGENDE AÇILAR": {
+    "kademe": "A",
+    "soru_yil": 1.12,
+    "kilit": true
+   },
+   "ÜÇGENLERİN EŞLİĞİ VE ÖZEL ÜÇGENLER": {
+    "kademe": "A",
+    "soru_yil": 0.84,
+    "kilit": true
+   },
+   "DÜZGÜN ÇOKGEN": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "DÖRTGENLER VE DELTOİD": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "DİK DAİRESEL KONİ": {
+    "kademe": "C",
+    "soru_yil": 0.28,
     "kilit": false
    }
   },
@@ -3048,11 +3133,6 @@
     "kademe": "B",
     "soru_yil": 0.4,
     "kilit": false
-   },
-   "SAYI DOĞRUSU VEANALİTİK DÜZLEM": {
-    "kademe": "C",
-    "soru_yil": 0.35,
-    "kilit": true
    },
    "DOĞRU PARÇASINI BELLİ ORANDA BÖLEN NOKTANIN KOORDİNATLARI": {
     "kademe": "A",
@@ -3103,7 +3183,13 @@
     "kademe": "C",
     "soru_yil": 0.19,
     "kilit": false
+   },
+   "SAYI DOĞRUSU VE ANALİTİK DÜZLEM": {
+    "kademe": "C",
+    "soru_yil": 0.35,
+    "kilit": true
    }
   }
- }
+ },
+ "guncelleme": "2026-08-30 — mufredat guncellemesi: biyoloji konulari bolundu/eklendi, yazim duzeltmeleri"
 }
