@@ -480,23 +480,40 @@ async function load(){
   try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){}
   return MEM;
 }
-let YAZKUYRUK=null, YAZDURUM='';
+let YAZKUYRUK=null, YAZDURUM='', YAZBEKLEYEN=0;
 function sunucuyaKaydet(){
   if(DEMO) return;              // tanıtım modu: hiçbir şey kaydedilmez
   if(!sbOturum()) return;
-  if(ornekMi(DB.sel)) return;     // örnek öğrenciler sunucuya yazılmaz
+  /* DÜZELTME (30 Ağu 2026) — ESKİDEN BURADA `if(ornekMi(DB.sel)) return;` VARDI.
+     Hatası: süre/soru ayarları (DB.sureler, DB.sorular) KOÇA aittir, öğrenciye değil.
+     Solda ÖRNEK bir öğrenci seçiliyken süre değiştirince bu satır tüm yazmayı iptal
+     ediyor, ayar yalnızca localStorage'a gidiyordu. Panel "kaydedildi" bile demiyordu
+     (rayDurum hiç çalışmıyordu), kullanıcı da kaydedildi sanıyordu. Tarayıcı verisi
+     temizlenince ya da başka cihazdan girilince ayarlar yok oluyordu.
+     Doğrusu: örnek öğrencinin KENDİ verisi yazılmaz, ama koç ayarları HER ZAMAN yazılır. */
+  const simdi=Date.now();
+  if(!YAZBEKLEYEN) YAZBEKLEYEN=simdi;
   clearTimeout(YAZKUYRUK);
+  /* Arka arkaya hızlı değişiklikte 900 ms'lik bekleme her seferinde sıfırlanıyordu;
+     900 ms'den sık değişiklik yapılırsa yazma HİÇ tetiklenmiyordu. Artık ilk bekleyen
+     değişiklikten 3 sn sonra gecikme sıfırlanır — açlık (starvation) biter. */
+  const gecikme = (simdi - YAZBEKLEYEN > 3000) ? 0 : 900;
   YAZKUYRUK=setTimeout(async()=>{
+    YAZKUYRUK=null; YAZBEKLEYEN=0;
     const st=cur();
     try{
       YAZDURUM='yaziliyor'; rayDurum();
-      if(st) await ogrenciYaz(st);
-      await kocYaz();
+      if(st && !ornekMi(st.id)) await ogrenciYaz(st);   // örnek öğrencinin verisi sunucuya yazılmaz
+      await kocYaz();                                   // koç ayarları (süre/soru) HER ZAMAN yazılır
       YAZDURUM='ok'; rayDurum();
       setTimeout(()=>{ if(YAZDURUM==='ok'){YAZDURUM=''; rayDurum();} },1800);
     }catch(e){ YAZDURUM='hata|'+(e.message||e); rayDurum(); }
-  },900);
+  }, gecikme);
 }
+/* Bekleyen yazma varken sekme kapatılırsa uyar — aksi halde son değişiklikler kaybolur. */
+window.addEventListener('beforeunload', function(ev){
+  if(YAZKUYRUK || YAZDURUM==='yaziliyor'){ ev.preventDefault(); ev.returnValue=''; return ''; }
+});
 function rayDurum(){
   const lr=document.getElementById('lisansRozet');
   if(lr && !sbOturum()) lr.innerHTML='';
@@ -1172,8 +1189,17 @@ function sureOf(sk,konu){
 function setSure(sk,konu,dk){
   DB.sureler=DB.sureler||{}; DB.sureler[sk]=DB.sureler[sk]||{};
   if(dk===''||dk===null) delete DB.sureler[sk][konu]; else DB.sureler[sk][konu]=+dk;
-  otomatikOdevYenile();
+  odevYenileKuyruk();
   save();
+}
+/* Otomatik ödev yenilemeyi geciktir: eskiden HER süre/soru değişikliğinde tüm
+   öğrencilerin haftalık planı baştan kuruluyordu (öğrenci sayısı × 628 konu).
+   Arka arkaya 20 konu düzenlenince panel kilitleniyor, kullanıcı da yazma
+   tamamlanmadan sayfadan çıkabiliyordu. Artık düzenleme bitince BİR KEZ çalışır. */
+let ODEVKUYRUK=null;
+function odevYenileKuyruk(){
+  clearTimeout(ODEVKUYRUK);
+  ODEVKUYRUK=setTimeout(()=>{ ODEVKUYRUK=null; try{ otomatikOdevYenile(); save(); }catch(e){} }, 1200);
 }
 /* ===== EFEKTİF SÜRE (yetişir mi bütçesi) =====
    "Yetişir mi" hesapları artık yalnızca konu çalışma süresini (sureOf) değil,
@@ -3603,7 +3629,7 @@ function hedefSoru(sk, konu){
 function setSoru(sk,konu,n){
   DB.sorular=DB.sorular||{}; DB.sorular[sk]=DB.sorular[sk]||{};
   if(n===''||n===null) delete DB.sorular[sk][konu]; else DB.sorular[sk][konu]=Math.max(0,+n||0);
-  otomatikOdevYenile();
+  odevYenileKuyruk();
   save();
 }
 /* ===== TAVSİYE EDİLEN HAFTALIK ÖDEV =====
