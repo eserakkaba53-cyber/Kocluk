@@ -738,16 +738,6 @@
     "soru_yil": 0.38,
     "kilit": false
    },
-   "CANLILARIN ÇEŞİTLİLİĞİ VE SINIFLANDIRILMASI": {
-    "kademe": "B",
-    "soru_yil": 0.6,
-    "kilit": false
-   },
-   "CANLI ALEMLERİ VE ÖZELLİKLERİ": {
-    "kademe": "C",
-    "soru_yil": 0.4,
-    "kilit": false
-   },
    "MAYOZ VE EŞEYLİ ÜREME": {
     "kademe": "B",
     "soru_yil": 0.5,
@@ -845,6 +835,21 @@
    },
    "EŞEYE BAĞLI KALITIM": {
     "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "SINIFLANDIRMAYA GİRİŞ": {
+    "kademe": "B",
+    "soru_yil": 0.6,
+    "kilit": false
+   },
+   "OMURGASIZ HAYVANLAR VE GENEL ÖZELLİKLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "OMURGALI HAYVANLAR VE GENEL ÖZELLİKLERİ": {
+    "kademe": "C",
     "soru_yil": 0.2,
     "kilit": false
    }
@@ -3191,5 +3196,5 @@
    }
   }
  },
- "guncelleme": "2026-08-30 — mufredat guncellemesi: biyoloji konulari bolundu/eklendi, yazim duzeltmeleri"
+ "guncelleme": "2026-08-31 — CANLILAR DUNYASI unitesi guncellendi (siniflandirmaya giris + omurgasiz/omurgali hayvanlar)"
 }
