@@ -1,0 +1,3195 @@
+{
+ "surum": "2027",
+ "kaynak": "ÖSYM çıkmış soru dağılımı — TYT 2018-2025, AYT 2018/2019-2025",
+ "olusturma": "2026-08-25",
+ "aciklama": "kademe = ders içi kümülatif kapsam (A ilk %50, B %50-80, C kalan) · geometri ayrı ders",
+ "agirlik": {
+  "tyt_tur": {
+   "İLETİŞİM VE TEMEL ÖĞELERİ": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "DİLİN İŞLEVLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "DİL KÜLTÜR İLİŞKİSİ VE DİLLERİN FARKLILAŞMASI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "ANLAMLARI BAKIMINDAN SÖZCÜKLER": {
+    "kademe": "C",
+    "soru_yil": 1.52,
+    "kilit": true
+   },
+   "SÖZCÜKLER ARASI ANLAM İLİŞKİLERİ": {
+    "kademe": "C",
+    "soru_yil": 1.18,
+    "kilit": false
+   },
+   "KALIPLAŞMIŞ SÖZCÜK GRUPLARI VE ANLAM DEĞİŞMELERİ": {
+    "kademe": "C",
+    "soru_yil": 0.68,
+    "kilit": false
+   },
+   "CÜMLEDE ANLATIM": {
+    "kademe": "B",
+    "soru_yil": 2.0,
+    "kilit": false
+   },
+   "CÜMLEDE ANLAM İLİŞKİLERİ": {
+    "kademe": "B",
+    "soru_yil": 2.0,
+    "kilit": false
+   },
+   "ANLATIM ÖZELLİKLERİ": {
+    "kademe": "B",
+    "soru_yil": 3.73,
+    "kilit": false
+   },
+   "PARAGRAFTA ANLAM": {
+    "kademe": "A",
+    "soru_yil": 14.92,
+    "kilit": true
+   },
+   "PARAGRAFTA YAPI": {
+    "kademe": "B",
+    "soru_yil": 6.22,
+    "kilit": false
+   },
+   "SES BİLGİSİ": {
+    "kademe": "C",
+    "soru_yil": 0.75,
+    "kilit": false
+   },
+   "YAZIM BİLGİSİ": {
+    "kademe": "B",
+    "soru_yil": 2.0,
+    "kilit": false
+   },
+   "NOKTALAMA İŞARETLERİ": {
+    "kademe": "C",
+    "soru_yil": 1.75,
+    "kilit": false
+   },
+   "SÖZCÜK YAPISI": {
+    "kademe": "C",
+    "soru_yil": 0.5,
+    "kilit": true
+   },
+   "İSİM AD": {
+    "kademe": "C",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "SIFAT ÖNAD": {
+    "kademe": "C",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "ZAMİR ADIL": {
+    "kademe": "C",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "ZARF BELİRTEÇ": {
+    "kademe": "C",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "EDAT BAĞLAÇ ÜNLEM": {
+    "kademe": "C",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "EYLEM FİİL": {
+    "kademe": "C",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "CÜMLENİN ÖĞELERİ": {
+    "kademe": "C",
+    "soru_yil": 0.25,
+    "kilit": true
+   },
+   "CÜMLE TÜRLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "ANLAMA DAYALI ANLATIM BOZUKLUĞU": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "DİL BİLGİNE DAYALI ANLATIM BOZUKLUĞU": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   }
+  },
+  "tyt_mat": {
+   "DOĞAL SAYILAR TAM SAYILAR": {
+    "kademe": "A",
+    "soru_yil": 1.24,
+    "kilit": true
+   },
+   "TEK ÇİFT SAYILAR": {
+    "kademe": "C",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "ARDIŞIK SAYILAR": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": false
+   },
+   "BÖLME": {
+    "kademe": "C",
+    "soru_yil": 0.22,
+    "kilit": true
+   },
+   "BÖLÜNEBİLME": {
+    "kademe": "C",
+    "soru_yil": 0.41,
+    "kilit": false
+   },
+   "ASAL SAYILAR ASAL ÇARPANLAR": {
+    "kademe": "C",
+    "soru_yil": 0.48,
+    "kilit": true
+   },
+   "FAKTÖRİYEL İŞLEMLER": {
+    "kademe": "C",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "EBOB": {
+    "kademe": "C",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "EKOK": {
+    "kademe": "C",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "RASYONEL SAYILAR": {
+    "kademe": "A",
+    "soru_yil": 1.14,
+    "kilit": true
+   },
+   "ONDALIK SAYILAR": {
+    "kademe": "C",
+    "soru_yil": 0.49,
+    "kilit": false
+   },
+   "BASİT EŞİTSİZLİKLER": {
+    "kademe": "A",
+    "soru_yil": 1.12,
+    "kilit": true
+   },
+   "MUTLAK DEĞER": {
+    "kademe": "B",
+    "soru_yil": 1.12,
+    "kilit": false
+   },
+   "ÜSLÜ İFADELER VE ÖZELLİKLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.66,
+    "kilit": true
+   },
+   "ÜSLÜ DENKLEMLER VE EŞİTSİZLİKLER": {
+    "kademe": "C",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "KÖKLÜ İFADELER VE ÖZELLİKLERİ KÖKLÜ DENKLEMLER": {
+    "kademe": "B",
+    "soru_yil": 1.0,
+    "kilit": true
+   },
+   "ORTAK ÇARPAN PARANTEZİ VE GRUPLANDIRMA": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": true
+   },
+   "ÖZDEŞLİKLER YARDIMIYLA ÇARPANLARA AYIRMA": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": true
+   },
+   "ax2+bx+c ÜÇ TERİMLİSİ VE TERİM EKLEYİP ÇIKARMA": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "ORAN ORANTI ÖZELLİKLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.31,
+    "kilit": true
+   },
+   "ORANTI ÇEŞİTLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.16,
+    "kilit": false
+   },
+   "ORTALAMALAR VE ORANTI PROBLEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.16,
+    "kilit": false
+   },
+   "DENKLEMLER VE DENKLEM SİSTEMLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.62,
+    "kilit": true
+   },
+   "SAYI KESİR PROBLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 2.61,
+    "kilit": false
+   },
+   "YAŞ PROBLEMLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.83,
+    "kilit": false
+   },
+   "YÜZDE PROBLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 1.78,
+    "kilit": false
+   },
+   "FAİZ VE KARIŞIM PROBLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 1.43,
+    "kilit": false
+   },
+   "HAREKET PROBLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 1.66,
+    "kilit": false
+   },
+   "İŞÇİ HAVUZ PROBLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 1.19,
+    "kilit": false
+   },
+   "GRAFİK PROBLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 2.38,
+    "kilit": false
+   },
+   "ÖNERMELER VE BİLEŞİK ÖNERMELER": {
+    "kademe": "C",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "AÇIK ÖNERMELER": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "KÜME İŞLEMLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": true
+   },
+   "KÜME PROBLEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "KARTEZYEN ÇARPIMI": {
+    "kademe": "C",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "FONKSİYON KAVRAMI VE FONKSİYON ÇEŞİTLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.88,
+    "kilit": true
+   },
+   "TERS FONKSİYONEL BİLEŞKE FONKSİYON": {
+    "kademe": "C",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "2.DERECEDEN DENKLEMLER": {
+    "kademe": "C",
+    "soru_yil": 0.41,
+    "kilit": true
+   },
+   "2.DERECEDEN DENKLEMLERDE KÖK KATSAYI BAĞINTILARI": {
+    "kademe": "C",
+    "soru_yil": 0.28,
+    "kilit": false
+   },
+   "KARMAŞİIK SAYILAR": {
+    "kademe": "C",
+    "soru_yil": 0.21,
+    "kilit": false
+   },
+   "POLİNOM TERİMİ VE İŞLEMLER": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "POLİNOMLARDA KALAN BULMA VE PROBLEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "SAYMA KURALLARI VE PERMUTASYON": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": true
+   },
+   "KOMBİNASYON VE BİNOM AÇILIMI": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": false
+   },
+   "OLASILIK": {
+    "kademe": "B",
+    "soru_yil": 1.12,
+    "kilit": false
+   },
+   "İSTATİSTİK": {
+    "kademe": "B",
+    "soru_yil": 0.62,
+    "kilit": false
+   }
+  },
+  "tyt_fiz": {
+   "FİZİK BİLİMİNİN ÖNEMİ": {
+    "kademe": "C",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "FİZİĞİN UYGULAMA ALANLARI": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "FİZİKSEL NİCELİKLERİN SINIFLANDIRILMASI": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "BİLİM ARAŞTIRMA MERKEZLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "MADDE VE ÖZKÜTLE": {
+    "kademe": "A",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "DAYANIKLILIK": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "YAPIŞMA VE BİRBİRİNİ TUTMA": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "HAREKET": {
+    "kademe": "A",
+    "soru_yil": 0.26,
+    "kilit": true
+   },
+   "KUVVET": {
+    "kademe": "B",
+    "soru_yil": 0.18,
+    "kilit": true
+   },
+   "NEWTON'IN HAREKET YASALARI": {
+    "kademe": "A",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "SÜRTÜNME KUVVETİ": {
+    "kademe": "C",
+    "soru_yil": 0.13,
+    "kilit": false
+   },
+   "İŞ, ENERJİ VE GÜÇ": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "MEKANİK ENERJİ": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "ENERJİNİN KORUNUMU VE ENERJİ DÖNÜŞÜMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "VERİM": {
+    "kademe": "C",
+    "soru_yil": 0.01,
+    "kilit": false
+   },
+   "ENERJİ KAYNAKLARI": {
+    "kademe": "C",
+    "soru_yil": 0.01,
+    "kilit": false
+   },
+   "ISI VE SICAKLIK": {
+    "kademe": "A",
+    "soru_yil": 0.31,
+    "kilit": true
+   },
+   "HÂL DEĞİŞİMİ": {
+    "kademe": "B",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "ISIL DENGE": {
+    "kademe": "B",
+    "soru_yil": 0.18,
+    "kilit": false
+   },
+   "ENERJİ İLETİM YOLLARI VE ENERJİ İLETİM HIZI": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "GENLEŞME": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "ELEKTRİK YÜKLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "ELEKTRİK AKIMI, POTANSİYEL FARKI VE DİRENÇ": {
+    "kademe": "A",
+    "soru_yil": 0.31,
+    "kilit": true
+   },
+   "ELEKTRİK DEVRELERİ": {
+    "kademe": "A",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "MIKNATIS VE MANYETİK ALAN": {
+    "kademe": "C",
+    "soru_yil": 0.13,
+    "kilit": false
+   },
+   "AKIM VE MANYETİK ALAN": {
+    "kademe": "C",
+    "soru_yil": 0.13,
+    "kilit": false
+   },
+   "BASINÇ": {
+    "kademe": "A",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "KALDIRMA KUVVETİ": {
+    "kademe": "A",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "DALGALAR": {
+    "kademe": "B",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "YAY DALGASI": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "SU DALGASI": {
+    "kademe": "B",
+    "soru_yil": 0.16,
+    "kilit": false
+   },
+   "SES DALGASI": {
+    "kademe": "C",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "DEPREM DALGASI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "AYDINLANMA": {
+    "kademe": "B",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "GÖLGE": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "YANSIMA": {
+    "kademe": "B",
+    "soru_yil": 0.16,
+    "kilit": true
+   },
+   "DÜZLEM AYNA": {
+    "kademe": "B",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "KÜRESEL AYNALAR": {
+    "kademe": "A",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "KIRILMA": {
+    "kademe": "B",
+    "soru_yil": 0.19,
+    "kilit": true
+   },
+   "MERCEKLER": {
+    "kademe": "B",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "PRİZMALAR": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "RENK": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   }
+  },
+  "tyt_kim": {
+   "SİMYADA KİMYAYA": {
+    "kademe": "A",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "KİMYA DİSİPLİNLERİ VE KİMYACILARIN ÇALIŞMA ALANLARI": {
+    "kademe": "B",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "KİMYANIN SEMBOLİK DİLİ": {
+    "kademe": "A",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "KİMYA UYGULAMASINDA İŞ SAĞLIĞI VE GÜVENLİĞİ": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "ATOM MODELLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "ATOMUN YAPISI": {
+    "kademe": "A",
+    "soru_yil": 0.3,
+    "kilit": true
+   },
+   "PERİYODİK SİSTEM": {
+    "kademe": "A",
+    "soru_yil": 0.62,
+    "kilit": true
+   },
+   "KİMYASAL TÜR": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": true
+   },
+   "KİMYASAL TÜRLER ARASI ETKİLEŞİMLERİN SINIFLANDIRILMASI": {
+    "kademe": "B",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "GÜÇLÜ ETKİLEŞİMLER": {
+    "kademe": "B",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "ZAYIF ETKİLEŞİMLER": {
+    "kademe": "B",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "FİZİKSEL VE KİMYASAL DEĞİŞİMLER": {
+    "kademe": "C",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "MADDENİN FİZİKSEL HALLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.25,
+    "kilit": true
+   },
+   "KATILAR": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "SIVILAR": {
+    "kademe": "B",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "GAZLAR": {
+    "kademe": "B",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "PLAZMA": {
+    "kademe": "C",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "SU VE HAYAT": {
+    "kademe": "C",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "ÇEVRE KİMYASI": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "KİMYANIN TEMEL KANUNLARI": {
+    "kademe": "A",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "MOL KAVRAMI": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": true
+   },
+   "KİMYASAL TEPKİMELER VE DENKLEMLER": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "KİMYASAL TEPKİMELERDE HESAPLAMALAR": {
+    "kademe": "C",
+    "soru_yil": 0.13,
+    "kilit": false
+   },
+   "HOMOJEN VE HETEROJEN KARIŞIMLAR": {
+    "kademe": "A",
+    "soru_yil": 0.53,
+    "kilit": false
+   },
+   "AYIRMA VE SAFLAŞTIRMA TEKNİKLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "ASİTLER VE BAZLAR": {
+    "kademe": "A",
+    "soru_yil": 0.39,
+    "kilit": false
+   },
+   "ASİTLERİN VE BAZLARIN TEPKİMELERİ": {
+    "kademe": "B",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "HAYATIMIZDA ASİTLER VE BAZLAR": {
+    "kademe": "C",
+    "soru_yil": 0.13,
+    "kilit": false
+   },
+   "TUZLAR": {
+    "kademe": "C",
+    "soru_yil": 0.13,
+    "kilit": false
+   },
+   "YAYGIN GÜNLÜK HAYAT KİMYASALLARI": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "GIDALAR": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   }
+  },
+  "tyt_biy": {
+   "BİYOLOJİ VE CANLILARIN ORTAK ÖZELLİKLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "CANLILARIN ÇEŞİTLİLİĞİ VE SINIFLANDIRILMASI": {
+    "kademe": "B",
+    "soru_yil": 0.6,
+    "kilit": false
+   },
+   "CANLI ALEMLERİ VE ÖZELLİKLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "MAYOZ VE EŞEYLİ ÜREME": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "EKOSİSTEM EKOLOJİSİ": {
+    "kademe": "B",
+    "soru_yil": 0.62,
+    "kilit": false
+   },
+   "GÜNCEL ÇEVRE SORUNLARI VE İNSAN": {
+    "kademe": "C",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "DOĞAL KAYNAKLAR VE BİYOLOJİK ÇEŞİTLİLİĞİN KORUNMASI": {
+    "kademe": "C",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "MİTOZ VE EŞEYSİZ ÜREME": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": true
+   },
+   "İNORGANİK MADDELER": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": true
+   },
+   "KARBONHİDRATLAR": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "YAĞLAR (LİPİTLER)": {
+    "kademe": "B",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "PROTEİNLER": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "ENZİMLER": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": true
+   },
+   "NÜKLEİK ASİTLER": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "VİTAMİNLER": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "HÜCRE BİLİMİNE GİRİŞ": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": true
+   },
+   "HÜCRE ZARI VE MADDE GEÇİŞLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.3,
+    "kilit": true
+   },
+   "ORGANELLER": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "TEMEL KAVRAMLAR": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": true
+   },
+   "GAMET BULMA VE ÇEŞİTLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "MENDEL GENETİĞİ": {
+    "kademe": "A",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "GENİŞLETİLMİŞ MENDEL GENETİĞİ": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "EŞEYE BAĞLI KALITIM": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   }
+  },
+  "tyt_tar": {
+   "TARİH BİLİMİNE GİRİŞ TARİHSEL OLAYLARIN ÖZELLİKLERİ VE DEĞERLENDİRİLMESİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "TARİHİ BİLGİLERİN DEĞİŞEBİLİRLİĞİ TARİH YAZICILIĞI VE TARİHİN DİĞER BİLİMLERLE İLİŞKİSİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "ÇAĞ KAVRAMI MEZOPOTAMYA MISIR İRAN UYGARLIKLARI": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "ORTA ASYA UZAK DOĞU DOĞU AKDENİZ ANADOLU YUNAN ROMA UYGARLIKLARI": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "ORTA ASYA'DA İLK TÜRK DEVLETLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "DİĞER TÜRK DEVLETLERİ İLK TÜRK DEVLETLERİNDE KÜLTÜR VE UYGARLIK": {
+    "kademe": "A",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "İSLAMİYETİN DOĞUŞU YAYILIŞI VE DÖRT HALİFE DÖNEMİ": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "EMEVİLER ABBASİLER VE TÜRK İSLAM BİLGİNLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "TÜRKLERİN İSLAMİYETİ BENİMSEMESİ VE İLK TÜRK İSLAM DEVLETLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "BÜYÜK SELÇUKLU DEVLETİ VE DİĞER TÜRK İSLAM DEVLETLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "ANADOLU'DAKİ İLK TÜRK BEYLİKLERİ TÜRKİYE SELÇUKLU DEVLETİ": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "TÜRKİYE SELÇUKLU KÜLTÜR UYGARLIĞI HAÇLI SEFERLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "BEYLİĞİN BÜYÜME SEBEPLERİ VE İLK OSMANLI PADİŞAHLARI": {
+    "kademe": "A",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "İSKAN POLİTİKASI VE DİĞER KURULUŞ DÖNEMİ PADİŞAHLARI": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "15 VE 16.YY OSMANLI DIŞ SİYASETİNDEN MEYDANA GELEN GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "YENİ ÇAĞDA AVRUPADAKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "OSMANLI DEVLETİ'NDE DEVLET YÖNETİMİ ORDU VE TOPRAK SİSTEMİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "OSMANLI DEVLETİ'NDE SOSYAL YAPI EKONOMİ EĞİTİM HUKUK BİLİM TEKNOLOJİ KÜLTÜR SANAT": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "DURAKLAMANIN NEDENLERİ İÇ YAPIDAKİ DEĞİŞİM VE İÇ İSYANLAR": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "OSMANLI DIŞ SİYASETİ ISLAHATLAR AVRUPA VE OSMANLI'DA BİLİM KÜLTÜR": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "1700 1768 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "1768 1799 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "YAKIN ÇAĞ AVRUPA'DAKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "II.MAHMUT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TANZİMAT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "II.ABDÜLHAMİT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER 19.YY OSMANLI'DA KÜLTÜREL GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "II.MEŞRUTİYET'İN İLANI TRABLUSGARP VE BALKAN SAVAŞLARI": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "I.DÜNYA ŞAVAŞI": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "MONDROS ATEŞKES ANTLAŞMASI VE İŞGALLER": {
+    "kademe": "B",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "KUVAYI MİLLİYE VE CEMİYETLER": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "HAVZA GENELGESİ AMASYA GENELGESİ ERZURUM KONGRESİ": {
+    "kademe": "B",
+    "soru_yil": 0.16,
+    "kilit": false
+   },
+   "SİVAS KONGRESİ AMASYA GÖRÜŞMESİ SON OSMANLI MEBUSAN MECLİSİ'NİN AÇILMASI": {
+    "kademe": "B",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "TBMM'NİN AÇILMASI": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "DOĞU GÜNEY CEPHELERİ VE BATI CEPHESİNDE I.İNÖNÜ SAVAŞI": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "BATI CEPHESİ SAVAŞLARI VE ANADOLU'NUN KURTULUŞU": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "KURTULUŞ SAVAŞI'NIN SONUÇLARI": {
+    "kademe": "C",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "SİYASİ ALANDAKİ İNKILAPLAR": {
+    "kademe": "A",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "ATATÜRKÇÜ DÜŞÜNCE SİSTEMİ CUMHURİYETÇİLİK MİLLİYETÇİLİK": {
+    "kademe": "B",
+    "soru_yil": 0.16,
+    "kilit": false
+   },
+   "HALKÇILIK LAİKLİK DEVLETÇİLİK İNKILAPÇILIK MİLLİ GÜÇ UNSURLARI": {
+    "kademe": "B",
+    "soru_yil": 0.16,
+    "kilit": false
+   },
+   "1923 1932 YILLARI ARASI TÜRK DIŞ POLİTİKASI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "1932 1939 YILLARI ARASI TÜRK DIŞ POLİTİKASI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   }
+  },
+  "tyt_cog": {
+   "COĞRAFYA VE İNSAN DOĞA ETKİLEŞİMİ": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "DOĞADAKİ EKSTREM OLAYLAR VE ETKİLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "DOĞAL VE BEŞERİ SONUÇLARIN ETKİLEŞİMİ VE DOĞAL SİSTEMLERDEKİ OLASI DEĞİŞİMLER": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "PARALEL, MERİDYEN VE ENLEM ETKİLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "BOYLAM, YEREL SAAT, ULUSAL SAAT": {
+    "kademe": "B",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "COĞRAFİ REHBERİM, HARİTALAR": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "HARİTALARDA YER ŞEKİLLERİNİN GÖSTERİLMESİ": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "HARİTALARDAN YARARLANMA": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "DÜNYA'NIN ŞEKLİ VE GÜNLÜK HAREKET": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   },
+   "YILLIK HAREKET VE SONUÇLARI": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "ATMOSFER VE SICAKLIK": {
+    "kademe": "A",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "BASINÇ VE RÜZGARLAR": {
+    "kademe": "A",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "NEMLİLİK VE YAĞIŞ": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "DÜNYA'NIN İKLİM ZENGİNLİĞİ": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "TÜRKİYE'NİN İKLİM ELEMANLARI VE ÇEŞİTLİLİĞİ": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "YER'İN YAPISI, OLUŞUM SÜRECİ VE İÇ KUVVETLER": {
+    "kademe": "A",
+    "soru_yil": 0.23,
+    "kilit": false
+   },
+   "GÜNEŞ'TEN GELEN GÜÇ, DIŞ KUVVETLER": {
+    "kademe": "A",
+    "soru_yil": 0.23,
+    "kilit": false
+   },
+   "SU KAYNAKLARI": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "TOĞRAĞIN ÖYKÜSÜ": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "YERYÜZÜNÜN ÖRTÜSÜ BİTKİLER": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "BEŞERİ COĞRAFYA VE BEŞERİ FAALİYETLER": {
+    "kademe": "B",
+    "soru_yil": 0.1,
+    "kilit": false
+   },
+   "NÜFUS KAVRAMLARI VE NÜFUSUN DAĞILIŞI": {
+    "kademe": "A",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "NÜFUS PİRAMİTLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "GÖÇLERİN NEDENLERİ, SONUÇLARI VE ÇEŞİTLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "TÜRKİYE'DE NÜFUS VE GÖÇLER": {
+    "kademe": "A",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "EKONOMİK FAALİYET TÜRLERİNİN SINIFLANDIRILMASI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "EKONOMİK FAALİYET TÜRLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "ANADOLU'DA KURULAN UYGARLIKLAR, TÜRKİYE'NİN ARAZİ KULLANIMI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE EKONOMİSİNİN SEKTÖREL DAĞILMI, EKONOMİ POLİTİKALARI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE'DE TARIM": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE'DE HAYVANCILIK": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "TÜRKİYE'DE MADENLER VE ENERJİ KAYNAKLARI": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE'DE TİCARET": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "TÜRKİYE'DE ULAŞIM": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "TÜRKİYE'DE TURİZM": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "TÜRKİYE'DE DOĞAL AFET": {
+    "kademe": "A",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "TÜRKİYE'DE BÖLGELERİN OLUŞTURULMASI VE BÖLGESEL KALKINMA PROJELERİ": {
+    "kademe": "B",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "GEÇMİŞTEN GELECEĞE TÜRKİYE'NİN JEOPOLİTİĞİ VE TÜRKİYE'NİN ÇEVRESİNDE BÖLGESEL SORUNLAR": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE'DE SANAYİ": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TÜRKİYE'NİN TOPRAK, SU, BİTKİ VARLIĞI": {
+    "kademe": "B",
+    "soru_yil": 0.08,
+    "kilit": false
+   },
+   "TÜRKİYE'NİN YER ŞEKİLLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.05,
+    "kilit": false
+   }
+  },
+  "tyt_fel": {
+   "Felsefeyi Tanıma": {
+    "kademe": "B",
+    "soru_yil": 0.53,
+    "kilit": false
+   },
+   "Felsefeyle Düşünme": {
+    "kademe": "C",
+    "soru_yil": 0.26,
+    "kilit": false
+   },
+   "Bilgi Felsefesi": {
+    "kademe": "A",
+    "soru_yil": 1.5,
+    "kilit": false
+   },
+   "Varlık Felsefesi": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "Ahlak Felsefesi": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "Sanat Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "Din Felsefesi": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "Siyaset Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "Bilim Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "Felsefi Okuma ve Yazma": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "Psikoloji bilimini tanıma": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Psikolojinin temel süreçleri": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Öğrenme, bellek ve güdülenme": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Ruh sağlığının temelleri": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Sosyolojiye giriş": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Birey ve toplum": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Toplumsal yapı ve kurumlar": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Toplumsal değişme ve gelişme": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Mantığa giriş": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Klasik mantık": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Mantık ve dil": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Sembolik mantık": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   }
+  },
+  "tyt_din": {
+   "Bilgi ve İnanç": {
+    "kademe": "A",
+    "soru_yil": 1.12,
+    "kilit": false
+   },
+   "Din ve İslam": {
+    "kademe": "A",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "İslam ve İbadet": {
+    "kademe": "A",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "Gençlik ve Değerler": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "Gönül Coğrafyamız": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "Allah İnsan İlişkisi": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "Hz. Muhammed ve Gençlik": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "Din ve Hayat": {
+    "kademe": "B",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "Ahlaki Tutum ve Davranışlar": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "İslam Düşüncesinde İtikadi, Siyasi ve Fıkhi Yorumlar": {
+    "kademe": "C",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "Dünya ve Ahiret": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "Kurana Göre Hz. Muhammed": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "Kuranda Bazı Kavramlar": {
+    "kademe": "C",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "İnançla İlgili Meseleler": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Yahudilik ve Hıristiyanlık": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "İslam ve Bilim": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "İslam Düşüncesinde Tasavvufi Yorumlar": {
+    "kademe": "C",
+    "soru_yil": 0.12,
+    "kilit": false
+   },
+   "Güncel Dinî Meseleler": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Hint ve Çin Dinleri": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Anadolu'da İslam": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   }
+  },
+  "ayt_mat": {
+   "FONKSİYON GRAFİKLERİ VE DÖNÜŞÜM": {
+    "kademe": "A",
+    "soru_yil": 1.27,
+    "kilit": true
+   },
+   "İKİNCİ DERECEDEN FONKSİYONLAR VE GRAFİKLERİ (PARABOL)": {
+    "kademe": "C",
+    "soru_yil": 0.62,
+    "kilit": false
+   },
+   "İKİNCİ DERECEDEN İKİ BİLİNMEYENLİ DENKLEM SİSTEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "İKİNCİ DERECEDEN BİR BİLİNMEYENLİ EŞİTSİZLİKLER": {
+    "kademe": "C",
+    "soru_yil": 0.35,
+    "kilit": false
+   },
+   "İKİNCİ DERECEDEN BİR BİLİNMEYENLİ ESİTSİZLİK SİSTEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "KOŞULLU VE DENEYSEL OLASILIK": {
+    "kademe": "A",
+    "soru_yil": 1.18,
+    "kilit": false
+   },
+   "ÜSTEL VE LOGARİTMA FONKSİYONLARI": {
+    "kademe": "A",
+    "soru_yil": 1.27,
+    "kilit": true
+   },
+   "DİZİ ÇEŞİTLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "ARİTMETİK VE GEOMETRİK DİZİLERİN ÖZELLİKLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.75,
+    "kilit": false
+   },
+   "TRİGONOMETRİK FONKSİYONLAR": {
+    "kademe": "A",
+    "soru_yil": 1.91,
+    "kilit": true
+   },
+   "İKİ AÇININ ÖLÇÜLERİ TOPLAMININ VE VE FARKININ TRİGONOMETRİK DEĞERLERİ": {
+    "kademe": "A",
+    "soru_yil": 1.27,
+    "kilit": false
+   },
+   "TRİGONOMETRİK DENKLEMLER": {
+    "kademe": "A",
+    "soru_yil": 1.06,
+    "kilit": false
+   },
+   "LİMİT": {
+    "kademe": "A",
+    "soru_yil": 0.96,
+    "kilit": true
+   },
+   "SÜREKLİLİK": {
+    "kademe": "C",
+    "soru_yil": 0.41,
+    "kilit": false
+   },
+   "TÜREV KAVRAMI VE TÜREV ALMA KURALLARI": {
+    "kademe": "B",
+    "soru_yil": 0.9,
+    "kilit": true
+   },
+   "TEĞET VE NORMAL DENKLEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "BELİRSİZ İNTEGRAL": {
+    "kademe": "B",
+    "soru_yil": 0.72,
+    "kilit": true
+   },
+   "İNTEGRAL ALMA YÖNTEMİ": {
+    "kademe": "B",
+    "soru_yil": 0.86,
+    "kilit": true
+   },
+   "BELİRLİ İNTEGRAL": {
+    "kademe": "B",
+    "soru_yil": 0.72,
+    "kilit": false
+   },
+   "BELİRLİ İNTEGRALİN UYGULAMALARI": {
+    "kademe": "C",
+    "soru_yil": 0.58,
+    "kilit": false
+   },
+   "BİR FONKSİYONUN ARTAN AZALAN ARALIKLARI VE EKSTREMUM NOKTALARI": {
+    "kademe": "C",
+    "soru_yil": 0.67,
+    "kilit": false
+   },
+   "LOGARİTMİK DENKLEM VE EŞİTSİZLİKLER": {
+    "kademe": "B",
+    "soru_yil": 0.85,
+    "kilit": false
+   }
+  },
+  "ayt_fiz": {
+   "VEKTÖRLER": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": true
+   },
+   "BAĞIL HAREKET": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "NEWTON'IN HAREKET YASALARI": {
+    "kademe": "A",
+    "soru_yil": 0.86,
+    "kilit": true
+   },
+   "BİR BOYUTTA SABİT İVMELİ HAREKET": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": true
+   },
+   "İKİ BOYUTTA HAREKET": {
+    "kademe": "A",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "ENERJİ VE HAREKET": {
+    "kademe": "B",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "İTME VE ÇİZGİSEL MOMENTUM": {
+    "kademe": "A",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "TORK": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "DENGE VE DENGE ŞARTLARI": {
+    "kademe": "B",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "BASİT MAKİNELER": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "ELEKTRİKSEL KUVVET VE ELEKTRİK ALAN": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": true
+   },
+   "ELEKTRİKSEL POTANSİYEL": {
+    "kademe": "B",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "DÜZGÜN ELEKTRİK ALAN VE SIĞA": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "MANYETİZMA VE ELEKTROMANYETİK İNDÜKLENME": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "ALTERNATİF AKIM": {
+    "kademe": "A",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "TRANSFORMATÖRLER": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "DÜZGÜN ÇEMBERSEL HAREKET": {
+    "kademe": "A",
+    "soru_yil": 1.14,
+    "kilit": false
+   },
+   "DÖNEREK ÖTELEME HAREKETİ": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "AÇISAL MOMENTUM": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "KÜTLE ÇEKİM KUVVETİ": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "KEPLER KANUNLARI": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "BASİT HARMONİK HAREKET": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "DALGALARDA KIRINIM, GİRİŞİM VE DOPPLER OLAYI": {
+    "kademe": "A",
+    "soru_yil": 0.86,
+    "kilit": false
+   },
+   "ELEKTROMANYETİK DALGALAR": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "ATOM KAVRAMININ TARİHSEL GELİŞİMİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "BÜYÜK PATLAMA VE EVRENİN OLUŞUMU": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "RADYOAKTİVİTE": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "ÖZEL GÖRELİLİK": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "KUANTUM FİZİĞİNE GİRİŞ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "FOTOELEKTRİK OLAYI": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "COMPTON SAÇILMASI VE DE BROGLİE DALGA BOYU": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "GÖRÜNTÜLEME TEKNOLOJİLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "YARI İLETKEN TEKNOLOJİSİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "SÜPER İLETKENLER": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "NANOTEKNOLOJİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "LASER IŞINLARI": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   }
+  },
+  "ayt_kim": {
+   "ATOMUN KUANTUM MODELİ": {
+    "kademe": "A",
+    "soru_yil": 0.7,
+    "kilit": true
+   },
+   "PERİYODİK SİSTEM VE ELEKTRON DİZİLİMLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "PERİYODİK ÖZELLİKLER": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "ELEMENTLERİ TANIYALIM": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "YÜKSELTGENME BASAMAKLARI": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "GAZLARIN ÖZELLİKLERİ VE GAZ YASALARI": {
+    "kademe": "B",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "İDEAL GAZ YASASI": {
+    "kademe": "B",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "GAZLARDA KİNETİK TEORİ": {
+    "kademe": "A",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "GAZ KARIŞIMLARI": {
+    "kademe": "B",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "GERÇEK GAZLAR": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "ÇÖZÜCÜ ÇÖZÜNEN ETKİLEŞİMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "DERİŞİM BİRİMLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.8,
+    "kilit": true
+   },
+   "KOLİGATİF ÖZELLİKLER": {
+    "kademe": "A",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "ÇÖZÜNÜRLÜK": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "ÇÖZÜNÜRLÜĞE ETKİ EDEN FAKTÖRLER": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "TEPKİMELERDE ISI DEĞİŞİMİ": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "OLUŞUM ENTALPİSİ": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "BAĞ ENERJİLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.17,
+    "kilit": false
+   },
+   "TEPKİME ISILARININ TOPLANABİLİRLİĞİ": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "TEPKİME HIZLARI": {
+    "kademe": "A",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "TEPKİME HIZINI ETKİLEYEN FAKTÖRLER": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "KİMYASAL DENGE": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "DENGEYİ ETKİLEYEN FAKTÖRLER": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "SULU ÇÖZELTİ DENGELERİ": {
+    "kademe": "A",
+    "soru_yil": 1.14,
+    "kilit": true
+   },
+   "İNDİRGENME YÜKSELTGENME TEPKİMELERİNDE ELEKTRİK AKIMI": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "ELEKTROTLAR VE ELEKTROKİMYASAL HÜCRESEL": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "ELEKTROT POTANSİYELLERİ": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "KİMYASALLARDAN ELEKTRİK ÜRETİMİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "ELEKTROLİZ": {
+    "kademe": "A",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "KOROZYON": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "ANORGANİK VE ORGANİK BİLEŞİKLER": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "BASİT FORMÜL VE MOLEKÜL FORMÜLÜ": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "DOĞADA KARBON": {
+    "kademe": "C",
+    "soru_yil": 0.11,
+    "kilit": false
+   },
+   "LEWİS FORMÜLLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.18,
+    "kilit": false
+   },
+   "HİBRİTLEŞME MOLEKÜL GEOMETRİLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.54,
+    "kilit": true
+   },
+   "HİDROKARBONLAR": {
+    "kademe": "A",
+    "soru_yil": 0.86,
+    "kilit": true
+   },
+   "FONKSİYONEL GRUPLAR": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "ALKOLLER": {
+    "kademe": "C",
+    "soru_yil": 0.17,
+    "kilit": false
+   },
+   "ETERLER": {
+    "kademe": "C",
+    "soru_yil": 0.11,
+    "kilit": false
+   },
+   "KARBONİL BİLEŞİKLER": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "KARBONSİLİK ASİTLER": {
+    "kademe": "B",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "ESTERLER": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "FOSİL YAKITLAR": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "ALTERNATİF ENERJİ KAYNAKLARI": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "SÜRDÜRÜLEBİLİRLİK": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "NANOTEKNOLOJİ": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   }
+  },
+  "ayt_biy": {
+   "DESTEK VE HAREKET SİSTEMİ": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "DOLAŞIM SİSTEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "SOLUNUM SİSTEMİ": {
+    "kademe": "A",
+    "soru_yil": 0.86,
+    "kilit": false
+   },
+   "ÜRİNER SİSTEM": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "ÜREME SİSTEMİ VE EMBRİYONİK GELİŞİM": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "KOMÜNİTE EKOLOJİSİ": {
+    "kademe": "A",
+    "soru_yil": 0.79,
+    "kilit": false
+   },
+   "POPÜLASYON EKOLOJİSİ": {
+    "kademe": "A",
+    "soru_yil": 0.79,
+    "kilit": false
+   },
+   "NÜKLEİK ASİTLERİN KEŞFİ VE ÖNEMİ": {
+    "kademe": "B",
+    "soru_yil": 0.7,
+    "kilit": false
+   },
+   "GENETİK ŞİFRE VE PROTEİN SENTEZİ": {
+    "kademe": "A",
+    "soru_yil": 1.3,
+    "kilit": true
+   },
+   "CANLILIK VE ENERJİ": {
+    "kademe": "C",
+    "soru_yil": 0.43,
+    "kilit": true
+   },
+   "FOTOSENTEZ": {
+    "kademe": "B",
+    "soru_yil": 0.69,
+    "kilit": false
+   },
+   "KEMOSENTEZ": {
+    "kademe": "C",
+    "soru_yil": 0.17,
+    "kilit": false
+   },
+   "HÜCRESEL SOLUNUM": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "BİTKİLERİN YAPISI": {
+    "kademe": "C",
+    "soru_yil": 0.55,
+    "kilit": false
+   },
+   "BİTKİLERDE MADDE TAŞINMASI": {
+    "kademe": "B",
+    "soru_yil": 0.63,
+    "kilit": false
+   },
+   "BİTKİLERDE EŞEYLİ ÜREME": {
+    "kademe": "C",
+    "soru_yil": 0.39,
+    "kilit": false
+   },
+   "CANLILAR VE ÇEVRE": {
+    "kademe": "C",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "SİNDİRİM SİSTEMİ": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "SİNİR SİSTEMİ": {
+    "kademe": "A",
+    "soru_yil": 0.7,
+    "kilit": true
+   },
+   "DUYU ORGANLARI": {
+    "kademe": "B",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "HORMONAL SİSTEM": {
+    "kademe": "A",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "REPLİKASYON": {
+    "kademe": "A",
+    "soru_yil": 0.7,
+    "kilit": true
+   },
+   "BİYOTEKNOLOJİ VE GENETİK MÜHENDİSLİĞİ": {
+    "kademe": "B",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "BİTKİSEL HORMONLAR": {
+    "kademe": "B",
+    "soru_yil": 0.35,
+    "kilit": false
+   }
+  },
+  "ayt_edb": {
+   "Sözcükte ve söz öbeğinde anlam": {
+    "kademe": "A",
+    "soru_yil": 1.06,
+    "kilit": false
+   },
+   "Cümlede anlam": {
+    "kademe": "A",
+    "soru_yil": 1.32,
+    "kilit": false
+   },
+   "Paragrafta anlam ve yapı": {
+    "kademe": "A",
+    "soru_yil": 2.11,
+    "kilit": true
+   },
+   "Anlatım biçimleri ve düşünceyi geliştirme yolları": {
+    "kademe": "B",
+    "soru_yil": 0.79,
+    "kilit": false
+   },
+   "Şiirde ahenk: ölçü, uyak, redif": {
+    "kademe": "A",
+    "soru_yil": 1.09,
+    "kilit": false
+   },
+   "Şiirde yapı ve tema": {
+    "kademe": "B",
+    "soru_yil": 0.81,
+    "kilit": false
+   },
+   "Nazım biçimleri ve türleri": {
+    "kademe": "B",
+    "soru_yil": 0.81,
+    "kilit": false
+   },
+   "Söz sanatları": {
+    "kademe": "A",
+    "soru_yil": 1.57,
+    "kilit": true
+   },
+   "Sözlü edebiyat: koşuk, sagu, sav, destan": {
+    "kademe": "B",
+    "soru_yil": 0.6,
+    "kilit": false
+   },
+   "Yazılı edebiyat: Göktürk ve Uygur metinleri": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "Kutadgu Bilig ve Divanü Lügati't-Türk": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "Atabetü'l-Hakayık ve Divan-ı Hikmet": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "Anonim halk edebiyatı": {
+    "kademe": "B",
+    "soru_yil": 0.45,
+    "kilit": false
+   },
+   "Âşık tarzı halk edebiyatı": {
+    "kademe": "B",
+    "soru_yil": 0.51,
+    "kilit": false
+   },
+   "Dinî-tasavvufi halk edebiyatı": {
+    "kademe": "C",
+    "soru_yil": 0.32,
+    "kilit": false
+   },
+   "Divan şiiri nazım biçimleri": {
+    "kademe": "A",
+    "soru_yil": 1.8,
+    "kilit": true
+   },
+   "Divan edebiyatı nesir türleri": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "Divan edebiyatı sanatçıları": {
+    "kademe": "A",
+    "soru_yil": 1.2,
+    "kilit": false
+   },
+   "Tanzimat I. dönem": {
+    "kademe": "B",
+    "soru_yil": 0.64,
+    "kilit": false
+   },
+   "Tanzimat II. dönem": {
+    "kademe": "B",
+    "soru_yil": 0.64,
+    "kilit": false
+   },
+   "Servet-i Fünun şiiri ve romanı": {
+    "kademe": "B",
+    "soru_yil": 0.8,
+    "kilit": false
+   },
+   "Fecr-i Ati topluluğu": {
+    "kademe": "C",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "Millî Edebiyat şiiri": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "Millî Edebiyat roman ve hikâyesi": {
+    "kademe": "C",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "Bağımsız sanatçılar": {
+    "kademe": "C",
+    "soru_yil": 0.2,
+    "kilit": false
+   },
+   "Öz şiir anlayışı": {
+    "kademe": "C",
+    "soru_yil": 0.36,
+    "kilit": false
+   },
+   "Toplumcu gerçekçi şiir": {
+    "kademe": "C",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "Garip ve İkinci Yeni": {
+    "kademe": "C",
+    "soru_yil": 0.39,
+    "kilit": false
+   },
+   "1980 sonrası şiir": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "Toplumcu gerçekçi roman": {
+    "kademe": "C",
+    "soru_yil": 0.36,
+    "kilit": false
+   },
+   "Bireyin iç dünyasını esas alan roman": {
+    "kademe": "C",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "Modernist ve postmodernist roman": {
+    "kademe": "C",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "Cumhuriyet dönemi hikâyesi": {
+    "kademe": "C",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "Cumhuriyet dönemi tiyatrosu": {
+    "kademe": "C",
+    "soru_yil": 0.24,
+    "kilit": false
+   },
+   "Deneme, makale, fıkra, eleştiri": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "Anı, günlük, biyografi, gezi yazısı": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "Batı edebiyatı akımları": {
+    "kademe": "B",
+    "soru_yil": 0.7,
+    "kilit": false
+   },
+   "Dünya edebiyatından seçme yazarlar": {
+    "kademe": "C",
+    "soru_yil": 0.3,
+    "kilit": false
+   }
+  },
+  "ayt_tar1": {
+   "TARİH BİLİMİNE GİRİŞ TARİHSEL OLAYLARIN ÖZELLİKLERİ VE DEĞERLENDİRİLMESİ": {
+    "kademe": "A",
+    "soru_yil": 0.51,
+    "kilit": false
+   },
+   "TARİHİ BİLGİLERİN DEĞİŞEBİLİRLİĞİ TARİH YAZICILIĞI VE TARİHİN DİĞER BİLİMLERLE İLİŞKİSİ": {
+    "kademe": "B",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "ÇAĞ KAVRAMI MEZOPOTAMYA MISIR İRAN UYGARLIKLARI": {
+    "kademe": "A",
+    "soru_yil": 0.51,
+    "kilit": false
+   },
+   "ORTA ASYA UZAK DOĞU DOĞU AKDENİZ ANADOLU YUNAN ROMA UYGARLIKLARI": {
+    "kademe": "B",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "ORTA ASYA'DA İLK TÜRK DEVLETLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.94,
+    "kilit": true
+   },
+   "DİĞER TÜRK DEVLETLERİ İLK TÜRK DEVLETLERİNDE KÜLTÜR VE UYGARLIK": {
+    "kademe": "A",
+    "soru_yil": 0.63,
+    "kilit": false
+   },
+   "İSLAMİYETİN DOĞUŞU YAYILIŞI VE DÖRT HALİFE DÖNEMİ": {
+    "kademe": "A",
+    "soru_yil": 0.6,
+    "kilit": false
+   },
+   "EMEVİLER ABBASİLER VE TÜRK İSLAM BİLGİNLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "TÜRKLERİN İSLAMİYETİ BENİMSEMESİ VE İLK TÜRK İSLAM DEVLETLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.77,
+    "kilit": true
+   },
+   "BÜYÜK SELÇUKLU DEVLETİ VE DİĞER TÜRK İSLAM DEVLETLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.51,
+    "kilit": false
+   },
+   "ANADOLU'DAKİ İLK TÜRK BEYLİKLERİ TÜRKİYE SELÇUKLU DEVLETİ": {
+    "kademe": "C",
+    "soru_yil": 0.26,
+    "kilit": false
+   },
+   "TÜRKİYE SELÇUKLU KÜLTÜR UYGARLIĞI HAÇLI SEFERLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.17,
+    "kilit": false
+   },
+   "BEYLİĞİN BÜYÜME SEBEPLERİ VE İLK OSMANLI PADİŞAHLARI": {
+    "kademe": "A",
+    "soru_yil": 0.6,
+    "kilit": false
+   },
+   "İSKAN POLİTİKASI VE DİĞER KURULUŞ DÖNEMİ PADİŞAHLARI": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "15 VE 16.YY OSMANLI DIŞ SİYASETİNDEN MEYDANA GELEN GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "YENİ ÇAĞDA AVRUPADAKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.23,
+    "kilit": false
+   },
+   "OSMANLI DEVLETİ'NDE DEVLET YÖNETİMİ ORDU VE TOPRAK SİSTEMİ": {
+    "kademe": "C",
+    "soru_yil": 0.17,
+    "kilit": false
+   },
+   "OSMANLI DEVLETİ'NDE SOSYAL YAPI EKONOMİ EĞİTİM HUKUK BİLİM TEKNOLOJİ KÜLTÜR SANAT": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "DURAKLAMANIN NEDENLERİ İÇ YAPIDAKİ DEĞİŞİM VE İÇ İSYANLAR": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "OSMANLI DIŞ SİYASETİ ISLAHATLAR AVRUPA VE OSMANLI'DA BİLİM KÜLTÜR": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "1700 1768 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ": {
+    "kademe": "B",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "1768 1799 YILLARI ARASINDA OSMANLI DIŞ VE İÇ SİYASETİ": {
+    "kademe": "C",
+    "soru_yil": 0.26,
+    "kilit": false
+   },
+   "YAKIN ÇAĞ AVRUPA'DAKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.26,
+    "kilit": false
+   },
+   "II.MAHMUT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.21,
+    "kilit": false
+   },
+   "TANZİMAT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "II.ABDÜLHAMİT DÖNEMİ DIŞ VE İÇ SİYASETTEKİ GELİŞMELER 19.YY OSMANLI'DA KÜLTÜREL GELİŞMELER": {
+    "kademe": "C",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "II.MEŞRUTİYET'İN İLANI TRABLUSGARP VE BALKAN SAVAŞLARI": {
+    "kademe": "A",
+    "soru_yil": 1.07,
+    "kilit": false
+   },
+   "I.DÜNYA ŞAVAŞI": {
+    "kademe": "A",
+    "soru_yil": 1.07,
+    "kilit": false
+   },
+   "MONDROS ATEŞKES ANTLAŞMASI VE İŞGALLER": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "KUVAYI MİLLİYE VE CEMİYETLER": {
+    "kademe": "B",
+    "soru_yil": 0.46,
+    "kilit": false
+   },
+   "HAVZA GENELGESİ AMASYA GENELGESİ ERZURUM KONGRESİ": {
+    "kademe": "A",
+    "soru_yil": 0.58,
+    "kilit": false
+   },
+   "SİVAS KONGRESİ AMASYA GÖRÜŞMESİ SON OSMANLI MEBUSAN MECLİSİ'NİN AÇILMASI": {
+    "kademe": "A",
+    "soru_yil": 0.54,
+    "kilit": false
+   },
+   "TBMM'NİN AÇILMASI": {
+    "kademe": "B",
+    "soru_yil": 0.46,
+    "kilit": false
+   },
+   "DOĞU GÜNEY CEPHELERİ VE BATI CEPHESİNDE I.İNÖNÜ SAVAŞI": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "BATI CEPHESİ SAVAŞLARI VE ANADOLU'NUN KURTULUŞU": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "KURTULUŞ SAVAŞI'NIN SONUÇLARI": {
+    "kademe": "C",
+    "soru_yil": 0.31,
+    "kilit": false
+   },
+   "SİYASİ ALANDAKİ İNKILAPLAR": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "ATATÜRKÇÜ DÜŞÜNCE SİSTEMİ CUMHURİYETÇİLİK MİLLİYETÇİLİK": {
+    "kademe": "B",
+    "soru_yil": 0.36,
+    "kilit": false
+   },
+   "HALKÇILIK LAİKLİK DEVLETÇİLİK İNKILAPÇILIK MİLLİ GÜÇ UNSURLARI": {
+    "kademe": "B",
+    "soru_yil": 0.36,
+    "kilit": false
+   },
+   "1923 1932 YILLARI ARASI TÜRK DIŞ POLİTİKASI": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "1932 1939 YILLARI ARASI TÜRK DIŞ POLİTİKASI": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   }
+  },
+  "ayt_tar2": {
+   "I.DÜNYA SAVAŞI SSCB'NİN KURULMASI VE ORTA ASYA'DAKİ TÜRK DEVLETLERİ VE TOPLULUKLARI": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "I.DÜNYA SAVAŞI SONRASINDA ORTA DOĞU JAPONYA'NIN YÜKSELİŞİ 1929 EKONOMİK BUNALIM İKİ SAVAŞ ARASI DÖNEMDE AVRUPA VE DÜNYA": {
+    "kademe": "C",
+    "soru_yil": 0.07,
+    "kilit": false
+   },
+   "YENİ BİR SAVAŞA DOĞRU SAVAŞ YILLARI": {
+    "kademe": "A",
+    "soru_yil": 0.21,
+    "kilit": false
+   },
+   "BARIŞA DOĞRU SAVAŞIN ETKİLERİ SAVAŞ YILLARINDA TÜRKİYE": {
+    "kademe": "B",
+    "soru_yil": 0.21,
+    "kilit": false
+   },
+   "BLOKLARIN KURULUŞU PAYLAŞILAMAYAN ORTA DOĞU": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "UZAK DOĞU'DA ÇATIŞMA ASYA VE AFRİKA'NIN KURULUŞU SOĞUK SAVAŞ DÖNEMİNDE TÜRKİYE VE DÜNYA": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "ULUSLARARASI İLİŞKİLERDE DEĞİŞİM YUMUŞAMA DÖNEMİ ÇATIŞMALARI BARIŞ İÇİNDE BİR ARADA YAŞAMA ARAP İSRAİL SAVAŞLARI PETROLÜN SİYESETE ETKİSİ İRAN IRAK SAVAŞI": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "YUMUŞAMA DÖNEMİNDE DÜNYA TÜRK DIŞ POLİTİKASI TÜRKİYE'DE BUNALIMLI YILLAR": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "SSCB'DE DEĞİŞİM VE SONUÇLARI ASYA'DA YENİDEN YAPILANMA DOĞU BLOKUNDAN SONRA AVRUPA, TÜRKİYE VE AVRUPA BİRLİĞİ, YENİ OLUŞUM SÜRECİNDE BALKANLAR": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "ORTA DOĞU VE AFGANİSTAN'DAKİ GELİŞMELER, DÜNYADAKİ GELİŞMELER, DEĞİŞEN DÜNYA VE TÜRK DIŞ POLİTİKASI, 1980 SONRASI TÜRKİYE, KÜRESEL SORUNLAR": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   }
+  },
+  "ayt_cog1": {
+   "BİYOÇEŞİTLİLİK": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": true
+   },
+   "ENERJİ AKIŞI VE MADDE DÖNGÜLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "EKOSİSTEMLERİM İŞLEYİŞLERİ": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "ÜLKELERİN NÜFUS POLİTİKALARI": {
+    "kademe": "A",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "İLK MEDENİYETLER": {
+    "kademe": "C",
+    "soru_yil": 0.3,
+    "kilit": false
+   },
+   "ŞEHİRLER ETKİ ALANLARI": {
+    "kademe": "A",
+    "soru_yil": 1.29,
+    "kilit": false
+   },
+   "KÜLTÜR BÖLGELERİNİN OLUŞUMU VE TÜRK KÜLTÜRÜ": {
+    "kademe": "B",
+    "soru_yil": 0.7,
+    "kilit": false
+   },
+   "JAPONYA, İNGİLTERE, HOLLANDA, HİNDİSTAN, FRANSA, İTALYA": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "ÜLKELER NEDEN FARKLI GELİŞMİŞLERDİR, ALMANYA, NİJERYA, RUSYA, GAC, ÇİN": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "KÜRESEL VE BÖLGESEL ÖRGÜTLER SICAK ÇATIŞMA BÖLGELERİ": {
+    "kademe": "A",
+    "soru_yil": 0.86,
+    "kilit": false
+   },
+   "KÜRESEL TİCARETİN ÜÇ ÖNEMLİ ELEMANI, HAM MADDE, ÜRETİM, PAZAR": {
+    "kademe": "C",
+    "soru_yil": 0.43,
+    "kilit": false
+   }
+  },
+  "ayt_cog2": {
+   "ORTAK PAYDA, BÖLGE": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "DÜNYAYI BİRBİRİNE BAĞLAYAN AĞLAR, ULAŞIM": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "DÜNYA'NIN HIZLI GELİŞİM ENDÜSTRİSİ, TURİZM": {
+    "kademe": "A",
+    "soru_yil": 1.14,
+    "kilit": false
+   },
+   "İNSAN VE ÇEVRE": {
+    "kademe": "C",
+    "soru_yil": 0.46,
+    "kilit": false
+   },
+   "DOĞAL AFETLER VE TOPLUM": {
+    "kademe": "C",
+    "soru_yil": 0.69,
+    "kilit": false
+   },
+   "DOĞAL KAYNAKLAR VE ÇEVRE": {
+    "kademe": "C",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "ÇEVRE SORUNLARI VE ATIKLAR": {
+    "kademe": "A",
+    "soru_yil": 2.0,
+    "kilit": false
+   },
+   "ÇEVRE SORUNLARININ ÖNLENMESİ ÇEVRESEL ÖRGÜTLER": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   }
+  },
+  "ayt_fel": {
+   "Felsefeyi Tanıma": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Felsefeyle Düşünme": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Bilgi Felsefesi": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": true
+   },
+   "Varlık Felsefesi": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "Ahlak Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "Sanat Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "Din Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "Siyaset Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Bilim Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Felsefi Okuma ve Yazma": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "MÖ 6. Yüzyıl-MS 2. Yüzyıl Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "Hristiyan Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "İslam Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "15. Yüzyıl-17. Yüzyıl Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "18. Yüzyıl-19. Yüzyıl Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.06,
+    "kilit": false
+   },
+   "20. Yüzyıl Felsefesi": {
+    "kademe": "C",
+    "soru_yil": 0.09,
+    "kilit": false
+   },
+   "Psikoloji bilimini tanıma": {
+    "kademe": "B",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "Psikolojinin temel süreçleri": {
+    "kademe": "A",
+    "soru_yil": 0.86,
+    "kilit": false
+   },
+   "Öğrenme, bellek ve güdülenme": {
+    "kademe": "A",
+    "soru_yil": 0.86,
+    "kilit": false
+   },
+   "Ruh sağlığının temelleri": {
+    "kademe": "B",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "Sosyolojiye giriş": {
+    "kademe": "B",
+    "soru_yil": 0.86,
+    "kilit": false
+   },
+   "Birey ve toplum": {
+    "kademe": "B",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "Toplumsal yapı ve kurumlar": {
+    "kademe": "C",
+    "soru_yil": 0.43,
+    "kilit": false
+   },
+   "Toplumsal değişme ve gelişme": {
+    "kademe": "B",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "Mantığa giriş": {
+    "kademe": "A",
+    "soru_yil": 1.14,
+    "kilit": false
+   },
+   "Klasik mantık": {
+    "kademe": "A",
+    "soru_yil": 1.14,
+    "kilit": false
+   },
+   "Mantık ve dil": {
+    "kademe": "C",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "Sembolik mantık": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   }
+  },
+  "ayt_din": {
+   "Bilgi ve İnanç": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Din ve İslam": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "İslam ve İbadet": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "Gençlik ve Değerler": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Gönül Coğrafyamız": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Allah İnsan İlişkisi": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "Hz. Muhammed ve Gençlik": {
+    "kademe": "C",
+    "soru_yil": 0.26,
+    "kilit": false
+   },
+   "Din ve Hayat": {
+    "kademe": "C",
+    "soru_yil": 0.29,
+    "kilit": false
+   },
+   "Ahlaki Tutum ve Davranışlar": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "İslam Düşüncesinde İtikadi, Siyasi ve Fıkhi Yorumlar": {
+    "kademe": "B",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "Dünya ve Ahiret": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "Kurana Göre Hz. Muhammed": {
+    "kademe": "A",
+    "soru_yil": 0.6,
+    "kilit": false
+   },
+   "Kuranda Bazı Kavramlar": {
+    "kademe": "A",
+    "soru_yil": 0.71,
+    "kilit": false
+   },
+   "İnançla İlgili Meseleler": {
+    "kademe": "B",
+    "soru_yil": 0.57,
+    "kilit": false
+   },
+   "Yahudilik ve Hıristiyanlık": {
+    "kademe": "C",
+    "soru_yil": 0.17,
+    "kilit": false
+   },
+   "İslam ve Bilim": {
+    "kademe": "A",
+    "soru_yil": 1.43,
+    "kilit": false
+   },
+   "İslam Düşüncesinde Tasavvufi Yorumlar": {
+    "kademe": "B",
+    "soru_yil": 0.51,
+    "kilit": false
+   },
+   "Güncel Dinî Meseleler": {
+    "kademe": "C",
+    "soru_yil": 0.14,
+    "kilit": false
+   },
+   "Hint ve Çin Dinleri": {
+    "kademe": "C",
+    "soru_yil": 0.11,
+    "kilit": false
+   },
+   "Anadolu'da İslam": {
+    "kademe": "B",
+    "soru_yil": 0.43,
+    "kilit": false
+   }
+  },
+  "ydt": {
+   "Vocabulary": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Phrasal verbs": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Word formation": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Tenses": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Modals": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Passive voice": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Noun clauses": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Adjective clauses": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Adverbial clauses": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Conditionals": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Prepositions": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Conjunctions": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Cloze test": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Cümle tamamlama": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Çeviri: TR-EN / EN-TR": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Paragraf soruları": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Diyalog tamamlama": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Anlamca en yakın cümle": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Paragraf tamamlama": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   },
+   "Akışı bozan cümle": {
+    "kademe": "B",
+    "soru_yil": 4.0,
+    "kilit": false
+   }
+  },
+  "tyt_geo": {
+   "ÜÇGENDE AÇI KENAR BAĞINTILARI": {
+    "kademe": "C",
+    "soru_yil": 0.28,
+    "kilit": false
+   },
+   "ÜÇGENLERİN BENZERLİĞİ": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": true
+   },
+   "ÜÇGENİN YARDIMCI ELEMANLARI (AÇIORTAY KENAR ORTAY YÜKSEKLİK)": {
+    "kademe": "C",
+    "soru_yil": 0.21,
+    "kilit": false
+   },
+   "ÜÇGENİN ALANI": {
+    "kademe": "B",
+    "soru_yil": 0.49,
+    "kilit": true
+   },
+   "YAMUK": {
+    "kademe": "A",
+    "soru_yil": 0.75,
+    "kilit": false
+   },
+   "PARALELKENAR": {
+    "kademe": "C",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "EŞKENAR DÖRTGEN": {
+    "kademe": "C",
+    "soru_yil": 0.25,
+    "kilit": false
+   },
+   "DİKDÖRTGEN": {
+    "kademe": "A",
+    "soru_yil": 0.76,
+    "kilit": false
+   },
+   "KARE": {
+    "kademe": "B",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "DİK PRİZMALAR": {
+    "kademe": "B",
+    "soru_yil": 0.56,
+    "kilit": false
+   },
+   "DİK DAİRESEL SİLİNDİR": {
+    "kademe": "B",
+    "soru_yil": 0.47,
+    "kilit": false
+   },
+   "DİK PİRAMİTLER": {
+    "kademe": "C",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "KÜRE": {
+    "kademe": "C",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "ÜÇGENDE AÇILAR": {
+    "kademe": "A",
+    "soru_yil": 1.12,
+    "kilit": true
+   },
+   "ÜÇGENLERİN EŞLİĞİ VE ÖZEL ÜÇGENLER": {
+    "kademe": "A",
+    "soru_yil": 0.84,
+    "kilit": true
+   },
+   "DÜZGÜN ÇOKGEN": {
+    "kademe": "A",
+    "soru_yil": 1.0,
+    "kilit": false
+   },
+   "DÖRTGENLER VE DELTOİD": {
+    "kademe": "C",
+    "soru_yil": 0.0,
+    "kilit": false
+   },
+   "DİK DAİRESEL KONİ": {
+    "kademe": "C",
+    "soru_yil": 0.28,
+    "kilit": false
+   }
+  },
+  "ayt_geo": {
+   "ÇEMBERİN TEMEL ELEMANLARI": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": true
+   },
+   "ÇEMBERLERDE AÇILAR": {
+    "kademe": "A",
+    "soru_yil": 0.7,
+    "kilit": false
+   },
+   "ÇEMBERDE TEĞET": {
+    "kademe": "A",
+    "soru_yil": 0.5,
+    "kilit": false
+   },
+   "DAİRENİN ÇEVRESİ VE ALANI": {
+    "kademe": "B",
+    "soru_yil": 0.4,
+    "kilit": false
+   },
+   "DOĞRU PARÇASINI BELLİ ORANDA BÖLEN NOKTANIN KOORDİNATLARI": {
+    "kademe": "A",
+    "soru_yil": 0.53,
+    "kilit": false
+   },
+   "DOĞRUNUN DENKLEMLERİ": {
+    "kademe": "A",
+    "soru_yil": 0.6,
+    "kilit": true
+   },
+   "DÜZLEMDE İKİ DOĞRUNUN BİRBİRİNE GÖRE DURUMLARI NOKTANIN DOĞRUYA OLAN UZAKLIĞI": {
+    "kademe": "A",
+    "soru_yil": 0.52,
+    "kilit": false
+   },
+   "DENKLEMİ VERİLEN BİR DOĞRUNUN GRAFİĞİ VE DOĞRUNUN DÜZLEMDE AYIRDIĞI BÖLGELER": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "ÖTELEME YANSIMA VE DÖNME DÖNÜŞÜMLERİ NOKTANIN NOKTAYA EKSENLERE ÖZEL DOĞRULARA VE HERHANGİ BİR DOĞRUYA GÖRE YANSIMASI": {
+    "kademe": "B",
+    "soru_yil": 0.38,
+    "kilit": false
+   },
+   "BİR DOĞRUNUN BAŞKA BİR DOĞRUYA VE BİR NOKTAYA GÖRE YANSIMASI": {
+    "kademe": "C",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "BİR NOKTANIN BAŞLANGIÇ NOKTASI ETRAFINDA DÖNDÜRÜLMESİ": {
+    "kademe": "C",
+    "soru_yil": 0.15,
+    "kilit": false
+   },
+   "ÇEMBERİN DENKLEMLERİ": {
+    "kademe": "C",
+    "soru_yil": 0.34,
+    "kilit": false
+   },
+   "DENKLEMLERİ VERİLEN DOĞRU İLE ÇEMBERİN BİRBİRİNE GÖRE DURUMLARI": {
+    "kademe": "C",
+    "soru_yil": 0.22,
+    "kilit": false
+   },
+   "ÇEMBERİN ÜZERİNDEKİ BİR NOKTADAN ÇİZİLEN TEĞET VE NORMALİN DENKLEMİ": {
+    "kademe": "C",
+    "soru_yil": 0.19,
+    "kilit": false
+   },
+   "SAYI DOĞRUSU VE ANALİTİK DÜZLEM": {
+    "kademe": "C",
+    "soru_yil": 0.35,
+    "kilit": true
+   }
+  }
+ },
+ "guncelleme": "2026-08-30 — mufredat guncellemesi: biyoloji konulari bolundu/eklendi, yazim duzeltmeleri"
+}
