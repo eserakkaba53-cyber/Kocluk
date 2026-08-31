@@ -420,6 +420,104 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 .km-btn{display:block;width:100%;margin-top:18px;background:var(--accent);color:#fff;border:0;padding:12px;border-radius:7px;font-weight:650;font-size:14px;cursor:pointer;text-align:center}
 .km-foot{font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px}
 
+
+/* ═══════════════════════════════════════════════════════════════
+   HAREKET SİSTEMİ — yalnızca görsel katman, uygulama mantığına dokunmaz.
+   Ekran geçiş animasyonları #view üzerindeki .gecis sınıfına bağlıdır;
+   o sınıfı dosyanın sonundaki küçük betik yalnızca EKRAN değiştiğinde
+   ekler. Böylece her tıklamada animasyon tekrarlamaz.
+   ═══════════════════════════════════════════════════════════════ */
+:root{ --gy:cubic-bezier(.22,.68,.32,1) }
+
+/* ---- ekran geçişi: içerik yumuşakça yükselir, kartlar kademeli ---- */
+@keyframes ekranGel{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+#view.gecis>*{animation:ekranGel .34s var(--gy) backwards}
+#view.gecis>*:nth-child(2){animation-delay:.05s}
+#view.gecis>*:nth-child(3){animation-delay:.1s}
+#view.gecis>*:nth-child(4){animation-delay:.15s}
+#view.gecis>*:nth-child(5){animation-delay:.2s}
+#view.gecis>*:nth-child(6){animation-delay:.25s}
+#view.gecis>*:nth-child(n+7){animation-delay:.3s}
+
+/* ---- imza: hedef farkı çubukları ekran açılırken soldan dolar ---- */
+@keyframes cubukDol{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.gecis .gap-fill{transform-origin:left center;animation:cubukDol .65s var(--gy) .12s backwards}
+.gecis .gap-def{transform-origin:left center;animation:cubukDol .65s var(--gy) .24s backwards}
+
+/* ---- istatistik değerleri hafifçe belirir ---- */
+@keyframes degerBelir{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.gecis .stat .v{animation:degerBelir .5s var(--gy) .16s backwards}
+
+/* ---- bayraklar (uyarı/onay kutuları) ekran girişinde süzülür ---- */
+@keyframes bayrakGel{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.gecis .flag{animation:bayrakGel .32s var(--gy) backwards}
+
+/* ---- mikro etkileşimler (her zaman açık, tekrar sorunu yok) ---- */
+.btn{transition:transform .16s var(--gy),box-shadow .2s var(--gy),background .18s,border-color .18s,color .18s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px -4px rgba(11,32,51,.35)}
+.btn:active{transform:translateY(0) scale(.98);box-shadow:none;transition-duration:.06s}
+.btn:disabled{transform:none;box-shadow:none}
+
+.tab{transition:color .16s,border-color .22s,background .18s}
+.st-item{transition:background .18s,color .16s,border-color .22s,padding-left .18s var(--gy)}
+.st-item:hover{padding-left:19px}
+.rail-bot button{transition:background .18s,border-color .18s,transform .16s var(--gy)}
+.rail-bot button:hover{transform:translateY(-1px)}
+
+input,select,textarea{transition:border-color .18s,box-shadow .18s,background .18s}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ---- tema geçişi: renkler sertçe zıplamasın ---- */
+body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-color .25s}
+
+/* ---- pencereler: karşılama ve video çekmecesi ---- */
+@keyframes perdeGel{from{opacity:0}to{opacity:1}}
+@keyframes kutuGel{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes cekmeceGel{from{transform:translateX(46px);opacity:0}to{transform:none;opacity:1}}
+.km-overlay{animation:perdeGel .22s ease-out}
+.km-overlay>*{animation:kutuGel .34s var(--gy)}
+.vd-overlay{animation:perdeGel .2s ease-out}
+.vd-drawer{animation:cekmeceGel .3s var(--gy)}
+
+/* ---- giriş sahnesi: markanın kapısı ---- */
+.giris-fon{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.giris-fon::before{content:"";position:absolute;inset:-40% -10% -10%;opacity:.5;
+  background-image:linear-gradient(color-mix(in srgb,var(--accent) 26%,transparent) 1px,transparent 1px),
+    linear-gradient(90deg,color-mix(in srgb,var(--accent) 26%,transparent) 1px,transparent 1px);
+  background-size:52px 52px;
+  -webkit-mask-image:radial-gradient(640px 420px at 60% 30%,#000 0%,transparent 74%);
+  mask-image:radial-gradient(640px 420px at 60% 30%,#000 0%,transparent 74%);
+  animation:izgaraAk 36s linear infinite}
+@keyframes izgaraAk{to{background-position:52px 52px,52px 52px}}
+.giris-fon i{position:absolute;border-radius:50%;filter:blur(64px);opacity:.34;will-change:transform}
+.giris-fon i:nth-child(1){width:440px;height:440px;top:-140px;right:-80px;
+  background:radial-gradient(circle,var(--accent),transparent 66%);animation:kureA 23s ease-in-out infinite}
+.giris-fon i:nth-child(2){width:360px;height:360px;bottom:-150px;left:6%;
+  background:radial-gradient(circle,var(--warn),transparent 64%);opacity:.2;animation:kureB 28s ease-in-out infinite}
+.giris-fon i:nth-child(3){width:280px;height:280px;top:44%;left:52%;
+  background:radial-gradient(circle,var(--accent),transparent 62%);opacity:.16;animation:kureC 20s ease-in-out infinite}
+@keyframes kureA{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-52px,42px) scale(1.12)}}
+@keyframes kureB{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(58px,-38px) scale(1.08)}}
+@keyframes kureC{0%,100%{transform:translate(0,0)}33%{transform:translate(44px,-32px)}66%{transform:translate(-36px,26px)}}
+
+/* giriş kartı: ışıyan çerçeveyle yerine oturur */
+@keyframes sahneGel{from{opacity:0;transform:translateY(22px) scale(.985)}to{opacity:1;transform:none}}
+.gecis .giris-sahne{animation:sahneGel .55s var(--gy)}
+.giris-kart{position:relative}
+.giris-kart::before{content:"";position:absolute;inset:-2px;border-radius:9px;z-index:-1;
+  background:linear-gradient(135deg,var(--accent),transparent 40%,var(--warn));
+  opacity:.4;filter:blur(10px);animation:kartIsilti 5.5s ease-in-out infinite}
+@keyframes kartIsilti{0%,100%{opacity:.22}50%{opacity:.5}}
+
+/* ---- hareketi azalt: her şey kapanır ---- */
+@media (prefers-reduced-motion: reduce){
+  #view.gecis>*,.gecis .gap-fill,.gecis .gap-def,.gecis .stat .v,.gecis .flag,
+  .km-overlay,.km-overlay>*,.vd-overlay,.vd-drawer,
+  .giris-fon::before,.giris-fon i,.gecis .giris-sahne,
+  .giris-kart::before{animation:none !important}
+  .btn,.tab,.st-item,.rail-bot button,input,select,textarea,body,.card,.hdr,.rail,.stat{transition:none !important}
+}
+
 </style>
 
 <div class="app">
@@ -6377,11 +6475,11 @@ function girisEkrani(){
       <button class="btn wide" ${GIRISBEKLE?'disabled':''} onclick="yeniSifreKaydet()">${GIRISBEKLE?'Bekle...':'Şifreyi kaydet'}</button>
       ${h?`<div class="flag ${iyi?'ok':'bad'}" style="margin-top:12px"><span class="ic">${iyi?'✓':'!'}</span><span>${esc(h.replace(/^OK\|/,'')).replace(/\n/g,'<br>')}</span></div>`:''}
     </div></div></div>`;
-  return `<div style="max-width:${kurulu?'960px':'460px'};margin:36px auto">
+  return `<div class="giris-fon" aria-hidden="true"><i></i><i></i><i></i></div><div class="giris-sahne" style="max-width:${kurulu?'960px':'460px'};margin:36px auto">
     ${kurulu?sayacSerit():''}
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
     <div style="flex:1 1 440px;min-width:0">
-    <div class="card"><h2>${kurulu?(GIRISMOD==='kayit'?'Öğretmen hesabı oluştur':'Öğretmen girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
+    <div class="card giris-kart"><h2>${kurulu?(GIRISMOD==='kayit'?'Öğretmen hesabı oluştur':'Öğretmen girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
       kurulu?(GIRISMOD==='kayit'
         ? 'Kaydını tamamla, 7 günlük denemen hemen başlasın.'
         : 'Verilerin sunucuda saklanır; her cihazdan aynı veriye ulaşırsın.')
@@ -6621,5 +6719,44 @@ function kaynakUyarisi(){
     return;
   }
   render();
+})();
+</script>
+<script>
+/* ═══ EKRAN GECIS ANIMASYONU ═══
+   render() her tiklamada calisir; animasyon yalnizca EKRAN degistiginde
+   oynasin diye ekran kimligi izlenir. Mantiga dokunmaz; #view'a kisa
+   sureli .gecis sinifi ekler, animasyon bitince kaldirir. */
+(function(){
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (typeof render !== 'function') return;
+  var cekirdek = render, oncekiAnahtar = null, sayac = null;
+  function anahtar(){
+    var p = [];
+    try{ p.push(typeof TAB      !== 'undefined' ? String(TAB)      : ''); }catch(e){}
+    try{ p.push(typeof KOKPIT   !== 'undefined' ? String(!!KOKPIT) : ''); }catch(e){}
+    try{ p.push(typeof ABONE    !== 'undefined' ? String(!!ABONE)  : ''); }catch(e){}
+    try{ p.push(typeof GIRISMOD !== 'undefined' ? String(GIRISMOD) : ''); }catch(e){}
+    try{ p.push((typeof YENIOGR !== 'undefined' && YENIOGR) ? 'y' : ''); }catch(e){}
+    try{ p.push((typeof DB !== 'undefined' && DB) ? String(DB.sel) : ''); }catch(e){}
+    try{ p.push(typeof sbOturum === 'function' ? String(!!sbOturum()) : ''); }catch(e){}
+    return p.join('|');
+  }
+  function oynat(){
+    var v = document.getElementById('view');
+    if (!v) return;
+    v.classList.remove('gecis'); void v.offsetWidth; v.classList.add('gecis');
+    clearTimeout(sayac);
+    sayac = setTimeout(function(){ v.classList.remove('gecis'); }, 950);
+  }
+  render = function(){
+    cekirdek.apply(this, arguments);
+    var a = anahtar();
+    if (a === oncekiAnahtar) return;
+    oncekiAnahtar = a;
+    oynat();
+  };
+  /* sarmalayici kurulmadan once cizilmis ilk ekran da animasyonla acilsin */
+  var v0 = document.getElementById('view');
+  if (v0 && v0.children.length){ oncekiAnahtar = anahtar(); oynat(); }
 })();
 </script>
