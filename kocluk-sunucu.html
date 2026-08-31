@@ -518,6 +518,46 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
   .btn,.tab,.st-item,.rail-bot button,input,select,textarea,body,.card,.hdr,.rail,.stat{transition:none !important}
 }
 
+
+/* ═══════════ SOL RAY: ÖĞRENCİ ALTI SEKMELER (akordeon) ═══════════
+   Üstteki sekme çubuğu kaldırıldı; öğrenciye tıklayınca sekmeleri
+   adının altında aşağı kayarak açılır. Davet/Hesap rayın altında. */
+#tabs:empty{display:none}
+.hdr{padding-bottom:15px}
+.st-item .nm{position:relative;padding-right:18px}
+.st-item .stok{position:absolute;right:0;top:2px;font-size:10px;opacity:.55;
+  transition:transform .32s var(--gy)}
+.st-item.on .stok{transform:rotate(180deg)}
+.rag{display:grid;grid-template-rows:0fr;background:rgba(0,0,0,.24)}
+.rag>div{min-height:0;overflow:hidden}
+.rag.acik{grid-template-rows:1fr}
+.rag.acik.yeni{animation:ragAc .36s var(--gy)}
+@keyframes ragAc{from{grid-template-rows:0fr}to{grid-template-rows:1fr}}
+.rtab{display:block;width:100%;text-align:left;background:none;border:0;border-left:3px solid transparent;
+  color:#B9CBD6;padding:7px 14px 7px 37px;font-size:12.8px;cursor:pointer;position:relative;
+  transition:background .16s,color .14s,border-color .2s,padding-left .18s var(--gy)}
+.rtab::before{content:"";position:absolute;left:23px;top:50%;width:5px;height:5px;margin-top:-2.5px;
+  border-radius:50%;background:currentColor;opacity:.4}
+.rtab:hover{background:rgba(255,255,255,.07);color:#fff;padding-left:40px}
+.rtab.on{color:#fff;background:rgba(255,255,255,.12);border-left-color:#4FB3A9;font-weight:650}
+.rag.acik.yeni .rtab{animation:rtabGel .28s var(--gy) backwards}
+.rag.acik.yeni .rtab:nth-child(2){animation-delay:.03s}
+.rag.acik.yeni .rtab:nth-child(3){animation-delay:.06s}
+.rag.acik.yeni .rtab:nth-child(4){animation-delay:.09s}
+.rag.acik.yeni .rtab:nth-child(5){animation-delay:.12s}
+.rag.acik.yeni .rtab:nth-child(6){animation-delay:.15s}
+.rag.acik.yeni .rtab:nth-child(n+7){animation-delay:.18s}
+@keyframes rtabGel{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.raybas{padding:12px 16px 5px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:#6E8E9B;font-weight:700;border-top:1px solid rgba(255,255,255,.10);margin-top:6px}
+.rtab.genel{padding-left:16px}
+.rtab.genel::before{display:none}
+.rtab.genel:hover{padding-left:19px}
+@media (prefers-reduced-motion: reduce){
+  .rag.acik.yeni,.rag.acik.yeni .rtab{animation:none !important}
+  .rtab,.st-item .stok{transition:none !important}
+}
+
 </style>
 
 <div class="app">
@@ -2505,17 +2545,7 @@ function render(){
   }
   // sol ray
   const _liste=ogrListesi();
-  const _kokpitBtn = `<button class="st-item ${KOKPIT?'on':''}" style="border-bottom:1px solid rgba(255,255,255,.10)${KOKPIT?';border-left-color:#4FB3A9':''}" onclick="YENIOGR=null;ABONE=false;KOKPIT=true;render()">
-      <div class="nm">◉ Kokpit</div><div class="sub">tüm öğrenciler · risk sırası</div></button>`;
-  document.getElementById('railList').innerHTML = _kokpitBtn + (_liste.length
-    ? _liste.map(s=>{
-        const a=avgNets(s,3);let tot=0;for(const k in a.nets)tot+=a.nets[k];
-        return `<button class="st-item ${(!KOKPIT&&s.id===DB.sel)?'on':''}" onclick="YENIOGR=null;KOKPIT=false;DB.sel='${s.id}';${s.ornek?'':'save();'}render()"
-          ${s.ornek?'style="opacity:.62"':''}>
-          <div class="nm">${esc(s.name)}${s.ornek?' <span style="font-size:9.5px;letter-spacing:.06em;background:#C6892E;color:#fff;font-weight:700;padding:1px 5px;border-radius:3px;vertical-align:2px">ÖRNEK</span>':''}</div>
-          <div class="sub">${s.grade}. sınıf · ${trLabel(s.track)} · ort ${a.count?n1(tot):'—'}</div></button>`;
-      }).join('')
-    : '<div style="padding:20px 16px;color:#7E939F;font-size:12.5px">Henüz öğrenci yok. Aşağıdan ekle.</div>');
+  document.getElementById('railList').innerHTML = (typeof railAgaci==='function') ? railAgaci(_liste) : '';
 
   const re=document.getElementById('railEk');
   if(re) re.innerHTML = DEMO
@@ -2544,8 +2574,7 @@ function render(){
   document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()}${st.startedAt?' · BAŞLANGIÇ '+st.startedAt:''}`:'';
   document.getElementById('stGoal').innerHTML = st&&st.dept
     ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${st.rank||'—'} · puan ${st.score||'—'}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
-  document.getElementById('tabs').innerHTML = (st || LISANS)
-    ? TABSAL().map(t=>`<button class="tab ${TAB===t[0]?'on':''}" onclick="TAB='${t[0]}';render()">${t[1]}</button>`).join('') : '';
+  document.getElementById('tabs').innerHTML='';   // sekmeler artık sol rayda, öğrencinin altında
 
   const v=document.getElementById('view');
   // İlk girişte: yeni koça DETAYLI karşılama rehberi (panel arkada normal açılır,
@@ -6721,6 +6750,52 @@ function kaynakUyarisi(){
   render();
 })();
 </script>
+<script>
+/* ═══════════ RAY AĞACI ═══════════
+   Sol rayda her öğrencinin altında sekmeler akordeon olarak açılır.
+   Üstteki sekme çubuğu kullanılmaz. Davet/Hesap/Yönetim öğrenciden
+   bağımsız olduğundan rayın altında "Hesap" bölümünde durur. */
+var _RAYSEC=null;
+var KOC_GENEL_SEKME=['davet','hesap','yonetim'];
+
+function kocSek(id,t,ornek){
+  YENIOGR=null; ABONE=false; KOKPIT=false;
+  if(DB.sel!==id){ DB.sel=id; if(!ornek) save(); }
+  TAB=t; render();
+}
+function kocGenel(t){ YENIOGR=null; ABONE=false; KOKPIT=false; TAB=t; render(); }
+
+function railAgaci(liste){
+  const tum=TABSAL();
+  const ogrSek=tum.filter(x=>KOC_GENEL_SEKME.indexOf(x[0])<0);
+  const genSek=tum.filter(x=>KOC_GENEL_SEKME.indexOf(x[0])>=0);
+  const acikId=(!KOKPIT&&!ABONE&&!YENIOGR)?DB.sel:null;
+  const yeni=(acikId!==_RAYSEC && acikId!==null); _RAYSEC=acikId;
+
+  const kokpit='<button class="st-item '+(KOKPIT?'on':'')+'" style="border-bottom:1px solid rgba(255,255,255,.10)'+(KOKPIT?';border-left-color:#4FB3A9':'')+'" onclick="YENIOGR=null;ABONE=false;KOKPIT=true;render()">'+
+    '<div class="nm">◉ Kokpit</div><div class="sub">tüm öğrenciler · risk sırası</div></button>';
+
+  const ogr = liste.length ? liste.map(s=>{
+    const a=avgNets(s,3); let tot=0; for(const k in a.nets) tot+=a.nets[k];
+    const acik=(s.id===acikId);
+    const rozet=s.ornek?' <span style="font-size:9.5px;letter-spacing:.06em;background:#C6892E;color:#fff;font-weight:700;padding:1px 5px;border-radius:3px;vertical-align:2px">ÖRNEK</span>':'';
+    return '<button class="st-item '+(acik?'on':'')+'" onclick="YENIOGR=null;ABONE=false;KOKPIT=false;DB.sel=\''+s.id+'\';'+(s.ornek?'':'save();')+'render()"'+(s.ornek?' style="opacity:.78"':'')+'>'+
+      '<div class="nm">'+esc(s.name)+rozet+'<span class="stok">▾</span></div>'+
+      '<div class="sub">'+s.grade+'. sınıf · '+trLabel(s.track)+' · ort '+(a.count?n1(tot):'—')+'</div></button>'+
+      '<div class="rag '+(acik?'acik':'')+' '+(acik&&yeni?'yeni':'')+'"><div>'+
+      ogrSek.map(t=>'<button class="rtab '+(acik&&TAB===t[0]?'on':'')+'" onclick="kocSek(\''+s.id+'\',\''+t[0]+'\''+(s.ornek?',1':'')+')">'+t[1]+'</button>').join('')+
+      '</div></div>';
+  }).join('') : '<div style="padding:20px 16px;color:#7E939F;font-size:12.5px">Henüz öğrenci yok. Aşağıdan ekle.</div>';
+
+  const genelAktif=(!KOKPIT&&!ABONE&&!YENIOGR);
+  const genel=(cur()||LISANS)
+    ? '<div class="raybas">Hesap</div>'+genSek.map(t=>
+        '<button class="rtab genel '+(genelAktif&&TAB===t[0]?'on':'')+'" onclick="kocGenel(\''+t[0]+'\')">'+t[1]+'</button>').join('')
+    : '';
+  return kokpit + ogr + genel;
+}
+</script>
+
 <script>
 /* ═══ EKRAN GECIS ANIMASYONU ═══
    render() her tiklamada calisir; animasyon yalnizca EKRAN degistiginde
