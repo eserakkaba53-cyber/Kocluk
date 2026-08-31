@@ -1719,6 +1719,11 @@ function vOdev(){
     <div class="stat"><div class="k">Kalan süre</div><div class="v" style="font-size:20px">${sa([...devreden,...kon].reduce((a,t)=>a+(t.konu?sureOf(t.sub,t.konu):0),0)+rut.filter(t=>t.s!==1).reduce((a,t)=>a+Math.max(0,(t.q||0)-(t.yap||0))*(t.dks||1.5),0))}</div><div class="n">bitmemiş işler</div></div>
   </div></div>
 
+  ${devreden.length?`<div class="card" style="border:2px solid var(--bad)"><h2 style="color:var(--bad)">Geçen haftalardan kalanlar — ${devreden.length} ödev</h2><div class="body">
+    <div class="flag bad" style="margin-bottom:6px"><span class="ic">!</span><span>Bunlar önce bitmeli. <b>Yaptım</b> işaretleyene kadar her hafta burada kalacak.</span></div>
+    ${devreden.map(t=>odevSatiri(t,true)).join('')}
+  </div></div>`:''}
+
   ${rut.length?`<div class="card"><h2>Sabit rutin — her hafta zorunlu</h2><div class="body">
     ${rut.map(t=>{const o=t.q?Math.min(100,Math.round((t.yap||0)/t.q*100)):0;
       return `<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line-soft)">
@@ -1731,11 +1736,6 @@ function vOdev(){
         <div style="margin-top:10px" class="seg">${[1,2,3].map(s=>`<button data-v="${s}" class="${t.s===s?'on':''}" onclick="setTask('${t.id}',${s})">${SL[s]}</button>`).join('')}</div>
         <div class="hint">Kaç soru çözdüysen yaz, sonra durumunu işaretle. Günde ~${Math.ceil(t.q/7)} soru hedefle.</div>
       </div>`;}).join('')}
-  </div></div>`:''}
-
-  ${devreden.length?`<div class="card" style="border:2px solid var(--bad)"><h2 style="color:var(--bad)">Geçen haftalardan kalanlar — ${devreden.length} ödev</h2><div class="body">
-    <div class="flag bad" style="margin-bottom:6px"><span class="ic">!</span><span>Bunlar önce bitmeli. <b>Yaptım</b> işaretleyene kadar her hafta burada kalacak.</span></div>
-    ${devreden.map(t=>odevSatiri(t,true)).join('')}
   </div></div>`:''}
 
   <div class="card"><h2>Bu haftanın konu ödevleri</h2><div class="body">
@@ -2813,7 +2813,7 @@ function vKilavuz(){
   </div></div>
 
   <div class="card"><h2>Ödevlerim sekmesi</h2><div class="body">
-    <p style="margin:0 0 12px"><b>Sabit rutin</b> en üstte durur. Bu her hafta tekrar eden iştir (paragraf, problem gibi). Kaç tane çözdüysen kutuya yazarsın, çubuk dolar. Hafta sonu 100'ü birden çözmeye çalışma — <b>her gün azar azar</b> yapman gereken şey budur, faydası oradan gelir.</p>
+    <p style="margin:0 0 12px"><b>Geçen haftalardan devreden ödevler</b> en üstte durur — önce onlar biter; <b>Yaptım</b> işaretleyene kadar her hafta orada kalırlar. Altında <b>sabit rutin</b> vardır. Bu her hafta tekrar eden iştir (paragraf, problem gibi). Kaç tane çözdüysen kutuya yazarsın, çubuk dolar. Hafta sonu 100'ü birden çözmeye çalışma — <b>her gün azar azar</b> yapman gereken şey budur, faydası oradan gelir.</p>
     <p style="margin:0 0 12px"><b>Konu ödevleri</b> altta listelenir. Her birinde üç seçenek var:</p>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yaptım</b> — ödevin tamamını bitirdim</span></div>
     <div class="topic"><span class="dot t1"></span><span class="tn"><b>Yarım</b> — başladım ama bitiremedim</span></div>
