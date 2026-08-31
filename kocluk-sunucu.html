@@ -558,6 +558,57 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
   .rtab,.st-item .stok{transition:none !important}
 }
 
+
+/* ═══════════ GİRİŞ KARTLARI — onaylı yeni tasarım ═══════════ */
+.gcift{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+@media(max-width:860px){.gcift{grid-template-columns:1fr}}
+.gkart{position:relative;display:flex;flex-direction:column;background:var(--panel);border-radius:18px;
+  padding:24px 24px 20px;box-shadow:0 18px 44px rgba(3,24,43,.12);overflow:hidden;border:1px solid var(--line-soft)}
+.gkart::after{content:"";position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,var(--vk),var(--vk2))}
+.gkart.ga{--vk:var(--accent);--vk2:#57B8AE}
+.gkart.gb{--vk:#E8873A;--vk2:#F5B269}
+.gkart .gov{display:flex;flex-direction:column;flex:1;margin-top:15px;min-width:0}
+.gbas{display:flex;gap:13px;align-items:center}
+.gikon{flex:none;width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;background:var(--accent-soft);border:1px solid var(--line-soft)}
+.gkart.gb .gikon{background:#FBEEDF;border-color:#F2D9BC}
+:root[data-tema="gece"] .gkart.gb .gikon{background:#33280F;border-color:#4A3A16}
+.gbas b{font-size:17.5px;letter-spacing:-.01em;display:block;line-height:1.3}
+.gbas .galt{font-size:12.5px;color:var(--ink-3);margin-top:2px;font-weight:400}
+.gmadde{font-size:13.5px;margin:0 0 10px;padding-left:22px;position:relative;color:var(--ink-2);line-height:1.5}
+.gmadde::before{content:"✓";position:absolute;left:0;color:var(--vk);font-weight:800}
+.gfiyat{display:flex;align-items:baseline;gap:9px;background:var(--warn-bg);border:1px solid #F2D9BC;
+  border-radius:11px;padding:11px 15px;margin:4px 0 14px;flex-wrap:wrap}
+:root[data-tema="gece"] .gfiyat{border-color:#4A3A16}
+.gfiyat b{font-family:var(--mono);font-size:19px;color:#E8873A}
+.gfiyat span{font-size:12.5px;color:var(--ink-3)}
+.gdip{margin-top:auto;padding-top:11px;text-align:center;font-size:12.5px;color:var(--ink-3);line-height:1.55}
+.gdip a{color:var(--accent);font-weight:650}
+.gkart .btn{border-radius:11px;padding:12px 16px;font-size:14px}
+.gkart.gb .btn:not(.ghost){background:var(--vk)}
+.gkart.gb .btn:not(.ghost):hover{background:#D97A2E}
+.gkart.gb .btn.ghost{border-color:var(--vk);color:var(--vk)}
+.gkart.gb .btn.ghost:hover{background:#FBEEDF}
+:root[data-tema="gece"] .gkart.gb .btn.ghost:hover{background:#33280F}
+/* sayaç kutuları */
+.gsayac{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.gsayac>div{background:linear-gradient(135deg,#0B2D45,#03182B);border-radius:14px;padding:14px 20px;
+  text-align:center;color:#fff;box-shadow:0 10px 26px rgba(3,24,43,.2)}
+.gsayac b{display:block;font-family:var(--mono);font-size:25px;color:#8FD3CE;line-height:1.15}
+.gsayac span{font-size:12px;color:#9FC0D2}
+/* video kartları */
+.vbtn{text-align:left;background:var(--panel);color:var(--ink);border:1px solid var(--line-soft);
+  border-radius:12px;padding:12px 13px;cursor:pointer;width:100%;font-family:inherit;
+  transition:transform .2s cubic-bezier(.22,.68,.32,1),box-shadow .2s,border-color .2s,background .2s}
+.vbtn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(3,24,43,.12);border-color:#E8873A}
+.vbtn.on{background:#E8873A;color:#fff;border-color:#E8873A;
+  box-shadow:0 8px 22px rgba(3,24,43,.18)}
+.vbtn .vy{flex:none;width:24px;height:24px;border-radius:8px;background:#E8873A;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:10px}
+.vbtn.on .vy{background:rgba(255,255,255,.25)}
+@media (prefers-reduced-motion: reduce){ .vbtn{transition:none !important} }
+
 </style>
 
 <div class="app">
@@ -6086,11 +6137,8 @@ async function sayaclariOku(){
 }
 function sayacSerit(){
   if(!SAYAC || (!SAYAC.ogretmen && !SAYAC.ogrenci)) return '';
-  const kutu=(s,e)=>`<div style="flex:1;min-width:126px;background:var(--line-soft);border:1px solid var(--line-soft);
-      border-radius:9px;padding:13px 16px;text-align:center">
-      <div style="font-family:var(--mono);font-size:25px;font-weight:700;color:var(--accent);line-height:1.1">${esc(s)}</div>
-      <div style="font-size:12px;color:var(--ink-2);margin-top:3px">${e}</div></div>`;
-  return `<div style="display:flex;gap:10px;margin-bottom:16px">
+  const kutu=(s,e)=>`<div><b>${esc(s)}</b><span>${e}</span></div>`;
+  return `<div class="gsayac">
     ${SAYAC.ogretmen?kutu(SAYAC.ogretmen,'öğretmen kullanıyor'):''}
     ${SAYAC.ogrenci?kutu(SAYAC.ogrenci,'öğrenci takip ediliyor'):''}</div>`;
 }
@@ -6119,14 +6167,9 @@ function videoBolumu(tekSira,grup,baslik,altyazi){
     <div class="card"><h2>${esc(baslik)}<small>${esc(altyazi)}</small></h2><div class="body">
       <div ${tekSira?`class="vsira" style="--n:${v.length}"`
                   :'style="display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px"'}>
-        ${v.map((x,i)=>`<button onclick="videoAc('${grup}',${i})"
-          style="text-align:left;background:${sec===i?'var(--accent)':'#F3F7F8'};
-                 color:${sec===i?'#fff':'var(--ink)'};border:1px solid ${sec===i?'var(--accent)':'var(--line-soft)'};
-                 border-radius:8px;padding:${tekSira?'10px 11px':'12px 13px'};cursor:pointer;width:100%;font-family:inherit">
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:${x.a?'6px':'0'}">
-            <div style="flex:none;width:22px;height:22px;border-radius:50%;
-                 background:${sec===i?'rgba(255,255,255,.22)':'var(--accent)'};color:#fff;
-                 display:flex;align-items:center;justify-content:center;font-size:10px">▶</div>
+        ${v.map((x,i)=>`<button onclick="videoAc('${grup}',${i})" class="vbtn ${sec===i?'on':''}">
+          <div style="display:flex;gap:9px;align-items:center;margin-bottom:${x.a?'6px':'0'}">
+            <div class="vy">▶</div>
             <div style="font-weight:650;font-size:13px;line-height:1.25;min-width:0">${esc(x.b||('Video '+(i+1)))}</div>
           </div>
           ${x.a?`<div style="font-size:11.5px;opacity:.75;line-height:1.35">${esc(x.a)}</div>`:''}
@@ -6137,7 +6180,7 @@ function videoBolumu(tekSira,grup,baslik,altyazi){
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <b style="font-size:14px">${esc(s.b||'')}</b>
           <button class="btn ghost mini" onclick="videoKapat()">Kapat</button></div>
-        <div style="position:relative;padding-top:56.25%;border-radius:9px;overflow:hidden;background:#000">
+        <div style="position:relative;padding-top:56.25%;border-radius:13px;overflow:hidden;background:#000;box-shadow:0 14px 34px rgba(3,24,43,.2)">
           <iframe src="https://www.youtube-nocookie.com/embed/${esc(s.id)}?rel=0&modestbranding=1&playsinline=1"
             title="${esc(s.b||'Kullanım videosu')}" loading="lazy"
             style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
@@ -6470,26 +6513,19 @@ function kvkkPencere(){
 
 function ogrenciGirisKarti(){
   const oadr=ogrenciPaneliAdresi();
-  const bstil='display:block;text-align:center;text-decoration:none;padding:11px 16px';
-  return `<div style="flex:1 1 320px;min-width:0">
-    <div class="card" style="border:1.5px solid var(--accent-soft)">
-      <h2>Öğrenci misin?<small>Koçun yoksa kendi hesabınla buradan başla.</small></h2>
-      <div class="body">
-        <p style="margin:0 0 14px;font-size:14px;color:var(--ink-2);line-height:1.55">
-          Bu ekran <b>öğrenciler</b> içindir. Koçlu ve koçsuz öğrenci paneli <b>ayrıdır</b> —
-          ödevlerin, denemelerin ve hedefin buradan yönetilir.</p>
-        <div style="display:flex;align-items:baseline;gap:8px;margin:0 0 12px;padding:10px 12px;background:var(--accent-soft);border-radius:8px">
-          <span style="font-size:13px;color:var(--ink-2);font-weight:600">Koçsuz Öğrenci Paketi</span>
-          <span style="font-family:var(--mono);font-size:20px;font-weight:800;color:var(--accent)">99 TL</span>
-          <span style="font-size:12px;color:var(--ink-3)">/ yıl</span>
-        </div>
-        <a class="btn wide" style="${bstil}" href="${esc(oadr)}#kayit">Öğrenci kaydı oluştur</a>
-        <a class="btn ghost wide" style="${bstil};margin-top:8px" href="${esc(oadr)}">Zaten hesabım var — öğrenci girişi</a>
-        <button class="btn ghost wide" style="${bstil};margin-top:8px;border:0;background:transparent;color:var(--ink-2)" onclick="demoBaslat()">Önce sistemi gezmek istiyorum</button>
-        <div class="hint" style="margin-top:6px;text-align:center">Örnek bir öğrenci üzerinden, kayıt olmadan.</div>
-        <div class="hint" style="margin-top:12px">Koçun seni davet ettiyse, sana gönderdiği <b>bağlantıdan</b> gir — kodun kendiliğinden dolar.</div>
-      </div>
-    </div>
+  const bstil='display:block;text-align:center;text-decoration:none;padding:12px 16px';
+  return `<div style="min-width:0">
+    <div class="gkart gb"><div class="gbas"><div class="gikon">🎓</div>
+      <div><b>Öğrenci misin?</b><div class="galt">Koçun yoksa kendi hesabınla buradan başla.</div></div></div>
+    <div class="gov">
+      <div class="gmadde">Ödevlerin, denemelerin ve hedefin ayrı panelde — koçlu ve koçsuz öğrenci paneli ayrıdır</div>
+      <div class="gmadde">Karneni yapıştır — netlerin ve eksik konuların kendiliğinden çıksın</div>
+      <div class="gmadde">Koçun seni davet ettiyse gönderdiği bağlantıdan gir; kodun kendiliğinden dolar</div>
+      <div class="gfiyat"><b>99 TL</b><span>/ yıl · Koçsuz Öğrenci Paketi</span></div>
+      <a class="btn wide" style="${bstil}" href="${esc(oadr)}#kayit">Öğrenci kaydı oluştur</a>
+      <a class="btn ghost wide" style="${bstil};margin-top:8px" href="${esc(oadr)}">Zaten hesabım var — öğrenci girişi</a>
+      <div class="gdip"><a href="#" onclick="demoBaslat();return false">▶ Önce sistemi gezmek istiyorum</a><br>örnek bir öğrenci üzerinden, kayıt olmadan</div>
+    </div></div>
   </div>`;
 }
 function girisEkrani(){
@@ -6506,13 +6542,15 @@ function girisEkrani(){
     </div></div></div>`;
   return `<div class="giris-fon" aria-hidden="true"><i></i><i></i><i></i></div><div class="giris-sahne" style="max-width:${kurulu?'960px':'460px'};margin:36px auto">
     ${kurulu?sayacSerit():''}
-    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
-    <div style="flex:1 1 440px;min-width:0">
-    <div class="card giris-kart"><h2>${kurulu?(GIRISMOD==='kayit'?'Öğretmen hesabı oluştur':'Öğretmen girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}<small>${
+    <div class="${kurulu?'gcift':''}">
+    <div style="min-width:0">
+    <div class="gkart ga"><div class="gbas"><div class="gikon">${kurulu?'👩‍🏫':'⚙️'}</div>
+      <div><b>${kurulu?(GIRISMOD==='kayit'?'Öğretmen hesabı oluştur':'Öğretmen girişi'):'Sunucu kurulumu — yalnızca sistem sahibi'}</b>
+      <div class="galt">${
       kurulu?(GIRISMOD==='kayit'
         ? 'Kaydını tamamla, 7 günlük denemen hemen başlasın.'
         : 'Verilerin sunucuda saklanır; her cihazdan aynı veriye ulaşırsın.')
-            :'Panel dosyasına anahtar yazılmamış. Geçici olarak buradan girebilirsin.'}</small></h2><div class="body">
+            :'Panel dosyasına anahtar yazılmamış. Geçici olarak buradan girebilirsin.'}</div></div></div><div class="gov">
       ${!kurulu?`
         <div class="flag warn"><span class="ic">!</span><span>
           <b>Bu ekranı koçlar görmemeli.</b> Panel dosyasındaki <span style="font-family:var(--mono)">SUNUCU</span>
