@@ -1512,7 +1512,7 @@ function soruKarti(st){
 const RUTIN_VAR=[{ad:'Paragraf',sub:'tyt_tur',konu:'',adet:100,dks:1.5},{ad:'Problem',sub:'tyt_mat',konu:'',adet:100,dks:2}];
 function rutinler(){ const r=DB.rutin||(DB.rutin=RUTIN_VAR.map(x=>({...x}))); r.forEach(x=>{if(x.dks===undefined)x.dks=1.5;}); return r; }
 function rutinVar(st,wk){ return st.tasks.filter(t=>t.rutin&&weekKey(t.date)===wk); }
-function rutinEkle(){
+function rutinEkle(sessiz){
   const st=cur(), wk=weekKey(today());
   const mevcut=new Set(rutinVar(st,wk).map(t=>t.konu));
   let n=0;
@@ -1522,7 +1522,34 @@ function rutinEkle(){
     n++;
   });
   save(); render();
-  if(!n) alert('Bu haftanın rutini zaten eklenmiş.');
+  if(!n && !sessiz) alert('Bu haftanın rutini zaten eklenmiş.');
+  return n;
+}
+/* ===== TAVSİYE PLANINDAN KONU ÇIKARMA =====
+   Koç, önerilen plandan istemediği konuyu ✕ ile çıkarır; o hafta boyunca
+   plana geri girmez (yeri sıradaki konuyla dolar). Cihaza kaydedilir,
+   hafta değişince kendiliğinden sıfırlanır. */
+const CIKARKEY='biyoser_tavsiye_cikar';
+function tavsiyeCikarOku(){ try{ return JSON.parse(localStorage.getItem(CIKARKEY)||'{}'); }catch(e){ return {}; } }
+function tavsiyeCikarSet(st){
+  const wk=weekKey(today());
+  return new Set(tavsiyeCikarOku()[st.id+'|'+wk]||[]);
+}
+function tavsiyeCikarYaz(m){
+  const wk=weekKey(today());
+  for(const k in m){ if(k.split('|').pop()!==wk) delete m[k]; }   // eski haftalar temizlenir
+  try{ localStorage.setItem(CIKARKEY, JSON.stringify(m)); }catch(e){}
+}
+function tavsiyeCikar(sub,konu){
+  const st=cur(); if(!st) return;
+  const m=tavsiyeCikarOku(), k=st.id+'|'+weekKey(today());
+  (m[k]=m[k]||[]).push(sub+'|'+konu);
+  tavsiyeCikarYaz(m); render();
+}
+function tavsiyeCikarGeriAl(){
+  const st=cur(); if(!st) return;
+  const m=tavsiyeCikarOku(); delete m[st.id+'|'+weekKey(today())];
+  tavsiyeCikarYaz(m); render();
 }
 /* haftalık hedef çalışma süresi (dakika): rutin + konu ödevleri */
 function haftaSure(st,wk){
@@ -3410,12 +3437,17 @@ function vHafta(st){
 
   ${devredenKart(st)}
 
-  ${rutinKart(st, wk)}
-
   <div class="card"><h2>Bu haftanın ödevleri — ${wk}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri buraya anında yansır.</small></h2><div class="body" style="padding:0">
-    ${tasks.filter(t=>!t.rutin).length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th></tr></thead><tbody>
-      ${tasks.filter(t=>!t.rutin).map(t=>{
+    ${tasks.length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th></tr></thead><tbody>
+      ${tasks.slice().sort((a,b)=>((b.rutin?1:0)-(a.rutin?1:0))||a.date.localeCompare(b.date)).map(t=>{
         const dg=+t.dg||0, yn=+t.yn||0, bs=+t.bs||0, dybVar=(dg+yn+bs)>0;
+        if(t.rutin) return `<tr style="background:var(--warn-bg)"><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td>
+        <td><span style="font-size:9.5px;letter-spacing:.06em;background:#C6892E;color:#fff;font-weight:700;padding:2px 7px;border-radius:4px">RUTİN</span></td>
+        <td><b>${esc(t.konu||'—')}</b>${t.konuRef?`<div style="font-size:11px;color:var(--ink-3)">${esc(t.konuRef)}</div>`:''}</td><td class="num">${t.q||'—'}</td>
+        <td class="num" style="width:96px"><input type="number" min="0" value="${t.yap||0}" onchange="rutinYap('${t.id}',this.value)" style="width:82px"></td>
+        <td class="num"><span style="color:var(--ink-3)">—</span></td><td class="num">—</td>
+        <td class="num" style="color:var(--ink-3)">${Math.round((t.q||0)*(t.dks||1.5))} dk</td>
+        <td><span class="pill s${t.s}">${SL[t.s]}</span></td></tr>`;
         return `<tr><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td>
         <td style="color:var(--ink-3);font-size:12px">${esc((uniteOf[t.sub]||{})[t.konu]||'—')}</td>
         <td><b>${esc(t.konu||'—')}</b></td><td class="num">${t.q||'—'}</td>
@@ -3831,6 +3863,7 @@ function tavsiyeHesap(st){
   if(hk===null) return {durum:'tarih'};
   if(hk<=0) return {durum:'gecti'};
   const mult = m => m===1?0.5 : m===3?0.7 : 1;   // işleniyor/eksik kısmi süre
+  const _cikar = tavsiyeCikarSet(st);            // koçun bu hafta ✕ ile çıkardıkları
   let kapsamDk=0, cekDk=0; const havuz=[];
   for(const [sk] of subs(st)){
     const oc = konuOncelik(st, sk); if(!oc) continue;
@@ -3841,7 +3874,7 @@ function tavsiyeHesap(st){
       const dk = efektifDk(sk, x.konu)*mult(durum);
       kapsamDk += dk;
       if(x.oncelik==='cekirdek') cekDk += dk;
-      if(!verilmis.has(x.konu))
+      if(!verilmis.has(x.konu) && !_cikar.has(sk+'|'+x.konu))
         // faz: 0 TYT çekirdek(+ön koşul) · 1 AYT çekirdek · 2 TYT güvenlik · 3 AYT güvenlik
         havuz.push({sub:sk, konu:x.konu, unite:x.unite, oncelik:x.oncelik,
                     kilit:x.kilit, agirlik:x.agirlik, grup:x.grup, mufredat:x.mufredat,
@@ -3865,7 +3898,7 @@ function tavsiyeHesap(st){
     (st.tasks||[]).filter(t=>!t.rutin && t.konu && t.sub && t.s!==1 && weekKey(t.date)<wkn)
       .sort((a,b)=>a.date.localeCompare(b.date))
       .forEach(t=>{
-        const key=t.sub+'|'+t.konu; if(grld.has(key)) return; grld.add(key);
+        const key=t.sub+'|'+t.konu; if(grld.has(key)||_cikar.has(key)) return; grld.add(key);
         const durum=((st.topics||{})[t.sub]||{})[t.konu]||0; if(durum===2) return; // aslında bitmiş
         devrSecim.push({sub:t.sub, konu:t.konu, unite:(uniteOf[t.sub]||{})[t.konu]||'',
           oncelik:'devreden', kilit:false, devreden:true, taskId:t.id, hafta:haftaFarki(t.date),
@@ -3879,7 +3912,7 @@ function tavsiyeHesap(st){
   const beyanDk = (+st.haftalikSaat||0)*60;
   const gercekci = beyanDk>0 ? (haftalikDk<=beyanDk) : null;
   return {durum:'ok', hk, kapsamDk, cekDk, haftalikDk, beyanDk, gercekci, secim, secimDk:topla,
-          devrSayi, devrToplam:devrSecim.length};
+          devrSayi, devrToplam:devrSecim.length, cikarilan:_cikar.size};
 }
 /* "Önce devreden ödevleri kapat" seçeneği — cihaza özel (localStorage), varsayılan AÇIK. */
 function devredenOnceAcik(){ try{ return localStorage.getItem('biyoser_devreden_once')!=='0'; }catch(e){ return true; } }
@@ -3898,6 +3931,7 @@ function tavsiyeUygula(){
     st.tasks.push({id:uid(), date:gun, type:'h', sub:x.sub, konu:x.konu,
                    q:x.soru||hedefSoru(x.sub,x.konu), txt:'Tavsiye edilen haftalık plan', s:0});
   });
+  if(!st.ornek) rutinEkle(true);   // bu haftanın rutinleri de eksikse eklenir (sessiz)
   save(); render();
 }
 /* ===== OTOMATİK ÖDEV YENİLEME =====
@@ -3963,7 +3997,9 @@ function tavsiyeHaftalikKart(st){
       <span style="color:var(--ink-3);font-weight:400">— ${bySub[sk].length} konu, ${sa(bySub[sk].reduce((a,x)=>a+x.dk,0))} + ${bySub[sk].reduce((a,x)=>a+(+x.soru||0),0)} soru</span></div>
       ${bySub[sk].map(x=>`<div class="topic" style="align-items:center">
         <span class="tn">${esc(x.konu)} <span style="color:var(--ink-3);font-size:12px">(${sa(x.dk)} + <b style="color:var(--accent)">${x.soru} soru</b>)${x.devreden?` <span style="color:var(--bad)">· ${x.hafta} hafta geçti</span>`:''}</span></span>
-        ${oncelikRozet(x.oncelik, x.kilit)}</div>`).join('')}
+        ${oncelikRozet(x.oncelik, x.kilit)}
+        <button class="btn ghost mini" style="flex:none;margin-left:8px;color:var(--bad);border-color:var(--line)" title="Bu konuyu bu haftaki plandan çıkar"
+          onclick="tavsiyeCikar('${x.sub}',${JSON.stringify(x.konu).replace(/"/g,'&quot;')})">✕ çıkar</button></div>`).join('')}
     </div>`).join('');
 
   return sar(`
@@ -3978,8 +4014,19 @@ function tavsiyeHaftalikKart(st){
     </div>
     ${devrNot}
     ${valf}
+    ${(()=>{ const rl=rutinler(); if(!rl.length) return '';
+      const rDk=rl.reduce((a,x)=>a+(x.adet||0)*(x.dks||1.5),0);
+      const rSoru=rl.reduce((a,x)=>a+(+x.adet||0),0);
+      return `<div style="margin-top:10px;padding:11px 14px;background:var(--warn-bg);border:1px solid var(--line-soft);border-radius:9px">
+        <div style="font-weight:650;font-size:13px;margin-bottom:3px">Sabit haftalık rutin — plana dahil</div>
+        <div style="font-size:12.5px;color:var(--ink-2)">${rl.map(x=>`<b>${esc(x.ad)}</b> ${x.adet} soru (${sa((x.adet||0)*(x.dks||1.5))})`).join(' · ')}
+          &nbsp;=&nbsp; <b>${sa(rDk)} + ${rSoru} soru</b> her hafta</div>
+        <div class="hint" style="margin-top:4px">"Ödevleri ver"e bastığında bu haftanın rutinleri de (eksikse) eklenir. Rutin tanımlarını bu sekmenin altındaki <b>Rutin tanımı</b> kartından düzenlersin.</div>
+      </div>`; })()}
+    ${r.cikarilan?`<div class="hint" style="margin-top:10px">✕ ile <b>${r.cikarilan} konu</b> bu haftaki plandan çıkarıldı; yerini sıradaki konular aldı.
+      <a href="#" onclick="tavsiyeCikarGeriAl();return false" style="color:var(--accent)">Hepsini geri al</a></div>`:''}
     <div style="margin-top:6px">${liste}</div>
-    <button class="btn wide" style="margin-top:14px" onclick="tavsiyeUygula()">Bu haftanın ödevlerini ver (${r.secim.length} konu)</button>
+    <button class="btn wide" style="margin-top:14px" onclick="tavsiyeUygula()">Bu haftanın ödevlerini ver (${r.secim.length} konu${(!cur().ornek&&rutinler().length)?' + rutin':''})</button>
     <div class="hint" style="margin-top:8px">Plan her hafta yeniden hesaplanır: öğrenci konu bitirdikçe kalan azalır, tempo güncellenir. Verilen konular listeden düşer.</div>
   `);
 }
