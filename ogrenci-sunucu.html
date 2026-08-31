@@ -431,6 +431,16 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
   .sgrup,.sgrup .sgok{transition:none !important}
 }
 
+
+/* ═══════════ GENİŞ EKRAN DÜZENİ ═══════════
+   Masaüstünde içerik sütunu genişler; deneme sekmesinde karne yapıştırma
+   ile elle giriş yan yana durur. Dar ekranlarda hiçbir şey değişmez. */
+.girisSarma{max-width:860px;margin:0 auto}
+@media(min-width:1280px){
+  .main .wrap{max-width:1150px}
+  .hdr .in{max-width:1150px}
+  .denemeYan{display:grid;grid-template-columns:1fr 1.05fr;gap:0 20px;align-items:start}
+}
 </style>
 
 <div class="app">
@@ -1309,7 +1319,7 @@ function render(){
     document.getElementById('hAd').textContent='Çalışma Panelim';
     document.getElementById('hMeta').textContent='';
     document.getElementById('tabs').innerHTML='';
-    v.innerHTML=girisEkrani();
+    v.innerHTML='<div class="girisSarma">'+girisEkrani()+'</div>';
     if(GMOD==='kayit') gcKayitSay('kayit-ogrenci');   // kaç kişi öğrenci kayıt ekranına geldi
     return;
   }
@@ -2037,6 +2047,7 @@ function vDeneme(){
   const liste = DTUR==='tyt'?tytDersleri() : DTUR==='ayt'?aytDersleri() : [hepsi.find(x=>x[0]===DBRANS)].filter(Boolean);
   const anahtar = KARNE_SONUC?Object.keys(KARNE_SONUC):[];
   return `
+  <div class="denemeYan"><div class="dsol">
   <div class="card"><h2>Karneni yapıştır<small>Elle yazmak yerine karnenin kendisini okut.</small></h2><div class="body">
     <div class="hint" style="margin-bottom:8px">
       Deneme karnenin <b>PDF</b>’ini bilgisayarda aç → <b>Ctrl+A</b> (tümünü seç) → <b>Ctrl+C</b> (kopyala) →
@@ -2055,6 +2066,7 @@ function vDeneme(){
       ${anahtar.map(k=>`${esc(subName(k))}: ${KARNE_SONUC[k].d} D / ${KARNE_SONUC[k].y} Y`).join(' · ')}</div>`:''}
     ${KARNE_UYARI?`<div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>${esc(KARNE_UYARI)}</span></div>`:''}
   </div></div>
+  </div><div class="dsag">
 
   <div class="card"><div class="body">
     <label class="f">Hangi denemeyi gireceksin</label>
@@ -2078,6 +2090,7 @@ function vDeneme(){
     </tbody></table>`:'<div class="empty">Ders bulunamadı.</div>'}
     <button class="btn wide" style="margin-top:14px" onclick="denemeKaydet()">Denemeyi kaydet</button>
     <div class="hint">Girmediğin dersler boş kalır. Net otomatik hesaplanır (doğru − yanlış/4).</div>
+  </div></div>
   </div></div>
 
   ${D.exams.length?`<div class="card"><h2>Girdiğin denemeler (${D.exams.length})</h2><div class="body" style="padding:0">
