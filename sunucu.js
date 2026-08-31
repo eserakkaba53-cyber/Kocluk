@@ -13,7 +13,7 @@ window.SUNUCU_AYAR = {
   // BOŞ bırakırsan sayaç çalışmaz. GoatCounter hesabını açıp kodunu buraya yapıştır, örnek:
   //   gc: "https://biyoser.goatcounter.com/count"
   // (Sadece "biyoser" kısmını kendi seçtiğin kodla değiştirirsin.)
-  gc: "https://biyoser.goatcounter.com/count"
+  gc: ""
 };
 
 
@@ -36,7 +36,7 @@ window.VIDEOLAR = [
   { b:'2 · HEDEF BELİRLEME',          a:'YÖK verisiyle bölüm seçimi, hedefe uzaklık',  id:'jbWGy8c-Ub0' },
   { b:'3 · DENEME SONUÇLARI',         a:'Deneme karnesini yapıştır, netler otomatik',  id:'2jN49XP5p9g' },
   { b:'4 · ÖDEVLER',                  a:'Konu seçimi, süre planı ve rutinler',         id:'qys0nXOuQio' },
-  { b:'5 · KONU TAKİBİ',              a:'612 konuluk harita nasıl işaretlenir',        id:'vNScbFsC2H0' },
+  { b:'5 · KONU TAKİBİ',              a:'628 konuluk harita nasıl işaretlenir',        id:'vNScbFsC2H0' },
   { b:'6 · HAFTALIK VE DURUM TAKİBİ', a:'Öğrencinin genel takibi',                     id:'UcaOE0iuwqo' }
 ];
 
@@ -73,4 +73,4 @@ window.OGRENCI_VIDEOLAR = [
    ============================================================ */
 window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
 
-window.BIYOSER_WP = '905325874492';   // ülke kodu, başında + ve boşluk yok
+window.BIYOSER_WP = '905325874992';   // ülke kodu, başında + ve boşluk yok

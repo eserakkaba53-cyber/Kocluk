@@ -4350,7 +4350,7 @@ function karsilamaAc(){
           '<li><b>Kokpit:</b> Tüm öğrencilerini tek ekranda <b>risk sırasına göre</b> gösterir (Acil / İzle / Yolunda). Risk; ödev uyumu, biriken devreden ödev, deneme trendi ve "yetişir mi" hesabından üretilir — bugün önce kime bakman gerektiğini söyler.</li>'+
           '<li><b>Otomatik haftalık plan:</b> Her öğrenci için ön koşul + çekirdek + güvenlik payı konularını müfredat sırasında (önce TYT çekirdek, sonra AYT, sonra güvenlik payı) sıralar; sınava kalan süreye göre haftalık tempoyu çıkarır ve planın öğrencinin çalışma süresine sığıp sığmadığını ("gerçekçilik" uyarısı) söyler.</li>'+
           '<li><b>Yetişir mi:</b> Öncelikli / güvenlik payı / genişleme — kalan konuların sınava yetişip yetişmediğini üç tamponla gösterir.</li>'+
-          '<li><b>612 konuluk harita:</b> Öğrenci konu işaretledikçe (Bitti / İşliyor / Eksik) kalan süre ve konu önceliği kendiliğinden güncellenir; her konunun yanında konu anlatımı videosu vardır.</li>'+
+          '<li><b>628 konuluk harita:</b> Öğrenci konu işaretledikçe (Bitti / İşliyor / Eksik) kalan süre ve konu önceliği kendiliğinden güncellenir; her konunun yanında konu anlatımı videosu vardır.</li>'+
           '<li><b>Karne okuyucu:</b> Deneme karnesini yapıştır → netler, yanlış ve boş konular otomatik çıkar (yayınevi bağımsız).</li>'+
           '<li><b>Hedef & net takibi:</b> Bölüm seçince hedef netler otomatik dolar; TYT/AYT ve ders ders net grafikleri, hedefe uzaklık ve puan hesaplayıcı hep güncel kalır.</li>'+
           '<li><b>Veli raporu:</b> Tek tıkla, panelin verisinden veliye uygun haftalık rapor üretir; WhatsApp\'la gönderirsin (göndermeyi hep sen onaylarsın).</li>'+
@@ -4945,6 +4945,68 @@ let _ORNEKLER=null, _ORNEKLER_HAZIR=false;
      → devreden ödevlerin "kaç hafta geçti" değeri sabit kalır.
    · Konu durumları temizlenir: "işleniyor" hiç kalmaz; yalnızca 2 derste
      sıradaki konu "eksik" olur (Hızlı ödev kartında en fazla 1-2 eksik). */
+/* ---- KALICI (RUTİN) ÖDEVLER — örnek öğrenci başına 3 tane ----------------
+   Rutin = her hafta tekrar eden sabit iş (paragraf, problem, alan tekrarı).
+   Devretmez, hafta geçse de kaybolmaz. Buradakiler HER YÜKLEMEDE bu haftanın
+   içine yerleşir; takvim ilerlese de örnek panel aynı görünür.
+     gun  : haftanın günü — 0 Pazartesi · 2 Çarşamba · 4 Cuma
+     adet : hedef soru sayısı        dks : soru başına dakika
+     oran : kaçının yapıldığı (0–1)  s   : 1 yapıldı · 2 yarım · 0 bekliyor
+   Ders kodları öğrencinin alanına göre seçilir (SAY/EA); tabloda olmayan bir
+   ders yazılırsa aşağıdaki kod sessizce o öğrencinin ilk AYT dersine düşer. */
+const ORNEK_RUTIN=[
+  /* 1 · Elif Y. — SAY 12 · tempolu */
+  [ {ad:'Paragraf',              sub:'tyt_tur', adet:120, dks:1.5, gun:0, oran:1,   s:1},
+    {ad:'Problem',               sub:'tyt_mat', adet:100, dks:2,   gun:2, oran:1,   s:1},
+    {ad:'AYT Biyoloji tekrarı',  sub:'ayt_biy', adet:50,  dks:1.5, gun:4, oran:1,   s:1} ],
+  /* 2 · Kerem D. — SAY 12 · matematik ağırlıklı */
+  [ {ad:'Paragraf',              sub:'tyt_tur', adet:100, dks:1.5, gun:0, oran:1,   s:1},
+    {ad:'Problem',               sub:'tyt_mat', adet:120, dks:2,   gun:2, oran:1,   s:1},
+    {ad:'AYT Kimya tekrarı',     sub:'ayt_kim', adet:40,  dks:1.5, gun:4, oran:1,   s:1} ],
+  /* 3 · Zeynep A. — EA 12 · sözel ağırlıklı */
+  [ {ad:'Paragraf',              sub:'tyt_tur', adet:140, dks:1.5, gun:0, oran:1,   s:1},
+    {ad:'Problem',               sub:'tyt_mat', adet:80,  dks:2,   gun:2, oran:1,   s:1},
+    {ad:'AYT Edebiyat paragraf', sub:'ayt_edb', adet:40,  dks:1.5, gun:4, oran:1,   s:1} ],
+  /* 4 · Mert S. — EA 12 · hafif tempo */
+  [ {ad:'Paragraf',              sub:'tyt_tur', adet:100, dks:1.5, gun:0, oran:1,   s:1},
+    {ad:'Problem',               sub:'tyt_mat', adet:60,  dks:2,   gun:2, oran:1,   s:1},
+    {ad:'AYT Tarih-1 tekrarı',   sub:'ayt_tar1',adet:40,  dks:1.5, gun:4, oran:1,   s:1} ],
+  /* 5 · Selin K. — SAY 11 · yeni başlayan, düşük hacim */
+  [ {ad:'Paragraf',              sub:'tyt_tur', adet:60,  dks:1.5, gun:0, oran:1,   s:1},
+    {ad:'Problem',               sub:'tyt_mat', adet:60,  dks:2,   gun:2, oran:1,   s:1},
+    {ad:'TYT Biyoloji tekrarı',  sub:'tyt_biy', adet:30,  dks:1.5, gun:4, oran:1,   s:1} ]
+];
+
+/* ---- "YETİŞİR Mİ" SENARYOLARI — öğrenciye özel ve SABİT ------------------
+   Kart, haftada GEREKEN saati (kalan konuların efektif süresi ÷ 23 hafta)
+   öğrencinin beyan ettiği HAFTALIK saatle karşılaştırır:
+     Öncelikli  = gereken × 1.00     (pay yok)
+     Güvenlik   = gereken × 1.15     (%15 pay)
+     Genişleme  = gereken × 1.30     (%30 pay)
+   Sorun: "gereken" müfredat ve konu süreleri değiştikçe kayıyor, dolayısıyla
+   örnek öğrencinin sonucu da kayıyordu. Çözüm: haftalık saati sabit bir sayı
+   olarak değil, GEREKENİN KATSAYISI olarak üretiyoruz. Böylece 5 örnek öğrenci
+   müfredat ne olursa olsun hep 5 farklı sonuç verir:
+     kat ≥ 1.30 → üçü de Yetişir            1.15 ≤ kat < 1.30 → Genişleme Yetişmez
+     1.00 ≤ kat < 1.15 → sadece Öncelikli   kat < 1.00 → üçü de Yetişmez          */
+const ORNEK_YETISIR=[1.45, 1.22, 1.06, 0.82, 1.33];
+
+/* Katsayıyı tam saate yuvarlarken senaryo bandından taşmayı engeller.
+   (Ör. gereken 17.4 sa, kat 1.06 → 18.4; yuvarlanınca 18 olur ve hâlâ
+   1.00–1.15 bandındadır. Yuvarlama bandı bozarsa 1'er saat kaydırılır,
+   hiç sığmazsa yarım saat hassasiyetine düşülür.) */
+function yetisirBandi(gerekli, kat){
+  const bant=x=>x>=1.30?3:x>=1.15?2:x>=1?1:0;
+  const hedef=bant(kat);
+  let hs=Math.max(1,Math.round(gerekli*kat));
+  for(let i=0;i<500;i++){
+    const b=bant(hs/gerekli);
+    if(b===hedef) return hs;
+    if(b<hedef) hs++; else if(hs>1) hs--; else break;
+  }
+  return Math.round(gerekli*kat*2)/2;   // tam saat sığmadı → yarım saat hassasiyeti
+}
+
 function ornekOgrenciler(){
   if(_ORNEKLER && _ORNEKLER_HAZIR) return _ORNEKLER;   // AGIRLIK yüklendiyse artık sabit
   const liste=JSON.parse(ORNEKLER_HAM);
@@ -5013,72 +5075,38 @@ function ornekOgrenciler(){
       o.__cozum=cz;
     }
 
-    /* 5) BU HAFTANIN KALICI (RUTİN) ÖDEVLERİ — örnek öğrencide hafta hep dolu görünsün.
-       Eski ödevler tarih sabitlemesiyle geçmişe kayıyor, bu hafta 1 satır kalıyordu.
-       Burada her örnek öğrenciye bu haftaya ait rutin ödevler eklenir; durumları
-       (yapıldı / kısmen / bekliyor) öğrenciden öğrenciye DEĞİŞİR ki ödev uyumu
-       yüzdesi de farklı çıksın. Rutinler gerçek öğrencilere DOKUNMAZ. */
+    // 5) KALICI (RUTİN) ÖDEVLER — bu haftaya sabit, öğrenciye özel
+    /* Geçmiş haftaların rutinleri OLDUĞU GİBİ kalır (ödev uyumu geçmişi bozulmasın);
+       yalnızca bu haftaya düşenler silinip ORNEK_RUTIN'dekilerle değiştirilir.
+       Böylece hangi gün açılırsa açılsın "bu hafta" kartında 3 kalıcı ödev durur. */
     {
-      const hafBas = weekKey(today());
-      const gun = (i)=> new Date(new Date(hafBas+'T00:00').getTime()+i*86400000).toISOString().slice(0,10);
-      const RUT = [
-        {sub:'tyt_tur', konu:'Paragraf',        q:100, dks:1.5},
-        {sub:'tyt_mat', konu:'Problem',         q:80,  dks:2},
-        {sub:'tyt_mat', konu:'Yeni nesil soru', q:40,  dks:2.5}
-      ];
-      /* her öğrenci için: kaç rutin ödev + hangi durumda (0 bekliyor,1 yapıldı,2 kısmen,3 yapılmadı) */
-      const PLAN = [
-        {n:3, dur:[1,1,1]},   // Elif  — hepsini yapmış
-        {n:3, dur:[1,2,0]},   // Kerem — biri yarım
-        {n:3, dur:[1,1,0]},   // Zeynep
-        {n:3, dur:[2,3,0]},   // Mert  — aksatıyor
-        {n:2, dur:[1,0]}      // Selin — daha az yük
-      ][k%5];
-      for(let i=0;i<PLAN.n;i++){
-        const r=RUT[i%RUT.length], durum=PLAN.dur[i];
-        o.tasks.push({ date:gun(i*2), sub:r.sub, konu:r.konu, q:r.q, dks:r.dks,
-          yap: durum===1 ? r.q : durum===2 ? Math.round(r.q*0.5) : 0,
-          s: durum, rutin:true, txt:'' });
-      }
+      const buHafta=weekKey(today());
+      o.tasks=(o.tasks||[]).filter(t=>!(t.rutin && t.date && weekKey(t.date)===buHafta));
+      const dersler=subs(o).map(x=>x[0]);
+      const gecerli=new Set(dersler);
+      const yedekDers=dersler.find(s=>s.indexOf('ayt_')===0)||'tyt_mat';
+      (ORNEK_RUTIN[k]||[]).forEach(r=>{
+        const sk=gecerli.has(r.sub)?r.sub:yedekDers;      // alanda olmayan ders → güvenli karşılık
+        o.tasks.push({
+          date:new Date(anchorTs+r.gun*86400000).toISOString().slice(0,10),
+          type:'h', sub:sk, konu:r.ad, konuRef:'',
+          q:r.adet, dks:r.dks, yap:Math.round(r.adet*r.oran),
+          txt:'Sabit haftalık rutin', s:r.s, rutin:true
+        });
+      });
+      o.tasks.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
     }
 
-    /* 6) "YETİŞİR Mİ" SONUCUNU SABİTLE VE ÇEŞİTLENDİR.
-       Sorun: müfredat 628 konuya çıkınca örnek öğrencilerin BEŞİ DE "Yetişmez"
-       gösteriyordu — tanıtım için kötü, üstelik hepsi aynıydı. Ayrıca sınava kalan
-       hafta azaldıkça sonuç kendiliğinden bozuluyordu (sabit değildi).
-       Çözüm: her örnek öğrenci için hedef bir TEMPO ORANI belirlenir
-       (gereken saat ÷ beyan edilen saat). Bitmemiş konular müfredat sırasıyla
-       "bitti" işaretlenerek kalan yük bu orana getirilir. Böylece sonuç hem
-       öğrenciden öğrenciye FARKLI, hem tarihten bağımsız SABİT olur.
-         oran < 0.77 → üç senaryo da Yetişir
-         0.77-0.87   → Yetişir / Yetişir / Yetişmez
-         0.87-1.00   → Yetişir / Yetişmez / Yetişmez
-         > 1.00      → üçü de Yetişmez                                        */
+    // 6) "YETİŞİR Mİ" — öğrenciye özel sonucu sabitle
+    /* Haftalık saati, HESAPLANAN gereken saatin katsayısı olarak yeniden üretiyoruz.
+       AGIRLIK (konu ağırlık/süre tablosu) yüklenmeden kalan süre doğru hesaplanamaz;
+       o yüzden guard var. AGIRLIK gelince _ORNEKLER_HAZIR true olur ve bu blok
+       son bir kez çalışıp sonucu kalıcı olarak sabitler. */
     if(AGIRLIK){
-      const ORAN=[0.72, 1.15, 0.95, 1.45, 0.82][k%5];   // Elif·Kerem·Zeynep·Mert·Selin
-      const hk=haftaKalan(o), hs=+o.haftalikSaat||0;
-      if(hk>0 && hs>0){
-        const hedefDk = ORAN*hs*60*hk;
-        const kalanDk = ()=> subs(o).reduce((a,[sk])=>a+kalanSure(o,sk).dk, 0);
-        const sirali=[];
-        subs(o).forEach(([sk])=>{
-          const oc=konuOncelik(o,sk);
-          (oc?oc.kalem:(KONU[sk]||[]).flatMap(u=>u[1].map(t=>({konu:t}))))
-            .forEach((x,i)=>sirali.push({sk, konu:x.konu, sira:i}));
-        });
-        sirali.sort((a,b)=>a.sira-b.sira);
-        // fazla yük varsa baştan "bitti" işaretle
-        for(const x of sirali){
-          if(kalanDk()<=hedefDk) break;
-          o.topics[x.sk]=o.topics[x.sk]||{};
-          if(o.topics[x.sk][x.konu]!==2) o.topics[x.sk][x.konu]=2;
-        }
-        // yük çok azaldıysa sondan geri aç (öğrenci fazla ileri görünmesin)
-        for(let i=sirali.length-1;i>=0 && kalanDk()<hedefDk*0.94;i--){
-          const x=sirali[i];
-          if((o.topics[x.sk]||{})[x.konu]===2) delete o.topics[x.sk][x.konu];
-        }
-      }
+      const hk=23;                                        // örnek öğrencide haftaKalan() sabit 23
+      const topDk=subs(o).reduce((a,x)=>a+((kalanSure(o,x[0])||{}).dk||0),0);
+      const gerekli=(topDk/60)/hk;                        // saat / hafta
+      if(gerekli>0) o.haftalikSaat=yetisirBandi(gerekli, ORNEK_YETISIR[k%5]);
     }
 
     o.tasks.forEach((t,i)=>{ t.id='or'+(k+1)+'-t'+i; });
@@ -5186,7 +5214,7 @@ function refWa(){
     `En sevdiğim yanı: deneme karnesini olduğu gibi kopyalayıp yapıştırıyorsunuz, `+
     `sistem netleri hesaplıyor ve hangi konudan kaç yanlış yapıldığını çıkarıyor. `+
     `Yayınevi fark etmiyor.\n\n`+
-    `Üstüne haftalık ödev takibi, 612 konuluk harita ve YÖK verisiyle hedef bölüm karşılaştırması var. `+
+    `Üstüne haftalık ödev takibi, 628 konuluk harita ve YÖK verisiyle hedef bölüm karşılaştırması var. `+
     `Öğrenci ayrı uygulama indirmiyor.\n\n`+
     `7 gün ücretsiz deneyebilirsiniz:\n${refLinki()}\n\n`+
     `(Bağlantı açılmazsa ${tabanAdres()}kocluk-sunucu.html adresine girip `+
@@ -5417,7 +5445,7 @@ function vAbonelik(){
       ['<b>Öğrencinin kendi hesabı</b> — koça bağlı değil',
        'Hedefe göre konu önceliği',
        'Deneme karnesi okuyucu',
-       '612 konuluk takip haritası',
+       '628 konuluk takip haritası',
        'Kendine ödev verme'])}
     ${kart('koc','Öğretmen Paketi','10','449 TL','45 TL',false)}
     ${kart('sinif','Sınıf Paketi','40','2.999 TL','75 TL',true)}
@@ -5506,22 +5534,11 @@ async function kocKaydet(id){
 }
 
 async function kocOgrencileri(id, ad){
-  /* DÜZELTME (31 Ağu 2026) — ESKİDEN doğrudan tablo sorgusu yapılıyordu:
-       sbSorgu('ogrenciler','?koc_id=eq.'+id+'&...')
-     Hatası: ogrenciler tablosunun RLS politikası (ogr_gor) şöyle:
-       USING ((koc_id = auth.uid()) OR (auth_id = auth.uid()))
-     Yani yönetici bile olsan BAŞKA bir koçun öğrencilerini doğrudan sorgulayamıyorsun;
-     RLS satırları sessizce eliyor. Hata da vermiyor — sadece BOŞ liste dönüyor,
-     panel de "Bu koçun kayıtlı öğrencisi yok" yazıyordu. Öğrenciler duruyordu.
-     Ayrıca sorgudaki `hedef_bolum` kolonu tabloda YOK (doğrusu `bolum`).
-     Çözüm: bu iş için zaten var olan yonetici_ogrenciler(koc) RPC'si kullanılıyor.
-     O fonksiyon SECURITY DEFINER ve içinde yonetici_mi() kontrolü var — RLS'i
-     yetkili biçimde aşar, yetkisiz çağrıda boş döner. */
   YOGRENCI={id:id, ad:ad||''}; YOGRLISTE=[]; YOGRHATA='Yükleniyor...'; render();
   try{
-    const r=await sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:id}});
+    const r=await sbSorgu('ogrenciler',
+      '?koc_id=eq.'+id+'&arsivlendi=eq.false&select=id,ad,sinif,alan,bolum,olusturuldu&order=ad');
     YOGRLISTE=Array.isArray(r)?r:[]; YOGRHATA='';
-    if(!YOGRLISTE.length) YOGRHATA='';
   }catch(e){ YOGRHATA='Öğrenciler alınamadı: '+(e.message||e); }
   render();
 }
@@ -5532,16 +5549,12 @@ function vKocOgrencileri(){
     <button class="btn ghost" onclick="YOGRENCI=null;YOGRLISTE=[];render()">← Koç listesine dön</button>
     ${YOGRHATA?`<div class="flag ${/Yükleniyor/.test(YOGRHATA)?'warn':'bad'}" style="margin-top:12px">
       <span class="ic">${/Yükleniyor/.test(YOGRHATA)?'·':'!'}</span><span>${esc(YOGRHATA)}</span></div>`:''}
-    ${YOGRLISTE.length?`<div style="margin-top:12px;overflow-x:auto"><table>
-      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>E-posta</th><th>Panele bağlı</th><th>Onay</th>
-        <th class="num">Deneme</th><th class="num">Ödev</th><th class="num">Kayıt</th></tr></thead>
+    ${YOGRLISTE.length?`<div style="margin-top:12px"><table>
+      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>Hedef bölüm</th><th class="num">Kayıt</th></tr></thead>
       <tbody>${YOGRLISTE.map(o=>`<tr>
         <td><b>${esc(o.ad||'—')}</b></td><td>${esc(o.sinif||'—')}</td>
-        <td>${esc(o.alan||'—')}</td><td style="font-size:12px">${esc((o.eposta||'—').slice(0,32))}</td>
-        <td>${o.bagli?'<span style="color:var(--ok)">✓ bağlı</span>':'<span style="color:var(--ink-3)">—</span>'}</td>
-        <td>${o.onay?'<span style="color:var(--ok)">✓</span>':'<span style="color:var(--warn)">eksik</span>'}</td>
-        <td class="num">${+o.deneme||0}</td><td class="num">${+o.odev||0}</td>
-        <td class="num">${esc((o.kayit||'').slice(0,10))}</td></tr>`).join('')}</tbody>
+        <td>${esc(o.alan||'—')}</td><td style="font-size:12px">${esc((o.bolum||'—').slice(0,44))}</td>
+        <td class="num">${esc((o.olusturuldu||'').slice(0,10))}</td></tr>`).join('')}</tbody>
     </table></div>`:(YOGRHATA?'':'<div class="empty" style="margin-top:12px">Bu koçun kayıtlı öğrencisi yok.</div>')}
   </div></div>`;
 }
