@@ -424,24 +424,9 @@
     "soru_yil": 0.05,
     "kilit": false
    },
-   "MEKANİK ENERJİ": {
-    "kademe": "C",
-    "soru_yil": 0.03,
-    "kilit": false
-   },
    "ENERJİNİN KORUNUMU VE ENERJİ DÖNÜŞÜMLERİ": {
     "kademe": "C",
     "soru_yil": 0.03,
-    "kilit": false
-   },
-   "VERİM": {
-    "kademe": "C",
-    "soru_yil": 0.01,
-    "kilit": false
-   },
-   "ENERJİ KAYNAKLARI": {
-    "kademe": "C",
-    "soru_yil": 0.01,
     "kilit": false
    },
    "ISI VE SICAKLIK": {
@@ -572,6 +557,16 @@
    "RENK": {
     "kademe": "C",
     "soru_yil": 0.07,
+    "kilit": false
+   },
+   "KİNETİK, POTANSİYEL VE MEKANİK ENERJİ": {
+    "kademe": "C",
+    "soru_yil": 0.03,
+    "kilit": false
+   },
+   "VERİM VE ENERJİ KAYNAKLARI": {
+    "kademe": "C",
+    "soru_yil": 0.02,
     "kilit": false
    }
   },
@@ -3196,5 +3191,5 @@
    }
   }
  },
- "guncelleme": "2026-08-31 — CANLILAR DUNYASI unitesi guncellendi (siniflandirmaya giris + omurgasiz/omurgali hayvanlar)"
+ "guncelleme": "2026-08-31 — TYT Fizik ENERJI unitesi: mekanik enerji yeniden adlandirildi, verim+enerji kaynaklari birlestirildi"
 }
