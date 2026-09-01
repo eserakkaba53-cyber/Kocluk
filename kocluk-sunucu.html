@@ -5851,12 +5851,17 @@ async function kocKaydet(id){
 }
 
 async function kocOgrencileri(id, ad){
-  YOGRENCI={id:id, ad:ad||''}; YOGRLISTE=[]; YOGRHATA='Yükleniyor...'; render();
+  /* RLS, koçların birbirinin öğrencisini okumasını engeller; yönetici bu
+     yüzden doğrudan tablodan DEĞİL, sunucudaki yonetici_ogrenciler()
+     fonksiyonuyla okur (security definer — yonetici_mi kontrolü sunucuda). */
+  const koc=(KOCLAR||[]).find(x=>x.id===id);
+  YOGRENCI={id:id, ad:ad||(koc?koc.ad:'')||''}; YOGRLISTE=[]; YOGRHATA='Yükleniyor...'; render();
   try{
-    const r=await sbSorgu('ogrenciler',
-      '?koc_id=eq.'+id+'&arsivlendi=eq.false&select=id,ad,sinif,alan,bolum,olusturuldu&order=ad');
+    let r=await sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:id}});
+    if(typeof r==='string'){ try{ r=JSON.parse(r); }catch(e){} }
     YOGRLISTE=Array.isArray(r)?r:[]; YOGRHATA='';
-  }catch(e){ YOGRHATA='Öğrenciler alınamadı: '+(e.message||e); }
+  }catch(e){ YOGRHATA='Öğrenciler alınamadı: '+(e.message||e)+
+    "\n\nSupabase'de yonetici_ogrenciler() fonksiyonu var mı, kontrol et."; }
   render();
 }
 
@@ -5867,11 +5872,15 @@ function vKocOgrencileri(){
     ${YOGRHATA?`<div class="flag ${/Yükleniyor/.test(YOGRHATA)?'warn':'bad'}" style="margin-top:12px">
       <span class="ic">${/Yükleniyor/.test(YOGRHATA)?'·':'!'}</span><span>${esc(YOGRHATA)}</span></div>`:''}
     ${YOGRLISTE.length?`<div style="margin-top:12px"><table>
-      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>Hedef bölüm</th><th class="num">Kayıt</th></tr></thead>
+      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>E-posta</th><th>Hesap</th><th>Onay</th><th class="num">Deneme</th><th class="num">Ödev</th><th class="num">Kayıt</th></tr></thead>
       <tbody>${YOGRLISTE.map(o=>`<tr>
         <td><b>${esc(o.ad||'—')}</b></td><td>${esc(o.sinif||'—')}</td>
-        <td>${esc(o.alan||'—')}</td><td style="font-size:12px">${esc((o.bolum||'—').slice(0,44))}</td>
-        <td class="num">${esc((o.olusturuldu||'').slice(0,10))}</td></tr>`).join('')}</tbody>
+        <td>${esc(o.alan||'—')}</td>
+        <td style="font-size:12px">${esc(o.eposta||'—')}</td>
+        <td>${o.bagli?'<span class="pill s1" style="font-size:10.5px">bağlı</span>':'<span class="pill s0" style="font-size:10.5px">girmedi</span>'}</td>
+        <td>${o.onay?'<span class="pill s1" style="font-size:10.5px">✓</span>':'<span class="pill s3" style="font-size:10.5px">eksik</span>'}</td>
+        <td class="num">${o.deneme??'—'}</td><td class="num">${o.odev??'—'}</td>
+        <td class="num">${esc(String(o.kayit||o.olusturuldu||'').slice(0,10))}</td></tr>`).join('')}</tbody>
     </table></div>`:(YOGRHATA?'':'<div class="empty" style="margin-top:12px">Bu koçun kayıtlı öğrencisi yok.</div>')}
   </div></div>`;
 }
