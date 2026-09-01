@@ -1515,9 +1515,10 @@ function rutinVar(st,wk){ return st.tasks.filter(t=>t.rutin&&weekKey(t.date)===w
 function rutinEkle(sessiz){
   const st=cur(), wk=weekKey(today());
   const mevcut=new Set(rutinVar(st,wk).map(t=>t.konu));
+  const muaf=(typeof rutinCikarSet==='function')?rutinCikarSet(st):new Set();   // bu hafta elle çıkarılanlar
   let n=0;
   rutinler().forEach(r=>{
-    if(mevcut.has(r.ad)) return;
+    if(mevcut.has(r.ad)||muaf.has(r.ad)) return;
     st.tasks.push({id:uid(),date:today(),type:'h',sub:r.sub,konu:r.ad,konuRef:r.konu||'',q:r.adet,dks:r.dks,yap:0,txt:r.konu?('Konu: '+r.konu):'Sabit haftalık rutin',s:0,rutin:true});
     n++;
   });
@@ -1550,6 +1551,44 @@ function tavsiyeCikarGeriAl(){
   const st=cur(); if(!st) return;
   const m=tavsiyeCikarOku(); delete m[st.id+'|'+weekKey(today())];
   tavsiyeCikarYaz(m); render();
+}
+/* ===== HAFTALIK TABLODAN ÖDEV ÇIKARMA =====
+   Konu ödevi: bu haftadan silinir VE otomatik plan aynı konuyu bu hafta
+   yeniden önermez (tavsiye-çıkarma kaydına işlenir).
+   Rutin: YALNIZCA bu haftadan silinir; tanım durur, gelecek haftalarda
+   yine gelir. Bu haftaki "ödevleri ver" de onu geri eklemez. */
+const RUTCIKARKEY='biyoser_rutin_cikar';
+function rutinCikarOku(){ try{ return JSON.parse(localStorage.getItem(RUTCIKARKEY)||'{}'); }catch(e){ return {}; } }
+function rutinCikarSet(st){ return new Set(rutinCikarOku()[st.id+'|'+weekKey(today())]||[]); }
+function rutinCikarYaz(m){
+  const wk=weekKey(today());
+  for(const k in m){ if(k.split('|').pop()!==wk) delete m[k]; }
+  try{ localStorage.setItem(RUTCIKARKEY, JSON.stringify(m)); }catch(e){}
+}
+function haftaOdevCikar(id){
+  const st=cur(); if(!st) return;
+  const t=(st.tasks||[]).find(x=>x.id===id); if(!t) return;
+  if(t.rutin){ haftaRutinCikar(id); return; }
+  if(!confirm('“'+(t.konu||'Ödev')+'” bu haftadan çıkarılacak.\nOtomatik plan bu konuyu BU HAFTA yeniden önermez; gelecek hafta konu hâlâ bitmemişse plana geri girer.\nDevam?')) return;
+  st.tasks=st.tasks.filter(x=>x.id!==id);
+  if(t.sub&&t.konu){
+    const m=tavsiyeCikarOku(), k=st.id+'|'+weekKey(today());
+    (m[k]=m[k]||[]).push(t.sub+'|'+t.konu);
+    tavsiyeCikarYaz(m);
+  }
+  if(!st.ornek) save();
+  render();
+}
+function haftaRutinCikar(id){
+  const st=cur(); if(!st) return;
+  const t=(st.tasks||[]).find(x=>x.id===id); if(!t) return;
+  if(!confirm('“'+(t.konu||'Rutin')+'” YALNIZCA bu haftadan çıkarılacak.\nRutin tanımı durur; gelecek haftalarda yine gelir.\nDevam?')) return;
+  st.tasks=st.tasks.filter(x=>x.id!==id);
+  const m=rutinCikarOku(), k=st.id+'|'+weekKey(today());
+  (m[k]=m[k]||[]).push(t.konu);
+  rutinCikarYaz(m);
+  if(!st.ornek) save();
+  render();
 }
 /* haftalık hedef çalışma süresi (dakika): rutin + konu ödevleri */
 function haftaSure(st,wk){
@@ -3426,7 +3465,7 @@ function vHafta(st){
   ${ornekUyari(st)}
 
   <div class="card"><div class="stats">
-    <div class="stat"><div class="k">Bu hafta ödev</div><div class="v">${ws.total||'—'}</div><div class="n">uyum ${ws.rate!==null?ws.rate+'%':'—'}</div></div>
+    <div class="stat"><div class="k">Bu hafta ödev</div><div class="v">${tasks.filter(t=>!t.rutin).length||'—'}</div><div class="n">uyum ${ws.rate!==null?ws.rate+'%':'—'}${tasks.some(t=>t.rutin)?' · +'+tasks.filter(t=>t.rutin).length+' rutin':''}</div></div>
     <div class="stat"><div class="k">Devreden</div><div class="v" style="color:${devredenler(st).length?'var(--bad)':'var(--ok)'}">${devredenler(st).length}</div><div class="n">${devredenler(st).length?'geçen haftalardan':'temiz'}</div></div>
     <div class="stat"><div class="k">Haftalık hedef süre</div><div class="v" style="font-size:21px">${hs.top?sa(hs.top):'—'}</div><div class="n">${hs.top?`rutin ${sa(hs.rut)} + konu ${sa(hs.konu)}`:'ödev verilince hesaplanır'}</div></div>
     <div class="stat"><div class="k">Sınava kalan</div><div class="v">${haftaKalan(st)??'—'}</div><div class="n">hafta${st.sinavTarihi?' · '+st.sinavTarihi:' · Hedef sekmesinden gir'}</div></div>
@@ -3438,7 +3477,7 @@ function vHafta(st){
   ${devredenKart(st)}
 
   <div class="card"><h2>Bu haftanın ödevleri — ${wk}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri buraya anında yansır.</small></h2><div class="body" style="padding:0">
-    ${tasks.length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th></tr></thead><tbody>
+    ${tasks.length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th><th></th></tr></thead><tbody>
       ${tasks.slice().sort((a,b)=>((b.rutin?1:0)-(a.rutin?1:0))||a.date.localeCompare(b.date)).map(t=>{
         const dg=+t.dg||0, yn=+t.yn||0, bs=+t.bs||0, dybVar=(dg+yn+bs)>0;
         if(t.rutin) return `<tr style="background:var(--warn-bg)"><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td>
@@ -3447,7 +3486,8 @@ function vHafta(st){
         <td class="num" style="width:96px"><input type="number" min="0" value="${t.yap||0}" onchange="rutinYap('${t.id}',this.value)" style="width:82px"></td>
         <td class="num"><span style="color:var(--ink-3)">—</span></td><td class="num">—</td>
         <td class="num" style="color:var(--ink-3)">${Math.round((t.q||0)*(t.dks||1.5))} dk</td>
-        <td><span class="pill s${t.s}">${SL[t.s]}</span></td></tr>`;
+        <td><span class="pill s${t.s}">${SL[t.s]}</span></td>
+        <td><button class="btn ghost mini" style="color:var(--bad);border-color:var(--line)" title="Yalnızca bu haftadan çıkar — gelecek haftalarda yine gelir" onclick="haftaRutinCikar('${t.id}')">✕</button></td></tr>`;
         return `<tr><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td>
         <td style="color:var(--ink-3);font-size:12px">${esc((uniteOf[t.sub]||{})[t.konu]||'—')}</td>
         <td><b>${esc(t.konu||'—')}</b></td><td class="num">${t.q||'—'}</td>
@@ -3457,7 +3497,8 @@ function vHafta(st){
           : '<span style="color:var(--ink-3)">—</span>'}</td>
         <td class="num"><b>${dybVar?n1(dg-yn/4):'—'}</b></td>
         <td class="num" style="color:var(--ink-3)">${t.konu?Math.round(sureOf(t.sub,t.konu))+' dk':'—'}</td>
-        <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td></tr>`;}).join('')}
+        <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td>
+        <td><button class="btn ghost mini" style="color:var(--bad);border-color:var(--line)" title="Bu ödevi bu haftadan çıkar" onclick="haftaOdevCikar('${t.id}')">✕</button></td></tr>`;}).join('')}
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
   </div></div>`;
 }
