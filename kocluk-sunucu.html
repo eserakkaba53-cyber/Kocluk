@@ -609,6 +609,51 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 .vbtn.on .vy{background:rgba(255,255,255,.25)}
 @media (prefers-reduced-motion: reduce){ .vbtn{transition:none !important} }
 
+
+/* ═══════════ ÖZEL DERS SEKMESİ ═══════════ */
+.od-yer{display:block}
+@media(min-width:1100px){.od-yer{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}}
+.od-serit{display:flex;gap:14px;align-items:center;background:var(--ok-bg);border:1px solid var(--line-soft);
+  border-radius:10px;padding:11px 15px;margin-bottom:16px;flex-wrap:wrap}
+.od-serit b.f{font-family:var(--mono);font-size:19px;color:var(--ok)}
+.od-serit .kom{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ok);
+  background:var(--panel);border:1px solid var(--line-soft);border-radius:20px;padding:4px 12px}
+.od-talep{border:1px solid var(--line-soft);border-radius:10px;padding:13px 15px;margin-bottom:11px;background:var(--panel)}
+.od-talep .ust{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.od-brozet{font-size:11px;font-weight:800;letter-spacing:.05em;background:var(--accent-soft);color:var(--accent);
+  border-radius:6px;padding:3px 9px;cursor:default}
+.od-brozet.sec{background:var(--accent);color:#fff}
+.od-brozet.tik{cursor:pointer}
+.od-tarih{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+.od-durum{margin-left:auto;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 11px;white-space:nowrap}
+.od-durum.acik{background:var(--ok-bg);color:var(--ok-ink)}
+.od-durum.kabul{background:var(--warn-bg);color:var(--warn-ink)}
+.od-durum.bitti{background:var(--line-soft);color:var(--ink-3)}
+.od-talep .konu{margin:7px 0 3px;font-size:13.5px}
+.od-talep .alt{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.od-talep.silik{opacity:.55;background:var(--paper)}
+.od-yild{color:#E2A63F;font-size:16px;letter-spacing:1px}
+.od-yild .bos{color:var(--line)}
+.od-yild button{background:none;border:0;cursor:pointer;font-size:18px;color:var(--line);padding:0 1px}
+.od-yild button:hover,.od-yild button.dolu{color:#E2A63F}
+.od-nasil{background:linear-gradient(160deg,#0B2D45,#03182B);color:#DCE9F2;border-radius:14px;padding:20px;margin-bottom:16px}
+@media(min-width:1100px){.od-nasil{position:sticky;top:80px}}
+.od-nasil h3{margin:0 0 4px;font-size:15px;color:#fff}
+.od-nasil .na{font-size:12px;color:#9FC0D2;margin-bottom:14px}
+.od-adim{display:flex;gap:11px;margin-bottom:13px;font-size:12.8px;line-height:1.5}
+.od-adim .no{flex:none;width:22px;height:22px;border-radius:50%;background:#E8873A;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:11px}
+.od-nasil .kutu{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;
+  padding:10px 12px;font-size:12px;margin-top:8px}
+.od-nasil .kutu b{color:#8FD3CE}
+.od-nasil .kutu.uyari{border-color:rgba(232,135,58,.5)}
+.od-nasil .kutu.uyari b{color:#F5B269}
+
+
+/* özel ders v2 ekleri */
+.od-durum.gelmedi{background:var(--bad-bg);color:var(--bad-ink)}
+.od-durum.itirazli{background:var(--bad-bg);color:var(--bad-ink)}
+.od-sorun{margin-top:9px;padding:11px;border:1px dashed var(--line);border-radius:9px;width:100%}
 </style>
 
 <div class="app">
@@ -2404,7 +2449,7 @@ function durumBul(L){
 let RAPOR_ON=null, GERIKORU=true;
 const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],
                   ['konu','Konular'],['hedef','Hedef'],['puan','Puan hesaplayıcı'],['veli','Veli raporu'],['ogrenci','Öğrenci bilgileri'],
-                  ['davet','Davet ve kullanım'],['hesap','Hesap']];
+                  ['davet','Davet ve kullanım'],['ozel','Özel Ders'],['hesap','Hesap']];
 function TABSAL(){ return (LISANS&&LISANS.yonetici) ? TABS_TEMEL.concat([['yonetim','Yönetim']]) : TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
 const ORNEK_ID='ornek-ogrenci';                 // geriye donuk uyumluluk
@@ -2738,12 +2783,18 @@ function render(){
     karsilamaKontrol();
     return;
   }
-  if(!st && TAB!=='yonetim' && TAB!=='davet'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';karsilamaKontrol();return;}
+  if(!st && TAB!=='yonetim' && TAB!=='davet' && TAB!=='ozel'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';karsilamaKontrol();return;}
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
   if(!TABSAL().find(t=>t[0]===TAB)) TAB='hafta';
+  if(TAB==='ozel'){
+    v.innerHTML=kaynakUyarisi()+vOzelDersKoc();
+    if(_aid){ const _el=document.getElementById(_aid);
+      if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+    return;
+  }
   if(TAB==='davet'){
     if(!REFERANS && !REFHATA && !REFYUKLENIYOR){ REFYUKLENIYOR=true; setTimeout(()=>referansOku().then(render),10); }
     v.innerHTML=kaynakUyarisi()+vDavet();
@@ -2753,7 +2804,7 @@ function render(){
   }
   if(TAB==='yonetim'){
     if(!KOCLAR.length && !YONDURUM){ YONDURUM='Yükleniyor...'; setTimeout(koclariOku,10); }
-    v.innerHTML=kaynakUyarisi()+vYonetici();
+    v.innerHTML=kaynakUyarisi()+vYonetici()+((typeof odYonetimKart==='function')?odYonetimKart():'');
     if(_aid){ const _el=document.getElementById(_aid);
       if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
     return;
@@ -6665,7 +6716,13 @@ function girisEkrani(){
             deneme analizi, konu haritası, öğrenci paneli.<br>
             Süre bitince verilerin durur ve okunabilir kalır; devam etmek istersen paket seçersin.</span></div>
           <div class="fr"><div style="flex:1"><label class="f">Adın</label>
-          <input type="text" id="gAd" placeholder="Ad Soyad" value="${esc(KAYIT.ad||'')}" oninput="KAYIT.ad=this.value"></div></div>`:''}
+          <input type="text" id="gAd" placeholder="Ad Soyad" value="${esc(KAYIT.ad||'')}" oninput="KAYIT.ad=this.value"></div></div>
+          <div class="fr"><div style="flex:1"><label class="f">Telefonun <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(WhatsApp — özel ders için)</span></label>
+          <input type="text" id="gTel" placeholder="05xx xxx xx xx" value="${esc(KAYIT.tel||'')}" oninput="KAYIT.tel=this.value;odKayitBekle()"></div></div>
+          <div style="margin-bottom:12px"><label class="f">Branşların <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(özel ders talepleri buna göre gelir; sonra değiştirilebilir)</span></label>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:4px">
+            ${OD_BRANSLAR.map(b=>`<span class="od-brozet tik ${(KAYIT.branslar||[]).indexOf(b)>=0?'sec':''}" onclick="odKayitBrans('${b.replace(/'/g,"\\'")}')">${(KAYIT.branslar||[]).indexOf(b)>=0?'✓ ':''}${b.toUpperCase()}</span>`).join('')}
+          </div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
           <input type="text" id="gMail" placeholder="ornek@eposta.com" value="${esc(KAYIT.mail||'')}" oninput="KAYIT.mail=this.value"></div></div>
         ${GIRISMOD==='kayit'?`<div class="fr"><div style="flex:1"><label class="f">E-postanı tekrar yaz</label>
@@ -6882,7 +6939,7 @@ function kaynakUyarisi(){
    Üstteki sekme çubuğu kullanılmaz. Davet/Hesap/Yönetim öğrenciden
    bağımsız olduğundan rayın altında "Hesap" bölümünde durur. */
 var _RAYSEC=null;
-var KOC_GENEL_SEKME=['davet','hesap','yonetim'];
+var KOC_GENEL_SEKME=['ozel','davet','hesap','yonetim'];
 
 function kocSek(id,t,ornek){
   YENIOGR=null; ABONE=false; KOKPIT=false;
@@ -6921,6 +6978,317 @@ function railAgaci(liste){
   return kokpit + ogr + genel;
 }
 </script>
+
+<script>
+/* ═══════════ ÖZEL DERS — KOÇ (v2: koruma katmanlı) ═══════════
+   v2: öğrenci istatistiği görünür (tamamlanan/gelmedi) · "öğrenci gelmedi"
+   işareti (2 gelmedi = öğrenci otomatik kilitlenir) · sorun bildir ·
+   yönetici şikayet listesi + men düğmeleri (Yönetim sekmesinde).
+   Sunucu tarafı: OZEL-DERS-supabase-kurulum.sql */
+const OD_BRANSLAR=['Matematik','Geometri','Fizik','Kimya','Biyoloji','Türkçe / Edebiyat','Tarih','Coğrafya','Felsefe','Din Kültürü','İngilizce (YDT)'];
+const OD_KATLAR=[['uygunsuz','Uygunsuz davranış'],['yapilmadi','Ders yapılmadı'],['odeme','Ödeme sorunu'],['diger','Diğer']];
+const OD_KAT_AD={uygunsuz:'Uygunsuz davranış',yapilmadi:'Ders yapılmadı',odeme:'Ödeme sorunu',gelmedi:'Öğrenci gelmedi',diger:'Diğer'};
+var OD_K={prof:null,acik:null,benim:null,yuk:false,hata:'',telForm:'',sorun:null};
+var OD_Y={liste:null,yuk:false,hata:''};
+
+function odHataYaz(e){
+  const m=String((e&&e.message)||e);
+  return (/PGRST202|does not exist|not find|404|schema cache/i.test(m))
+    ? 'Özel ders modülü sunucuda kurulu değil. (OZEL-DERS-supabase-kurulum.sql çalıştırılmalı.)'
+    : m.replace(/^.*?:\s*/,'');
+}
+function odTarihYaz(t,s){
+  if(!t) return s||'—';
+  const p=String(t).split('-');
+  return (p.length===3?p[2]+'.'+p[1]+'.'+p[0]:t)+(s?' · '+s:'');
+}
+function odWaTel(t){
+  t=String(t||'').replace(/\D/g,'');
+  if(t.startsWith('0')) t='9'+t;
+  else if(t.length===10&&t.startsWith('5')) t='90'+t;
+  return t;
+}
+async function odKocYukle(){
+  OD_K.yuk=true; OD_K.hata=''; render();
+  try{
+    let p=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_koc_profil_oku',{method:'POST',body:{}}));
+    if(Array.isArray(p)) p=p[0]||{};
+    OD_K.prof={tel:(p&&p.tel)||'', branslar:(p&&p.branslar)||[],
+               engelli:!!(p&&p.engelli), engelNeden:(p&&p.engel_neden)||''};
+    let bek=null; try{ bek=JSON.parse(localStorage.getItem('od_bekleyen_profil')||'null'); }catch(e){}
+    if(bek && ((!OD_K.prof.tel&&bek.tel) || (!OD_K.prof.branslar.length&&(bek.branslar||[]).length))){
+      await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_koc_profil_yaz',{method:'POST',
+        body:{p_tel:bek.tel||'', p_branslar:bek.branslar||[]}}));
+      try{ localStorage.removeItem('od_bekleyen_profil'); }catch(e){}
+      let p2=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_koc_profil_oku',{method:'POST',body:{}}));
+      if(Array.isArray(p2)) p2=p2[0]||{};
+      OD_K.prof.tel=(p2&&p2.tel)||''; OD_K.prof.branslar=(p2&&p2.branslar)||[];
+    }
+    OD_K.telForm=OD_K.prof.tel;
+    if(OD_K.prof.engelli){ OD_K.acik=[]; OD_K.benim=[]; OD_K.yuk=false; render(); return; }
+    const [a,b]=await Promise.all([
+      sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_acik',{method:'POST',body:{p_branslar:OD_K.prof.branslar}})),
+      sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_koc_liste',{method:'POST',body:{}}))
+    ]);
+    OD_K.acik=Array.isArray(a)?a:[]; OD_K.benim=Array.isArray(b)?b:[];
+  }catch(e){ OD_K.hata=odHataYaz(e); OD_K.acik=OD_K.acik||[]; OD_K.benim=OD_K.benim||[]; }
+  OD_K.yuk=false; render();
+}
+async function odProfilKaydet(){
+  const tel=(OD_K.telForm||'').trim();
+  if(!tel){ alert('Telefonunu yaz — dersi kabul ettiğinde öğrenci sana bu numaradan ulaşacak.'); return; }
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_koc_profil_yaz',{method:'POST',
+      body:{p_tel:tel, p_branslar:(OD_K.prof&&OD_K.prof.branslar)||[]}}));
+    await odKocYukle();
+  }catch(e){ alert(odHataYaz(e)); }
+}
+async function odBransTog(b){
+  const l=((OD_K.prof&&OD_K.prof.branslar)||[]).slice();
+  const i=l.indexOf(b); if(i>=0) l.splice(i,1); else l.push(b);
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_koc_profil_yaz',{method:'POST',
+      body:{p_tel:(OD_K.prof&&OD_K.prof.tel)||'', p_branslar:l}}));
+    await odKocYukle();
+  }catch(e){ alert(odHataYaz(e)); }
+}
+async function odKabul(id){
+  if(!confirm('Dersi kabul ediyorsun. Öğrencinin numarası sana açılacak ve WhatsApp açılacak. Devam?')) return;
+  try{
+    let r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_kabul',{method:'POST',body:{p_id:id}}));
+    if(Array.isArray(r)) r=r[0];
+    await odKocYukle();
+    if(r&&r.ogr_tel){
+      const mesaj='Merhaba '+(r.ogr_ad||'')+', Biyoser üzerinden açtığın '+(r.brans||'')+' özel ders talebini kabul ettim. '
+        +'Konu: '+(r.aciklama||'')+' — '+odTarihYaz(r.tarih,r.saat)+' uygun mu?';
+      baglantiAc('https://wa.me/'+odWaTel(r.ogr_tel)+'?text='+encodeURIComponent(mesaj),'WhatsApp — öğrenci');
+    }
+  }catch(e){ alert(odHataYaz(e)); odKocYukle(); }
+}
+function odWaAc(x){
+  const mesaj='Merhaba '+(x.ogr_ad||'')+', Biyoser özel ders: '+(x.brans||'')+' — '+odTarihYaz(x.tarih,x.saat);
+  baglantiAc('https://wa.me/'+odWaTel(x.ogr_tel)+'?text='+encodeURIComponent(mesaj),'WhatsApp — öğrenci');
+}
+async function odBirak(id){
+  if(!confirm('Bu dersi bırakıyorsun; talep öğrencinin hak kaybı olmadan yeniden yayına dönecek. Devam?')) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_birak',{method:'POST',body:{p_id:id}})); await odKocYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odBitir(id){
+  if(!confirm('Ders tamamlandı olarak işaretlenecek. Öğrenci yıldız vererek onaylayacak; ders yapılmadıysa itiraz edebilecek. Devam?')) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_bitir',{method:'POST',body:{p_id:id}})); await odKocYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odGelmedi(id){
+  if(!confirm('“Öğrenci derse gelmedi” işaretliyorsun. Bu kayıt öğrencinin geçmişine işlenir; 2 gelmedide öğrencinin talep açması kilitlenir. Devam?')) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_gelmedi',{method:'POST',body:{p_id:id}})); await odKocYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odYildizKoc(id,n){
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_yildiz',{method:'POST',body:{p_id:id,p_n:n}})); await odKocYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+function odSorunAc(id){ OD_K.sorun={id:id,kat:'uygunsuz',metin:''}; render(); }
+function odSorunKapat(){ OD_K.sorun=null; render(); }
+async function odSorunGonder(){
+  const s=OD_K.sorun; if(!s) return;
+  if(!s.metin.trim()){ alert('Kısaca ne olduğunu yaz.'); return; }
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_sikayet',{method:'POST',
+      body:{p_ders:s.id, p_kategori:s.kat, p_aciklama:s.metin}}));
+    OD_K.sorun=null; alert('Bildirimin Biyoser yönetimine iletildi.'); render();
+  }catch(e){ alert(odHataYaz(e)); }
+}
+function odSorunFormK(id){
+  const s=OD_K.sorun;
+  if(!s || s.id!==id)
+    return '<a href="#" class="hint" style="color:var(--ink-3)" onclick="odSorunAc(\''+id+'\');return false">⚑ Sorun bildir</a>';
+  return `<div class="od-sorun">
+    <div class="fr" style="margin-bottom:8px"><div style="max-width:220px">
+      <select onchange="OD_K.sorun.kat=this.value">${OD_KATLAR.map(k=>`<option value="${k[0]}" ${s.kat===k[0]?'selected':''}>${k[1]}</option>`).join('')}</select></div></div>
+    <textarea rows="2" placeholder="Kısaca ne oldu?" oninput="OD_K.sorun.metin=this.value">${esc(s.metin)}</textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn mini" onclick="odSorunGonder()">Gönder</button>
+      <button class="btn ghost mini" onclick="odSorunKapat()">Vazgeç</button></div>
+  </div>`;
+}
+function odYildizHtml(v){
+  if(!v) return '<span class="od-yild"><span class="bos">—</span></span>';
+  let s='<span class="od-yild">';
+  for(let i=1;i<=5;i++) s+= i<=v ? '★' : '<span class="bos">★</span>';
+  return s+'</span>';
+}
+function odYildizSeciciK(id){
+  let s='<span class="od-yild">';
+  for(let i=1;i<=5;i++) s+='<button title="'+i+' yıldız" onclick="odYildizKoc(\''+id+'\','+i+')">★</button>';
+  return s+'</span>';
+}
+
+function vOzelDersKoc(){
+  if(DEMO || !sbOturum())
+    return '<div class="card"><div class="body"><div class="empty">Özel ders bölümü tanıtım modunda kullanılamaz — kendi hesabınla giriş yap.</div></div></div>';
+  if(OD_K.acik===null && !OD_K.yuk){ setTimeout(odKocYukle,0); }
+  const prof=OD_K.prof||{tel:'',branslar:[]};
+  if(prof.engelli)
+    return `<div class="card" style="border:2px solid var(--bad)"><div class="body">
+      <div class="flag bad"><span class="ic">!</span><span><b>Özel ders erişimin kapatıldı.</b><br>${esc(prof.engelNeden||'')}<br>
+      İtiraz için <a href="https://wa.me/905325874992?text=${encodeURIComponent('Merhaba, özel ders erişimim hakkında itirazım var.')}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">Biyoser'e yaz</a>.</span></div></div></div>`;
+  const profTam=!!(prof.tel && prof.branslar.length);
+  const kabulum=(OD_K.benim||[]).filter(x=>x.durum==='kabul');
+  const gecmis=(OD_K.benim||[]).filter(x=>x.durum==='bitti'||x.durum==='gelmedi');
+
+  const serit=`<div class="od-serit">
+    <span>Tavsiye edilen ders ücreti:</span><b class="f">1.000 TL</b><span class="hint">/ 40 dk</span>
+    <span class="kom">✓ Biyoser hiçbir komisyon almaz</span></div>`;
+
+  const profilKart=`<div class="card"${profTam?'':' style="border:2px solid var(--warn)"'}><h2>${profTam?'Branşlarım':'Önce profilini tamamla — bir kereye mahsus'}<small>${profTam
+      ?'Yalnızca seçtiğin branşların talepleri sana gösterilir. Tıklayarak aç/kapat.'
+      :'Özel ders alabilmek için telefonunu ve branşlarını kaydet. Telefon, yalnızca dersini kabul ettiğin öğrenciye iletilir.'}</small></h2><div class="body">
+    ${prof.tel?'':`<div class="fr" style="margin-bottom:12px"><div style="max-width:260px"><label class="f">Telefonun (WhatsApp)</label>
+      <input value="${esc(OD_K.telForm||'')}" placeholder="05xx xxx xx xx" oninput="OD_K.telForm=this.value"></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn" onclick="odProfilKaydet()">Kaydet</button></div></div>`}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${OD_BRANSLAR.map(b=>`<span class="od-brozet tik ${prof.branslar.indexOf(b)>=0?'sec':''}" onclick="odBransTog('${b.replace(/'/g,"\\'")}')">${prof.branslar.indexOf(b)>=0?'✓ ':''}${esc(b.toUpperCase())}</span>`).join('')}
+    </div>
+    ${prof.branslar.length?'':'<div class="hint" style="margin-top:9px">Henüz branş seçmedin — talepler görünmeyecek.</div>'}
+  </div></div>`;
+
+  const acikKart=(x)=>`<div class="od-talep">
+    <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+      <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
+      <span class="od-durum acik">YENİ</span></div>
+    <div class="konu">${esc(x.aciklama||'—')}${(x.ogr_sinif||x.ogr_alan)?` — <span class="hint">${esc(x.ogr_sinif?x.ogr_sinif+'. sınıf':'')}${x.ogr_alan?' · '+esc(typeof trLabel==='function'?trLabel(x.ogr_alan):x.ogr_alan):''}</span>`:''}</div>
+    <div class="alt"><button class="btn mini" onclick="odKabul('${x.id}')">Dersi kabul et</button>
+      <span class="hint">Öğrenci geçmişi: <b>${x.ogr_tamam||0} ders tamamladı</b>${(+x.ogr_gelmedi||0)?` · <b style="color:var(--bad)">${x.ogr_gelmedi} gelmedi</b>`:' · 0 gelmedi'}</span></div>
+  </div>`;
+
+  const benimKart=(x)=>`<div class="od-talep" style="border-color:var(--warn)">
+    <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+      <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
+      <span class="od-durum kabul">SENDE</span></div>
+    <div class="konu">${esc(x.aciklama||'—')} — <b>${esc(x.ogr_ad||'')}</b></div>
+    <div class="alt">
+      <button class="btn mini" style="background:var(--warn)" onclick='odWaAc(${JSON.stringify({ogr_ad:x.ogr_ad,ogr_tel:x.ogr_tel,brans:x.brans,tarih:x.tarih,saat:x.saat}).replace(/'/g,"&#39;")})'>📱 WhatsApp'tan yaz</button>
+      <button class="btn ghost mini" onclick="odBitir('${x.id}')">✓ Dersi bitirdim</button>
+      <button class="btn ghost mini" onclick="odGelmedi('${x.id}')">Öğrenci gelmedi</button>
+      <button class="btn ghost mini" style="color:var(--bad)" onclick="odBirak('${x.id}')">Vazgeç</button>
+      ${odSorunFormK(x.id)}
+    </div></div>`;
+
+  const gKart=(x)=>{
+    if(x.durum==='gelmedi') return `<div class="od-talep">
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+        <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
+        <span class="od-durum gelmedi">GELMEDİ</span></div>
+      <div class="konu">${esc(x.aciklama||'—')} — öğrenci: <b>${esc(x.ogr_ad||'')}</b></div>
+      <div class="alt"><span class="hint">“Derse gelmedi” olarak kapattın; öğrencinin geçmişine işlendi.</span></div></div>`;
+    return `<div class="od-talep">
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+        <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
+        <span class="od-durum bitti">TAMAMLANDI</span>
+        ${x.itiraz?'<span class="od-durum itirazli">⚠ Öğrenci “ders yapılmadı” dedi</span>':''}</div>
+      <div class="konu">${esc(x.aciklama||'—')} — öğrenci: <b>${esc(x.ogr_ad||'')}</b></div>
+      <div class="alt">
+        ${x.itiraz
+          ? '<span class="hint">İtiraz Biyoser yönetimine iletildi; gerekiyorsa seninle iletişime geçilir.</span>'
+          : `<span class="hint">Senin puanın:</span>${x.koc_yildiz?odYildizHtml(x.koc_yildiz):odYildizSeciciK(x.id)}
+             <span class="hint" style="margin-left:10px">Öğrencinin sana puanı:</span>${odYildizHtml(x.ogr_yildiz)}`}
+        ${odSorunFormK(x.id)}
+      </div></div>`;
+  };
+
+  const nasil=`<div class="od-nasil"><h3>Özel ders nasıl işler?</h3><div class="na">Öğretmen tarafı — 5 adım</div>
+    <div class="od-adim"><div class="no">1</div><div><b>Branşlarını seç</b> — yalnızca o branşların talepleri sana düşer.</div></div>
+    <div class="od-adim"><div class="no">2</div><div>Açık talebi <b>ilk kabul eden öğretmen</b> alır; öğrencinin geçmişini (tamamlanan / gelmedi) kabul etmeden görürsün.</div></div>
+    <div class="od-adim"><div class="no">3</div><div>Kabul edince öğrencinin numarası açılır, <b>WhatsApp'tan sen ulaşırsın</b>.</div></div>
+    <div class="od-adim"><div class="no">4</div><div>Öğrenci gelmezse <b>“Öğrenci gelmedi”</b> işaretle — 2 gelmedide öğrenci kilitlenir. Anlaşamazsanız <b>“Vazgeç”</b> de.</div></div>
+    <div class="od-adim"><div class="no">5</div><div><b>“Dersi bitirdim”</b> de ve puanla; öğrenci yıldız vererek dersi onaylar, yapılmadıysa itiraz edebilir.</div></div>
+    <div class="kutu"><b>Tavsiye edilen ücret:</b> 40 dakikalık ders saati <b>1.000 TL</b>. Ödemeyi öğrenci/velisiyle kendin anlaşırsın.</div>
+    <div class="kutu"><b>Biyoser komisyon almaz.</b> Ücretin tamamı öğretmenindir; sistem ödemeye aracılık etmez.</div>
+    <div class="kutu uyari"><b>Kurallar:</b> Uygunsuz söz ve davranış kalıcı men sebebidir; şikayetler yönetici tarafından incelenir.
+      Görüşmeleri WhatsApp'ta yazılı tutun. Ders, içerik ve ödeme öğretmenle öğrenci/veli arasındadır; fatura-vergi yükümlülüğü öğretmene aittir.</div>
+  </div>`;
+
+  return `${serit}<div class="od-yer"><div>
+    ${OD_K.hata?`<div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>${esc(OD_K.hata)}</span></div>`:''}
+    ${profilKart}
+    <div class="card"><h2>Açık talepler${prof.branslar.length?' — '+prof.branslar.join(', '):''}<small>Öğrencinin adı ve telefonu, talebi sen kabul edene kadar gizlidir.</small></h2><div class="body">
+      ${OD_K.yuk?'<div class="hint">⏳ Yükleniyor…</div>'
+        :(OD_K.acik||[]).length?(OD_K.acik||[]).map(acikKart).join('')
+        :'<div class="empty">Şu an branşlarında açık talep yok.</div>'}
+      <div class="hint" style="margin-top:8px"><a href="#" onclick="odKocYukle();return false" style="color:var(--accent)">↻ Listeyi yenile</a></div>
+    </div></div>
+    ${kabulum.length?`<div class="card"><h2>Kabul ettiğim dersler</h2><div class="body">${kabulum.map(benimKart).join('')}</div></div>`:''}
+    ${gecmis.length?`<div class="card"><h2>Geçmiş derslerim</h2><div class="body">${gecmis.map(gKart).join('')}</div></div>`:''}
+  </div>${nasil}</div>`;
+}
+
+/* ── YÖNETİCİ: şikayetler ve men — Yönetim sekmesine eklenir ── */
+async function odYonetimYukle(){
+  OD_Y.yuk=true; OD_Y.hata=''; render();
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_sikayet_liste',{method:'POST',body:{}}));
+    OD_Y.liste=Array.isArray(r)?r:[];
+  }catch(e){ OD_Y.hata=odHataYaz(e); OD_Y.liste=[]; }
+  OD_Y.yuk=false; render();
+}
+async function odSikayetKapat(id){
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_sikayet_kapat',{method:'POST',body:{p_id:id}})); await odYonetimYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odMen(auth,taraf){
+  const neden=prompt((taraf==='ogrenci'?'Öğrenci':'Koç')+' özel dersten men edilecek. Nedeni (karşı tarafa gösterilir):','Kurallara aykırı davranış.');
+  if(neden===null) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_engelle',{method:'POST',body:{p_auth:auth,p_taraf:taraf,p_neden:neden}})); await odYonetimYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odMenKaldir(auth){
+  if(!confirm('Men kaldırılacak; kişi özel ders sistemini yeniden kullanabilecek. Devam?')) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_engel_kaldir',{method:'POST',body:{p_auth:auth}})); await odYonetimYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+function odYonetimKart(){
+  if(!(LISANS&&LISANS.yonetici)) return '';
+  if(OD_Y.liste===null && !OD_Y.yuk){ setTimeout(odYonetimYukle,0); }
+  const L=OD_Y.liste||[];
+  const satir=(s)=>`<div class="od-talep" ${s.kategori==='uygunsuz'?'style="border:2px solid var(--bad)"':''}>
+    <div class="ust">
+      <span class="od-brozet" ${s.kategori==='uygunsuz'?'style="background:var(--bad-bg);color:var(--bad-ink)"':''}>${OD_KAT_AD[s.kategori]||s.kategori}</span>
+      <span class="od-tarih">${String(s.olusma||'').slice(0,16).replace('T',' ')}</span>
+      <span class="od-durum ${s.durum==='acik'?'kabul':'bitti'}">${s.durum==='acik'?'AÇIK':'KAPANDI'}</span></div>
+    <div class="konu">Bildiren: <b>${s.taraf==='ogrenci'?'öğrenci':'koç'}</b> ·
+      ${esc(s.brans||'')} · öğrenci <b>${esc(s.ogr_ad||'—')}</b>${s.ogr_engelli?' <span class="od-durum gelmedi">MENLİ</span>':''}
+      ↔ koç <b>${esc(s.koc_ad||'—')}</b>${s.koc_engelli?' <span class="od-durum gelmedi">MENLİ</span>':''}
+      · ders durumu: ${esc(s.ders_durum||'')}</div>
+    <div class="konu" style="color:var(--ink-2)">${esc(s.aciklama||'')}</div>
+    <div class="alt">
+      ${s.durum==='acik'?`<button class="btn ghost mini" onclick="odSikayetKapat('${s.id}')">İncelendi — kapat</button>`:''}
+      ${s.ogr_engelli
+        ?`<button class="btn ghost mini" onclick="odMenKaldir('${s.ogr_auth}')">Öğrenci menini kaldır</button>`
+        :`<button class="btn ghost mini" style="color:var(--bad)" onclick="odMen('${s.ogr_auth}','ogrenci')">Öğrenciyi men et</button>`}
+      ${s.koc_id?(s.koc_engelli
+        ?`<button class="btn ghost mini" onclick="odMenKaldir('${s.koc_id}')">Koç menini kaldır</button>`
+        :`<button class="btn ghost mini" style="color:var(--bad)" onclick="odMen('${s.koc_id}','koc')">Koçu men et</button>`):''}
+    </div></div>`;
+  return `<div class="card" style="margin-top:18px"><h2>Özel ders — şikayet ve men<small>Uygunsuz davranış bildirimleri en üsttedir. Men edilen kişi özel ders sistemini kullanamaz; kararı buradan geri alabilirsin.</small></h2><div class="body">
+    ${OD_Y.hata?`<div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>${esc(OD_Y.hata)}</span></div>`:''}
+    ${OD_Y.yuk?'<div class="hint">⏳ Yükleniyor…</div>':L.length?L.map(satir).join(''):'<div class="empty">Şikayet yok.</div>'}
+    <div class="hint" style="margin-top:8px"><a href="#" onclick="odYonetimYukle();return false" style="color:var(--accent)">↻ Yenile</a></div>
+  </div></div>`;
+}
+
+/* kayıt formundan gelen tel/branş — koç panele ilk girişinde profile işlenir */
+function odKayitBekle(){
+  try{ localStorage.setItem('od_bekleyen_profil', JSON.stringify({tel:(KAYIT&&KAYIT.tel)||'', branslar:(KAYIT&&KAYIT.branslar)||[]})); }catch(e){}
+}
+function odKayitBrans(b){
+  KAYIT.branslar=KAYIT.branslar||[];
+  const i=KAYIT.branslar.indexOf(b);
+  if(i>=0) KAYIT.branslar.splice(i,1); else KAYIT.branslar.push(b);
+  odKayitBekle(); render();
+}
+</script>
+
 
 <script>
 /* ═══ EKRAN GECIS ANIMASYONU ═══

@@ -495,6 +495,51 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 
 /* kart basligi alt aciklamasi ayri satirda dursun (bitisik gorunum duzeltmesi) */
 .card>h2 small{display:block;text-transform:none;letter-spacing:0;font-weight:400;font-size:11.5px;color:var(--ink-3);margin-top:3px}
+
+/* ═══════════ ÖZEL DERS SEKMESİ ═══════════ */
+.od-yer{display:block}
+@media(min-width:1100px){.od-yer{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}}
+.od-serit{display:flex;gap:14px;align-items:center;background:var(--ok-bg);border:1px solid var(--line-soft);
+  border-radius:10px;padding:11px 15px;margin-bottom:16px;flex-wrap:wrap}
+.od-serit b.f{font-family:var(--mono);font-size:19px;color:var(--ok)}
+.od-serit .kom{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ok);
+  background:var(--panel);border:1px solid var(--line-soft);border-radius:20px;padding:4px 12px}
+.od-talep{border:1px solid var(--line-soft);border-radius:10px;padding:13px 15px;margin-bottom:11px;background:var(--panel)}
+.od-talep .ust{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.od-brozet{font-size:11px;font-weight:800;letter-spacing:.05em;background:var(--accent-soft);color:var(--accent);
+  border-radius:6px;padding:3px 9px;cursor:default}
+.od-brozet.sec{background:var(--accent);color:#fff}
+.od-brozet.tik{cursor:pointer}
+.od-tarih{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+.od-durum{margin-left:auto;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 11px;white-space:nowrap}
+.od-durum.acik{background:var(--ok-bg);color:var(--ok-ink)}
+.od-durum.kabul{background:var(--warn-bg);color:var(--warn-ink)}
+.od-durum.bitti{background:var(--line-soft);color:var(--ink-3)}
+.od-talep .konu{margin:7px 0 3px;font-size:13.5px}
+.od-talep .alt{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.od-talep.silik{opacity:.55;background:var(--paper)}
+.od-yild{color:#E2A63F;font-size:16px;letter-spacing:1px}
+.od-yild .bos{color:var(--line)}
+.od-yild button{background:none;border:0;cursor:pointer;font-size:18px;color:var(--line);padding:0 1px}
+.od-yild button:hover,.od-yild button.dolu{color:#E2A63F}
+.od-nasil{background:linear-gradient(160deg,#0B2D45,#03182B);color:#DCE9F2;border-radius:14px;padding:20px;margin-bottom:16px}
+@media(min-width:1100px){.od-nasil{position:sticky;top:80px}}
+.od-nasil h3{margin:0 0 4px;font-size:15px;color:#fff}
+.od-nasil .na{font-size:12px;color:#9FC0D2;margin-bottom:14px}
+.od-adim{display:flex;gap:11px;margin-bottom:13px;font-size:12.8px;line-height:1.5}
+.od-adim .no{flex:none;width:22px;height:22px;border-radius:50%;background:#E8873A;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:11px}
+.od-nasil .kutu{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;
+  padding:10px 12px;font-size:12px;margin-top:8px}
+.od-nasil .kutu b{color:#8FD3CE}
+.od-nasil .kutu.uyari{border-color:rgba(232,135,58,.5)}
+.od-nasil .kutu.uyari b{color:#F5B269}
+
+
+/* özel ders v2 ekleri */
+.od-durum.gelmedi{background:var(--bad-bg);color:var(--bad-ink)}
+.od-durum.itirazli{background:var(--bad-bg);color:var(--bad-ink)}
+.od-sorun{margin-top:9px;padding:11px;border:1px dashed var(--line);border-radius:9px;width:100%}
 </style>
 
 <div class="app">
@@ -1258,6 +1303,7 @@ const TABS_HEPSI=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denemem
 function TABLIST(){
   const sunucuda = (typeof sbOturum==='function') && sbOturum() && OGRID;
   let l = sunucuda ? TABS_HEPSI.filter(t=>t[0]!=='rapor' && t[0]!=='ayar') : TABS_HEPSI.slice();
+  if(sunucuda) l.push(['ozel','Özel Ders']);   // özel ders sunucu hesabı gerektirir
   // Koçu olmayan öğrenci kendi paketini görür ve yönetir
   if(sunucuda && typeof soloMu==='function' && soloMu()) l.push(['paket','Paketim']);
   return l;
@@ -1410,7 +1456,7 @@ function render(){
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
   if(!TABLIST().find(t=>t[0]===TAB)&&TAB!=='kilavuz') TAB='odev';
-  v.innerHTML=uy+((typeof ornekSerit==='function')?ornekSerit():'')+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,yardim:vYardim,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar,paket:vPaket})[TAB]();
+  v.innerHTML=uy+((typeof ornekSerit==='function')?ornekSerit():'')+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,yardim:vYardim,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar,paket:vPaket,ozel:vOzelDersOgr})[TAB]();
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
   karsilamaKontrol();
@@ -3686,6 +3732,213 @@ function ornekSerit(){
     '</div></div></div>';
 }
 </script>
+
+<script>
+/* ═══════════ ÖZEL DERS — ÖĞRENCİ (v2: koruma katmanlı) ═══════════
+   v2: koç itibarı görünür · "ders yapılmadı" itirazı · sorun bildir ·
+   gelmedi kilidi (2 gelmedi = talep açma kapalı) · kurallar.
+   Sunucu tarafı: OZEL-DERS-supabase-kurulum.sql */
+const OD_BRANSLAR=['Matematik','Geometri','Fizik','Kimya','Biyoloji','Türkçe / Edebiyat','Tarih','Coğrafya','Felsefe','Din Kültürü','İngilizce (YDT)'];
+const OD_KATLAR=[['uygunsuz','Uygunsuz davranış'],['yapilmadi','Ders yapılmadı'],['odeme','Ödeme sorunu'],['diger','Diğer']];
+var OD_O={liste:null,yuk:false,hata:'',gonder:false,engel:null,sorun:null,
+  form:{brans:'Matematik',tarih:'',saat:'',aciklama:'',tel:'',veli:false}};
+
+function odHataYaz(e){
+  const m=String((e&&e.message)||e);
+  return (/PGRST202|does not exist|not find|404|schema cache/i.test(m))
+    ? 'Özel ders modülü sunucuda kurulu değil. (OZEL-DERS-supabase-kurulum.sql çalıştırılmalı.)'
+    : m.replace(/^.*?:\s*/,'');
+}
+function odTarihYaz(t,s){
+  if(!t) return s||'—';
+  const p=String(t).split('-');
+  return (p.length===3?p[2]+'.'+p[1]+'.'+p[0]:t)+(s?' · '+s:'');
+}
+async function odOgrYukle(){
+  OD_O.yuk=true; OD_O.hata=''; render();
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_taleplerim',{method:'POST',body:{}}));
+    OD_O.liste=Array.isArray(r)?r:[];
+    const ilk=OD_O.liste[0];
+    OD_O.engel = (ilk&&ilk.engelli) ? (ilk.engel_neden||'Erişim kapalı.') : null;
+  }catch(e){ OD_O.hata=odHataYaz(e); OD_O.liste=OD_O.liste||[]; }
+  OD_O.yuk=false; render();
+}
+async function odTalepAc(){
+  const f=OD_O.form;
+  if(!f.veli){ alert('Devam etmek için veli bilgisi onay kutusunu işaretlemen gerekiyor.'); return; }
+  if(!f.tel.trim()){ alert('WhatsApp numaranı yaz — öğretmen sana oradan ulaşacak.'); return; }
+  if(!f.tarih){ alert('Ders için bir tarih seç.'); return; }
+  OD_O.gonder=true; render();
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_talep_ac',{method:'POST',body:{
+      p_brans:f.brans, p_aciklama:f.aciklama, p_tarih:f.tarih, p_saat:f.saat, p_tel:f.tel }}));
+    OD_O.form={brans:f.brans,tarih:'',saat:'',aciklama:'',tel:f.tel,veli:false};
+    OD_O.gonder=false; await odOgrYukle();
+  }catch(e){ OD_O.gonder=false; alert(odHataYaz(e)); render(); }
+}
+async function odYenile(id){
+  if(!confirm('Talep yeniden yayınlanacak ve bir yenileme hakkın düşecek. Devam?')) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_yenile',{method:'POST',body:{p_id:id}})); await odOgrYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odIptal(id){
+  if(!confirm('Talep geri çekilecek. Devam?')) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_iptal',{method:'POST',body:{p_id:id}})); await odOgrYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odYildizVer(id,n){
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_yildiz',{method:'POST',body:{p_id:id,p_n:n}})); await odOgrYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+async function odItiraz(id){
+  if(!confirm('“Bu ders yapılmadı” itirazı açıyorsun. Ders itirazlı işaretlenecek ve Biyoser yönetimine iletilecek. Devam?')) return;
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_itiraz',{method:'POST',body:{p_id:id}})); await odOgrYukle(); }
+  catch(e){ alert(odHataYaz(e)); }
+}
+function odSorunAc(id){ OD_O.sorun={id:id,kat:'uygunsuz',metin:''}; render(); }
+function odSorunKapat(){ OD_O.sorun=null; render(); }
+async function odSorunGonder(){
+  const s=OD_O.sorun; if(!s) return;
+  if(!s.metin.trim()){ alert('Kısaca ne olduğunu yaz.'); return; }
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_sikayet',{method:'POST',
+      body:{p_ders:s.id, p_kategori:s.kat, p_aciklama:s.metin}}));
+    OD_O.sorun=null; alert('Bildirimin Biyoser yönetimine iletildi.'); render();
+  }catch(e){ alert(odHataYaz(e)); }
+}
+function odSorunForm(id){
+  const s=OD_O.sorun;
+  if(!s || s.id!==id)
+    return '<a href="#" class="hint" style="color:var(--ink-3)" onclick="odSorunAc(\''+id+'\');return false">⚑ Sorun bildir</a>';
+  return `<div class="od-sorun">
+    <div class="fr" style="margin-bottom:8px"><div style="max-width:220px">
+      <select onchange="OD_O.sorun.kat=this.value">${OD_KATLAR.map(k=>`<option value="${k[0]}" ${s.kat===k[0]?'selected':''}>${k[1]}</option>`).join('')}</select></div></div>
+    <textarea rows="2" placeholder="Kısaca ne oldu?" oninput="OD_O.sorun.metin=this.value">${esc(s.metin)}</textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn mini" onclick="odSorunGonder()">Gönder</button>
+      <button class="btn ghost mini" onclick="odSorunKapat()">Vazgeç</button></div>
+    <div class="hint" style="margin-top:6px">Uygunsuz davranış bildirimleri önceliklidir ve men sebebidir.</div>
+  </div>`;
+}
+function odYildizHtml(v){
+  if(!v) return '<span class="od-yild"><span class="bos">—</span></span>';
+  let s='<span class="od-yild">';
+  for(let i=1;i<=5;i++) s+= i<=v ? '★' : '<span class="bos">★</span>';
+  return s+'</span>';
+}
+function odYildizSecici(id){
+  let s='<span class="od-yild">';
+  for(let i=1;i<=5;i++) s+='<button title="'+i+' yıldız — ders yapıldı onayı" onclick="odYildizVer(\''+id+'\','+i+')">★</button>';
+  return s+'</span>';
+}
+function odKocItibar(x){
+  if(!x.koc_ad) return '';
+  const ort=x.koc_ort?(' · ★'+String(x.koc_ort).replace('.',','))+(x.koc_ders?' · '+x.koc_ders+' ders':''):'';
+  return `<b>${esc(x.koc_ad)}</b>${ort?`<span class="hint">${ort}</span>`:''}`;
+}
+
+function vOzelDersOgr(){
+  if(typeof ORNEKMOD!=='undefined'&&ORNEKMOD)
+    return '<div class="card"><div class="body"><div class="empty">Örnek öğrencide özel ders bölümü yoktur — kendi paneline dön.</div></div></div>';
+  if(OD_O.liste===null && !OD_O.yuk){ setTimeout(odOgrYukle,0); }
+  const f=OD_O.form, L=OD_O.liste||[];
+  const aktif=L.filter(x=>x.durum==='acik'||x.durum==='kabul');
+  const gecmis=L.filter(x=>x.durum==='bitti'||x.durum==='gelmedi');
+
+  const serit=`<div class="od-serit">
+    <span>Tavsiye edilen ders ücreti:</span><b class="f">1.000 TL</b><span class="hint">/ 40 dk</span>
+    <span class="kom">✓ Biyoser hiçbir komisyon almaz</span></div>`;
+
+  const form = OD_O.engel
+    ? `<div class="card" style="border:2px solid var(--bad)"><div class="body">
+        <div class="flag bad"><span class="ic">!</span><span><b>Özel ders talebi açman şu an kapalı.</b><br>${esc(OD_O.engel)}<br>
+        Haksız olduğunu düşünüyorsan <a href="https://wa.me/905325874992?text=${encodeURIComponent('Merhaba, özel ders kilidim hakkında itirazım var.')}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">Biyoser'e yaz</a>.</span></div>
+      </div></div>`
+    : `<div class="card"><h2>Yeni özel ders talebi<small>Talebin yalnızca seçtiğin branştaki öğretmenlere gösterilir. Adın ve telefonun, yalnızca dersi kabul eden öğretmene iletilir.</small></h2><div class="body">
+    <div class="fr">
+      <div><label class="f">Branş</label>
+        <select onchange="OD_O.form.brans=this.value">${OD_BRANSLAR.map(b=>`<option ${f.brans===b?'selected':''}>${b}</option>`).join('')}</select></div>
+      <div><label class="f">Tarih</label><input type="date" value="${esc(f.tarih)}" onchange="OD_O.form.tarih=this.value"></div>
+      <div><label class="f">Saat</label><input type="time" value="${esc(f.saat)}" onchange="OD_O.form.saat=this.value"></div>
+    </div>
+    <div class="fr"><div style="flex:1"><label class="f">Hangi konuda destek istiyorsun? (kısa açıklama)</label>
+      <textarea rows="2" placeholder="ör. Türev almada zincir kuralına takılıyorum." oninput="OD_O.form.aciklama=this.value">${esc(f.aciklama)}</textarea></div></div>
+    <div class="fr"><div style="max-width:240px"><label class="f">WhatsApp numaran</label>
+      <input value="${esc(f.tel||((typeof D!=='undefined'&&D&&D.tel)||''))}" placeholder="05xx xxx xx xx" oninput="OD_O.form.tel=this.value"></div></div>
+    <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;margin:2px 0 12px;cursor:pointer">
+      <input type="checkbox" ${f.veli?'checked':''} onchange="OD_O.form.veli=this.checked;render()" style="width:18px;height:18px;flex:none;margin-top:1px;accent-color:var(--accent)">
+      <span>18 yaşından küçüksem bu talebi <b>velimin bilgisi dahilinde</b> açıyorum; ilk görüşmeye velimin katılabileceğini biliyorum.</span></label>
+    <button class="btn wide" ${(OD_O.gonder||!f.veli)?'disabled':''} onclick="odTalepAc()">${OD_O.gonder?'Gönderiliyor…':'Talebi yayınla'}</button>
+    <div class="hint" style="margin-top:8px">Ders, içerik ve ödeme öğretmenle aranızdadır; Biyoser yalnızca sizi buluşturur.
+      Derse gitmediğin her ders “gelmedi” olarak işaretlenir; <b>2 gelmedide talep açman kilitlenir</b>.</div>
+  </div></div>`;
+
+  const kart=(x)=>{
+    const silik=x.durum==='kabul';
+    return `<div class="od-talep ${silik?'silik':''}">
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+        <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
+        <span class="od-durum ${x.durum}">${x.durum==='acik'?'YAYINDA':'ÖĞRETMEN BULUNDU'}</span></div>
+      <div class="konu">${esc(x.aciklama||'—')}</div>
+      <div class="alt">${x.durum==='acik'
+        ? `<button class="btn ghost mini" onclick="odIptal('${x.id}')">Talebi geri çek</button>`
+        : `<span class="hint">${odKocItibar(x)} kabul etti — WhatsApp'tan sana ulaşacak.</span>
+           ${x.yenile_hak>0
+             ? `<button class="btn ghost mini" onclick="odYenile('${x.id}')">↻ Yeniden yayınla (${x.yenile_hak} hakkın kaldı)</button>`
+             : `<span class="hint">Yenileme hakkın bitti.</span>`}
+           ${odSorunForm(x.id)}`}</div>
+    </div>`;
+  };
+  const gKart=(x)=>{
+    if(x.durum==='gelmedi') return `<div class="od-talep">
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+        <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
+        <span class="od-durum gelmedi">GELMEDİN</span></div>
+      <div class="konu">${esc(x.aciklama||'—')} — <b>${esc(x.koc_ad||'')}</b></div>
+      <div class="alt"><span class="hint">Öğretmen “derse gelmedi” işaretledi. Haksızsa ${odSorunForm(x.id)}</span></div></div>`;
+    return `<div class="od-talep">
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+        <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
+        <span class="od-durum bitti">TAMAMLANDI</span>
+        ${x.itiraz?'<span class="od-durum itirazli">⚠ İTİRAZLI</span>':''}</div>
+      <div class="konu">${esc(x.aciklama||'—')} — ${odKocItibar(x)}</div>
+      <div class="alt">
+        ${x.itiraz
+          ? '<span class="hint">“Ders yapılmadı” itirazın Biyoser yönetimine iletildi.</span>'
+          : `<span class="hint">Senin puanın:</span>${x.ogr_yildiz?odYildizHtml(x.ogr_yildiz):odYildizSecici(x.id)}
+             <span class="hint" style="margin-left:10px">Öğretmenin sana puanı:</span>${odYildizHtml(x.koc_yildiz)}
+             ${!x.ogr_yildiz?`<button class="btn ghost mini" style="color:var(--bad)" onclick="odItiraz('${x.id}')">Bu ders yapılmadı</button>`:''}`}
+        ${odSorunForm(x.id)}
+      </div></div>`;
+  };
+
+  const nasil=`<div class="od-nasil"><h3>Özel ders nasıl işler?</h3><div class="na">Baştan sona 6 adım</div>
+    <div class="od-adim"><div class="no">1</div><div>Branşını, tarihini ve konunu yazıp <b>talebini yayınla</b>.</div></div>
+    <div class="od-adim"><div class="no">2</div><div>Talebin o branştaki <b>tüm Biyoser öğretmenlerine</b> düşer.</div></div>
+    <div class="od-adim"><div class="no">3</div><div>Bir öğretmen kabul edince diğerlerinden kalkar; öğretmen <b>WhatsApp'tan sana ulaşır</b>.</div></div>
+    <div class="od-adim"><div class="no">4</div><div>Anlaşamazsanız talebi <b>yeniden yayınlarsın</b> (talep başına en çok 2 kez).</div></div>
+    <div class="od-adim"><div class="no">5</div><div>Ders yapılır; ücret ve ödeme <b>öğretmenle aranızda</b>dır.</div></div>
+    <div class="od-adim"><div class="no">6</div><div>Ders bitince <b>yıldız verirsin</b> — yıldız aynı zamanda “ders yapıldı” onayındır. Yapılmadıysa <b>itiraz</b> edersin.</div></div>
+    <div class="kutu"><b>Tavsiye edilen ücret:</b> 40 dakikalık ders saati <b>1.000 TL</b>.</div>
+    <div class="kutu"><b>Biyoser komisyon almaz.</b> Sistem yalnızca öğrenciyle öğretmeni buluşturur; ödemeye aracılık etmez, ücretten pay almaz.</div>
+    <div class="kutu uyari"><b>Kurallar:</b> Uygunsuz söz ve davranış kalıcı men sebebidir; “Sorun bildir” ile anında yönetime ulaşır.
+      Görüşmeleri WhatsApp'ta yazılı tutun. Derse gitmediğin her ders sayılır; <b>2 gelmedide talep açman kilitlenir</b>.</div>
+    <div class="kutu uyari"><b>Güvenlik:</b> 18 yaşından küçüksen talebi velinin bilgisiyle aç; ilk görüşmeye velinin katılmasını öneririz.</div>
+  </div>`;
+
+  return `${serit}<div class="od-yer"><div>
+    ${OD_O.hata?`<div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>${esc(OD_O.hata)}</span></div>`:''}
+    ${form}
+    <div class="card"><h2>Taleplerim</h2><div class="body">
+      ${OD_O.yuk?'<div class="hint">⏳ Yükleniyor…</div>'
+        :aktif.length?aktif.map(kart).join(''):'<div class="empty">Şu an açık talebin yok.</div>'}
+    </div></div>
+    ${gecmis.length?`<div class="card"><h2>Geçmiş derslerim</h2><div class="body">${gecmis.map(gKart).join('')}</div></div>`:''}
+  </div>${nasil}</div>`;
+}
+</script>
+
 
 <script>
 /* ═══ EKRAN GECIS ANIMASYONU ═══
