@@ -151,7 +151,7 @@ function blokListesi(){
         cikti.push({
           id:o.id+'|'+p.tur+'|'+i, odevId:o.id, sub:o.sub, konu:o.konu, tur:p.tur,
           dk:dk, uzunluk:Math.max(1,Math.ceil(dk/DILIM_DK)),
-          oncelik:o.oncelik||'cekirdek', rutin:!!o.rutin,
+          oncelik:o.oncelik||'cekirdek', rutin:!!o.rutin, dev:o.dev||0,
           parca:adet>1?((++sira)+'/'+adet):'', sirano:cikti.length
         });
         kalan-=dk;
@@ -516,7 +516,7 @@ function disaKapali(){
 function blokDisa(b, yerlesmis){
   return {id:b.id, odevId:b.odevId, sub:b.sub, konu:b.konu, tur:b.tur,
           dk:b.dk, gun:yerlesmis?b.gun:null, dilim:yerlesmis?b.dilim:null,
-          uzunluk:b.uzunluk, parca:b.parca||'', rutin:!!b.rutin,
+          uzunluk:b.uzunluk, parca:b.parca||'', rutin:!!b.rutin, dev:b.dev||0,
           kilit:yerlesmis?!!b.kilit:false};
 }
 function disaBloklar(){
@@ -629,9 +629,11 @@ function ciz(){
          '" data-sebep="'+esc(sb)+'">';
       if(b){
         var renk=renkOf(b.sub), yuk=b.uzunluk*21-3, kisa=b.uzunluk<=2;
-        var etiket=kisaAd(b.sub)+(b.tur==='soru'?' · SORU':b.tur==='konu'?' · KONU':'')+
+        var etiket=(b.dev?'⚠ DEVREDEN · ':'')+
+                   kisaAd(b.sub)+(b.tur==='soru'?' · SORU':b.tur==='konu'?' · KONU':'')+
                    (b.parca?' '+b.parca:'');
         h+='<div class="pg-blok'+(b.tur==='soru'?' soru':'')+(kisa?' kisa':'')+
+           (b.dev?' devreden':'')+
            (b.kilit?' kilitli':'')+(cak[b.id]?' cakisik':'')+
            (kocMu()?'':' salt')+'" data-b="'+esc(b.id)+'" style="height:'+yuk+
            'px;background:'+renk+'" title="'+esc(adOf(b.sub)+' — '+b.konu+' ('+sa(b.dk)+')')+
@@ -661,8 +663,10 @@ function cizOzet(){
     return '<div><div class="k">'+k+'</div><div class="v"'+
       (renk?' style="color:'+renk+'"':'')+'>'+v+'</div><div class="n">'+n+'</div></div>';
   }
+  var devSay=odevler().filter(function(o){ return o.dev; }).length;
   el.innerHTML =
-    kutu('Bu haftanın yükü', toplam?sa(toplam):'—', odevler().length+' ödev') +
+    kutu('Bu haftanın yükü', toplam?sa(toplam):'—',
+         odevler().length+' ödev'+(devSay?' · '+devSay+' devreden':'')) +
     kutu('Açık zaman', sa(acik), acik<toplam?'yetmiyor':'yeterli',
          acik<toplam?'var(--bad)':'') +
     kutu('Yerleşen', toplam?oran+'%':'—', sa(yerlesen)+' / '+sa(toplam),
@@ -1032,6 +1036,10 @@ function stil(){
 '.pg-blok.soru{background-image:repeating-linear-gradient(135deg,transparent,transparent 6px,rgba(255,255,255,.16) 6px,rgba(255,255,255,.16) 12px)}',
 '.pg-blok.kisa{padding:1px 5px}.pg-blok.kisa .bk{-webkit-line-clamp:1;font-size:10px}.pg-blok.kisa .bs{display:none}',
 '.pg-blok.kilitli{box-shadow:0 0 0 2px rgba(255,255,255,.55),0 1px 3px rgba(0,0,0,.2)}',
+/* Devreden iş: sol kenarda kalın turuncu şerit. Kırmızı değil — geciken
+   ödev bir hata değil, bir kuyruk; ama görünmesi şart. */
+'.pg-blok.devreden{border-left:5px solid var(--turuncu,#E8873A)}',
+'.pg-blok.devreden .bd{opacity:1}',
 '.pg-blok.cakisik{box-shadow:0 0 0 2px var(--bad),0 1px 3px rgba(0,0,0,.2)}',
 '.pg-blok .pg-kil{position:absolute;right:3px;top:2px;font-size:9px;opacity:.9;line-height:1;font-weight:800}',
 
