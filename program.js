@@ -458,18 +458,48 @@ function blokCakisiyor(b,g,d,haric){
 /* ═══════════════════════════════════════════════════════════
    KAYIT — sahibi olduğun dalı, gecikmeli olarak yaz
    ═══════════════════════════════════════════════════════════ */
+/* Kaydedilemeyen bir değişiklik SESSİZ KALMAMALI: koç blokları düzenler,
+   lisansı bitmiştir, hiçbir şey kaydolmaz ve panel bunu hiç söylemez —
+   koç ertesi gün emeğinin yok olduğunu görür. Hata artık ekranda. */
+var kayitHatasi=null;
 function isaretle(dal){
   kayitKuyruk[dal]=true;
   if(kayitSaat) clearTimeout(kayitSaat);
+  /* Hangi kaydın hangi öğrenciye ait olduğu 900 ms sonra değişmiş olabilir
+     (koç bu arada öğrenci değiştirir). Kaydı ŞU ANKİ hedefe kilitle,
+     yoksa yazı yanlış öğrencinin kaydına gider. */
+  var hedefKaydet=C.kaydet, hedefAnahtar=suAnahtar;
   kayitSaat=setTimeout(function(){
     kayitSaat=null;
     var k=kayitKuyruk; kayitKuyruk={};
-    if(!C.kaydet) return;
+    if(!hedefKaydet) return;
+    var isler=[];
     try{
-      if(k.kapali && C.kaydet.kapali) C.kaydet.kapali(disaKapali());
-      if(k.bloklar && C.kaydet.bloklar) C.kaydet.bloklar(disaBloklar());
-    }catch(e){ if(window.console) console.warn('program kaydı:',e); }
+      if(k.kapali && hedefKaydet.kapali) isler.push(hedefKaydet.kapali(disaKapali()));
+      if(k.bloklar && hedefKaydet.bloklar) isler.push(hedefKaydet.bloklar(disaBloklar()));
+    }catch(e){ isler.push(Promise.reject(e)); }
+    Promise.all(isler.map(function(x){ return Promise.resolve(x); }))
+      .then(function(){
+        if(kayitHatasi){ kayitHatasi=null; if(suAnahtar===hedefAnahtar) ciz(); }
+      })
+      .catch(function(e){
+        kayitHatasi = (e && e.message) ? String(e.message) : 'Sunucuya yazılamadı.';
+        if(window.console) console.warn('program kaydı:',e);
+        if(suAnahtar===hedefAnahtar) ciz();
+      });
   }, 900);
+}
+/* Sayfa kapanırken bekleyen kayıt varsa hemen gönder — 900 ms'lik pencere
+   içinde sekme kapatılırsa değişiklik kayboluyordu. */
+function bekleyeniHemenYaz(){
+  if(!kayitSaat) return;
+  clearTimeout(kayitSaat); kayitSaat=null;
+  var k=kayitKuyruk; kayitKuyruk={};
+  if(!C.kaydet) return;
+  try{
+    if(k.kapali && C.kaydet.kapali) C.kaydet.kapali(disaKapali());
+    if(k.bloklar && C.kaydet.bloklar) C.kaydet.bloklar(disaBloklar());
+  }catch(e){}
 }
 /* "3-20" ya da sebepliyse "3-20|OKUL" */
 function disaKapali(){
@@ -477,17 +507,31 @@ function disaKapali(){
   kapali.forEach(function(a){ l.push(sebep[a] ? a+'|'+sebep[a] : a); });
   return l.sort();
 }
+/* Yerleşmiş bloklar VE yerleşemeyenler birlikte kaydedilir.
+   Neden: bekleyenler kaydedilmezse sayfa yenilendiğinde "bu iş sığmadı"
+   bilgisi tamamen kayboluyordu — panel de bunu göremeyip yeşil "Bütün
+   ödevler haftaya sığdı" yazıyordu. Ağır bir haftada 50+ saatlik iş
+   sessizce yok olup koça "her şey yolunda" deniyordu. Yerleşemeyen blok
+   gun:null ile işaretlenir; okurken bekleyenler dizisine geri ayrılır. */
+function blokDisa(b, yerlesmis){
+  return {id:b.id, odevId:b.odevId, sub:b.sub, konu:b.konu, tur:b.tur,
+          dk:b.dk, gun:yerlesmis?b.gun:null, dilim:yerlesmis?b.dilim:null,
+          uzunluk:b.uzunluk, parca:b.parca||'', rutin:!!b.rutin,
+          kilit:yerlesmis?!!b.kilit:false};
+}
 function disaBloklar(){
-  return bloklar.map(function(b){
-    return {id:b.id, odevId:b.odevId, sub:b.sub, konu:b.konu, tur:b.tur,
-            dk:b.dk, gun:b.gun, dilim:b.dilim, uzunluk:b.uzunluk,
-            parca:b.parca||'', rutin:!!b.rutin, kilit:!!b.kilit};
-  });
+  return bloklar.map(function(b){ return blokDisa(b,true); })
+    .concat(bekleyenler.map(function(b){ return blokDisa(b,false); }));
 }
 function iceriAl(p){
   p=p||{};
   kapali=new Set(); sebep={};
-  if(Array.isArray(p.kapali) && p.kapali.length){
+  /* DİKKAT: boş dizi ile "hiç kayıt yok" AYNI ŞEY DEĞİL.
+     Öğrenci "Hepsini aç" derse kapalı saat listesi boş dizi olur; bunu
+     "veri yok" sayıp varsayılan uyku/okul saatlerini geri koymak
+     öğrencinin kararını sessizce iptal ediyordu. Ayrım: alan HİÇ yoksa
+     (undefined/null) varsayılan uygulanır, boş DİZİ ise aynen korunur. */
+  if(Array.isArray(p.kapali)){
     p.kapali.forEach(function(x){
       var s=String(x), i=s.indexOf('|');
       var a = i<0 ? s : s.slice(0,i);
@@ -497,8 +541,26 @@ function iceriAl(p){
   }else{
     varsayilan();
   }
-  bloklar = Array.isArray(p.bloklar) ? p.bloklar.slice() : [];
-  bekleyenler=[];
+  /* Sunucudan gelen veriye güvenme: eksik/bozuk tek bir alan (ör. dk yok)
+     gün yükünü NaN yapar ve bütün hafta tek güne yığılır. Süz. */
+  var gelen = Array.isArray(p.bloklar) ? p.bloklar : [];
+  /* sayiMi: isFinite(null) JavaScript-te TRUE doner (Number(null)===0).
+     Bu yuzden "gun:null" ile kaydedilmis BEKLEYEN blok, sadece isFinite ile
+     bakildiginda "0. gune yerlesmis" sayiliyordu ve yerlesemeyen isler
+     yeniden yuklemede sessizce yerlesmis gorunup panel yine "hepsi sigdi"
+     diyordu. typeof denetimi sart. */
+  function sayiMi(x){ return typeof x==='number' && isFinite(x); }
+  var saglam = gelen.filter(function(b){
+    return b && typeof b==='object' &&
+           sayiMi(b.dk) && b.dk>0 &&
+           sayiMi(b.uzunluk) && b.uzunluk>0 && b.uzunluk<=DILIM;
+  });
+  bloklar=[]; bekleyenler=[];
+  saglam.forEach(function(b){
+    var yerlesik = sayiMi(b.gun) && b.gun>=0 && b.gun<GUN &&
+                   sayiMi(b.dilim) && b.dilim>=0 && b.dilim+b.uzunluk<=DILIM;
+    if(yerlesik) bloklar.push(b); else bekleyenler.push(b);
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -666,6 +728,13 @@ function cizAlt(){
   var cak=cakisanlar();
   var h='';
 
+  if(kayitHatasi){
+    h+='<div class="pg-flag bad"><span class="ic">!</span><span>'+
+       '<b>Değişikliklerin kaydedilemedi.</b> '+esc(kayitHatasi)+
+       ' Sayfayı kapatma — bağlantını kontrol edip bir blok taşıyarak yeniden dene.'+
+       '</span></div>';
+  }
+
   /* Bu uyarı "hepsi sığdı" mesajından ÖNCE gelir ve onu bastırır: program
      ödev listesinin gerisindeyken "bütün ödevler yerleşti" demek yanlıştır. */
   if(tazelik.yeni || tazelik.giden){
@@ -777,6 +846,10 @@ function boyala(g,d){
 function bagla(){
   if(baglandi) return;
   baglandi=true;
+  window.addEventListener('pagehide', bekleyeniHemenYaz);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='hidden') bekleyeniHemenYaz();
+  });
 
   document.addEventListener('pointerdown', function(e){
     var kok=kokEl(); if(!kok || !kok.contains(e.target)) return;
@@ -930,7 +1003,10 @@ function stil(){
 '.pg-btn.gh{background:none;border:1.5px solid var(--accent);color:var(--accent)}',
 '.pg-btn.gh.on{background:var(--accent);color:#fff}',
 '.pg-btn.mini{padding:6px 10px;font-size:12.5px;min-height:34px}',
-'.pg-sec{font:inherit;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);min-height:38px}',
+/* width:auto ŞART — her iki panelde de genel bir "select{width:100%}"
+   kuralı var ve onu yeniyordu; açılır kutu 569px olup araç çubuğunu
+   üç satıra çıkarıyordu (ölçüldü). */
+'.pg .pg-sec{font:inherit;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);min-height:38px;width:auto;max-width:170px;display:inline-block}',
 
 '.pg-izsar{overflow:auto;max-height:70vh;border-bottom:1px solid var(--pg-cizgi);-webkit-overflow-scrolling:touch}',
 'table.pg-iz{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed;min-width:660px}',
@@ -1012,7 +1088,13 @@ function mont(cfg){
     boyaAcik=false; acikKatlar=new Set();
     /* Koç ilk kez açıyorsa ve program boşsa otomatik doldur — koçun
        boş bir tabloyla karşılaşıp "bu ne işe yarıyor" demesini önler. */
-    if(kocMu() && !bloklar.length && odevler().length) dagitCekirdek();
+    /* isaretle() ŞART: bu ilk dağıtım kaydedilmezse koç ekranda dolu bir
+       program görür ama sunucuda hiçbir şey yoktur — öğrenci boş sekme
+       açar ve "koçum program hazırlamamış" sanır. */
+    if(kocMu() && !bloklar.length && odevler().length){
+      dagitCekirdek();
+      isaretle('bloklar');
+    }
   }
   /* Anahtar aynı kalsa bile (aynı öğrenci, aynı hafta) ödev listesi değişmiş
      olabilir — koç az önce yeni ödev vermiş olabilir. Kilitli blok YOKSA

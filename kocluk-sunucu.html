@@ -3584,7 +3584,7 @@ function vHafta(st){
    ═══════════════════════════════════════════════════════════════════ */
 function progKart(st,wk){
   if(typeof PROG==='undefined') return '';
-  return `<div class="card"><h2>Haftalık çalışma programı — ${wk}
+  return `<div class="card"><h2>Haftalık çalışma programı — ${wk} haftası
     <small>Ödevler gün yükü dengelenerek otomatik yerleşir. Blokları sürükleyerek taşıyabilirsin;
     elle taşıdığın blok kilitlenir ve yeniden dağıtımda yerinde kalır.
     Öğrencinin kapattığı saatler taralı görünür.</small></h2>${PROG.iskelet()}</div>`;
@@ -3617,15 +3617,31 @@ function progOdevleri(st,wk){
   });
 }
 
-/* Koçun yerleştirdiği bloklar sunucuya. kapali dalına DOKUNMAZ. */
+/* Koçun yerleştirdiği bloklar sunucuya. kapali dalına DOKUNMAZ.
+   HATA YUTULMAZ: yeniden fırlatılır ki motor ekranda kırmızı bant
+   gösterebilsin. Eskiden console.warn ile yutuluyordu — lisansı bitmiş
+   koç bütün akşam blok düzenleyip hiçbirinin kaydedilmediğini
+   ertesi gün öğreniyordu. */
 async function progBloklarYaz(ogrId,bloklar){
-  if(!sbOturum()) return;
-  try{
-    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/program_bloklar_yaz',
-      {method:'POST',body:{p_ogr:ogrId,p_bloklar:bloklar}}));
-    const st=(DB.students||[]).find(x=>x.id===ogrId);
-    if(st){ st.program=st.program||{}; st.program.bloklar=bloklar; }
-  }catch(e){ console.warn('program kaydedilemedi:',e); }
+  if(!sbOturum()) throw new Error('Oturumun kapanmış. Yeniden giriş yap.');
+  const st=(DB.students||[]).find(x=>x.id===ogrId);
+  if(st && st.ornek) return;              // örnek öğrenci sunucuya ASLA yazılmaz
+  await sbGuvenli(()=>sbCagri('/rest/v1/rpc/program_bloklar_yaz',
+    {method:'POST',body:{p_ogr:ogrId,p_bloklar:bloklar}}));
+  if(st){ st.program=st.program||{}; st.program.bloklar=bloklar; }
+}
+
+/* Koç da öğrencinin müsait saatlerini düzenleyebilir — yeni öğrenci
+   kurarken okul/uyku saatlerini birlikte oturup girmek yaygın. Araç
+   çubuğundaki "Saat aç / kapat" düğmesi koça da gösteriliyordu ama
+   hiçbir yere yazılmıyordu: koç saatleri düzenliyor, hiçbiri kaydolmuyordu. */
+async function progKapaliYaz(ogrId,kapali){
+  if(!sbOturum()) throw new Error('Oturumun kapanmış. Yeniden giriş yap.');
+  const st=(DB.students||[]).find(x=>x.id===ogrId);
+  if(st && st.ornek) return;
+  await sbGuvenli(()=>sbCagri('/rest/v1/rpc/program_kapali_yaz',
+    {method:'POST',body:{p_ogr:ogrId,p_kapali:kapali}}));
+  if(st){ st.program=st.program||{}; st.program.kapali=kapali; }
 }
 
 function progMont(st,wk){
@@ -3636,7 +3652,10 @@ function progMont(st,wk){
     odevler: progOdevleri(st,wk),
     program: st.program||{},
     dersAdi: subName,
-    kaydet: { bloklar: l=>progBloklarYaz(st.id,l) }
+    kaydet: {
+      bloklar: l=>progBloklarYaz(st.id,l),
+      kapali:  l=>progKapaliYaz(st.id,l)
+    }
   });
 }
 

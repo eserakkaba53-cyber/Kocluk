@@ -126,6 +126,15 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .card.k-sakin {--kart-renk:var(--line);box-shadow:none;border-color:var(--line-soft)}
 .card .body{padding:16px}
 .stats{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1px;background:var(--line-soft)}
+/* Telefonda sütun akışı SIFIRLANMALI. Aksi hâlde 4-5 kutu tek satıra
+   sıkışıp sonuncular ekran dışında kalıyor ve hiç okunamıyordu
+   (ölçüldü: 375px'te dördüncü kutu görünmüyor). */
+@media(max-width:560px){
+  .stats{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:360px){
+  .stats{grid-template-columns:1fr}
+}
 .stat{background:var(--panel);padding:14px 16px}
 .stat .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650}
 /* tabular-nums: sayı değişince rakamlar yanlara zıplamasın */
@@ -183,14 +192,20 @@ input,select,textarea{font-family:inherit;font-size:inherit}
    sessizlik. Sınav hazırlığı ciddi bir iş. */
 @keyframes kutlaHale{ from{box-shadow:0 0 0 0 var(--kutla-renk,var(--ok))}
                        to{box-shadow:0 0 0 14px transparent} }
-.kutla{--kutla-renk:var(--kart-renk,var(--accent));animation:kutlaHale .75s var(--gy)}
+/* !important ŞART: "#view.gecis>*" seçicisi (id + sınıf) özgüllükte
+   .kutla'yı yeniyor ve sekme geçişinden sonraki 1,4 saniye içinde
+   kutlama animasyonu hiç oynamıyordu. */
+.kutla{--kutla-renk:var(--kart-renk,var(--accent));animation:kutlaHale .75s var(--gy) !important}
 .kutla.k-ok{--kutla-renk:var(--ok)}
 
 /* ═══ SESSİZ KADEME ═══
    Biten iş, yapılacak işle aynı görsel ağırlıkta durmamalı. */
 .card.k-sakin>h2{color:var(--ink-2);font-weight:640}
-.sessiz{opacity:.62}
-.sessiz:hover{opacity:1}
+/* Yalnız arka planı sakinleştir — opacity kart gövdesinin TAMAMINI
+   soluklaştırıyordu ve ipucu metni ~2:1 kontrasta düşüyordu; dokunmatik
+   ekranda :hover olmadığı için geri dönüş yolu da yoktu. */
+.sessiz .dot{opacity:.75}
+.card.k-sakin>h2{color:var(--ink-2)}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:650;padding:8px 10px;border-bottom:1px solid var(--line)}
 td{padding:9px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
@@ -1590,8 +1605,8 @@ function vProgram(){
     return '<div class="card"><h2>Programım</h2><div class="empty">Program bölümü yüklenemedi. Sayfayı yenile.</div></div>';
   const wk=weekKey(today());
   const n=(D&&D.tasks?D.tasks.filter(t=>weekKey(t.date)===wk).length:0);
-  return '<div class="card"><h2>Haftalık programım — '+wk+
-    '<small>Koçun bu haftanın '+n+' çalışmasını takvime yerleştirdi. '+
+  return '<div class="card"><h2>Haftalık programım — '+wk+' haftası'+
+    '<small>'+(n?'Bu haftanın '+n+' ödevi takvime yerleştirildi. ':'')+
     'Müsait olmadığın saatleri kapat — koçun bunu görür ve programı ona göre günceller. '+
     'Blokları sen taşıyamazsın.</small></h2>'+PROG.iskelet()+'</div>';
 }
@@ -1618,17 +1633,18 @@ function progOdevleri(wk){
   });
 }
 
-/* Kapalı saatler sunucuya. bloklar dalına DOKUNMAZ — o koçun. */
+/* Kapalı saatler sunucuya. bloklar dalına DOKUNMAZ — o koçun.
+   HATA YUTULMAZ: yeniden fırlatılır, motor ekranda uyarı gösterir.
+   Eskiden sessizce yutuluyordu; öğrenci saatlerini kapatıyor, hiçbiri
+   kaydolmuyor ve bunu hiç öğrenmiyordu. */
 async function progKapaliYaz(liste){
   if(typeof ORNEKMOD!=='undefined' && ORNEKMOD) return;   // örnek veri yazılmaz
-  if(!OGRID || !sbOturum()) return;
-  try{
-    await sbGuvenli(function(){
-      return sbCagri('/rest/v1/rpc/program_kapali_yaz',
-        {method:'POST',body:{p_ogr:OGRID,p_kapali:liste}});
-    });
-    if(D){ D.program=D.program||{}; D.program.kapali=liste; }
-  }catch(e){ console.warn('kapalı saatler kaydedilemedi:',e); }
+  if(!OGRID || !sbOturum()) throw new Error('Oturumun kapanmış. Yeniden giriş yap.');
+  await sbGuvenli(function(){
+    return sbCagri('/rest/v1/rpc/program_kapali_yaz',
+      {method:'POST',body:{p_ogr:OGRID,p_kapali:liste}});
+  });
+  if(D){ D.program=D.program||{}; D.program.kapali=liste; }
 }
 
 function progMont(){
@@ -1977,7 +1993,13 @@ function tavsiyeHaftalikKart(){
 
 function vOdev(){
   const wk=weekKey(today());
-  const rut=D.tasks.filter(t=>t.rutin);
+  /* SADECE BU HAFTANIN RUTİNLERİ. D.tasks rutinleri her hafta yeniden
+     biriktiriyor; süzgeçsiz bırakılınca "Sabit rutin" kartı 4 aylık geçmişi
+     listeliyordu (ölçüldü: 16 satır, oysa bu hafta 1). Rutinler devretmez —
+     haftalık tanımlanır, o hafta biter; kartın kendi başlığı da bunu söylüyor
+     ("her hafta zorunlu"). Bu süzgeç kartın yanı sıra "Kalan süre"yi ve
+     kahraman şeridinin sayılarını da düzeltir. */
+  const rut=D.tasks.filter(t=>t.rutin && weekKey(t.date)>=wk);
   const konHepsi=D.tasks.filter(t=>!t.rutin).sort((a,b)=>a.date.localeCompare(b.date));
   const devreden=konHepsi.filter(t=>t.s!==1&&weekKey(t.date)<wk);
   const kon=konHepsi.filter(t=>t.s!==1&&weekKey(t.date)>=wk);
@@ -2023,12 +2045,19 @@ function vOdev(){
        O sayı büyütüldü; "bu hafta / tamamladığın / devreden" küçültülüp tek
        destek satırına indirildi. Yay 270° — Biyoser logosundaki kalkan yayı
        da 270°; tam daireli donut her şablonda var, bu panele ait değil. */
-    const top=D.tasks.length, kalan=top-bit;
-    const oran=top?bit/top:0;
+    /* D.tasks TÜM ZAMANLARIN ödevlerini tutar — "bu hafta" diye onu
+       yazmak yanlıştı (örnek öğrencide 34 çıkıyordu, oysa bu hafta 6).
+       Bu hafta = tarihi bu haftaya düşen konu ödevleri + rutinler.
+       Kalan iş = devredenler + bu haftanın bitmemişleri + bitmemiş rutin. */
+    const buHaftaKon = konHepsi.filter(t=>weekKey(t.date)>=wk);
+    const top  = buHaftaKon.length + rut.length;
+    const bitH = buHaftaKon.filter(t=>t.s===1).length + rut.filter(t=>t.s===1).length;
+    const kalan = devreden.length + kon.length + rut.filter(t=>t.s!==1).length;
+    const oran = top ? bitH/top : 0;
     const renk = kalan===0 ? 'var(--ok)' : devreden.length ? 'var(--vurgu)' : 'var(--accent)';
     const destek=[
       'bu hafta <b>'+top+'</b> ödev',
-      'tamamladığın <b>'+bit+'</b>',
+      'tamamladığın <b>'+bitH+'</b>',
       devreden.length ? 'devreden <b>'+devreden.length+'</b>' : null
     ].filter(Boolean).join(' · ');
     /* Kutlama SATIRA değil ŞERİDE konur: "Yaptım" işaretlenen ödev aynı
@@ -2050,7 +2079,7 @@ function vOdev(){
            rut.filter(t=>t.s!==1).reduce((a,t)=>a+Math.max(0,(t.q||0)-(t.yap||0))*(t.dks||1.5),0))+
         '</div><div class="n">bitmemiş işler</div></div>'+
       '<div class="stat"><div class="k">Bu haftanın ilerlemesi</div><div class="v" style="font-size:20px">'+
-        bit+'<span style="font-size:14px;color:var(--ink-3)"> / '+top+'</span></div>'+
+        bitH+'<span style="font-size:14px;color:var(--ink-3)"> / '+top+'</span></div>'+
         '<div class="dolgu" style="--dolgu-renk:'+renk+'"><i style="width:'+Math.round(oran*100)+'%"></i></div></div>'+
       '</div></div>';
   })()+`
