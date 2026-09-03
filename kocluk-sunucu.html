@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=1280">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script>/* Temayı ilk boyamadan ÖNCE uygula — açılışta beyaz parlaması (flash) olmasın. */
 try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.documentElement.setAttribute('data-tema',_t);}catch(e){}</script>
 <style>
@@ -21,6 +21,15 @@ try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.docu
   --warn-bg:#F8EEDA;
   --bad-bg:#F6E3E0;
   --ok-ink:#155C40; --warn-ink:#7A4E06; --bad-ink:#7C2B20;
+  /* ÜZERİ-RENKLER — renkli zemine yazılacak metnin rengi.
+     Neden ayrı belirteç: --accent, --ok, --bad, --vurgu tema başına
+     değişiyor. Gece temasında bunlar AÇIK renk oluyor ve üzerlerindeki
+     sabit beyaz metin okunmaz hâle geliyor (ölçüldü: gece temasında
+     --ok üzerine beyaz 2.17:1, --accent üzerine beyaz 2.24:1 — WCAG
+     asgarisi 4.5:1). Turuncu/amber (--vurgu) HER temada açık olduğu için
+     her yerde koyu metin ister; varsayılan temada beyazla 2.64:1'di.
+     Bu belirteçlerle aynı kural dört temada da doğru çalışır. */
+  --uz-accent:#fff; --uz-ok:#fff; --uz-bad:#fff; --uz-vurgu:#1A1206;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:"SF Mono",'JetBrains Mono',Consolas,"Liberation Mono",Menlo,monospace;
 }
@@ -33,6 +42,8 @@ try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.docu
   --ok:#54C58C; --warn:#E2A63F; --bad:#EE7460;
   --ok-bg:#123528; --warn-bg:#33280F; --bad-bg:#37201B;
   --ok-ink:#7FDCA8; --warn-ink:#EFC06A; --bad-ink:#F0998A;
+  /* gece: accent/ok/bad AÇIK renkler — üzerlerine KOYU metin gerekir */
+  --uz-accent:#0B1A21; --uz-ok:#0B1A21; --uz-bad:#2A1210; --uz-vurgu:#1A1206;
 }
 :root[data-tema="kum"]{
   --ink:#2A231E; --ink-2:#5C5046; --ink-3:#94867A;
@@ -41,6 +52,7 @@ try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.docu
   --ok:#3C7A4E; --warn:#B0740F; --bad:#B0432E;
   --ok-bg:#E4EFDD; --warn-bg:#F6EACF; --bad-bg:#F3E0D7;
   --ok-ink:#2E6B3E; --warn-ink:#7A4E06; --bad-ink:#8A3320;
+  --uz-accent:#fff; --uz-ok:#fff; --uz-bad:#fff; --uz-vurgu:#1A1206;
 }
 :root[data-tema="lacivert"]{
   --ink:#0B2033; --ink-2:#37506A; --ink-3:#7389A0;
@@ -145,7 +157,7 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 input[type=number]{font-family:var(--mono);text-align:right}
 .fr{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .fr>div{flex:1;min-width:130px}
-.btn{background:var(--accent);color:#fff;border:0;padding:8px 16px;border-radius:5px;font-weight:600;font-size:13px}
+.btn{background:var(--accent);color:var(--uz-accent);border:0;padding:8px 16px;border-radius:5px;font-weight:600;font-size:13px}
 .btn:hover{background:#125552}
 .btn.ghost{background:none;color:var(--accent);border:1px solid var(--line)}
 .btn.ghost:hover{background:var(--accent-soft)}
@@ -242,7 +254,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
      border-radius:7px;padding:3px}
 .seg > button{flex:1;border:0;background:transparent;padding:9px 12px;border-radius:5px;
      font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap}
-.seg > button.on{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg > button.on{background:var(--accent);color:var(--uz-accent);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .seg > button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:760px){
   .seg{flex-direction:column}
@@ -357,7 +369,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
 
 /* ===== KOKPİT ve VELİ RAPORU ===== */
 .chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink-2)}
-.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip.on{background:var(--accent);color:var(--uz-accent);border-color:var(--accent)}
 .risk{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:650;border:1px solid;white-space:nowrap}
 .risk .d{width:8px;height:8px;border-radius:50%;flex:none}
 .risk.r{background:var(--bad-bg);border-color:#E4B8B1;color:var(--bad)} .risk.r .d{background:var(--bad)}
@@ -366,7 +378,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .ubar{height:7px;background:var(--line-soft);border-radius:4px;overflow:hidden;min-width:70px;flex:1}
 .ufill{height:100%;border-radius:4px}
 .trend{font-family:var(--mono);font-weight:650;font-size:12.5px}
-.badge-new{background:var(--accent);color:#fff;font-size:9.5px;letter-spacing:.06em;padding:1px 6px;border-radius:3px;vertical-align:2px;font-weight:700}
+.badge-new{background:var(--accent);color:var(--uz-accent);font-size:9.5px;letter-spacing:.06em;padding:1px 6px;border-radius:3px;vertical-align:2px;font-weight:700}
 .kok-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
 .kok-row:last-child{border-bottom:0}
 .kok-info{flex:1;min-width:150px}
@@ -387,7 +399,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .vidbtn:hover{background:var(--accent-soft);border-color:var(--accent)}
 .vd-overlay{position:fixed;inset:0;background:rgba(9,20,26,.45);z-index:80}
 .vd-drawer{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:92vw;background:var(--panel);z-index:81;box-shadow:-8px 0 24px -12px rgba(0,0,0,.4);display:flex;flex-direction:column;color:var(--ink)}
-.vd-head{background:var(--accent);color:#fff;padding:16px 18px;position:relative}
+.vd-head{background:var(--accent);color:var(--uz-accent);padding:16px 18px;position:relative}
 .vd-body{padding:18px;overflow:auto;flex:1}
 .vd-x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);border:0;color:#fff;width:28px;height:28px;border-radius:6px;font-size:15px;cursor:pointer}
 .qbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-top:10px;cursor:pointer;color:var(--ink);text-decoration:none}
@@ -417,7 +429,7 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 .km-how{margin-top:16px;background:var(--paper);border-radius:9px;padding:14px 16px}
 .km-how ul{margin:6px 0 0;padding-left:18px}
 .km-how li{font-size:13px;margin:5px 0}
-.km-btn{display:block;width:100%;margin-top:18px;background:var(--accent);color:#fff;border:0;padding:12px;border-radius:7px;font-weight:650;font-size:14px;cursor:pointer;text-align:center}
+.km-btn{display:block;width:100%;margin-top:18px;background:var(--accent);color:var(--uz-accent);border:0;padding:12px;border-radius:7px;font-weight:650;font-size:14px;cursor:pointer;text-align:center}
 .km-foot{font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px}
 
 
@@ -689,6 +701,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
 <script src="sunucu.js"></script>
+<script src="program.js"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -2032,6 +2045,7 @@ async function sunucudanOku(){
       refNets:o.hedef_netler||{}, authId:o.auth_id||null, davetKodu:o.davet_kodu||null,
       resit:!!o.resit, veliAd:o.veli_ad||'', veliTel:o.veli_telefon||'',
       veliOnay:o.veli_onay||null, veliOnayNotu:o.veli_onay_notu||'',
+      program:o.program||{},
       tasks:[], exams:[], topics:{}, notlar:[], uygulanan:[]
     };
     yeni.students.push(st);
@@ -2810,6 +2824,11 @@ function render(){
     return;
   }
   v.innerHTML = uy + ({hafta:vHafta,durum:vDurum,veli:vVeli,deneme:vDeneme,odev:vOdev,konu:vKonu,hedef:vHedef,puan:vPuanSekme,ogrenci:vOgrenciBilgi,hesap:vHesap})[TAB](st);
+  /* Program ızgarası innerHTML'den SONRA kurulur — render() her seferinde
+     DOM'u siliyor, motor durumu kendi içinde tutuyor. */
+  if(TAB==='hafta' && typeof progMont==='function'){
+    try{ progMont(st, st.ornek?sonDoluHafta(st):weekKey(today())); }catch(e){ console.warn('program:',e); }
+  }
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
   karsilamaKontrol();
@@ -3551,8 +3570,76 @@ function vHafta(st){
         <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td>
         <td><button class="btn ghost mini" style="color:var(--bad);border-color:var(--line)" title="Bu ödevi bu haftadan çıkar" onclick="haftaOdevCikar('${t.id}')">✕</button></td></tr>`;}).join('')}
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
-  </div></div>`;
+  </div></div>
+
+  ${progKart(st,wk)}`;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   HAFTALIK ÇALIŞMA PROGRAMI (program.js motoru)
+   ───────────────────────────────────────────────────────────────────
+   Bu haftanın ödevleri 6 gün × 24 saatlik ızgaraya otomatik dağıtılır.
+   Öğrenci kendi müsait olmadığı saatleri kapatır, koç blokları sürükler.
+   Senkron: kapali dalı öğrencinin, bloklar dalı koçun.
+   ═══════════════════════════════════════════════════════════════════ */
+function progKart(st,wk){
+  if(typeof PROG==='undefined') return '';
+  return `<div class="card"><h2>Haftalık çalışma programı — ${wk}
+    <small>Ödevler gün yükü dengelenerek otomatik yerleşir. Blokları sürükleyerek taşıyabilirsin;
+    elle taşıdığın blok kilitlenir ve yeniden dağıtımda yerinde kalır.
+    Öğrencinin kapattığı saatler taralı görünür.</small></h2>${PROG.iskelet()}</div>`;
+}
+
+/* Panelin ödev kaydını motorun beklediği biçime çevirir.
+   SÜRE FORMÜLÜ — panelin kendi "efektif süre" hesabıyla BİREBİR aynı:
+       efektif dk = sureOf(ders,konu)  +  efektifKatsayi(ders,konu) × soru
+   (bkz. efektifDk, satır ~1467 — "yetişir mi" bütçesi bunu kullanır).
+   Konu/soru ayrımı bu formülün iki terimidir; uydurma bir bölme değil:
+       konu çalışması = sureOf(...)          soru çözümü = katsayı × soru
+   Not: Haftalık sekmesinin üstündeki "Haftalık hedef süre" istatistiği
+   (haftaSure) yalnız sureOf'u topluyor, soru süresini saymıyor. Program
+   bu yüzden ondan daha yüksek bir toplam gösterir; doğru olan buradaki
+   efektif süredir, panelin "yetişir mi" hesabı da onu kullanır. */
+function progOdevleri(st,wk){
+  /* Haftadan çıkarılan ödev st.tasks'tan zaten siliniyor (haftaOdevCikar),
+     ayrıca süzmeye gerek yok. */
+  return st.tasks.filter(t=>weekKey(t.date)===wk).map(t=>{
+    if(t.rutin){
+      return {id:t.id, sub:t.sub, konu:t.konu||'Rutin', calisma:0,
+              soru:t.q||0, soruDk:Math.round((t.q||0)*(t.dks||1.5)),
+              oncelik:'rutin', rutin:true};
+    }
+    return {id:t.id, sub:t.sub, konu:t.konu||'—',
+            calisma:Math.round(sureOf(t.sub,t.konu)),
+            soru:t.q||0,
+            soruDk:Math.round(efektifKatsayi(t.sub,t.konu)*(t.q||0)),
+            oncelik:'cekirdek', rutin:false};
+  });
+}
+
+/* Koçun yerleştirdiği bloklar sunucuya. kapali dalına DOKUNMAZ. */
+async function progBloklarYaz(ogrId,bloklar){
+  if(!sbOturum()) return;
+  try{
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/program_bloklar_yaz',
+      {method:'POST',body:{p_ogr:ogrId,p_bloklar:bloklar}}));
+    const st=(DB.students||[]).find(x=>x.id===ogrId);
+    if(st){ st.program=st.program||{}; st.program.bloklar=bloklar; }
+  }catch(e){ console.warn('program kaydedilemedi:',e); }
+}
+
+function progMont(st,wk){
+  if(typeof PROG==='undefined' || !document.getElementById('pg-kok')) return;
+  PROG.mont({
+    anahtar: st.id+'|'+wk,
+    rol: 'koc',
+    odevler: progOdevleri(st,wk),
+    program: st.program||{},
+    dersAdi: subName,
+    kaydet: { bloklar: l=>progBloklarYaz(st.id,l) }
+  });
+}
+
 function waGonder(){
   const st=cur();
   const metin=document.getElementById('hfMetin').value;
