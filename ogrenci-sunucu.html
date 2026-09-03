@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=1280">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Çalışma Panelim</title>
 <script>/* Temayı ilk boyamadan ÖNCE uygula — açılışta beyaz parlaması olmasın. */
 try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.documentElement.setAttribute('data-tema',_t);}catch(e){}</script>
@@ -13,6 +13,15 @@ try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.docu
   --ok-ink:#155C40; --warn-ink:#7A4E06; --bad-ink:#7C2B20;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --mono:"SF Mono",'JetBrains Mono',Consolas,"Liberation Mono",Menlo,monospace;
+  /* ÜZERİ-RENKLER — renkli zemine yazılacak metnin rengi.
+     Neden ayrı belirteç: --accent, --ok, --bad, --vurgu tema başına
+     değişiyor. Gece temasında bunlar AÇIK renk oluyor ve üzerlerindeki
+     sabit beyaz metin okunmaz hâle geliyor (ölçüldü: gece temasında
+     --ok üzerine beyaz 2.17:1, --accent üzerine beyaz 2.24:1 — WCAG
+     asgarisi 4.5:1). Turuncu/amber (--vurgu) HER temada açık olduğu için
+     her yerde koyu metin ister; varsayılan temada beyazla 2.64:1'di.
+     Bu belirteçlerle aynı kural dört temada da doğru çalışır. */
+  --uz-accent:#fff; --uz-ok:#fff; --uz-bad:#fff; --uz-vurgu:#1A1206;
 }
 /* ===== TEMALAR — yalnızca renk değişkenleri. ===== */
 :root[data-tema="gece"]{
@@ -22,6 +31,8 @@ try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.docu
   --ok:#54C58C; --warn:#E2A63F; --bad:#EE7460;
   --ok-bg:#123528; --warn-bg:#33280F; --bad-bg:#37201B;
   --ok-ink:#7FDCA8; --warn-ink:#EFC06A; --bad-ink:#F0998A;
+  /* gece: accent/ok/bad AÇIK renkler — üzerlerine KOYU metin gerekir */
+  --uz-accent:#0B1A21; --uz-ok:#0B1A21; --uz-bad:#2A1210; --uz-vurgu:#1A1206;
 }
 :root[data-tema="kum"]{
   --ink:#2A231E; --ink-2:#5C5046; --ink-3:#94867A;
@@ -30,6 +41,7 @@ try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.docu
   --ok:#3C7A4E; --warn:#B0740F; --bad:#B0432E;
   --ok-bg:#E4EFDD; --warn-bg:#F6EACF; --bad-bg:#F3E0D7;
   --ok-ink:#2E6B3E; --warn-ink:#7A4E06; --bad-ink:#8A3320;
+  --uz-accent:#fff; --uz-ok:#fff; --uz-bad:#fff; --uz-vurgu:#1A1206;
 }
 :root[data-tema="lacivert"]{
   --ink:#0B2033; --ink-2:#37506A; --ink-3:#7389A0;
@@ -38,6 +50,7 @@ try{var _t=localStorage.getItem('biyoser_tema');if(_t&&_t!=='acik')document.docu
   --ok:#1F7A55; --warn:#B0710A; --bad:#A73A2C;
   --ok-bg:#E1F0E9; --warn-bg:#F7EDD6; --bad-bg:#F5E1DD;
   --ok-ink:#155C40; --warn-ink:#7A4E06; --bad-ink:#7C2B20;
+  --uz-accent:#fff; --uz-ok:#fff; --uz-bad:#fff; --uz-vurgu:#1A1206;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
@@ -90,14 +103,94 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .tabs{display:flex;gap:2px;margin-top:12px;overflow-x:auto}
 .tab{background:none;border:0;border-bottom:2px solid transparent;padding:9px 13px;color:var(--ink-2);font-size:14px;font-weight:550;white-space:nowrap}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin:16px 0}
-.card>h2{margin:0;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);padding:13px 16px;border-bottom:1px solid var(--line-soft);font-weight:700}
+.card{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;margin:16px 0;
+  box-shadow:0 1px 2px rgba(11,32,51,.05), 0 10px 26px -20px rgba(11,32,51,.35)}
+/* Başlık artık "vergi beyannamesi" değil, gerçek bir başlık.
+   Eski hâli 11.5px UPPERCASE .1em harf aralığıyla yazılıyordu; ekranda
+   dört kart yan yana gelince hiçbiri diğerinden ayrılmıyordu. Şimdi
+   okunur bir ad + soldan 3px renk sekmesi: renk kartın ANLAMINI söyler,
+   panel renklenir ama cümbüş olmaz. */
+.card>h2{margin:0;font-size:15px;font-weight:680;letter-spacing:-.01em;text-transform:none;
+  color:var(--ink);padding:14px 16px 12px;border-bottom:1px solid var(--line-soft);
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.card>h2::before{content:"";flex:none;width:3px;height:17px;border-radius:2px;
+  background:var(--kart-renk,var(--accent))}
+.card>h2 small{display:block;flex-basis:100%;text-transform:none;letter-spacing:0;
+  font-weight:400;font-size:12px;color:var(--ink-3);margin-top:3px}
+/* Anlam sınıfları — satır içi "border:2px solid var(--bad)" yamalarının yerine.
+   Kalın kırmızı çerçeve öğrencide alarm yaratıyordu; ince renk sekmesi aynı
+   bilgiyi paniksiz verir. */
+.card.k-ok    {--kart-renk:var(--ok)}
+.card.k-dikkat{--kart-renk:var(--vurgu)}
+.card.k-acil  {--kart-renk:var(--bad)}
+.card.k-sakin {--kart-renk:var(--line);box-shadow:none;border-color:var(--line-soft)}
 .card .body{padding:16px}
 .stats{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1px;background:var(--line-soft)}
 .stat{background:var(--panel);padding:14px 16px}
 .stat .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650}
-.stat .v{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.02em;margin-top:2px}
+/* tabular-nums: sayı değişince rakamlar yanlara zıplamasın */
+.stat .v{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.02em;margin-top:2px;
+  font-variant-numeric:tabular-nums}
 .stat .n{font-size:11.5px;color:var(--ink-3)}
+
+/* ═══ KAHRAMAN ŞERİDİ ═══
+   "Beş şey eşit derecede önemliyse hiçbiri önemli değildir." Ödevlerim
+   ekranında öğrencinin sorduğu tek soru var: şimdi ne kadar işim kaldı?
+   Beş eşit kutu yerine tek büyük sayı + onu çevreleyen ilerleme yayı;
+   geri kalan sayılar altına tek satır destek bilgisi olarak iner. */
+.kahraman{display:flex;align-items:center;gap:20px;padding:18px 18px 16px;flex-wrap:wrap}
+.kahraman .kh-sag{flex:1;min-width:190px}
+.kahraman .kh-et{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:650}
+.kahraman .kh-sayi{font-family:var(--mono);font-size:40px;font-weight:680;line-height:1.05;
+  letter-spacing:-.03em;margin-top:1px;font-variant-numeric:tabular-nums}
+.kahraman .kh-alt{font-size:12.5px;color:var(--ink-3);margin-top:6px;line-height:1.6}
+.kahraman .kh-alt b{color:var(--ink-2);font-weight:650;font-variant-numeric:tabular-nums}
+@media(max-width:420px){
+  .kahraman{gap:14px;padding:15px}
+  .kahraman .kh-sayi{font-size:34px}
+}
+
+/* ═══ 270° YAY ═══
+   Marka imzası: Biyoser logosundaki kalkan yayı da 270°. Tam daire donut
+   her SaaS şablonunda var; alttan açık yay bu paneli tanınır kılar.
+   Boşluk aşağıda (135°'den başlar, saat yönünde 270° döner). */
+.halka-sar{position:relative;width:92px;height:92px;flex:none;display:grid;place-items:center}
+.halka{--a:0deg;position:absolute;inset:0;border-radius:50%;
+  /* 225°: yay 225°→135° arasını tarar, boşluk tam ALTTA (180°) ortalanır. */
+  background:conic-gradient(from 225deg,
+    var(--halka-renk,var(--accent)) 0 var(--a),
+    var(--line-soft) var(--a) 270deg,
+    transparent 270deg 360deg);
+  -webkit-mask:radial-gradient(circle, #0000 58%, #000 59%);
+          mask:radial-gradient(circle, #0000 58%, #000 59%)}
+.halka-ic{position:relative;text-align:center;line-height:1.1}
+.halka-ic b{display:block;font-family:var(--mono);font-size:20px;font-weight:680;
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.halka-ic i{display:block;font-style:normal;font-size:10px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:650;margin-top:2px}
+
+/* ═══ İLERLEME ÇUBUĞU ═══ paydası olan her sayının altına */
+.dolgu{height:5px;border-radius:99px;background:var(--line-soft);overflow:hidden;margin-top:8px}
+.dolgu>i{display:block;height:100%;border-radius:99px;width:0;
+  background:var(--dolgu-renk,var(--accent))}
+
+/* ═══ TEK SEFERLİK KUTLAMA ═══
+   render() her şeyi siliyor, o yüzden "az önce bitirdim" hissi DOM'da
+   tutulamaz. Çözüm jeton: setTask jetonu basar, sınıf yazılan HTML'e
+   gömülür, render() sonunda jeton sıfırlanır. Animasyon tam bir kez oynar.
+   Konfeti yok, ses yok, ekranı kaplayan kutlama yok — 0,7 saniye, sonra
+   sessizlik. Sınav hazırlığı ciddi bir iş. */
+@keyframes kutlaHale{ from{box-shadow:0 0 0 0 var(--kutla-renk,var(--ok))}
+                       to{box-shadow:0 0 0 14px transparent} }
+.kutla{--kutla-renk:var(--kart-renk,var(--accent));animation:kutlaHale .75s var(--gy)}
+.kutla.k-ok{--kutla-renk:var(--ok)}
+
+/* ═══ SESSİZ KADEME ═══
+   Biten iş, yapılacak işle aynı görsel ağırlıkta durmamalı. */
+.card.k-sakin>h2{color:var(--ink-2);font-weight:640}
+.sessiz{opacity:.62}
+.sessiz:hover{opacity:1}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:650;padding:8px 10px;border-bottom:1px solid var(--line)}
 td{padding:9px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
@@ -107,8 +200,10 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 input[type=number]{font-family:var(--mono);text-align:right}
 .fr{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .fr>div{flex:1;min-width:130px}
-.btn{background:var(--accent);color:#fff;border:0;padding:11px 18px;border-radius:6px;font-weight:600;font-size:14px}
-.btn:hover{background:#223860}
+.btn{background:var(--accent);color:var(--uz-accent);border:0;padding:11px 18px;border-radius:6px;font-weight:600;font-size:14px}
+/* Sabit lacivert yerine parlaklık: dört temada da doğru davranır.
+   (#223860 gece temasında accent teal iken butonu laciverte çeviriyordu.) */
+.btn:hover{filter:brightness(1.08)}
 .btn.ghost{background:none;color:var(--accent);border:1px solid var(--line)}
 .btn.ghost:hover{background:var(--accent-soft)}
 .btn.mini{padding:5px 11px;font-size:12.5px}
@@ -116,11 +211,10 @@ input[type=number]{font-family:var(--mono);text-align:right}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .seg button{background:var(--panel);border:0;padding:6px 10px;font-size:12.5px;font-weight:600;color:var(--ink-3);border-right:1px solid var(--line-soft)}
 .seg button:last-child{border-right:0}
-.seg button.on{color:#fff}
-.seg button.on[data-v="1"]{background:var(--ok)}
-.seg button.on[data-v="2"]{background:var(--vurgu)}
-.seg button.on[data-v="3"]{background:var(--bad)}
-.seg button.on[data-v="0"]{background:var(--ink-3)}
+.seg button.on[data-v="1"]{background:var(--ok);color:var(--uz-ok)}
+.seg button.on[data-v="2"]{background:var(--vurgu);color:var(--uz-vurgu)}
+.seg button.on[data-v="3"]{background:var(--bad);color:var(--uz-bad)}
+.seg button.on[data-v="0"]{background:var(--ink-3);color:var(--panel)}
 .flag{display:flex;gap:10px;padding:12px 14px;border-radius:6px;margin-bottom:10px;font-size:14px;align-items:flex-start}
 .flag.ok{background:var(--ok-bg);color:var(--ok-ink)}
 .flag.warn{background:var(--warn-bg);color:var(--warn-ink)}
@@ -129,7 +223,7 @@ input[type=number]{font-family:var(--mono);text-align:right}
 .topic{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:6px;background:var(--panel);font-size:13.5px;margin-bottom:6px}
 .topic .tn{flex:1;min-width:0}
 .dot{width:10px;height:10px;border-radius:50%;flex:none}
-.dot.t0{background:var(--line)}.dot.t1{background:#E8873A}.dot.t2{background:var(--ok)}.dot.t3{background:var(--bad)}
+.dot.t0{background:var(--line)}.dot.t1{background:var(--vurgu)}.dot.t2{background:var(--ok)}.dot.t3{background:var(--bad)}
 .sec-h{display:flex;align-items:center;gap:10px;margin:16px 0 8px}
 .sec-h h3{margin:0;font-size:14px;font-weight:650}
 .empty{padding:30px 16px;text-align:center;color:var(--ink-3);font-size:14px}
@@ -170,7 +264,11 @@ img,svg,video,canvas,iframe{max-width:100%}
 /* Yazı ekran genişliğine göre kendini ayarlar:
    clamp(en küçük, ekrana göre, en büyük) */
 body{font-size:clamp(13px,3.4vw,14px)}
-.card>h2{font-size:clamp(10.5px,2.7vw,12px)}
+/* DİKKAT: bu kural .card>h2 tanımından SONRA geliyor ve aynı özgüllükte,
+   yani kazanıyor. Eski küçük-büyük harf başlık için 12px tavanı doğruydu;
+   yeni başlık 15px olduğu için o tavan yenilemeyi sessizce geri alıyordu.
+   Aralık yeni tasarıma göre yeniden kuruldu: telefonda 13.5, masaüstünde 15. */
+.card>h2{font-size:clamp(13.5px,3.2vw,15px)}
 .tab{font-size:clamp(11.5px,3vw,13.5px)}
 
 @media(max-width:640px){
@@ -263,7 +361,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .vidbtn:hover{background:var(--accent-soft);border-color:var(--accent)}
 .vd-overlay{position:fixed;inset:0;background:rgba(9,20,26,.5);z-index:80}
 .vd-drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:94vw;background:var(--panel);z-index:81;box-shadow:-8px 0 24px -12px rgba(0,0,0,.4);display:flex;flex-direction:column;color:var(--ink)}
-.vd-head{background:var(--accent);color:#fff;padding:16px 18px;position:relative}
+.vd-head{background:var(--accent);color:var(--uz-accent);padding:16px 18px;position:relative}
 .vd-body{padding:18px;overflow:auto;flex:1}
 .vd-x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);border:0;color:#fff;width:30px;height:30px;border-radius:6px;font-size:16px;cursor:pointer}
 .qbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px 14px;margin-top:10px;cursor:pointer;color:var(--ink);text-decoration:none}
@@ -295,7 +393,7 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 .km-how{margin-top:16px;background:var(--paper);border-radius:9px;padding:14px 16px}
 .km-how ul{margin:6px 0 0;padding-left:18px}
 .km-how li{font-size:13px;margin:5px 0}
-.km-btn{display:block;width:100%;margin-top:18px;background:var(--accent);color:#fff;border:0;padding:12px;border-radius:7px;font-weight:650;font-size:14px;cursor:pointer;text-align:center}
+.km-btn{display:block;width:100%;margin-top:18px;background:var(--accent);color:var(--uz-accent);border:0;padding:12px;border-radius:7px;font-weight:650;font-size:14px;cursor:pointer;text-align:center}
 .km-foot{font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px}
 
 
@@ -320,6 +418,13 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 /* ---- istatistik değerleri hafifçe belirir ---- */
 @keyframes degerBelir{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .gecis .stat .v{animation:degerBelir .5s var(--gy) .16s backwards}
+/* @property olmayan tarayıcıda animasyon atlanır, değer yine doğru görünür */
+@property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes halkaDol{from{--a:0deg}}
+@keyframes dolgArt{from{width:0}}
+.gecis .halka{animation:halkaDol .85s var(--gy) .1s backwards}
+.gecis .dolgu>i{animation:dolgArt .6s var(--gy) .14s backwards}
+.gecis .kh-sayi{animation:degerBelir .5s var(--gy) .16s backwards}
 
 /* ---- bayraklar (uyarı/onay kutuları) ekran girişinde süzülür ---- */
 @keyframes bayrakGel{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
@@ -385,6 +490,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 
 /* ---- hareketi azalt: her şey kapanır ---- */
 @media (prefers-reduced-motion: reduce){
+  .kutla,.dolgu>i,
   #view.gecis>*,.gecis .stat .v,.gecis .flag,
   .km-overlay,.km-overlay>*,.vd-overlay,.vd-drawer,
   .giris-fon::before,.giris-fon i,.giris-kart{animation:none !important}
@@ -493,8 +599,8 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 @media (prefers-reduced-motion: reduce){ .vbtn{transition:none !important} }
 
 
-/* kart basligi alt aciklamasi ayri satirda dursun (bitisik gorunum duzeltmesi) */
-.card>h2 small{display:block;text-transform:none;letter-spacing:0;font-weight:400;font-size:11.5px;color:var(--ink-3);margin-top:3px}
+/* (kart başlığı alt açıklaması kuralı yukarıda, .card>h2 small içinde
+   tanımlı — burada ikinci kez tanımlamak yalnız karışıklık yaratıyordu.) */
 
 /* ═══════════ ÖZEL DERS SEKMESİ ═══════════ */
 .od-yer{display:block}
@@ -508,7 +614,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 .od-talep .ust{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .od-brozet{font-size:11px;font-weight:800;letter-spacing:.05em;background:var(--accent-soft);color:var(--accent);
   border-radius:6px;padding:3px 9px;cursor:default}
-.od-brozet.sec{background:var(--accent);color:#fff}
+.od-brozet.sec{background:var(--accent);color:var(--uz-accent)}
 .od-brozet.tik{cursor:pointer}
 .od-tarih{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
 .od-durum{margin-left:auto;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 11px;white-space:nowrap}
@@ -558,6 +664,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 </div>
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
 <script src="sunucu.js"></script>
+<script src="program.js"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -738,7 +845,7 @@ async function ogrSunucudanOku(){
     kocTel:koc.telefon||'', url:koc.site_url||'', kopru:(koc.ayarlar&&koc.ayarlar.kopru)||'',
     sureler:(koc.ayarlar&&koc.ayarlar.sureler)||{},
     sorular:(koc.ayarlar&&koc.ayarlar.sorular)||{},
-    kocAd:koc.ad||'',
+    kocAd:koc.ad||'', program:o.program||{},
     tasks:[], exams:[], topics:{}, ekstra:[], hedef:null, not:'', sunucu:true
   };
   odev.forEach(function(t){
@@ -1303,6 +1410,9 @@ const TABS_HEPSI=[['odev','Ödevlerim'],['konu','Konularım'],['deneme','Denemem
 function TABLIST(){
   const sunucuda = (typeof sbOturum==='function') && sbOturum() && OGRID;
   let l = sunucuda ? TABS_HEPSI.filter(t=>t[0]!=='rapor' && t[0]!=='ayar') : TABS_HEPSI.slice();
+  /* Programım — koçun hazırladığı haftalık çalışma takvimi. Kapattığın
+     saatler sunucuya yazıldığı için oturum şart; yerel modda gizlenir. */
+  if(sunucuda) l.splice(1,0,['program','Programım']);
   if(sunucuda) l.push(['ozel','Özel Ders']);   // özel ders sunucu hesabı gerektirir
   // Koçu olmayan öğrenci kendi paketini görür ve yönetir
   if(sunucuda && typeof soloMu==='function' && soloMu()) l.push(['paket','Paketim']);
@@ -1456,10 +1566,84 @@ function render(){
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
   if(!TABLIST().find(t=>t[0]===TAB)&&TAB!=='kilavuz') TAB='odev';
-  v.innerHTML=uy+((typeof ornekSerit==='function')?ornekSerit():'')+({odev:vOdev,konu:vKonu,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,yardim:vYardim,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar,paket:vPaket,ozel:vOzelDersOgr})[TAB]();
+  v.innerHTML=uy+((typeof ornekSerit==='function')?ornekSerit():'')+({odev:vOdev,konu:vKonu,program:vProgram,deneme:vDeneme,gelisim:vGelisim,hedef:vHedef,puan:vPuan,yardim:vYardim,rapor:vRapor,kilavuz:vKilavuz,ayar:vAyar,paket:vPaket,ozel:vOzelDersOgr})[TAB]();
+  /* Program ızgarası innerHTML'den SONRA kurulur — render() DOM'u her
+     seferinde siliyor, motor durumu kendi içinde tutuyor. */
+  if(TAB==='program' && typeof progMont==='function'){
+    try{ progMont(); }catch(e){ console.warn('program:',e); }
+  }
   if(_aid){ const _el=document.getElementById(_aid);
     if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
+  SONBITEN=null;   /* kutlama jetonu harcandı — animasyon tam bir kez oynadı */
   karsilamaKontrol();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROGRAMIM — koçun hazırladığı haftalık çalışma takvimi
+   ───────────────────────────────────────────────────────────────────
+   SAHİPLİK: bloklar koçun, kapalı saatler senin. Koçun yerleştirdiği
+   blokları taşıyamazsın; müsait olmadığın saatleri kapatabilirsin.
+   Kapattığın saatte bir çalışma varsa blok kırmızıya döner, koç görür.
+   ═══════════════════════════════════════════════════════════════════ */
+function vProgram(){
+  if(typeof PROG==='undefined')
+    return '<div class="card"><h2>Programım</h2><div class="empty">Program bölümü yüklenemedi. Sayfayı yenile.</div></div>';
+  const wk=weekKey(today());
+  const n=(D&&D.tasks?D.tasks.filter(t=>weekKey(t.date)===wk).length:0);
+  return '<div class="card"><h2>Haftalık programım — '+wk+
+    '<small>Koçun bu haftanın '+n+' çalışmasını takvime yerleştirdi. '+
+    'Müsait olmadığın saatleri kapat — koçun bunu görür ve programı ona göre günceller. '+
+    'Blokları sen taşıyamazsın.</small></h2>'+PROG.iskelet()+'</div>';
+}
+
+/* Panelin ödev kaydını motorun biçimine çevirir.
+   SÜRE FORMÜLÜ koç paneliyle birebir aynı (efektifDk):
+       konu çalışması = sureOf(ders,konu)
+       soru çözümü    = efektifKatsayi(ders,konu) × soru
+   Aynı formül iki panelde de kullanıldığı için öğrenci ve koç AYNI
+   programı görür; biri diğerinden farklı süre hesaplamaz. */
+function progOdevleri(wk){
+  if(!D||!D.tasks) return [];
+  return D.tasks.filter(t=>weekKey(t.date)===wk).map(t=>{
+    if(t.rutin){
+      return {id:t.id, sub:t.sub, konu:t.konu||'Rutin', calisma:0,
+              soru:t.q||0, soruDk:Math.round((t.q||0)*(t.dks||1.5)),
+              oncelik:'rutin', rutin:true};
+    }
+    return {id:t.id, sub:t.sub, konu:t.konu||'—',
+            calisma:Math.round(sureOf(t.sub,t.konu)),
+            soru:t.q||0,
+            soruDk:Math.round(efektifKatsayi(t.sub,t.konu)*(t.q||0)),
+            oncelik:'cekirdek', rutin:false};
+  });
+}
+
+/* Kapalı saatler sunucuya. bloklar dalına DOKUNMAZ — o koçun. */
+async function progKapaliYaz(liste){
+  if(typeof ORNEKMOD!=='undefined' && ORNEKMOD) return;   // örnek veri yazılmaz
+  if(!OGRID || !sbOturum()) return;
+  try{
+    await sbGuvenli(function(){
+      return sbCagri('/rest/v1/rpc/program_kapali_yaz',
+        {method:'POST',body:{p_ogr:OGRID,p_kapali:liste}});
+    });
+    if(D){ D.program=D.program||{}; D.program.kapali=liste; }
+  }catch(e){ console.warn('kapalı saatler kaydedilemedi:',e); }
+}
+
+function progMont(){
+  if(typeof PROG==='undefined' || !document.getElementById('pg-kok')) return;
+  const wk=weekKey(today());
+  const ornek=(typeof ORNEKMOD!=='undefined' && ORNEKMOD);
+  PROG.mont({
+    anahtar: (ornek?'ornek':(OGRID||'yerel'))+'|'+wk,
+    rol: 'ogrenci',
+    odevler: progOdevleri(wk),
+    program: (D&&D.program)||{},
+    dersAdi: (typeof subName==='function')?subName:null,
+    /* Örnek öğrencide hiçbir şey kaydedilmez. */
+    kaydet: ornek ? {} : { kapali: progKapaliYaz }
+  });
 }
 
 /* ---------- ödevlerim ---------- */
@@ -1471,19 +1655,28 @@ function odevKonuBitir(t){
     D.topics=D.topics||{}; D.topics[t.sub]=D.topics[t.sub]||{}; D.topics[t.sub][t.konu]=2;
   }
 }
+/* "Az önce bitirdim" hissini render() hayatta bırakmıyor: her etkileşimde
+   tüm ekran innerHTML ile yeniden yazılıyor, DOM'daki hiçbir geçici durum
+   yaşamıyor. Çözüm jeton: burada basılır, HTML'e sınıf olarak gömülür,
+   render() sonunda sıfırlanır. Zamanlayıcı yok, DOM state yok. */
+let SONBITEN=null;
 function setTask(id,s){
   const t=D.tasks.find(x=>x.id===id); if(!t) return;
   t.s=s;
   if(t.q && (s===1||s===2)) DYBACIK[id]=true;   // döküm girebilsin diye açık kalsın
-  if(s===1) odevKonuBitir(t);                    // Yaptım → konu Bitti
+  if(s===1){ odevKonuBitir(t); SONBITEN=id; }    // Yaptım → konu Bitti + kutlama jetonu
   save(); render();
 }
 function weekKey(ds){const d=new Date(ds+'T00:00');const g=(d.getDay()+6)%7;d.setDate(d.getDate()-g);return d.toISOString().slice(0,10);}
 function haftaFarki(ds){const a=new Date(weekKey(ds)+'T00:00'),b=new Date(weekKey(today())+'T00:00');return Math.round((b-a)/604800000);}
 function setSoru(id,v){const t=D.tasks.find(x=>x.id===id); if(t){t.yap=Math.max(0,+v||0);save();render();}}
 function setYap(id,v){const t=D.tasks.find(x=>x.id===id); if(!t)return;
+  const oncekiDurum=t.s;
   t.yap=Math.max(0,+v||0); const o=t.q?t.yap/t.q:0; t.s=o>=0.9?1:o>0?2:0;
-  if(t.s===1) odevKonuBitir(t);                  // çözdüğü ≥%90 → Yaptım → konu Bitti
+  /* Jeton buraya da konmalı: rutin ödev soru sayısıyla bitiyor, düğmeyle
+     değil. Yoksa kutlama bazen olur bazen olmaz — bu "bozuk" hissi verir,
+     hiç olmamasından kötüdür. */
+  if(t.s===1){ odevKonuBitir(t); if(oncekiDurum!==1) SONBITEN=id; }
   save(); render();}
 function yedekUyari(){
   // Sunucu modunda veri zaten sunucuda; yedek uyarısı anlamsız ve
@@ -1522,8 +1715,11 @@ function odevSatiri(t,devreden){
   const eksik = t.q ? Math.max(0,t.q-top) : 0;
   const acik = DYBACIK[t.id] || (t.s===2) || (t.s===1 && top>0);
   const net = v.d - v.y/4;
+  /* Devreden ödev bir HATA değil, bir KUYRUK. --bad yalnız gerçek hataya
+     (veri kaybı, süre bitti) saklanır; geciken iş turuncu ile gösterilir.
+     Ölçülebilir stres düşüşü, tek satır değişiklik. */
   return `<div style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
-    <div style="font-size:11px;color:${devreden?'var(--bad)':'var(--ink-3)'};font-family:var(--mono)">
+    <div style="font-size:11px;color:${devreden?'var(--warn-ink)':'var(--ink-3)'};font-family:var(--mono)">
       ${devreden?`⚠ ${hf} hafta önce verildi · `:''}${t.date} · ${subName(t.sub)}${(t.konu||t.q)?' · '+[t.konu?'tahmini '+sa(sureOf(t.sub,t.konu)):null, t.q?t.q+' soru':null].filter(Boolean).join(' + '):''}</div>
     <div style="font-weight:600;margin:3px 0 8px">${esc(t.konu||'—')}</div>
     ${t.txt&&t.txt!=='Sabit haftalık rutin'?`<div style="font-size:13px;color:var(--ink-2);margin-bottom:8px">${esc(t.txt)}</div>`:''}
@@ -1821,16 +2017,46 @@ function vOdev(){
     <div class="hint" style="margin-top:10px">Sıralama <b>hedef bölümüne</b> göre yapılır.
       Hedefini <b>Hedefe uzaklık</b> sekmesinden seçmediysen müfredat sırası kullanılır.</div>
   </div></div>`:''}
-  <div class="card"><div class="stats">
-    <div class="stat"><div class="k">Bu hafta</div><div class="v">${D.tasks.length}</div><div class="n">ödev var</div></div>
-    <div class="stat"><div class="k">Tamamladığın</div><div class="v" style="color:var(--ok)">${bit}</div><div class="n">${D.tasks.length?Math.round(bit/D.tasks.length*100):0}%</div></div>
-    <div class="stat"><div class="k">Kalan</div><div class="v" style="color:${D.tasks.length-bit?'var(--vurgu)':'var(--ok)'}">${D.tasks.length-bit}</div><div class="n">ödev</div></div>
-    <div class="stat"><div class="k">Devreden</div><div class="v" style="color:${devreden.length?'var(--bad)':'var(--ok)'}">${devreden.length}</div><div class="n">${devreden.length?'geçen haftalardan':'temiz'}</div></div>
-    <div class="stat"><div class="k">Kalan süre</div><div class="v" style="font-size:20px">${sa([...devreden,...kon].reduce((a,t)=>a+(t.konu?sureOf(t.sub,t.konu):0),0)+rut.filter(t=>t.s!==1).reduce((a,t)=>a+Math.max(0,(t.q||0)-(t.yap||0))*(t.dks||1.5),0))}</div><div class="n">bitmemiş işler</div></div>
-  </div></div>
+  `+(()=>{
+    /* KAHRAMAN ŞERİDİ — "beş şey eşit derecede önemliyse hiçbiri önemli değildir".
+       Öğrencinin panele girme sebebi tek soru: şimdi ne kadar işim kaldı?
+       O sayı büyütüldü; "bu hafta / tamamladığın / devreden" küçültülüp tek
+       destek satırına indirildi. Yay 270° — Biyoser logosundaki kalkan yayı
+       da 270°; tam daireli donut her şablonda var, bu panele ait değil. */
+    const top=D.tasks.length, kalan=top-bit;
+    const oran=top?bit/top:0;
+    const renk = kalan===0 ? 'var(--ok)' : devreden.length ? 'var(--vurgu)' : 'var(--accent)';
+    const destek=[
+      'bu hafta <b>'+top+'</b> ödev',
+      'tamamladığın <b>'+bit+'</b>',
+      devreden.length ? 'devreden <b>'+devreden.length+'</b>' : null
+    ].filter(Boolean).join(' · ');
+    /* Kutlama SATIRA değil ŞERİDE konur: "Yaptım" işaretlenen ödev aynı
+       render'da "Tamamladıkların" listesine geçtiği için satırı hiç
+       çizilmiyor — oradaki animasyon hiçbir zaman oynamazdı. Şerit ise
+       her zaman ekranda ve doğru şeyi anlatıyor: iğneyi oynattın. */
+    const kutla = SONBITEN ? ' kutla' : '';
+    return '<div class="card '+(kalan===0?'k-ok':devreden.length?'k-dikkat':'')+kutla+'"><div class="kahraman">'+
+      '<div class="halka-sar"><div class="halka" style="--a:'+(oran*270).toFixed(1)+'deg;--halka-renk:'+renk+'"></div>'+
+      '<div class="halka-ic"><b>%'+Math.round(oran*100)+'</b><i>bitti</i></div></div>'+
+      '<div class="kh-sag">'+
+        '<div class="kh-et">'+(kalan===0?'Bu hafta':'Kalan iş')+'</div>'+
+        '<div class="kh-sayi" style="color:'+renk+'">'+(kalan===0?'Bitti ✓':kalan+' ödev')+'</div>'+
+        '<div class="kh-alt">'+destek+'</div>'+
+      '</div></div>'+
+      '<div class="stats" style="border-top:1px solid var(--line-soft)">'+
+      '<div class="stat"><div class="k">Kalan süre</div><div class="v" style="font-size:20px">'+
+        sa([...devreden,...kon].reduce((a,t)=>a+(t.konu?sureOf(t.sub,t.konu):0),0)+
+           rut.filter(t=>t.s!==1).reduce((a,t)=>a+Math.max(0,(t.q||0)-(t.yap||0))*(t.dks||1.5),0))+
+        '</div><div class="n">bitmemiş işler</div></div>'+
+      '<div class="stat"><div class="k">Bu haftanın ilerlemesi</div><div class="v" style="font-size:20px">'+
+        bit+'<span style="font-size:14px;color:var(--ink-3)"> / '+top+'</span></div>'+
+        '<div class="dolgu" style="--dolgu-renk:'+renk+'"><i style="width:'+Math.round(oran*100)+'%"></i></div></div>'+
+      '</div></div>';
+  })()+`
 
-  ${devreden.length?`<div class="card" style="border:2px solid var(--bad)"><h2 style="color:var(--bad)">Geçen haftalardan kalanlar — ${devreden.length} ödev</h2><div class="body">
-    <div class="flag bad" style="margin-bottom:6px"><span class="ic">!</span><span>Bunlar önce bitmeli. <b>Yaptım</b> işaretleyene kadar her hafta burada kalacak.</span></div>
+  ${devreden.length?`<div class="card k-dikkat"><h2>Geçen haftalardan kalanlar<small>${devreden.length} ödev · bunlar önce bitmeli</small></h2><div class="body">
+    <div class="flag warn" style="margin-bottom:6px"><span class="ic">!</span><span><b>Yaptım</b> işaretleyene kadar her hafta burada kalacaklar. Panik yok — sırayla bitir.</span></div>
     ${devreden.map(t=>odevSatiri(t,true)).join('')}
   </div></div>`:''}
 
@@ -1854,7 +2080,7 @@ function vOdev(){
 
   ${ekstraKart()}
 
-  ${tamam.length?`<div class="card"><h2>Tamamladıkların — ${tamam.length} ödev</h2><div class="body">
+  ${tamam.length?`<div class="card k-sakin"><h2>Tamamladıkların<small>${tamam.length} ödev · iş bitti, burada duruyor</small></h2><div class="body sessiz">
     <button class="btn ghost wide" onclick="ARSIV=!ARSIV;render()">${ARSIV?'Listeyi gizle':'Listeyi göster'}</button>
     ${ARSIV?`<div style="margin-top:12px">${tamam.slice().reverse().map(t=>`<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:13px">
       <span class="dot t2"></span><span style="flex:1"><b>${esc(t.konu)}</b><div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${t.date} · ${subName(t.sub)}${t.yap?' · '+t.yap+' soru':''}</div></span>
@@ -2709,7 +2935,7 @@ function vPuan(){
     <div class="hint" style="margin-top:8px">Netleri değiştirdikçe puan anlık hesaplanır. Hangi dersten kaç net alırsan hedefe ulaşacağını burada dene.</div>
   </div></div>
 
-  <div class="card" style="border:2px solid var(--vurgu)"><h2 style="color:var(--vurgu)">Hedef puanı değiştir</h2><div class="body">
+  <div class="card k-dikkat"><h2>Hedef puanı değiştir</h2><div class="body">
     <div class="flag warn"><span class="ic">!</span><span>
       <b>Dikkat:</b> Hedef puanı serbestçe değiştiremezsin. Yazdığın puan, seçtiğin bölümün taban puanının altındaysa
       <b>kabul edilmez</b> — çünkü o puanla o bölüme yerleşilemez. Hedefini düşürmek istiyorsan önce
@@ -2893,7 +3119,7 @@ function vKilavuz(){
   return `
   ${KILAVUZ_TEK?`<div style="padding-top:14px"><button class="btn ghost mini" onclick="KILAVUZ_TEK=false;render()">← Geri dön</button></div>`:''}
 
-  <div class="card" style="border-color:#A73A2C;border-width:2px"><h2 style="color:#A73A2C;border-bottom-color:#F0D5D1">⚠ Çok önemli — önce bunu oku</h2><div class="body">
+  <div class="card k-acil"><h2>⚠ Çok önemli — önce bunu oku</h2><div class="body">
     <div class="flag bad"><span class="ic">1</span><span><b>Paneli hep aynı cihazdan ve aynı tarayıcıdan aç.</b><br>
       İşaretlerin, konu durumların ve girdiğin denemeler <b>sadece açtığın tarayıcının içinde</b> saklanıyor.
       Telefonda Chrome ile açtıysan hep Chrome ile aç. Bilgisayardan girersen orada <b>bomboş</b> görürsün —
@@ -3965,7 +4191,9 @@ function vOzelDersOgr(){
     if (!v) return;
     v.classList.remove('gecis'); void v.offsetWidth; v.classList.add('gecis');
     clearTimeout(sayac);
-    sayac = setTimeout(function(){ v.classList.remove('gecis'); }, 950);
+    /* 1400: en uzun giriş animasyonu (halka .1s gecikme + .85s) 0,95s'de
+       biter; 950 sınırda kalıp son karede sıçramaya yol açıyordu. */
+    sayac = setTimeout(function(){ v.classList.remove('gecis'); }, 1400);
   }
   render = function(){
     cekirdek.apply(this, arguments);
