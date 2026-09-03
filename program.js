@@ -1098,10 +1098,15 @@ function mont(cfg){
        boş bir tabloyla karşılaşıp "bu ne işe yarıyor" demesini önler. */
     /* isaretle() ŞART: bu ilk dağıtım kaydedilmezse koç ekranda dolu bir
        program görür ama sunucuda hiçbir şey yoktur — öğrenci boş sekme
-       açar ve "koçum program hazırlamamış" sanır. */
-    if(kocMu() && !bloklar.length && odevler().length){
+       açar ve "koçum program hazırlamamış" sanır.
+
+       otoDagit: örnek öğrenci için. Orada koç yok, dolayısıyla kimse
+       dağıtım yapmıyor ve tanıtım ızgarası boş kalıyordu. Bayrak açıkken
+       öğrenci rolünde de bir kez dağıtılır — kaydedilmez, çünkü örnek
+       modda kaydet zaten boştur. */
+    if((kocMu() || C.otoDagit) && !bloklar.length && odevler().length){
       dagitCekirdek();
-      isaretle('bloklar');
+      if(kocMu()) isaretle('bloklar');
     }
   }
   /* Anahtar aynı kalsa bile (aynı öğrenci, aynı hafta) ödev listesi değişmiş
