@@ -1404,12 +1404,23 @@ function efektifKatsayi(sk,konu){
 function efektifDk(sk,konu){
   return sureOf(sk,konu) + efektifKatsayi(sk,konu)*hedefSoru(sk,konu);
 }
-function kalanSure(sk){
-  const m=(D.topics||{})[sk]||{}; let dk=0;
-  (KONU[sk]||[]).forEach(([,ks])=>ks.forEach(t=>{const v=m[t]||0;
-    if(v===2)return; dk+=efektifDk(sk,t)*(v===1?0.5:v===3?0.7:1);}));
-  return dk;
+/* Kalan süre iki bileşen olarak döner:
+     konu = sureOf                        → anlatım / konu çalışması
+     soru = efektifKatsayi × hedef soru   → soru çözümü
+   Eskiden yalnız toplam dönüyordu ve ekranda "kalan konu süresi" diye
+   yazıyordu — içinde soru çözümü de vardı, yani etiket yanlıştı. */
+function kalanSureAyrik(sk){
+  const m=(D.topics||{})[sk]||{}; let konu=0, soru=0;
+  (KONU[sk]||[]).forEach(([,ks])=>ks.forEach(t=>{
+    const v=m[t]||0;
+    if(v===2) return;
+    const carp = v===1?0.5 : v===3?0.7 : 1;
+    konu += sureOf(sk,t)*carp;
+    soru += efektifKatsayi(sk,t)*hedefSoru(sk,t)*carp;
+  }));
+  return {konu, soru, dk:konu+soru};
 }
+function kalanSure(sk){ return kalanSureAyrik(sk).dk; }
 function sa(dk){const h=Math.floor(dk/60),m=Math.round(dk%60);return h?`${h} sa${m?' '+m+' dk':''}`:`${m} dk`;}
 const SL=['Bekliyor','Yaptım','Yarım','Yapamadım'];
 function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'}[t]||t;}
@@ -1502,16 +1513,27 @@ function yetSenaryo(gerekli, hs, m){
   return {v:ok?'Yetişir':'Yetişmez', c:ok?'var(--ok)':'var(--bad)',
     n: ok?`${saatY(hs-need)} payın var`:`haftada ${saatY(need-hs)} açık`};
 }
-function ucSenaryoKart(gerekli, hs){
-  const O=yetSenaryo(gerekli,hs,1), G=yetSenaryo(gerekli,hs,1.15), E=yetSenaryo(gerekli,hs,1.30);
-  return `<div class="card"><h2>Yetişir mi — üç senaryo<small>Kalan konuları sınava kadar bitirme payın. Öncelikli: tam denk (pay yok). Güvenlik payı: %15 fazladan pay — hastalık, aksama, tekrar için. Genişleme: %30 pay — ekstra soru çözümü ve tekrar için yer.</small></h2>
+/* İKİ AYRI KART: "konuları bitirmek" ile "sınava hazır olmak" aynı şey
+   değil. Tek bir yüzde ikisini birbirine karıştırıyordu. */
+function ucSenaryoKart(gerekli, hs, gerekliKonu){
+  const sat=(t,a,b,c)=>`
   <div class="stats">
-    <div class="stat"><div class="k">Öncelikli yetişir mi</div><div class="v" style="font-size:19px;color:${O.c}">${O.v}</div><div class="n">${O.n}</div></div>
-    <div class="stat"><div class="k">Güvenlik payı yetişir mi</div><div class="v" style="font-size:19px;color:${G.c}">${G.v}</div><div class="n">%15 payla · ${G.n}</div></div>
-    <div class="stat"><div class="k">Genişleme yetişir mi</div><div class="v" style="font-size:19px;color:${E.c}">${E.v}</div><div class="n">%30 payla · ${E.n}</div></div>
-  </div>
+    <div class="stat"><div class="k">Öncelikli</div><div class="v" style="font-size:19px;color:${a.c}">${a.v}</div><div class="n">${a.n}</div></div>
+    <div class="stat"><div class="k">Güvenlik payı</div><div class="v" style="font-size:19px;color:${b.c}">${b.v}</div><div class="n">%15 payla · ${b.n}</div></div>
+    <div class="stat"><div class="k">Genişleme</div><div class="v" style="font-size:19px;color:${c.c}">${c.v}</div><div class="n">%30 payla · ${c.n}</div></div>
+  </div>`;
+  const K1=yetSenaryo(gerekliKonu,hs,1), K2=yetSenaryo(gerekliKonu,hs,1.15), K3=yetSenaryo(gerekliKonu,hs,1.30);
+  const T1=yetSenaryo(gerekli,hs,1),     T2=yetSenaryo(gerekli,hs,1.15),     T3=yetSenaryo(gerekli,hs,1.30);
+  return `<div class="card k-sakin"><h2>Yetişir mi — yalnız konu çalışması<small>Soru çözümü hariç, sadece konuları bitirmeye yeter mi. Haftada ${gerekliKonu?n1(gerekliKonu):'—'} saat gerekiyor.</small></h2>
+  ${sat('konu',K1,K2,K3)}</div>
+
+  <div class="card"><h2>Yetişir mi — konu + soru çözümü<small>Gerçek hazırlık: konuları bitirmek VE hedeflenen soruları çözmek. Haftada ${gerekli?n1(gerekli):'—'} saat gerekiyor. Öncelikli: tam denk. Güvenlik payı: %15 — hastalık, aksama, tekrar. Genişleme: %30 — fazladan tekrar için yer.</small></h2>
+  ${sat('tam',T1,T2,T3)}
   <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint">Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise planın çok gergin; küçük bir aksama sınava yetişmemeye döner. Üçü de "Yetişir" ise ekstra soru çözecek rahat alanın var.</div>
+    <div class="hint"><b>Hangisine bakmalısın:</b> "konuları ne zaman bitiririm" sorusu üstteki karta,
+    "sınava hazır olur muyum" sorusu bu karta bakar. Üstteki "Yetişir" ama bu "Yetişmez" ise konuları
+    bitirirsin fakat yeterince soru çözemezsin — netlerin bildiğinin gerisinde kalır.
+    <br>Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise planın çok gergin; küçük bir aksama yetişmemeye döner.</div>
   </div></div>`;
 }
 
@@ -1619,7 +1641,13 @@ function vProgram(){
    programı görür; biri diğerinden farklı süre hesaplamaz. */
 function progOdevleri(wk){
   if(!D||!D.tasks) return [];
-  return D.tasks.filter(t=>weekKey(t.date)===wk).map(t=>{
+  /* Devredenler de programa girer — koç panelindeki mantığın aynısı.
+     Öğrenci geçen haftadan kalan işi takvimde görmeli, yoksa haftası
+     boş görünür ve devredenler bir hafta daha kayar. */
+  const dev = D.tasks.filter(t=>!t.rutin && t.konu && t.s!==1 && weekKey(t.date)<wk);
+  const devId = {}; dev.forEach(t=>devId[t.id]=true);
+  const bu  = D.tasks.filter(t=>weekKey(t.date)===wk);
+  return dev.concat(bu).map(t=>{
     if(t.rutin){
       return {id:t.id, sub:t.sub, konu:t.konu||'Rutin', calisma:0,
               soru:t.q||0, soruDk:Math.round((t.q||0)*(t.dks||1.5)),
@@ -1629,7 +1657,9 @@ function progOdevleri(wk){
             calisma:Math.round(sureOf(t.sub,t.konu)),
             soru:t.q||0,
             soruDk:Math.round(efektifKatsayi(t.sub,t.konu)*(t.q||0)),
-            oncelik:'cekirdek', rutin:false};
+            oncelik: devId[t.id] ? 'onkosul' : 'cekirdek',
+            dev: devId[t.id] ? haftaFarki(t.date) : 0,
+            rutin:false};
   });
 }
 
@@ -2771,7 +2801,12 @@ function vHedef(){
   let topDk=0;
   list.forEach(([k])=>{ topDk += kalanSure(k)||0; });
   const topSaat=topDk/60;
-  const gerekli=hk?topSaat/hk:null;
+  const gerekli=hk?topSaat/hk:null;                 // konu + soru
+  /* yalnız konu çalışması — soru çözümü hariç */
+  const topKonuDk=list.reduce((a,[k])=>a+kalanSureAyrik(k).konu,0);
+  const topSoruDk=Math.max(0, topDk-topKonuDk);
+  const topKonuSaat=topKonuDk/60, topSoruSaat=topSoruDk/60;
+  const gerekliKonu=hk?topKonuSaat/hk:null;
   const hp=parseFloat(String(hedefPuan()||'').replace(',','.'));
   const su=a.adet?puanHesapla(a.nets):null;
   const yetisKart=`
@@ -2779,10 +2814,18 @@ function vHedef(){
     <div class="stat"><div class="k">Sınava kalan</div>
       <div class="v">${hk===null?'—':hk}</div>
       <div class="n">${hk===null?'sınav tarihi gir':'hafta'}</div></div>
-    <div class="stat"><div class="k">Kalan konu süresi</div>
+    <div class="stat"><div class="k">Kalan süre — yalnız konu</div>
+      <div class="v">${topKonuSaat?Math.round(topKonuSaat):'—'}</div>
+      <div class="n">saat · konu çalışması</div></div>
+    <div class="stat"><div class="k">Kalan süre — konu + soru</div>
       <div class="v">${topSaat?Math.round(topSaat):'—'}</div>
-      <div class="n">saat · bitmemiş konular</div></div>
-    <div class="stat"><div class="k">Haftada gereken</div>
+      <div class="n">saat · +${Math.round(topSoruSaat)} sa soru</div></div>
+  </div>
+  <div class="stats" style="border-top:1px solid var(--line-soft)">
+    <div class="stat"><div class="k">Haftada gereken — yalnız konu</div>
+      <div class="v" style="color:${gerekliKonu&&hs&&gerekliKonu>hs?'var(--bad)':'var(--ok)'}">${gerekliKonu?n1(gerekliKonu):'—'}</div>
+      <div class="n">saat/hafta${hs?' · senin beyanın '+hs:''}</div></div>
+    <div class="stat"><div class="k">Haftada gereken — konu + soru</div>
       <div class="v" style="color:${gerekli&&hs&&gerekli>hs?'var(--bad)':'inherit'}">${gerekli?n1(gerekli):'—'}</div>
       <div class="n">saat/hafta${hs?' · senin beyanın '+hs:''}</div></div>
   </div>
@@ -2793,7 +2836,7 @@ function vHedef(){
         ? 'Bu hızla gidersen kalan konuları sınava kadar bitirirsin. Süre tahminleri planlama içindir, kesin ölçüm değildir.'
         : 'Bu hızla kalan konular yetişmiyor. Ya haftalık süreni artır ya da öğretmeninle konu önceliklerini konuş.'}</div>
   </div></div>
-  ${ucSenaryoKart(gerekli, hs)}`;
+  ${ucSenaryoKart(gerekli, hs, gerekliKonu)}`;
   let cN=0,hN=0,varH=false;
   list.forEach(([k])=>{ cN+=a.nets[k]||0; const t=+hedefNet(k)||0; if(t){hN+=t;varH=true;} });
   const bar=([k,nm,q])=>{
@@ -2862,6 +2905,8 @@ function vHedef(){
     </div>
     <div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>Burada yaptığın değişiklikler <b>rapor gönderdiğinde</b> öğretmenine iletilir. O onaylayınca onun sisteminde de güncellenir.</span></div>
   </div></div>
+
+  ${yetisKart}
 
   <div class="card"><h2>Ders ders hedef net</h2><div class="body">
     <div class="hint" style="margin:0 0 10px">Hedeflediğin bölüme göre her dersten kaç net gerektiğini buradan görür ve düzenlersin. Bölüm seçince otomatik dolar; elle de değiştirebilirsin.</div>

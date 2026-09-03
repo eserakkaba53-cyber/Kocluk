@@ -107,6 +107,10 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ---- kart ---- */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:7px;margin-bottom:18px}
+/* "Yalnız konu" gibi İKİNCİL kartlar: aynı bilgiyi taşır ama asıl karar
+   kartı değildir. Soluk çerçeve hangisinin ana sayı olduğunu söyler. */
+.card.k-sakin{border-color:var(--line-soft)}
+.card.k-sakin>h2{color:var(--ink-3)}
 .card>h2 small{display:block;text-transform:none;letter-spacing:0;font-weight:400;font-size:11.5px;color:var(--ink-3);margin-top:3px}
 .card>h2{margin:0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);padding:13px 18px;border-bottom:1px solid var(--line-soft);font-weight:700}
 .card .body{padding:18px}
@@ -1481,14 +1485,54 @@ function efektifDk(sk,konu){
 }
 /* açık (bitmemiş) konuların toplam efektif süresi, dakika */
 function kalanSure(st,sk){
-  const m=st.topics[sk]||{}; let dk=0,ad=0;
+  const m=st.topics[sk]||{}; let dk=0,konuDk=0,soruDk=0,ad=0;
   (KONU[sk]||[]).forEach(([,ks])=>ks.forEach(t=>{
     const d=m[t]||0;
     if(d===2) return;                       // bitti
     const carp=d===1?0.5:d===3?0.7:1;       // işleniyor yarım, eksik kısmi tekrar
-    dk+=efektifDk(sk,t)*carp; ad++;
+    const k=sureOf(sk,t)*carp;
+    const q=efektifKatsayi(sk,t)*hedefSoru(sk,t)*carp;
+    konuDk+=k; soruDk+=q; dk+=k+q; ad++;
   }));
-  return {dk,ad};
+  return {dk,konuDk,soruDk,ad};
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SÜRENİN İKİ BİLEŞENİ — tek doğru kaynak
+   ───────────────────────────────────────────────────────────────────
+   Bir konu ödevinin süresi iki parçadan oluşur:
+       konu = sureOf(ders,konu)                → anlatım / konu çalışması
+       soru = efektifKatsayi(ders,konu) × soru → soru çözümü
+   Panel bunları bazı ekranlarda topluyor, bazılarında yalnız konuyu
+   sayıyordu; aynı hafta üç ekranda üç farklı süre görünüyordu. Artık
+   her ekran bu iki fonksiyondan besleniyor ve ayrımı AÇIKÇA yazıyor.
+   ═══════════════════════════════════════════════════════════════════ */
+function odevSure(t){
+  if(!t) return {konu:0, soru:0};
+  if(t.rutin) return {konu:0, soru:(t.q||0)*(t.dks||1.5)};
+  if(!t.konu) return {konu:0, soru:0};
+  return {konu: sureOf(t.sub,t.konu),
+          soru: efektifKatsayi(t.sub,t.konu)*(t.q||0)};
+}
+
+/* Bir haftanın yükü — devredenler DAHİL, konu/soru ayrı ayrı.
+   devredenler dahil, çünkü öğrenci bu hafta onları da yapacak; hafta
+   yükünü onlarsız hesaplamak planı gerçekte olduğundan hafif gösterir. */
+function haftaYuku(st, wk){
+  const bu  = (st.tasks||[]).filter(t=>weekKey(t.date)===wk);
+  const dev = devredenler(st);
+  const topla = l => l.reduce((a,t)=>{ const x=odevSure(t); a.konu+=x.konu; a.soru+=x.soru; return a; }, {konu:0,soru:0});
+  const b = topla(bu.filter(t=>!t.rutin));
+  const r = topla(bu.filter(t=>t.rutin));
+  const d = topla(dev);
+  const konu = b.konu + d.konu;
+  const soru = b.soru + d.soru + r.soru;
+  return {
+    buKonu:b.konu, buSoru:b.soru,
+    rutin:r.soru,
+    devKonu:d.konu, devSoru:d.soru, devAdet:dev.length,
+    konu:konu, soru:soru, toplam:konu+soru
+  };
 }
 /* ===== ORTAK SINAV TARİHİ =====
    Tüm koç ve öğrencilere işlenir; kişisel tarihler yok sayılır (zorla uygula).
@@ -1648,7 +1692,11 @@ function haftaRutinCikar(id){
   if(!st.ornek) save();
   render();
 }
-/* haftalık hedef çalışma süresi (dakika): rutin + konu ödevleri */
+/* ESKİ — KULLANMA. Yalnız rutin + konu çalışmasını topluyor: soru çözüm
+   süresini ve devredenleri saymıyor. Bu yüzden Ödevler / Haftalık / Program
+   ekranları aynı hafta için üç farklı sayı gösteriyordu. Yerine haftaYuku()
+   kullan — o konu ve soruyu ayrı döndürür, devredenleri de sayar.
+   Geriye dönük bir çağrı kalırsa bozulmasın diye duruyor. */
 function haftaSure(st,wk){
   let rut=0,konu=0;
   st.tasks.filter(t=>weekKey(t.date)===wk).forEach(t=>{
@@ -3527,7 +3575,7 @@ function vHafta(st){
   const a=avgNets(st,3), bl=blokAyir(st);
   const ex=[...st.exams].sort((x,y)=>y.date.localeCompare(x.date)).slice(0,3);
   const wk = st.ornek ? sonDoluHafta(st) : weekKey(today());
-  const ws=weekStats(st,wk), hs=haftaSure(st,wk);
+  const ws=weekStats(st,wk), hy=haftaYuku(st,wk);
   const tasks=st.tasks.filter(t=>weekKey(t.date)===wk).sort((x,y)=>x.date.localeCompare(y.date));
 
 
@@ -3537,7 +3585,7 @@ function vHafta(st){
   <div class="card"><div class="stats">
     <div class="stat"><div class="k">Bu hafta ödev</div><div class="v">${tasks.filter(t=>!t.rutin).length||'—'}</div><div class="n">uyum ${ws.rate!==null?ws.rate+'%':'—'}${tasks.some(t=>t.rutin)?' · +'+tasks.filter(t=>t.rutin).length+' rutin':''}</div></div>
     <div class="stat"><div class="k">Devreden</div><div class="v" style="color:${devredenler(st).length?'var(--bad)':'var(--ok)'}">${devredenler(st).length}</div><div class="n">${devredenler(st).length?'geçen haftalardan':'temiz'}</div></div>
-    <div class="stat"><div class="k">Haftalık hedef süre</div><div class="v" style="font-size:21px">${hs.top?sa(hs.top):'—'}</div><div class="n">${hs.top?`rutin ${sa(hs.rut)} + konu ${sa(hs.konu)}`:'ödev verilince hesaplanır'}</div></div>
+    <div class="stat"><div class="k">Haftalık hedef süre</div><div class="v" style="font-size:21px">${hy.toplam?sa(hy.toplam):'—'}</div><div class="n">${hy.toplam?`konu ${sa(hy.konu)} + soru ${sa(hy.soru)}`:'ödev verilince hesaplanır'}</div></div>
     <div class="stat"><div class="k">Sınava kalan</div><div class="v">${haftaKalan(st)??'—'}</div><div class="n">hafta${st.sinavTarihi?' · '+st.sinavTarihi:' · Hedef sekmesinden gir'}</div></div>
   </div></div>
 
@@ -3602,18 +3650,31 @@ function progKart(st,wk){
    efektif süredir, panelin "yetişir mi" hesabı da onu kullanır. */
 function progOdevleri(st,wk){
   /* Haftadan çıkarılan ödev st.tasks'tan zaten siliniyor (haftaOdevCikar),
-     ayrıca süzmeye gerek yok. */
-  return st.tasks.filter(t=>weekKey(t.date)===wk).map(t=>{
+     ayrıca süzmeye gerek yok.
+
+     DEVREDENLER DE GİRER: geçen haftalardan kalan bitmemiş ödevler
+     öğrencinin bu hafta yapacağı işin parçasıdır. Programa koymazsak
+     takvim boş görünür, öğrenci "bu hafta işim az" sanır ve devredenler
+     bir hafta daha kayar. Öncelikleri 'onkosul' — yerleştirmede en önce
+     onlar gelir, çünkü zaten gecikmişler. */
+  const dev = devredenler(st);
+  const devId = {}; dev.forEach(t=>devId[t.id]=true);
+  const bu  = st.tasks.filter(t=>weekKey(t.date)===wk);
+
+  return dev.concat(bu).map(t=>{
+    const s = odevSure(t);
     if(t.rutin){
       return {id:t.id, sub:t.sub, konu:t.konu||'Rutin', calisma:0,
-              soru:t.q||0, soruDk:Math.round((t.q||0)*(t.dks||1.5)),
+              soru:t.q||0, soruDk:Math.round(s.soru),
               oncelik:'rutin', rutin:true};
     }
+    const gecikme = devId[t.id] ? haftaFarki(t.date) : 0;
     return {id:t.id, sub:t.sub, konu:t.konu||'—',
-            calisma:Math.round(sureOf(t.sub,t.konu)),
-            soru:t.q||0,
-            soruDk:Math.round(efektifKatsayi(t.sub,t.konu)*(t.q||0)),
-            oncelik:'cekirdek', rutin:false};
+            calisma:Math.round(s.konu),
+            soru:t.q||0, soruDk:Math.round(s.soru),
+            oncelik: devId[t.id] ? 'onkosul' : 'cekirdek',
+            dev: devId[t.id] ? gecikme : 0,
+            rutin:false};
   });
 }
 
@@ -3820,8 +3881,8 @@ function haftaMetni(st){
   L.push(`${st.name} — ${wk} haftası`);
   L.push(`Hazırlanma tarihi: ${today()}`);
   const hk=haftaKalan(st); if(hk!==null) L.push(`Sınava ${hk} hafta.`);
-  const hs=haftaSure(st,wk);
-  if(hs.top) L.push(`Bu haftanın hedef çalışma süresi: ${sa(hs.top)}  (rutin ${sa(hs.rut)} + konu ${sa(hs.konu)}) — günde ~${sa(hs.top/7)}`);
+  const hy=haftaYuku(st,wk);
+  if(hy.toplam) L.push(`Bu haftanın hedef çalışma süresi: ${sa(hy.toplam)}  (konu çalışması ${sa(hy.konu)} + soru çözümü ${sa(hy.soru)}${hy.devAdet?`; içinde ${hy.devAdet} devreden ödev`:''}) — günde ~${sa(hy.toplam/7)}`);
   L.push('');
 
   // 1) nerede duruyor
@@ -4280,16 +4341,15 @@ function vOdev(st){
       <input type="text" id="tkX" placeholder="ör. önce konu tekrarı, sonra orta-zor sorular"></div></div>
     <button class="btn" onclick="addTask()">Ödevi ekle</button>
     ${(()=>{const wk=weekKey(today());
-      const bu=st.tasks.filter(t=>weekKey(t.date)===wk);
-      const konuDk=bu.filter(t=>!t.rutin&&t.konu).reduce((a,t)=>a+sureOf(t.sub,t.konu),0);
-      const rutDk=bu.filter(t=>t.rutin).reduce((a,t)=>a+(t.q||0)*(t.dks||1.5),0);
-      const devDk=devredenler(st).reduce((a,t)=>a+sureOf(t.sub,t.konu),0);
+      /* Tek kaynak: haftaYuku(). Eskiden burada soru çözüm süresi hiç
+         sayılmıyordu, bu yüzden Ödevler / Haftalık / Program üç farklı
+         sayı gösteriyordu. */
+      const hy=haftaYuku(st,wk);
       const hafta=(+st.haftalikSaat||0)*60;
-      const top=konuDk+rutDk+devDk;
-      const asim=hafta&&top>hafta;
+      const asim=hafta&&hy.toplam>hafta;
       return `<span style="margin-left:16px;font-family:var(--mono);font-size:13px;color:${asim?'var(--bad)':'var(--ink-2)'}">
-        Bu haftanın toplamı: <b>${sa(top)}</b>
-        <span style="color:var(--ink-3);font-size:11.5px">(konu ${sa(konuDk)} + rutin ${sa(rutDk)}${devDk?' + devreden '+sa(devDk):''})</span>
+        Bu haftanın toplamı: <b>${sa(hy.toplam)}</b>
+        <span style="color:var(--ink-3);font-size:11.5px">(konu çalışması ${sa(hy.konu)} + soru çözümü ${sa(hy.soru)}${hy.devAdet?' · içinde '+hy.devAdet+' devreden ödev, '+sa(hy.devKonu+hy.devSoru):''})</span>
         ${hafta?` · öğrencinin beyanı ${sa(hafta)}${asim?' <b>— AŞILDI</b>':''}`:''}</span>`;})()}
 
   </div></div>
@@ -4643,38 +4703,70 @@ function vKonu(st){
   const _oc=konuOncelik(st,KSUB);
   const _ONC=_oc?{bilgi:Object.fromEntries(_oc.kalem.map(x=>[x.konu,x]))}:null;
   const topDk=stats.reduce((a,s)=>a+s.dk,0), topSaat=topDk/60;
+  /* Konu çalışması ile soru çözümü AYRI gösterilir: koç "sadece konuyu
+     bitirmek" ile "konu + hedeflenen soruyu bitirmek" arasındaki farkı
+     görmeden plan yapamıyordu. Eski ekran yalnız toplamı gösteriyor ama
+     etiketinde "konu bazlı tahmin" yazıyordu — hem eksik hem yanıltıcıydı. */
+  const topKonuDk=stats.reduce((a,s)=>a+s.konuDk,0), topKonuSaat=topKonuDk/60;
+  const topSoruDk=stats.reduce((a,s)=>a+s.soruDk,0), topSoruSaat=topSoruDk/60;
   const hk=haftaKalan(st), hs=+st.haftalikSaat||0;
-  const gerekli=hk?topSaat/hk:null;
+  const gerekli=hk?topSaat/hk:null;               // konu + soru
+  const gerekliKonu=hk?topKonuSaat/hk:null;       // yalnız konu çalışması
   // Yetişir mi — üç senaryo (zaman tamponu kademeleri).
   // m: gereken saate uygulanan pay katsayısı. 1.00 tam denk, 1.15 güvenlik payı, 1.30 genişleme.
-  const yetSenaryo=(m)=>{
-    if(!gerekli||!hs) return {v:'—',c:'var(--ink-3)',n:'Hedef sekmesini doldur'};
-    const need=gerekli*m, ok=need<=hs;
+  /* taban: hangi süreye göre bakıyoruz — yalnız konu mu, konu+soru mu */
+  const yetSenaryo=(m, taban)=>{
+    if(!taban||!hs) return {v:'—',c:'var(--ink-3)',n:'Hedef sekmesini doldur'};
+    const need=taban*m, ok=need<=hs;
     return {v:ok?'Yetişir':'Yetişmez', c:ok?'var(--ok)':'var(--bad)',
       n: ok?`${saatY(hs-need)} pay var`:`haftada ${saatY(need-hs)} açık`};
   };
-  const S_ONC=yetSenaryo(1), S_GUV=yetSenaryo(1.15), S_GEN=yetSenaryo(1.30);
+  const K_ONC=yetSenaryo(1,gerekliKonu), K_GUV=yetSenaryo(1.15,gerekliKonu), K_GEN=yetSenaryo(1.30,gerekliKonu);
+  const T_ONC=yetSenaryo(1,gerekli),     T_GUV=yetSenaryo(1.15,gerekli),     T_GEN=yetSenaryo(1.30,gerekli);
   return `
   ${ornekUyari(st)}
 
   <div class="card"><div class="stats">
     <div class="stat"><div class="k">Kalan konu</div><div class="v">${stats.reduce((a,s)=>a+s.ad,0)}</div><div class="n">bitmemiş konu sayısı</div></div>
-    <div class="stat"><div class="k">Tahmini gereken süre</div><div class="v">${Math.round(topSaat)}</div><div class="n">saat · konu bazlı tahmin</div></div>
-    <div class="stat"><div class="k">Haftada gereken</div><div class="v" style="color:${gerekli&&hs&&gerekli>hs?'var(--bad)':'inherit'}">${gerekli?n1(gerekli):'—'}</div><div class="n">saat/hafta${hs?` · beyan ${hs}`:''}</div></div>
     <div class="stat"><div class="k">Sınava kalan</div><div class="v">${hk===null?'—':hk}</div><div class="n">${hk===null?'sınav tarihi yok':'hafta'}</div></div>
   </div>
-  <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint">Süre tahminleri planlama başlangıcıdır, ölçüm değil. İşleniyor işaretli konular yarım, eksik işaretliler %70 süreyle sayılır. Her konunun süresini aşağıdan kendine göre düzeltebilirsin — düzeltmeler tüm öğrenciler için geçerlidir.</div>
-  </div></div>
-
-  <div class="card"><h2>Yetişir mi — üç senaryo<small>Kalan konuları sınava kadar bitirme payı. Öncelikli: tam denk (pay yok). Güvenlik payı: %15 fazladan pay — hastalık, tekrar, aksama için. Genişleme: %30 pay — ekstra soru çözümü ve tekrar için yer.</small></h2>
-  <div class="stats uc">
-    <div class="stat"><div class="k">Öncelikli yetişir mi</div><div class="v" style="font-size:19px;color:${S_ONC.c}">${S_ONC.v}</div><div class="n">${S_ONC.n}</div></div>
-    <div class="stat"><div class="k">Güvenlik payı yetişir mi</div><div class="v" style="font-size:19px;color:${S_GUV.c}">${S_GUV.v}</div><div class="n">%15 payla · ${S_GUV.n}</div></div>
-    <div class="stat"><div class="k">Genişleme yetişir mi</div><div class="v" style="font-size:19px;color:${S_GEN.c}">${S_GEN.v}</div><div class="n">%30 payla · ${S_GEN.n}</div></div>
+  <div class="stats" style="border-top:1px solid var(--line-soft)">
+    <div class="stat"><div class="k">Kalan süre — yalnız konu</div><div class="v">${Math.round(topKonuSaat)}</div><div class="n">saat · konu çalışması</div></div>
+    <div class="stat"><div class="k">Haftada gereken — yalnız konu</div>
+      <div class="v" style="color:${gerekliKonu&&hs&&gerekliKonu>hs?'var(--bad)':'var(--ok)'}">${gerekliKonu?n1(gerekliKonu):'—'}</div>
+      <div class="n">saat/hafta${hs?` · beyan ${hs}`:''}</div></div>
+    <div class="stat"><div class="k">Kalan süre — konu + soru</div><div class="v">${Math.round(topSaat)}</div><div class="n">saat · +${Math.round(topSoruSaat)} sa soru çözümü</div></div>
+    <div class="stat"><div class="k">Haftada gereken — konu + soru</div>
+      <div class="v" style="color:${gerekli&&hs&&gerekli>hs?'var(--bad)':'inherit'}">${gerekli?n1(gerekli):'—'}</div>
+      <div class="n">saat/hafta${hs?` · beyan ${hs}`:''}</div></div>
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint">Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise plan çok gergin demektir; küçük bir aksama sınava yetişmemeye döner. Üçü de "Yetişir" ise öğrencinin ekstra soru çözecek rahat alanı var.</div>
+    <div class="hint"><b>İki sayı neden farklı:</b> soldaki yalnız <b>konu çalışmasını</b> (anlatım, okuma, not) sayar.
+    Sağdaki buna <b>hedeflenen soru çözümünü</b> ekler (${Math.round(topSoruSaat)} saat) — gerçek hazırlık süresi budur.
+    Konuyu bitirmek ile o konuyu sınavda çıkaracak kadar soru çözmek aynı şey değildir; plan yaparken sağdakine bak,
+    "konuları ne zaman bitiririz" sorusunda soldakine.
+    <br><br>Süre tahminleri planlama başlangıcıdır, ölçüm değil. İşleniyor işaretli konular yarım, eksik işaretliler %70 süreyle sayılır.
+    Her konunun süresini aşağıdan kendine göre düzeltebilirsin — düzeltmeler tüm öğrenciler için geçerlidir.</div>
+  </div></div>
+
+  <div class="card k-sakin"><h2>Yetişir mi — yalnız konu çalışması<small>Soru çözümü hariç, sadece konuları bitirmeye yeter mi. Haftada ${gerekliKonu?n1(gerekliKonu):'—'} saat gerekiyor.</small></h2>
+  <div class="stats uc">
+    <div class="stat"><div class="k">Öncelikli</div><div class="v" style="font-size:19px;color:${K_ONC.c}">${K_ONC.v}</div><div class="n">${K_ONC.n}</div></div>
+    <div class="stat"><div class="k">Güvenlik payı</div><div class="v" style="font-size:19px;color:${K_GUV.c}">${K_GUV.v}</div><div class="n">%15 payla · ${K_GUV.n}</div></div>
+    <div class="stat"><div class="k">Genişleme</div><div class="v" style="font-size:19px;color:${K_GEN.c}">${K_GEN.v}</div><div class="n">%30 payla · ${K_GEN.n}</div></div>
+  </div></div>
+
+  <div class="card"><h2>Yetişir mi — konu + soru çözümü<small>Gerçek hazırlık: konuları bitirmek VE hedeflenen soruları çözmek. Haftada ${gerekli?n1(gerekli):'—'} saat gerekiyor. Öncelikli: tam denk. Güvenlik payı: %15 — hastalık, tekrar, aksama. Genişleme: %30 — fazladan tekrar için yer.</small></h2>
+  <div class="stats uc">
+    <div class="stat"><div class="k">Öncelikli</div><div class="v" style="font-size:19px;color:${T_ONC.c}">${T_ONC.v}</div><div class="n">${T_ONC.n}</div></div>
+    <div class="stat"><div class="k">Güvenlik payı</div><div class="v" style="font-size:19px;color:${T_GUV.c}">${T_GUV.v}</div><div class="n">%15 payla · ${T_GUV.n}</div></div>
+    <div class="stat"><div class="k">Genişleme</div><div class="v" style="font-size:19px;color:${T_GEN.c}">${T_GEN.v}</div><div class="n">%30 payla · ${T_GEN.n}</div></div>
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <div class="hint"><b>Hangisine bakmalı:</b> "konuları ne zaman bitiririz" sorusu üstteki karta,
+    "sınava hazır olur mu" sorusu bu karta bakar. Üstteki "Yetişir" ama bu "Yetişmez" ise öğrenci konuları
+    bitirir fakat yeterince soru çözemez — netler konu bilgisinden geri kalır.
+    <br>Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise plan çok gergin; küçük bir aksama yetişmemeye döner.</div>
   </div></div>
 
   <div class="card"><h2>Konu ilerlemesi — genel<small>Bir derse tıklayınca aşağıda o dersin konuları açılır.</small></h2><div class="body" style="padding:0">
