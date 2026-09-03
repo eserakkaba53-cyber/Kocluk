@@ -17,9 +17,10 @@ window.PROG = (function(){
 'use strict';
 
 /* ═══ SABİTLER ═══ */
-var GUN=6, DILIM=48, DILIM_DK=30, MAX_BLOK_DK=90;
-var GUNLER=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
-var GUN_KISA=['PZT','SAL','ÇAR','PER','CUM','CMT'];
+var GUN=7, DILIM=48, DILIM_DK=30, MAX_BLOK_DK=90;
+var GUNLER=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+var GUN_KISA=['PZT','SAL','ÇAR','PER','CUM','CMT','PAZ'];
+var SATIR_PX=26;   /* bir yarım saatlik satırın yüksekliği */
 
 /* Ders renkleri — panelin ders kodlarıyla birebir. */
 var RENK={
@@ -38,7 +39,7 @@ var KAT={
   ayt_fiz:1.5, ayt_kim:1.5, ayt_biy:1.5, ydt:1.2
 };
 var SEBEPLER=[['OKUL','Okul'],['UYKU','Uyku'],['YEMEK','Yemek'],
-              ['KURS','Kurs'],['OZEL','Meşgul']];
+              ['KURS','Kurs'],['IZIN','İzin günü'],['OZEL','Meşgul']];
 
 /* ═══ DURUM ═══ */
 var C={};
@@ -106,6 +107,11 @@ function kapat(g,d,neden){ kapali.add(ah(g,d)); if(neden) sebep[ah(g,d)]=neden; 
 function varsayilan(){
   kapali=new Set(); sebep={};
   for(var g=0;g<GUN;g++){
+    /* PAZAR — varsayılan olarak tamamen kapalı (dinlenme günü).
+       Tabloda görünür ama iş yerleştirilmez; öğrenci isterse açar.
+       Haftada bir tam gün boş bırakmak plan değil, sürdürülebilirlik
+       meselesi: yedi gün program verilen öğrenci üçüncü haftada bırakır. */
+    if(g===6){ for(var dp=0;dp<DILIM;dp++) kapat(g,dp,'IZIN'); continue; }
     for(var d=0;d<14;d++) kapat(g,d,'UYKU');               /* 00:00–07:00 */
     if(g<5) for(var d2=16;d2<32;d2++) kapat(g,d2,'OKUL');  /* 08:00–16:00 */
     kapat(g,38,'YEMEK'); kapat(g,39,'YEMEK');              /* 19:00–20:00 */
@@ -125,13 +131,18 @@ function blokListesi(){
   var cikti=[], n=0;
   sirali.forEach(function(o){
     var parcalar=[];
-    /* Bölme bedava değildir: toplamı 120 dk'yı aşmayan ödev, ayırma açık
-       olsa bile TEK blok kalır — ekrandaki blok sayısı şişmesin. */
-    if(ayir && toplamDk(o)>120){
-      if(o.calisma>0) parcalar.push({tur:'konu',dk:o.calisma});
-      if(soruDk(o)>0) parcalar.push({tur:'soru',dk:soruDk(o)});
-    }else{
+    /* KONU ve SORU HER ZAMAN AYRI. Eskiden toplamı 120 dk'yı aşmayan ödev
+       tek "karma" blok kalıyordu; o blokta ne KONU ne SORU etiketi vardı ve
+       öğrenci o saatte ne yapacağını bilmiyordu. Blok sayısı artıyor ama
+       ızgaranın işi tam da bunu söylemek. */
+    if(ayir && o.calisma>0 && soruDk(o)>0){
+      parcalar.push({tur:'konu',dk:o.calisma});
+      parcalar.push({tur:'soru',dk:soruDk(o)});
+    }else if(o.calisma>0 && soruDk(o)>0){
       parcalar.push({tur:'karma',dk:toplamDk(o)});
+    }else{
+      /* yalnız biri varsa (rutinlerde konu süresi yoktur) türü doğru yaz */
+      parcalar.push({tur:o.calisma>0?'konu':'soru', dk:toplamDk(o)});
     }
     parcalar.forEach(function(p){
       /* PARÇALAMA — dilim ızgarasına oturur.
@@ -152,6 +163,7 @@ function blokListesi(){
           id:o.id+'|'+p.tur+'|'+i, odevId:o.id, sub:o.sub, konu:o.konu, tur:p.tur,
           dk:dk, uzunluk:Math.max(1,Math.ceil(dk/DILIM_DK)),
           oncelik:o.oncelik||'cekirdek', rutin:!!o.rutin, dev:o.dev||0,
+          pi:i,                                  /* parça sırası — 0 tabanlı */
           parca:adet>1?((++sira)+'/'+adet):'', sirano:cikti.length
         });
         kalan-=dk;
@@ -238,6 +250,19 @@ function siraUygun(b,gun,dilim){
       return x.odevId===b.odevId && x.tur==='soru' && x.id!==b.id; });
     for(i=0;i<l.length;i++)
       if(mut(gun,dilim+b.uzunluk) > mut(l[i].gun,l[i].dilim)) return false;
+  }
+  /* PARÇA SIRASI — "1/3" bitmeden "2/3" başlamaz.
+     Uzun bir işi üçe böldüğümüzde parçalar takvimde karışık sırayla
+     görünebiliyordu (2/3 Salı, 1/3 Perşembe). Numarası olan bir şeyin
+     sırasız durması "sistem şaşırmış" hissi veriyor; üstelik konu
+     çalışmasında ikinci parça birincinin üstüne kurulur. */
+  if(b.pi!==undefined){
+    l=bloklar.filter(function(x){
+      return x.odevId===b.odevId && x.tur===b.tur && x.id!==b.id && x.pi!==undefined; });
+    for(i=0;i<l.length;i++){
+      if(l[i].pi < b.pi && mut(gun,dilim) < mut(l[i].gun,l[i].dilim+l[i].uzunluk)) return false;
+      if(l[i].pi > b.pi && mut(gun,dilim+b.uzunluk) > mut(l[i].gun,l[i].dilim)) return false;
+    }
   }
   return true;
 }
@@ -443,6 +468,9 @@ function cakisanlar(){
 }
 function blokCakisiyor(b,g,d,haric){
   if(d<0 || d+b.uzunluk>DILIM) return true;
+  /* Elle sürüklemede de sıra korunur: koç 2/3'ü 1/3'ün önüne, ya da soru
+     bloğunu konusundan öne bırakamaz. Hedef hücre kırmızı yanar. */
+  if(!siraUygun(b,g,d)) return true;
   for(var i=0;i<b.uzunluk;i++){
     if(kapali.has(ah(g,d+i))) return true;
     for(var j=0;j<bloklar.length;j++){
@@ -516,7 +544,7 @@ function disaKapali(){
 function blokDisa(b, yerlesmis){
   return {id:b.id, odevId:b.odevId, sub:b.sub, konu:b.konu, tur:b.tur,
           dk:b.dk, gun:yerlesmis?b.gun:null, dilim:yerlesmis?b.dilim:null,
-          uzunluk:b.uzunluk, parca:b.parca||'', rutin:!!b.rutin, dev:b.dev||0,
+          uzunluk:b.uzunluk, parca:b.parca||'', pi:b.pi, rutin:!!b.rutin, dev:b.dev||0,
           kilit:yerlesmis?!!b.kilit:false};
 }
 function disaBloklar(){
@@ -628,28 +656,52 @@ function ciz(){
       h+='<td class="pg-h'+kap+(tam?' tamsaat':'')+'" data-g="'+g+'" data-d="'+d+
          '" data-sebep="'+esc(sb)+'">';
       if(b){
-        var renk=renkOf(b.sub), yuk=b.uzunluk*21-3, kisa=b.uzunluk<=2;
+        var renk=renkOf(b.sub), yuk=b.uzunluk*SATIR_PX-3, kisa=b.uzunluk<=2;
+        /* SÜRE HER ZAMAN YAZILIR. Kısa bloklarda ayrı satır sığmadığı için
+           üst etikete eklenir — eskiden .bs gizleniyor ve 30-60 dk'lık
+           bloklarda süre hiç görünmüyordu. */
         var etiket=(b.dev?'⚠ DEVREDEN · ':'')+
                    kisaAd(b.sub)+(b.tur==='soru'?' · SORU':b.tur==='konu'?' · KONU':'')+
-                   (b.parca?' '+b.parca:'');
+                   (b.parca?' '+b.parca:'')+
+                   (kisa?' · '+sa(b.dk):'');
         h+='<div class="pg-blok'+(b.tur==='soru'?' soru':'')+(kisa?' kisa':'')+
            (b.dev?' devreden':'')+
            (b.kilit?' kilitli':'')+(cak[b.id]?' cakisik':'')+
-           (kocMu()?'':' salt')+'" data-b="'+esc(b.id)+'" style="height:'+yuk+
-           'px;background:'+renk+'" title="'+esc(adOf(b.sub)+' — '+b.konu+' ('+sa(b.dk)+')')+
+           (kocMu()?'':' salt')+'" data-b="'+esc(b.id)+'" data-u="'+b.uzunluk+
+           '" style="height:'+yuk+'px;background:'+renk+'" title="'+
+           esc(adOf(b.sub)+' — '+b.konu+' ('+sa(b.dk)+')')+
            (cak[b.id]?' · KAPALI SAATE DENK GELİYOR':'')+'">'+
            (cak[b.id]?'<span class="pg-kil">!</span>':b.kilit&&kocMu()?'<span class="pg-kil">🔒</span>':'')+
            '<div class="bd">'+esc(etiket)+'</div>'+
            '<div class="bk">'+esc(b.konu)+'</div>'+
-           '<div class="bs">'+sa(b.dk)+'</div></div>';
+           (kisa?'':'<div class="bs">'+sa(b.dk)+'</div>')+'</div>';
       }
       h+='</td>';
     }
     h+='</tr>'; d++;
   }
   t.innerHTML=h+'</tbody>';
+  blokBoyunuOlc(t);
 
   cizOzet(); cizArac(); cizYuk(); cizAlt();
+}
+
+/* BLOK YÜKSEKLİĞİNİ GERÇEK SATIRA GÖRE AYARLA.
+   Blok yüksekliği sabit bir satır varsayımıyla (SATIR_PX) yazılıyor, ama
+   satırın gerçek yüksekliğini saat sütununun içeriği belirliyor: punto,
+   dolgu, panelin kendi "td{padding}" kuralı... Ölçüldü — CSS 26px derken
+   satır 32px çıkıyordu ve bloklar kendi dilimlerinin altına yetişmiyor,
+   ızgarada kayık duruyordu. Tek doğru yol çizimden sonra ölçmek. */
+function blokBoyunuOlc(t){
+  var satir=t.querySelector('tbody tr:not(.pg-katli)');
+  if(!satir) return;
+  var h=satir.getBoundingClientRect().height;
+  if(!h || h<6) return;
+  var bl=t.querySelectorAll('.pg-blok');
+  for(var i=0;i<bl.length;i++){
+    var u=+bl[i].getAttribute('data-u')||1;
+    bl[i].style.height=(u*h-3)+'px';
+  }
 }
 
 function cizOzet(){
@@ -1016,10 +1068,12 @@ function stil(){
 'table.pg-iz{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed;min-width:660px}',
 'table.pg-iz th{position:sticky;top:0;z-index:5;background:var(--lacivert,#03182B);color:#fff;font-size:11px;font-weight:700;letter-spacing:.04em;padding:7px 3px;text-align:center}',
 'table.pg-iz th i{display:block;font-size:8.5px;opacity:.6;font-weight:400;font-style:normal}',
-'table.pg-iz th.sa{width:56px;left:0;z-index:6}',
-'table.pg-iz td.sa{position:sticky;left:0;z-index:4;background:var(--panel);font-family:var(--mono);font-size:10px;color:var(--ink-3);text-align:right;padding-right:6px;border-right:1px solid var(--line);white-space:nowrap}',
-'table.pg-iz td.sa.tam{color:var(--ink-2);font-weight:700}',
-'td.pg-h{height:21px;border-bottom:1px solid var(--pg-cizgi);border-right:1px solid var(--pg-cizgi);position:relative;background:var(--panel);padding:0}',
+'table.pg-iz th.sa{width:64px;left:0;z-index:6}',
+/* Saat sütunu okunur olmalı — 10px punto ile hangi satırda olduğunu
+   görmek için tabloya yaklaşmak gerekiyordu. */
+'table.pg-iz td.sa{position:sticky;left:0;z-index:4;background:var(--panel);font-family:var(--mono);font-size:12.5px;color:var(--ink-3);text-align:right;padding-right:8px;border-right:1px solid var(--line);white-space:nowrap;letter-spacing:-.02em}',
+'table.pg-iz td.sa.tam{color:var(--ink);font-weight:700;font-size:13.5px}',
+'td.pg-h{height:26px;border-bottom:1px solid var(--pg-cizgi);border-right:1px solid var(--pg-cizgi);position:relative;background:var(--panel);padding:0}',
 'td.pg-h.kapali{background:repeating-linear-gradient(45deg,var(--paper),var(--paper) 5px,var(--panel) 5px,var(--panel) 10px)}',
 'td.pg-h.hedef{background:var(--accent-soft)!important;box-shadow:inset 0 0 0 2px var(--accent)}',
 'td.pg-h.gecersiz{background:var(--bad-bg)!important}',
@@ -1034,7 +1088,9 @@ function stil(){
 '.pg-blok .bk{font-size:10.5px;font-weight:650;line-height:1.2;margin-top:1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
 '.pg-blok .bs{font-size:9px;font-family:var(--mono);opacity:.85;margin-top:1px}',
 '.pg-blok.soru{background-image:repeating-linear-gradient(135deg,transparent,transparent 6px,rgba(255,255,255,.16) 6px,rgba(255,255,255,.16) 12px)}',
-'.pg-blok.kisa{padding:1px 5px}.pg-blok.kisa .bk{-webkit-line-clamp:1;font-size:10px}.pg-blok.kisa .bs{display:none}',
+'.pg-blok.kisa{padding:1px 5px}',
+'.pg-blok.kisa .bd{font-size:8.5px}',
+'.pg-blok.kisa .bk{-webkit-line-clamp:1;font-size:10px;margin-top:0}',
 '.pg-blok.kilitli{box-shadow:0 0 0 2px rgba(255,255,255,.55),0 1px 3px rgba(0,0,0,.2)}',
 /* Devreden iş: sol kenarda kalın turuncu şerit. Kırmızı değil — geciken
    ödev bir hata değil, bir kuyruk; ama görünmesi şart. */
@@ -1045,7 +1101,7 @@ function stil(){
 
 '#pg-hayalet{position:fixed;pointer-events:none;z-index:9999;opacity:.92;border-radius:6px;padding:4px 8px;color:#fff;font-size:11px;font-weight:650;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none}',
 
-'.pg-yuk{display:grid;grid-template-columns:56px repeat(6,1fr);border-bottom:1px solid var(--pg-cizgi)}',
+'.pg-yuk{display:grid;grid-template-columns:64px repeat(7,1fr);border-bottom:1px solid var(--pg-cizgi)}',
 '.pg-yuk>div{padding:7px 3px;text-align:center;font-size:11px;border-right:1px solid var(--pg-cizgi)}',
 '.pg-yuk .et{text-align:right;padding-right:6px;color:var(--ink-3);font-size:10px;border-right:1px solid var(--line)}',
 '.pg-yuk .cb{height:5px;border-radius:3px;background:var(--pg-cizgi);margin-top:4px;overflow:hidden}',
