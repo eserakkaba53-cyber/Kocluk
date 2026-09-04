@@ -804,6 +804,9 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
 <script src="program.js?v=20260904c"></script>
+<!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
+     Sürüm etiketi değişince burayı da artır. -->
+<script src="deneme.js?v=20260904a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -1343,7 +1346,9 @@ function applyKarne(){
     log.push(`${subName(sk)}: ${B.d} doğru / ${B.y} yanlış → ${n1(B.d-B.y/4)} net`);
     B.konu.forEach(k=>{
       const [konu,unite]=konuEsle(sk,k.ad);
-      PENDING_AN.push({sub:sk,konu,unite,y:k.y,b:k.b});
+      /* ss/d de aktarılır — "bu konudan kaç soru çıktı" ve "doğru oranı"
+         ancak bu ikisiyle hesaplanabiliyor. */
+      PENDING_AN.push({sub:sk,konu,unite,ss:k.ss||0,d:k.d||0,y:k.y,b:k.b});
     });
   }
 
@@ -1496,13 +1501,15 @@ function parseKonuTablo(text){
       const tm=raw.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
       const art=tm?konuSatiri('Adı okunamayan konu'+tm[1]):null;
       if(art&&art.ss>0&&art.ss<=5){ akt.ss+=art.ss; akt.d+=art.d; akt.y+=art.y;
-        if(art.y||art.b) akt.konu.push({ad:'(adı okunamayan konu)',y:art.y,b:art.b}); }
+        /* ss (o konudan çıkan soru) ve d (doğru) DE taşınır. Eskiden yalnız
+           y/b saklanıyordu; konu başına doğru ORANI hesaplanamıyordu. */
+        if(art.y||art.b) akt.konu.push({ad:'(adı okunamayan konu)',ss:art.ss,d:art.d,y:art.y,b:art.b}); }
       return;
     }
     const k=konuSatiri(raw);
     if(!k||!akt) return;
     akt.ss+=k.ss; akt.d+=k.d; akt.y+=k.y;
-    if(k.y||k.b) akt.konu.push({ad:k.ad,y:k.y,b:k.b});
+    if(k.y||k.b) akt.konu.push({ad:k.ad,ss:k.ss,d:k.d,y:k.y,b:k.b});
   });
   const dolu={}; bloklar.forEach(b=>{ if(b.d||b.y) dolu[b.key]=true; });
   const blok={};
@@ -3275,9 +3282,12 @@ function anEkle(){
   if(serbest) konu=serbest;
   if(!konu){alert('Konu seç ya da karnedeki adını yaz.');return;}
   e.an=e.an||[];
+  const ssEl=document.getElementById('anSS');
+  const ss=ssEl?(parseInt(ssEl.value,10)||0):0;
   e.an.push({sub:sk,konu,unite:(uniteOf[sk]||{})[konu]||'Listede yok (karne adı)',
-    tip:document.getElementById('anT').value,adet:+document.getElementById('anA').value||1});
+    tip:document.getElementById('anT').value,adet:+document.getElementById('anA').value||1,ss:ss});
   document.getElementById('anFree').value='';
+  if(ssEl) ssEl.value='';
   save(); render();
 }
 function anSil(i){const st=cur(),e=st.exams.find(x=>x.id===ANEX); e.an.splice(i,1); save(); render();}
@@ -3335,32 +3345,17 @@ function anGoster(st,e){
   }).join('');
 }
 
-/* tüm denemelerde tekrar eden yanlış konular */
+/* Zayıf konular — artık ORTAK modülden (deneme.js), öğrenci paneliyle
+   birebir aynı hesap ve aynı görünüm.
+   DEĞİŞİKLİK (4 Eyl 2026): ölçüt "en az 2 denemede çıktı" değil, artık
+   "doğru oranı %50'nin altında". Ayrıca konudan kaç soru çıktığı da
+   gösteriliyor. Eskisi, çok çıkan ama iyi yapılan konuları da listeliyordu. */
 function anTekrar(st){
-  const agg={};
-  st.exams.forEach(e=>(e.an||[]).forEach(a=>{
-    const k=a.sub+'||'+a.konu;
-    const x=agg[k]=agg[k]||{sub:a.sub,unite:a.unite,konu:a.konu,y:0,b:0,den:new Set()};
-    x[a.tip]+=a.adet; x.den.add(e.id);
-  }));
-  const rows=Object.values(agg).map(r=>({...r,kac:r.den.size,tot:r.y+r.b}))
-    .filter(r=>r.kac>=2).sort((a,b)=>b.kac-a.kac||b.tot-a.tot);
-  if(!rows.length) return '';
-  return `<div class="card"><h2>Tekrar eden konular — en az 2 denemede çıktı (${rows.length})</h2>
-  <div class="body" style="padding:0;max-height:420px;overflow:auto">
-  <table><thead><tr><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Kaç denemede</th><th class="num">Yanlış</th><th class="num">Boş</th><th>Konu durumu</th></tr></thead><tbody>
-  ${rows.map(r=>{
-    const d=(st.topics[r.sub]||{})[r.konu];
-    const et=['Görülmedi','İşleniyor','Bitti','Eksik'][d||0];
-    return `<tr><td>${subName(r.sub)}</td><td style="color:var(--ink-3);font-size:12px">${esc(r.unite)}</td>
-      <td><b>${esc(r.konu)}</b></td><td class="num" style="font-weight:650">${r.kac}</td>
-      <td class="num" style="color:var(--bad)">${r.y||'·'}</td><td class="num" style="color:var(--warn)">${r.b||'·'}</td>
-      <td><span class="pill s${d===2?1:d===3?3:d===1?2:0}">${et}</span></td></tr>`;
-  }).join('')}
-  </tbody></table></div>
-  <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint"><b>"Bitti" işaretli ama üç denemede yanlış çıkan konu, bitmemiştir.</b> Konular sekmesinden <b>Eksik</b>'e çek — ödev listesine geri döner. Sistemin kendi kendini düzelttiği yer burasıdır.</div>
-  </div></div>`;
+  if(typeof SINAVANALIZ==='undefined') return '';
+  return SINAVANALIZ.zayifKart(st.exams||[], {
+    dersAdi: subName,
+    durumOf: (sub,konu)=>((st.topics||{})[sub]||{})[konu]||0
+  });
 }
 
 /* ================= KOÇ KOKPİTİ — tüm öğrenciler, risk sırası ================= */
@@ -4216,6 +4211,9 @@ function vDeneme(st){
         ${konularA.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>
       <div style="max-width:120px"><label class="f">Durum</label><select id="anT"><option value="y">Yanlış</option><option value="b">Boş</option></select></div>
       <div style="max-width:90px"><label class="f">Adet</label><input type="number" id="anA" min="1" value="1"></div>
+      <div style="max-width:120px"><label class="f">Konudan soru</label>
+        <input type="number" id="anSS" min="0" placeholder="—"
+          title="Bu konudan denemede çıkan TOPLAM soru sayısı. Doğru oranı bununla hesaplanır; boş bırakırsan konu 'oran bilinmiyor' grubuna düşer."></div>
     </div>
     <div class="fr"><div style="flex:1"><label class="f">Ya da karnedeki adıyla yaz (listede yoksa)</label>
       <input type="text" id="anFree" placeholder="ör. Modüler aritmetik — karne böyle yazmışsa"></div></div>
@@ -4290,8 +4288,11 @@ function saveExam(){
   if(!Object.keys(n).length){alert('En az bir derse doğru/yanlış gir.');return;}
   const an=[];
   PENDING_AN.forEach(r=>{
-    if(r.y) an.push({sub:r.sub,konu:r.konu,unite:r.unite,tip:'y',adet:r.y});
-    if(r.b) an.push({sub:r.sub,konu:r.konu,unite:r.unite,tip:'b',adet:r.b});
+    /* ss = o konudan çıkan toplam soru. Aynı konunun 'y' ve 'b' satırları
+       AYNI ss'i taşır; toplarken çift saymamak için konu bazında bir kez
+       alınır (bkz. tekrarEdenKonular). */
+    if(r.y) an.push({sub:r.sub,konu:r.konu,unite:r.unite,tip:'y',adet:r.y,ss:r.ss||0});
+    if(r.b) an.push({sub:r.sub,konu:r.konu,unite:r.unite,tip:'b',adet:r.b,ss:r.ss||0});
   });
   st.exams.push({id:uid(),date:document.getElementById('exD').value||today(),name:document.getElementById('exN').value.trim(),n,an});
   PENDING_AN=[];
