@@ -447,6 +447,23 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .vidbtn:hover{background:var(--accent-soft);border-color:var(--accent)}
 .vd-overlay{position:fixed;inset:0;background:rgba(9,20,26,.5);z-index:80}
 .vd-drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:94vw;background:var(--panel);z-index:81;box-shadow:-8px 0 24px -12px rgba(0,0,0,.4);display:flex;flex-direction:column;color:var(--ink)}
+/* ── ÇEKMECE GÖRSEL PENCEREYE OTURUR ──
+   <meta viewport width=1280> yüzünden mobilde position:fixed, GÖRSEL pencereyi
+   değil 1280 px'lik YERLEŞİM penceresini takip ediyordu: kullanıcı yakınlaştırıp
+   aşağı kaydırdığında çekmece ekranın üstünde kalıyor, "yukarı çıkmak" gerekiyordu.
+   Artık kapsayıcı JS ile o an GERÇEKTEN görünen alana oturtuluyor; içindekiler de
+   ona göre konumlanıyor. vw yerine % kullanılır — vw yine 1280'i baz alırdı. */
+#vidDrawerWrap{position:fixed;z-index:80}
+#vidDrawerWrap .vd-overlay{position:absolute;inset:0;z-index:0}
+#vidDrawerWrap .vd-drawer{position:absolute;top:0;right:0;bottom:0;max-width:100%;z-index:1}
+/* Ödev adı = konu anlatımı videosunu açan düğme. Metin gibi görünür ama
+   tıklanabilir olduğu noktalı alt çizgi ve ▶ ile belli olur; dokunmatikte
+   imleç ipucu olmadığı için görsel işaret şart. */
+.konuvid{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;
+  cursor:pointer;text-align:left;text-decoration:underline;text-decoration-style:dotted;
+  text-underline-offset:3px;text-decoration-color:var(--accent);-webkit-tap-highlight-color:transparent}
+.konuvid:hover,.konuvid:focus-visible{color:var(--accent)}
+.konuvid .kv-ic{font-size:.76em;margin-left:5px;color:var(--accent);vertical-align:1px;text-decoration:none;display:inline-block}
 .vd-head{background:var(--accent);color:var(--uz-accent);padding:16px 18px;position:relative}
 .vd-body{padding:18px;overflow:auto;flex:1}
 .vd-x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);border:0;color:#fff;width:30px;height:30px;border-radius:6px;font-size:16px;cursor:pointer}
@@ -753,7 +770,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260904"></script>
+<script src="program.js?v=20260904b"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -1852,7 +1869,7 @@ function odevSatiri(t,devreden){
   return `<div style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
     <div style="font-size:11px;color:${devreden?'var(--warn-ink)':'var(--ink-3)'};font-family:var(--mono)">
       ${devreden?`⚠ ${hf} hafta önce verildi · `:''}${t.date} · ${subName(t.sub)}${(t.konu||t.q)?' · '+[t.konu?'tahmini '+sa(sureOf(t.sub,t.konu)):null, t.q?t.q+' soru':null].filter(Boolean).join(' + '):''}</div>
-    <div style="font-weight:600;margin:3px 0 8px">${esc(t.konu||'—')}</div>
+    <div style="font-weight:600;margin:3px 0 8px">${konuVidEtiket(t)}</div>
     ${t.txt&&t.txt!=='Sabit haftalık rutin'?`<div style="font-size:13px;color:var(--ink-2);margin-bottom:8px">${esc(t.txt)}</div>`:''}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="seg">${[1,2,3].map(s=>`<button data-v="${s}" class="${t.s===s?'on':''}"
@@ -2270,11 +2287,51 @@ function karsilamaKontrol(){
   let seen=false; try{ seen=!!localStorage.getItem('biyoser_karsilama_ogr'); }catch(e){}
   if(!seen) karsilamaAc();
 }
+/* ═══════════════════════════════════════════════════════════════════
+   GÖRSEL PENCEREYE SABİTLE  (4 Eyl 2026)
+   Sayfada <meta name="viewport" content="width=1280"> var. Bu, mobilde
+   YERLEŞİM penceresini 1280 px'e sabitler; tarayıcı onu küçültüp gösterir.
+   Kullanıcı yakınlaştırdığında GÖRSEL pencere (gerçekten gördüğü alan) o
+   1280'lik alanın küçük bir parçası olur — ama position:fixed hâlâ
+   YERLEŞİM penceresine göre konumlanır. Sonuç: çekmece/pencere ekranın
+   dışında, yukarıda açılır ve kullanıcı "yukarı çıkmak" zorunda kalır.
+
+   Bu fonksiyon katmanı o an gerçekten görünen dikdörtgene oturtur ve
+   kullanıcı kaydırıp yakınlaştırdıkça takip eder. visualViewport
+   desteklenmiyorsa (eski tarayıcı) eski davranışa döner.
+   ═══════════════════════════════════════════════════════════════════ */
+function gorunureSabitle(el){
+  var vv=window.visualViewport;
+  function yerlestir(){
+    if(vv){
+      el.style.left   = vv.offsetLeft+'px';
+      el.style.top    = vv.offsetTop +'px';
+      el.style.width  = vv.width  +'px';
+      el.style.height = vv.height +'px';
+    }else{
+      el.style.left='0'; el.style.top='0';
+      el.style.width='100%'; el.style.height='100%';
+    }
+  }
+  yerlestir();
+  if(vv){
+    vv.addEventListener('resize', yerlestir);
+    vv.addEventListener('scroll', yerlestir);
+    el._vvBirak=function(){
+      vv.removeEventListener('resize', yerlestir);
+      vv.removeEventListener('scroll', yerlestir);
+    };
+  }
+  return el;
+}
+function gorunurBirak(el){ try{ if(el && el._vvBirak) el._vvBirak(); }catch(e){} }
+
 /* ---------- KONU ANLATIMI VİDEO ÇEKMECESİ ----------
    Panel içi çekmece; seçilmiş video yoksa YouTube aramasını yeni sekmede açar. */
 function konuVideoEsc(e){ if(e.key==='Escape') konuVideoKapat(); }
 function konuVideoKapat(){
-  const w=document.getElementById('vidDrawerWrap'); if(w) w.remove();
+  const w=document.getElementById('vidDrawerWrap');
+  if(w){ gorunurBirak(w); w.remove(); }
   document.removeEventListener('keydown', konuVideoEsc);
 }
 function konuVideoAc(sk, konu){
@@ -2302,7 +2359,18 @@ function konuVideoAc(sk, konu){
       '</div>'+
     '</div>';
   document.body.appendChild(wrap);
+  gorunureSabitle(wrap);            // her durumda görünen alanda açılsın
   document.addEventListener('keydown', konuVideoEsc);
+}
+/* Ödev adını, konu anlatımı videosunu açan düğmeye çevirir.
+   Rutinde ve konusuz ödevde düz metin döner — "Sabit haftalık rutin" için
+   YouTube araması açmak anlamsız olurdu. */
+function konuVidEtiket(t){
+  const k=(t&&t.konu||'').trim();
+  if(!k || !t.sub || t.rutin) return esc((t&&t.konu)||'—');
+  return '<button type="button" class="konuvid" title="Konu anlatımı videolarını aç" '+
+    'onclick="konuVideoAc(\''+esc(t.sub)+'\','+JSON.stringify(k).replace(/"/g,'&quot;')+')">'+
+    esc(k)+'<span class="kv-ic">▶</span></button>';
 }
 function dersOzet(sk){
   const m=D.topics[sk]||{}; let top=0,bit=0,isl=0,eks=0;
@@ -3793,8 +3861,11 @@ function sunucuKaydet(){
   SKUYRUK=setTimeout(async()=>{
     SKUYRUK=null; SBEKLEYEN=0;
     try{ SYAZ='y'; sYaz(); await ogrSunucuyaYaz(); SYAZ='ok'; sYaz();
+      kayitUyariKapat(); KU_SUS=0;     // yazma tuttu: uyarı kalksın, susturma sıfırlansın
       setTimeout(()=>{ if(SYAZ==='ok'){SYAZ='';sYaz();} },1600);
-    }catch(e){ SYAZ='h|'+(e.message||e); sYaz(); }
+    }catch(e){ SYAZ='h|'+(e.message||e); sYaz();
+      /* Köşedeki yazı yetmiyor — ekranı kapatan pencereyi aç. */
+      kayitUyariGoster(e.message||e, sunucuKaydet); }
   }, gecikme);
 }
 /* SAYFA KAPANIRKEN KURTARMA (4 Eyl 2026) — öğrenci panelinde hiçbir kapanış
@@ -3821,6 +3892,83 @@ function sYaz(){
     : SYAZ==='ok'?'<span style="color:#7FD1A8">✓ kaydedildi</span>'
     : SYAZ.startsWith('h|')?'<span style="color:#F0A79C">⚠ kaydedilemedi</span>' : '';
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   KAYIT BAŞARISIZ UYARISI  (4 Eyl 2026)  — koç panelindekinin AYNISI.
+   Köşedeki küçük "⚠ kaydedilemedi" yazısını öğrenci görmüyordu: ödevlerini
+   işaretlemeye devam ediyor, hepsinin kaydedildiğini sanıyor, ertesi gün
+   hiçbirinin görünmediğini fark ediyordu. Artık ekranı kapatan pencere çıkar.
+
+   NEDEN BİRİNCİL DÜĞME "YENİLE" DEĞİL: kayıt zaten olmadığı için sayfayı
+   yenilemek o değişikliği KALICI olarak siler. Önce tekrar denenir; sorun
+   geçiciyse (mobilde sık olan kısa bağlantı kopması) veri kurtulur.
+   Yenileme ikinci seçenek ve ne kaybedileceğini söyleyip onay ister.
+
+   Pencere document.body'ye eklenir — render() yalnız #view ve #tabs'ı
+   ezdiği için uyarı ekran tazelenince kaybolmaz.
+   ═══════════════════════════════════════════════════════════════════ */
+var KU_TEKRAR=null, KU_SUS=0;
+function kuEsc(x){ return String(x).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function kayitUyariGoster(sebep, tekrarDene){
+  if(tekrarDene) KU_TEKRAR=tekrarDene;
+  /* "Şimdilik kapat" denmişse 45 sn boyunca tekrar açılmaz — çevrimdışıyken
+     her denemede pencere fırlatmak öğrenciyi panelden atar. */
+  if(Date.now() < KU_SUS) return;
+  var k=document.getElementById('kayitUyariKat');
+  if(!k){
+    k=document.createElement('div'); k.id='kayitUyariKat';
+    k.setAttribute('role','alertdialog'); k.setAttribute('aria-modal','true');
+    k.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;z-index:99999;'+
+      'display:flex;align-items:center;justify-content:center;padding:18px;'+
+      'box-sizing:border-box;background:rgba(0,0,0,.55)';
+    document.body.appendChild(k);
+    /* Video çekmecesiyle aynı kusur: mobilde yakınlaştırılmışken position:fixed
+       görünen alanı takip etmiyor. Uyarı penceresinin görülmemesi, uyarının
+       hiç olmamasıyla aynı şey — o yüzden burada da sabitliyoruz. */
+    gorunureSabitle(k);
+  }
+  var s=(sebep==null?'':String(sebep)).slice(0,300);
+  k.innerHTML=
+    '<div style="max-width:440px;width:100%;background:var(--panel,#fff);color:var(--ink,#1a1a1a);'+
+      'border:1px solid var(--line,#ddd);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.4);'+
+      'font-family:var(--sans,system-ui,sans-serif);overflow:hidden">'+
+      '<div style="padding:15px 18px;background:var(--bad-bg,#fdecea);color:var(--bad-ink,#8a1c11);'+
+        'font-weight:700;font-size:15.5px;border-bottom:1px solid var(--line,#ddd)">'+
+        '⚠ Son işlemin kaydedilmedi</div>'+
+      '<div style="padding:16px 18px;font-size:14px;line-height:1.55;color:var(--ink-2,#444)">'+
+        'Yaptığın son değişiklik sunucuya yazılamadı. Ekranda görünüyor ama '+
+        '<b style="color:var(--ink,#1a1a1a)">kayıtlı değil</b> — sayfayı şimdi kapatırsan kaybolur.'+
+        (s?'<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--paper,#f6f6f6);'+
+           'border:1px solid var(--line,#ddd);font-family:var(--mono,monospace);font-size:12px;'+
+           'color:var(--ink-3,#666);word-break:break-word">'+kuEsc(s)+'</div>':'')+
+      '</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 14px">'+
+        '<button type="button" onclick="kayitUyariTekrar()" style="flex:1;min-width:132px;padding:11px 14px;'+
+          'border:0;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;'+
+          'background:var(--accent,#2b6cb0);color:#fff">Tekrar dene</button>'+
+        '<button type="button" onclick="kayitUyariYenile()" style="flex:1;min-width:132px;padding:11px 14px;'+
+          'border:1px solid var(--line,#ddd);border-radius:10px;cursor:pointer;font-size:14px;'+
+          'background:transparent;color:var(--ink-2,#444)">Sayfayı yenile</button>'+
+        '<button type="button" onclick="kayitUyariKapat(true)" style="width:100%;padding:9px;border:0;'+
+          'background:transparent;color:var(--ink-3,#666);cursor:pointer;font-size:13px;'+
+          'text-decoration:underline">Şimdilik kapat, çalışmaya devam et</button>'+
+      '</div></div>';
+}
+function kayitUyariKapat(elle){
+  var k=document.getElementById('kayitUyariKat');
+  if(k&&k.parentNode){ gorunurBirak(k); k.parentNode.removeChild(k); }
+  if(elle===true) KU_SUS=Date.now()+45000;
+}
+function kayitUyariTekrar(){
+  kayitUyariKapat(); KU_SUS=0;
+  try{ if(KU_TEKRAR) KU_TEKRAR(); }catch(e){}
+}
+function kayitUyariYenile(){
+  if(!confirm('Sayfa yenilenecek.\n\nKaydedilemeyen son değişikliğin KALICI olarak silinecek.\nÖnce "Tekrar dene" demeni öneririm.\n\nYine de yenilensin mi?')) return;
+  location.reload();
+}
+
 async function sbCikisYap(){
   if(!confirm('Çıkış yapılacak. Verilerin öğretmeninin sisteminde durur, tekrar giriş yapınca gelir.\nDevam?')) return;
   sbCikis(); OGRID=null; D=null; GMOD='giris'; GHATA=''; render();
