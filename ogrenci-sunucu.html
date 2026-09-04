@@ -958,6 +958,12 @@ async function ogrSunucudanOku(){
     tabanPuan:o.taban_puan||'', tabanSira:o.taban_sira||'', tabanYil:o.taban_yil||'',
     sinav:o.sinav_tarihi||'', dip:o.diploma_notu==null?'':o.diploma_notu,
     obp:o.obp==null?'':o.obp, yerlesti:!!o.yerlesti,
+    /* SENKRON BOŞLUĞU (4 Eyl 2026): haftalik_saat sütunu tabloda vardı ve koç
+       paneli onu hem okuyup hem yazıyordu; öğrenci paneli ise NE okuyordu NE
+       yazıyordu. Öğrencinin girdiği süre yalnız kendi tarayıcısında kalıyor,
+       koç göremiyor, cihaz değişince yok oluyordu. "Yetişir mi" hesaplarının
+       tamamı bu değere dayandığı için etkisi büyük. */
+    haftalikSaat:o.haftalik_saat==null?'':o.haftalik_saat,
     refNets:o.hedef_netler||{},
     kocTel:koc.telefon||'', url:koc.site_url||'', kopru:(koc.ayarlar&&koc.ayarlar.kopru)||'',
     sureler:(koc.ayarlar&&koc.ayarlar.sureler)||{},
@@ -1036,13 +1042,26 @@ async function ogrSunucuyaYaz(){
     if(D.dip!=='' && D.dip!=null) alan.diploma_notu=Number(D.dip);
     if(D.obp!=='' && D.obp!=null) alan.obp=Number(D.obp);
     alan.yerlesti=!!D.yerlesti;
+    /* Koç panelindekiyle AYNI kural (bkz. ogrenciYaz): boşsa null yazılır.
+       Eskiden bu alan hiç gönderilmiyordu — öğrencinin girdiği haftalık süre
+       sunucuya çıkmıyordu. */
+    alan.haftalik_saat = haftalikSaatSayi();
     if(Object.keys(alan).length) await sbGuncelle('ogrenciler','?id=eq.'+OGRID, alan);
-  } else if(D.dip!=='' || D.obp!=='' ){
+  } else if(D.dip!=='' || D.obp!=='' || (D.haftalikSaat!=='' && D.haftalikSaat!=null)){
     await sbGuncelle('ogrenciler','?id=eq.'+OGRID, {
       diploma_notu: D.dip===''||D.dip==null?null:Number(D.dip),
       obp: D.obp===''||D.obp==null?null:Number(D.obp),
-      yerlesti: !!D.yerlesti });
+      yerlesti: !!D.yerlesti,
+      haftalik_saat: haftalikSaatSayi() });
   }
+}
+
+/* Haftalık çalışma süresinin sunucuya yazılacak hâli. Koç panelindeki
+   ogrenciYaz ile birebir aynı kural: boş/geçersizse null. */
+function haftalikSaatSayi(){
+  if(!D) return null;
+  var n = parseInt(D.haftalikSaat, 10);
+  return (isNaN(n) || n <= 0) ? null : n;
 }
 
 /* ---------- öğretmene not ---------- */
