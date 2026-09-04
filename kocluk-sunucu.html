@@ -784,7 +784,9 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
 <script src="sunucu.js"></script>
-<script src="program.js"></script>
+<!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
+     kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
+<script src="program.js?v=20260904"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -2030,9 +2032,13 @@ async function sbCagri(yol, secenek){
     'Content-Type': 'application/json'
   };
   if(secenek.basliklar) for(var k in secenek.basliklar) bas[k]=secenek.basliklar[k];
+  /* keepalive: sayfa kapanırken program.js'in son yazması iptal edilmesin.
+     Yalnız kapanış anında açılır (window.KAPANIYOR); keepalive'ın 64 KB
+     gövde sınırı olduğu için normal akışta kullanılmaz. */
   var cevap = await fetch(SB.url.replace(/\/+$/,'') + yol, {
     method: secenek.method || 'GET',
     headers: bas,
+    keepalive: !!window.KAPANIYOR,
     body: secenek.body ? JSON.stringify(secenek.body) : undefined
   });
   var metin = await cevap.text();

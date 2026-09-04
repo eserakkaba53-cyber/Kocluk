@@ -520,15 +520,24 @@ function blokCakisiyor(b,g,d,haric){
    lisansı bitmiştir, hiçbir şey kaydolmaz ve panel bunu hiç söylemez —
    koç ertesi gün emeğinin yok olduğunu görür. Hata artık ekranda. */
 var kayitHatasi=null;
+/* AÇLIK KORUMASI (4 Eyl 2026) — koç panelindeki sunucuyaKaydet'te vardı,
+   burada yoktu. Her isaretle() 900 ms'lik sayacı sıfırdan başlatıyordu;
+   ızgarada sürükleyerek saat kapatmak ya da blokları arka arkaya taşımak
+   900 ms'den sık tetiklenince yazma hiç gitmiyordu. İlk bekleyen
+   değişiklikten 3 sn sonra gecikme sıfırlanır. */
+var kayitBekleyen=0;
 function isaretle(dal){
   kayitKuyruk[dal]=true;
+  var simdi=Date.now();
+  if(!kayitBekleyen) kayitBekleyen=simdi;
+  var gecikme=(simdi-kayitBekleyen>3000)?0:900;
   if(kayitSaat) clearTimeout(kayitSaat);
   /* Hangi kaydın hangi öğrenciye ait olduğu 900 ms sonra değişmiş olabilir
      (koç bu arada öğrenci değiştirir). Kaydı ŞU ANKİ hedefe kilitle,
      yoksa yazı yanlış öğrencinin kaydına gider. */
   var hedefKaydet=C.kaydet, hedefAnahtar=suAnahtar;
   kayitSaat=setTimeout(function(){
-    kayitSaat=null;
+    kayitSaat=null; kayitBekleyen=0;
     var k=kayitKuyruk; kayitKuyruk={};
     if(!hedefKaydet) return;
     var isler=[];
@@ -545,13 +554,18 @@ function isaretle(dal){
         if(window.console) console.warn('program kaydı:',e);
         if(suAnahtar===hedefAnahtar) ciz();
       });
-  }, 900);
+  }, gecikme);
 }
 /* Sayfa kapanırken bekleyen kayıt varsa hemen gönder — 900 ms'lik pencere
    içinde sekme kapatılırsa değişiklik kayboluyordu. */
 function bekleyeniHemenYaz(){
+  /* Bayrak EN BAŞTA kurulur: panellerin sbCagri'si bunu görüp fetch'e
+     keepalive ekler. keepalive olmadan tarayıcı, belgeyi yıkarken bu son
+     isteği iptal ediyor — yani kurtarma mekanizmasının kendisi çalışmıyordu.
+     Dinleyicilerin çalışma sırası garanti olmadığı için erken kurulmalı. */
+  try{ window.KAPANIYOR=true; }catch(e){}
   if(!kayitSaat) return;
-  clearTimeout(kayitSaat); kayitSaat=null;
+  clearTimeout(kayitSaat); kayitSaat=null; kayitBekleyen=0;
   var k=kayitKuyruk; kayitKuyruk={};
   if(!C.kaydet) return;
   try{
