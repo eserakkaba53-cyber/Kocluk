@@ -545,14 +545,26 @@ function isaretle(dal){
       if(k.kapali && hedefKaydet.kapali) isler.push(hedefKaydet.kapali(disaKapali()));
       if(k.bloklar && hedefKaydet.bloklar) isler.push(hedefKaydet.bloklar(disaBloklar()));
     }catch(e){ isler.push(Promise.reject(e)); }
+    /* Yeniden deneme için hangi dalların yazıldığını sakla — .catch anında
+       kayitKuyruk çoktan boşaltılmış olur. */
+    var yazilanDallar=Object.keys(k);
     Promise.all(isler.map(function(x){ return Promise.resolve(x); }))
       .then(function(){
         if(kayitHatasi){ kayitHatasi=null; if(suAnahtar===hedefAnahtar) ciz(); }
+        /* Yazma tuttu: paneldeki uyarı penceresi varsa kapansın. */
+        if(typeof window.kayitUyariKapat==='function') window.kayitUyariKapat();
       })
       .catch(function(e){
         kayitHatasi = (e && e.message) ? String(e.message) : 'Sunucuya yazılamadı.';
         if(window.console) console.warn('program kaydı:',e);
         if(suAnahtar===hedefAnahtar) ciz();
+        /* Izgaranın üstündeki kırmızı şerit tek başına yetmiyordu — koç
+           blokları sürüklemeye devam edip hepsinin kaydedildiğini sanıyordu.
+           Panelde uyarı penceresi varsa onu da aç. */
+        if(typeof window.kayitUyariGoster==='function')
+          window.kayitUyariGoster(kayitHatasi, function(){
+            yazilanDallar.forEach(function(d){ isaretle(d); });
+          });
       });
   }, gecikme);
 }
@@ -713,7 +725,10 @@ function ciz(){
            (kocMu()?'':' salt')+'" data-b="'+esc(b.id)+'" data-u="'+b.uzunluk+
            '" style="height:'+yuk+'px;background:'+renk+'" title="'+
            esc(adOf(b.sub)+' — '+b.konu+' ('+sa(b.dk)+')')+
-           (cak[b.id]?' · KAPALI SAATE DENK GELİYOR':'')+'">'+
+           (cak[b.id]?' · KAPALI SAATE DENK GELİYOR':'')+
+           /* Tıklamanın video açtığını kullanıcı bilmeli — tek ipucu imleç
+              olamaz, dokunmatikte imleç yok. İpucu title'a eklenir. */
+           ' · ▶ Tıkla: konu anlatımı videoları'+'">'+
            (cak[b.id]?'<span class="pg-kil">!</span>':b.kilit&&kocMu()?'<span class="pg-kil">🔒</span>':'')+
            '<div class="bd">'+esc(etiket)+'</div>'+
            '<div class="bk">'+esc(b.konu)+'</div>'+
@@ -904,6 +919,12 @@ function cizAlt(){
    ETKİLEŞİM — pointer olayları (fare + dokunma tek yol)
    ═══════════════════════════════════════════════════════════ */
 var boyaDurum=null, surukBlok=null, surukBek=null, baglandi=false;
+/* Blok TIKLAMASI ile SÜRÜKLEMESİNİ ayırmak için basış konumu.
+   Koçta blok sürüklenebiliyor; parmak/fare 8 px'den az kaydıysa bu bir
+   tıklamadır ve konunun video aramasını açar. Öğrencide bloklar zaten
+   sürüklenmez, orada her basış tıklamadır. */
+var tikBas=null;
+var TIK_ESIK=8;
 
 function hayalet(){
   var h=document.getElementById('pg-hayalet');
@@ -966,12 +987,14 @@ function bagla(){
       ciz(); return;
     }
 
-    /* bekleyen bloğu sürükle (yalnız koç) */
+    /* bekleyen bloğu sürükle (yalnız koç) — tıklama takibi HER ROLDE */
     var bek=e.target.closest('[data-bek]');
-    if(bek && kocMu()){
-      surukBek=bekleyenler.filter(function(x){ return x.id===bek.getAttribute('data-bek'); })[0];
-      if(surukBek){
-        hayaletGoster(e,renkOf(surukBek.sub),surukBek.konu+' · '+sa(surukBek.dk));
+    if(bek){
+      var bo=bekleyenler.filter(function(x){ return x.id===bek.getAttribute('data-bek'); })[0];
+      if(bo) tikBas={x:e.clientX,y:e.clientY,sub:bo.sub,konu:bo.konu};
+      if(bo && kocMu()){
+        surukBek=bo;
+        hayaletGoster(e,renkOf(bo.sub),bo.konu+' · '+sa(bo.dk));
         e.preventDefault();
       }
       return;
@@ -979,6 +1002,14 @@ function bagla(){
 
     var blokEl=e.target.closest('.pg-blok');
     var td=e.target.closest('td.pg-h');
+
+    /* Bloğa basıldı: konuyu sakla. Sürüklenmezse pointerup bunu tıklama
+       sayıp video aramasını açar. Boya modunda kapalı — orada basış
+       saat kapatmak içindir. */
+    if(blokEl && !boyaAcik){
+      var bt=bloklar.filter(function(x){ return x.id===blokEl.getAttribute('data-b'); })[0];
+      if(bt) tikBas={x:e.clientX,y:e.clientY,sub:bt.sub,konu:bt.konu};
+    }
 
     if(blokEl && kocMu() && !boyaAcik){
       var b=bloklar.filter(function(x){ return x.id===blokEl.getAttribute('data-b'); })[0];
@@ -1017,6 +1048,21 @@ function bagla(){
   });
 
   document.addEventListener('pointerup', function(e){
+    /* ── TIKLAMA → KONU ANLATIMI VİDEOSU ──
+       Basıştan beri 8 px'den az kaydıysa bu sürükleme değil, tıklamadır.
+       Koçta sürükleme başlamış olabilir; yer değişmediği için iptal edilir. */
+    var tb=tikBas; tikBas=null;
+    if(tb && !boyaDurum &&
+       Math.abs(e.clientX-tb.x)<TIK_ESIK && Math.abs(e.clientY-tb.y)<TIK_ESIK){
+      if(surukBlok || surukBek){ surukBlok=null; surukBek=null; hayaletGizle(); ciz(); }
+      var kn=(tb.konu||'').trim();
+      /* Rutinlerin ve konusuz blokların video araması anlamsız. */
+      if(tb.sub && kn && kn!=='—' && kn!=='Rutin' &&
+         typeof window.konuVideoAc==='function'){
+        window.konuVideoAc(tb.sub, kn);
+      }
+      return;
+    }
     if(boyaDurum){ boyaDurum=null; isaretle('kapali'); ciz(); return; }
     if(!surukBlok && !surukBek) return;
 
@@ -1126,7 +1172,9 @@ function stil(){
 'tr.pg-katli td{height:26px;background:var(--paper);text-align:center;font-size:11px;color:var(--ink-3);cursor:pointer;border-bottom:1px solid var(--line);font-weight:600}',
 
 '.pg-blok{position:absolute;left:2px;right:2px;top:1px;border-radius:6px;padding:3px 6px;overflow:hidden;cursor:grab;z-index:2;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.16);border-left:4px solid rgba(0,0,0,.28);touch-action:none}',
-'.pg-blok.salt{cursor:default}',
+/* Öğrencide blok sürüklenmez ama TIKLANIR (konu anlatımı videosu açar),
+   o yüzden imleç "default" değil "pointer" olmalı. */
+'.pg-blok.salt{cursor:pointer}',
 '.pg-blok.suruk{opacity:.4}',
 '.pg-blok .bd{font-size:9px;font-weight:800;letter-spacing:.04em;opacity:.9;line-height:1.15;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
 '.pg-blok .bk{font-size:10.5px;font-weight:650;line-height:1.2;margin-top:1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
