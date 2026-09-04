@@ -1793,11 +1793,34 @@ function vProgram(){
   if(typeof PROG==='undefined')
     return '<div class="card"><h2>Programım</h2><div class="empty">Program bölümü yüklenemedi. Sayfayı yenile.</div></div>';
   const wk=weekKey(today());
-  const n=(D&&D.tasks?D.tasks.filter(t=>weekKey(t.date)===wk).length:0);
-  return '<div class="card"><h2>Haftalık programım — '+wk+' haftası'+
-    '<small>'+(n?'Bu haftanın '+n+' ödevi takvime yerleştirildi. ':'')+
-    'Müsait olmadığın saatleri kapat — koçun bunu görür ve programı ona göre günceller. '+
-    'Blokları sen taşıyamazsın.</small></h2>'+PROG.iskelet()+'</div>';
+  const solo=(typeof soloMu==='function' && soloMu());
+  /* Motorun GERÇEKTEN gördüğü sayı — devredenler dahil. Eskiden yalnız bu
+     haftanın tarihli ödevleri sayılıyordu; devreden iş varken bile "0"
+     yazabiliyordu. */
+  const n=progOdevleri(wk).length;
+
+  /* Alt metin role göre: koçu olan öğrenci blok taşıyamaz, koçsuz öğrenci
+     kendi koçudur ve taşıyabilir. Eskiden herkese "blokları sen
+     taşıyamazsın" deniyordu — solo öğrencide yanlış. */
+  const alt = n
+    ? 'Bu haftanın '+n+' ödevi takvime yerleştirildi. ' + (solo
+        ? 'Blokları sürükleyerek taşıyabilir, "Yeniden dağıt" ile baştan düzenleyebilirsin.'
+        : 'Müsait olmadığın saatleri kapat — koçun bunu görür ve programı ona göre günceller. Blokları sen taşıyamazsın.')
+    : (solo ? 'Takvim boş: henüz kabul edilmiş ödev yok.'
+            : 'Koçun bu hafta için henüz ödev vermemiş.');
+
+  /* Koçsuz öğrencide boş takvimin sebebi neredeyse her zaman "planı kabul
+     etmedim" oluyor. Kullanıcı sorunu BURADA görüyor ama çözümü başka
+     sekmede; sebebi burada da söylemek gerekiyor. */
+  const uyari = (solo && !n)
+    ? '<div class="flag bad" style="margin:0 0 12px"><span class="ic">!</span><span>'+
+      '<b>Dağıtılacak ödev yok — bu bir arıza değil.</b> '+
+      '<b>Ödevlerim</b> sekmesine git, <b>"Bu haftanın planı"</b> kartından planı kabul et; '+
+      'takvim o anda kendiliğinden dolar.</span></div>'
+    : '';
+
+  return uyari + '<div class="card"><h2>Haftalık programım — '+wk+' haftası'+
+    '<small>'+alt+'</small></h2>'+PROG.iskelet()+'</div>';
 }
 
 /* Panelin ödev kaydını motorun biçimine çevirir.
@@ -2221,6 +2244,39 @@ function tavsiyeHaftalikKart(){
   `);
 }
 
+/* ═══ KOÇSUZ ÖĞRENCİ — BU HAFTANIN ÖDEVİ KABUL EDİLDİ Mİ? ═══
+   Haftalık program ancak ODEV VARSA dağıtım yapar. Koçsuz öğrenci
+   "Bu haftanın planı" kartındaki kabul düğmesine basmazsa hiç ödev
+   oluşmuyor; Programım sekmesi "0 ödev" gösteriyor ve öğrenci bunu
+   sistemin arızası sanıyor. Sebebi tahmin etmesini bekleyemeyiz —
+   sekmenin en başında açıkça yazar. Koçu olan öğrencide hiç çıkmaz;
+   onun ödevini koç verir. */
+function soloKabulSeridi(wk){
+  if(typeof soloMu!=='function' || !soloMu() || !D) return '';
+  const tum=(D.tasks||[]).filter(t=>!t.rutin && t.konu);
+  const buHafta =tum.filter(t=>weekKey(t.date)===wk);
+  const devreden=tum.filter(t=>t.s!==1 && weekKey(t.date)<wk);
+
+  if(buHafta.length){
+    const dk=buHafta.reduce((a,t)=>a+Math.round(sureOf(t.sub,t.konu))
+                                    +Math.round(efektifKatsayi(t.sub,t.konu)*(t.q||0)),0);
+    return `<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
+      <b>Bu haftanın ödevlerini kabul ettin — ${buHafta.length} konu, tahmini ${sa(dk)}.</b>
+      <b>Programım</b> sekmesinde haftalık takvimine dağıtıldı.</span></div>`;
+  }
+  if(devreden.length){
+    return `<div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>
+      <b>Bu hafta için yeni ödev kabul etmedin.</b>
+      Takviminde yalnızca geçmiş haftalardan kalan <b>${devreden.length} konu</b> var.
+      Aşağıdaki <b>"Bu haftanın planı"</b> kartından kabul edersen bu haftanın konuları da eklenir.</span></div>`;
+  }
+  return `<div class="flag bad" style="margin-bottom:12px"><span class="ic">!</span><span>
+    <b>Bu haftanın ödevini henüz kabul etmedin.</b>
+    Aşağıdaki <b>"Bu haftanın planı"</b> kartına in ve planı kabul et.
+    <b>Kabul etmediğin sürece Programım sekmesi boş kalır</b> — sistem dağıtacak ödev bulamaz.
+    Ödev senin kabulünle oluşur; koçun olmadığı için kimse senin yerine veremez.</span></div>`;
+}
+
 function vOdev(){
   const wk=weekKey(today());
   /* SADECE BU HAFTANIN RUTİNLERİ. D.tasks rutinleri her hafta yeniden
@@ -2244,6 +2300,7 @@ function vOdev(){
   }
   return `
   ${yedekUyari()}
+  ${soloKabulSeridi(wk)}
   ${(_kalan!==null && _kalan<=7)?`<div class="flag ${_kalan<=2?'warn':'ok'}" style="margin-bottom:12px">
     <span class="ic">${_kalan<=2?'!':'i'}</span><span>
     <b>Deneme sürenin ${_kalan>0?_kalan+' günü kaldı.':'son günü.'}</b>
