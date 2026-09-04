@@ -771,6 +771,9 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
 <script src="program.js?v=20260904c"></script>
+<!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
+     Sürüm etiketi değişince burayı da artır. -->
+<script src="deneme.js?v=20260904a"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -1022,9 +1025,24 @@ async function ogrSunucuyaYaz(){
   if(yeniDen.length){
     yeniDen.forEach(function(e){ e.id=yeniKimlik(); });
     await sbYaz('denemeler', yeniDen.map(function(e){
+      /* konu_analiz eskiden HER ZAMAN boş yazılıyordu; öğrenci kendi
+         denemesine konu girse bile sunucuya çıkmıyordu. */
       return { id:e.id, ogrenci_id:OGRID, tarih:e.date, ad:e.name||'', tur:e.tur||'tyt',
-        netler:e.n||{}, konu_analiz:[] };
+        netler:e.n||{}, konu_analiz:e.an||[] };
     }), 'id');
+  }
+  /* MEVCUT denemelere eklenen konu analizi de yazılır — yoksa öğrencinin
+     kendi fark ettiği zayıf konu öğretmene hiç ulaşmaz. Yalnızca bu
+     oturumda DEĞİŞENLER gönderilir; dokunulmayan denemeye yazılmaz. */
+  if(ANDEGISTI.size){
+    var degisen=(D.exams||[]).filter(function(e){ return uuidMi(e.id) && ANDEGISTI.has(e.id); });
+    if(degisen.length){
+      await sbYaz('denemeler', degisen.map(function(e){
+        return { id:e.id, ogrenci_id:OGRID, tarih:e.date, ad:e.name||'', tur:e.tur||'tyt',
+          netler:e.n||{}, konu_analiz:e.an||[] };
+      }), 'id');
+      degisen.forEach(function(e){ ANDEGISTI.delete(e.id); });
+    }
   }
   /* hedef değişikliği */
   if(D.hedef){
@@ -2605,6 +2623,149 @@ function karneTemizle(){
 
 function setDTur(t){DTUR=t;render();setTimeout(karneDoldur,30);}
 const TURAD={tyt:'TYT denemesi',ayt:'AYT denemesi',brans:'Branş denemesi'};
+/* ═══ DENEME ANALİZİ — koç panelindekinin öğrenci karşılığı ═══
+   Koçta olan ama öğrencide olmayan üç görünüm buraya taşındı:
+   zayıf konular, son 3 deneme ders bazlı tablo, ders bazlı geçmiş tablosu
+   ve deneme başına konu analizi. Hesaplar koçunkiyle birebir aynı. */
+let OANEX=null, OAD='', OAU='';          // açık analiz: deneme / ders / ünite
+const ANDEGISTI=new Set();               // konu analizi değişen deneme kimlikleri
+
+function totalNet(e){ let t=0; for(const s in (e.n||{})) t+=net(e.n[s].d||0,e.n[s].y||0); return t; }
+function avgNets(k=3){
+  const out={},cnt={};
+  const ex=[...(D.exams||[])].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,k);
+  ex.forEach(e=>{ for(const s in (e.n||{})){
+    const v=net(e.n[s].d||0,e.n[s].y||0); out[s]=(out[s]||0)+v; cnt[s]=(cnt[s]||0)+1; } });
+  for(const s in out) out[s]=out[s]/cnt[s];
+  return {nets:out,count:ex.length};
+}
+function oaDers(){ const l=subs(D); if(!OAD||!l.find(x=>x[0]===OAD)) OAD=l[0][0]; return OAD; }
+function ogrAnAc(id){ OANEX=(OANEX===id?null:id); OAU=''; render(); }
+function ogrAnEkle(){
+  const e=(D.exams||[]).find(x=>x.id===OANEX); if(!e) return;
+  const sk=oaDers();
+  const serbest=(document.getElementById('oaFree')||{}).value||'';
+  let konu = serbest.trim() || (document.getElementById('oaK')||{}).value || '';
+  if(!konu){ alert('Konu seç ya da karnedeki adını yaz.'); return; }
+  const ss=parseInt((document.getElementById('oaSS')||{}).value,10)||0;
+  e.an=e.an||[];
+  /* kim:'ogrenci' → bu satırı öğrenci ekledi. Silme düğmesi YALNIZ bu
+     satırlarda çıkar; öğretmenin karneden girdiği analiz korunur. */
+  e.an.push({ sub:sk, konu,
+    unite:(uniteOf[sk]||{})[konu]||'Listede yok (karne adı)',
+    tip:(document.getElementById('oaT')||{}).value||'y',
+    adet:+((document.getElementById('oaA')||{}).value)||1,
+    ss:ss, kim:'ogrenci' });
+  ANDEGISTI.add(e.id);
+  if(document.getElementById('oaFree')) document.getElementById('oaFree').value='';
+  if(document.getElementById('oaSS'))   document.getElementById('oaSS').value='';
+  save(); render();
+}
+function ogrAnSil(i){
+  const e=(D.exams||[]).find(x=>x.id===OANEX); if(!e||!e.an) return;
+  if((e.an[i]||{}).kim!=='ogrenci'){ alert('Bunu öğretmenin girmiş, silemezsin.'); return; }
+  e.an.splice(i,1); ANDEGISTI.add(e.id); save(); render();
+}
+
+/* Zayıf konular kartı — koç panelindekiyle AYNI modül, aynı hesap.
+   Öğrenci koçun girdiği karne analizini zaten sunucudan alıyordu
+   (an:e.konu_analiz), ama hiç göstermiyordu. */
+function ogrZayifKart(){
+  if(typeof SINAVANALIZ==='undefined' || !D) return '';
+  return SINAVANALIZ.zayifKart(D.exams||[], {
+    dersAdi: subName,
+    durumOf: (sub,konu)=>((D.topics||{})[sub]||{})[konu]||0,
+    ipucu: '<b>"Bitti" dediğin ama doğru oranı düşük konu, bitmemiştir.</b> '+
+           'Konularım sekmesinden <b>Eksik</b>\'e çek — öğretmenin görür, konu ödev listene geri gelir.'
+  });
+}
+
+/* Son 3 deneme — ders bazında seyir / ortalama / hedef / fark.
+   Koç panelindeki tablonun aynısı; etiketler öğrenciye göre yazıldı. */
+function ogrSon3Kart(){
+  const list=subs(D);
+  const ex3=[...(D.exams||[])].filter(e=>e.tur!=='brans')
+    .sort((x,y)=>y.date.localeCompare(x.date)).slice(0,3).reverse();
+  if(!ex3.length) return '';
+  const a=avgNets(3), ref=(D.hedef&&D.hedef.refNets)||D.refNets||{};
+  const bl={TYT:list.filter(x=>x[0].startsWith('tyt_')),AYT:list.filter(x=>!x[0].startsWith('tyt_'))};
+  const sat=([k,nm])=>{
+    const c=a.nets[k], t=+ref[k]||0;
+    if(c===undefined&&!t) return '';
+    const d=(c===undefined||!t)?null:c-t;
+    const seri=ex3.map(e=>(e.n&&e.n[k])?n1(net(e.n[k].d||0,e.n[k].y||0)):'·').join(' → ');
+    return `<tr><td>${nm}</td><td class="num" style="color:var(--ink-3);font-size:12px">${seri}</td>
+      <td class="num" style="font-weight:600">${c===undefined?'—':n1(c)}</td>
+      <td class="num" style="color:var(--ink-3)">${t?n1(t):'—'}</td>
+      <td class="num" style="font-weight:650;color:${d===null?'var(--ink-3)':d<0?'var(--bad)':'var(--ok)'}">${d===null?'—':(d>0?'+':'')+n1(d)}</td></tr>`;};
+  return `<div class="card"><h2>Son ${ex3.length} deneme — ders bazında<small>Seyir, ortalama ve hedefe uzaklık.</small></h2>
+    <div class="body" style="padding:0;overflow:auto">
+    <table><thead><tr><th>Ders</th><th class="num">Seyir</th><th class="num">Ortalama</th><th class="num">Hedef</th><th class="num">Fark</th></tr></thead>
+    <tbody><tr><td colspan="5" style="background:var(--line-soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650">TYT</td></tr>
+    ${bl.TYT.map(sat).join('')}
+    <tr><td colspan="5" style="background:var(--line-soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650">AYT — ${trLabel(D.track)}</td></tr>
+    ${bl.AYT.map(sat).join('')}</tbody></table></div></div>`;
+}
+
+/* Seçili denemenin konu analizi — görüntüle ve kendi konunu ekle. */
+function ogrAnalizKart(){
+  const e=(D.exams||[]).find(x=>x.id===OANEX); if(!e) return '';
+  const list=subs(D), sk=oaDers();
+  const un=KONU[sk]||[];
+  if(OAU&&!un.find(u=>u[0]===OAU)) OAU='';
+  const ks = OAU ? (un.find(u=>u[0]===OAU)||['',[]])[1] : un.flatMap(u=>u[1]);
+  const an=e.an||[];
+  const liste = an.length
+    ? `<table><thead><tr><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Yanlış</th><th class="num">Boş</th><th class="num">Soru</th><th></th></tr></thead><tbody>
+       ${an.map((a,i)=>`<tr><td>${esc(subName(a.sub))}</td>
+         <td style="color:var(--ink-3);font-size:12px">${esc(a.unite||'')}</td>
+         <td><b>${esc(a.konu)}</b>${a.kim==='ogrenci'?' <span class="pill s1" style="font-size:10px">senin</span>':''}</td>
+         <td class="num" style="color:var(--bad)">${a.tip==='y'?a.adet:'·'}</td>
+         <td class="num" style="color:var(--warn)">${a.tip==='b'?a.adet:'·'}</td>
+         <td class="num" style="color:var(--ink-3)">${a.ss||'—'}</td>
+         <td>${a.kim==='ogrenci'?`<button class="btn ghost mini" onclick="ogrAnSil(${i})">sil</button>`:''}</td></tr>`).join('')}
+       </tbody></table>`
+    : '<div class="empty">Bu denemede henüz konu girilmemiş.</div>';
+  return `<div class="card"><h2>Yanlış ve boş konular — ${esc(e.name||e.date)} · ${e.date}</h2><div class="body">
+    <div class="hint" style="margin:0 0 10px">Öğretmeninin karneden girdiği konular burada görünür. Sen de kendi fark ettiğin konuları ekleyebilirsin — <b>öğretmeninin girdiklerini silemezsin.</b></div>
+    <div class="fr">
+      <div><label class="f">Ders</label><select onchange="OAD=this.value;OAU='';render()">
+        ${list.map(([k,nm])=>`<option value="${k}" ${k===sk?'selected':''}>${nm}</option>`).join('')}</select></div>
+      <div style="flex:1.3"><label class="f">Ünite</label><select onchange="OAU=this.value;render()">
+        <option value="">Tüm üniteler</option>
+        ${un.map(([u,kk])=>`<option value="${esc(u)}" ${u===OAU?'selected':''}>${esc(u)} (${kk.length})</option>`).join('')}</select></div>
+      <div style="flex:1.6"><label class="f">Konu</label><select id="oaK">
+        ${ks.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>
+      <div style="max-width:110px"><label class="f">Durum</label><select id="oaT"><option value="y">Yanlış</option><option value="b">Boş</option></select></div>
+      <div style="max-width:80px"><label class="f">Adet</label><input type="number" id="oaA" min="1" value="1"></div>
+      <div style="max-width:110px"><label class="f">Konudan soru</label>
+        <input type="number" id="oaSS" min="0" placeholder="—" title="Bu konudan denemede çıkan toplam soru. Doğru oranı bununla hesaplanır."></div>
+    </div>
+    <div class="fr"><div style="flex:1"><label class="f">Ya da karnedeki adıyla yaz (listede yoksa)</label>
+      <input type="text" id="oaFree" placeholder="ör. Modüler aritmetik"></div></div>
+    <button class="btn" onclick="ogrAnEkle()">Konuyu ekle</button>
+    <div style="margin-top:18px;border-top:1px solid var(--line-soft);padding-top:14px;overflow:auto">${liste}</div>
+    <div style="margin-top:12px"><button class="btn ghost" onclick="OANEX=null;render()">Analizi kapat</button></div>
+  </div></div>`;
+}
+
+/* Geçmiş denemeler — koçtaki gibi ders bazlı tam tablo. */
+function ogrGecmisKart(){
+  const list=subs(D);
+  const ex=[...(D.exams||[])].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!ex.length) return `<div class="card"><h2>Geçmiş denemeler</h2><div class="body"><div class="empty">Henüz deneme yok. Yukarıdan ilk denemeni gir.</div></div></div>`;
+  return `<div class="card"><h2>Geçmiş denemeler (${ex.length})</h2><div class="body" style="padding:0;overflow:auto">
+    <table><thead><tr><th>Tarih</th><th>Deneme</th>
+      ${list.map(([k,nm])=>`<th class="num">${nm.replace('TYT ','').replace('AYT ','')}</th>`).join('')}
+      <th class="num">Toplam</th><th>Konular</th><th></th></tr></thead><tbody>
+      ${ex.map(e=>`<tr><td class="num">${e.date}</td><td>${esc(e.name||'—')}<div style="font-size:11px;color:var(--ink-3)">${TURAD[e.tur||'tyt']}</div></td>
+        ${list.map(([k])=>`<td class="num">${(e.n&&e.n[k])?n1(net(e.n[k].d||0,e.n[k].y||0)):'·'}</td>`).join('')}
+        <td class="num" style="font-weight:650">${n1(totalNet(e))}</td>
+        <td><button class="btn ${OANEX===e.id?'':'ghost'} mini" onclick="ogrAnAc('${e.id}')">${(e.an&&e.an.length)?'konular ('+e.an.length+')':'konu gir'}</button></td>
+        <td><button class="btn ghost mini" onclick="denemeSil('${e.id}')">sil</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
 function vDeneme(){
   const hepsi=subs(D);
   if(!DBRANS||!hepsi.find(x=>x[0]===DBRANS)) DBRANS=hepsi[0][0];
@@ -2657,13 +2818,10 @@ function vDeneme(){
   </div></div>
   </div></div>
 
-  ${D.exams.length?`<div class="card"><h2>Girdiğin denemeler (${D.exams.length})</h2><div class="body" style="padding:0">
-    <table><tbody>${D.exams.map(e=>{let t=0;for(const s in e.n)t+=net(e.n[s].d,e.n[s].y);
-      return `<tr><td class="num" style="color:var(--ink-3);font-size:12px">${e.date}</td>
-      <td><b>${esc(e.name||'—')}</b><div style="font-size:11px;color:var(--ink-3)">${TURAD[e.tur||'tyt']}</div></td>
-      <td class="num" style="font-weight:650">${n1(t)} net</td>
-      <td style="width:56px">${e.koc?'':`<button class="btn ghost mini" onclick="denemeSil('${e.id}')">sil</button>`}</td></tr>`;}).join('')}
-    </tbody></table></div></div>`:''}`;
+  ${ogrAnalizKart()}
+  ${ogrZayifKart()}
+  ${ogrSon3Kart()}
+  ${ogrGecmisKart()}`;
 }
 
 /* ---------- çözülen soru istatistiği ---------- */
