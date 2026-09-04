@@ -751,7 +751,9 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 </div>
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
 <script src="sunucu.js"></script>
-<script src="program.js"></script>
+<!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
+     kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
+<script src="program.js?v=20260904"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -800,9 +802,13 @@ async function sbCagri(yol, secenek){
     'Content-Type': 'application/json'
   };
   if(secenek.basliklar) for(var k in secenek.basliklar) bas[k]=secenek.basliklar[k];
+  /* keepalive: sayfa kapanırken gönderilen son yazmanın tarayıcı tarafından
+     iptal edilmesini engeller. Yalnız kapanış anında açılır — normal akışta
+     keepalive'ın 64 KB gövde sınırı vardır, gereksiz yere riske girmeyelim. */
   var cevap = await fetch(SB.url.replace(/\/+$/,'') + yol, {
     method: secenek.method || 'GET',
     headers: bas,
+    keepalive: !!window.KAPANIYOR,
     body: secenek.body ? JSON.stringify(secenek.body) : undefined
   });
   var metin = await cevap.text();
@@ -3199,7 +3205,11 @@ function vRapor(){
     <span><b>${bek} ödevi hiç işaretlememişsin.</b> Ödevlerim sekmesinden hepsini işaretle, sonra raporu gönder. Yapamadığını yazmak sorun değil — yazmamak sorun.</span></div></div></div>`:''}
 
   <div class="card"><h2>Öğretmenine not (isteğe bağlı)</h2><div class="body">
-    <textarea id="rNot" rows="4" placeholder="Nerede zorlandın? Neyi anlamadın? Bu hafta seni ne engelledi?" oninput="D.not=this.value">${esc(D.not||'')}</textarea>
+    <!-- oninput yalnız belleğe yazıyordu, save() YOKTU: öğrenci notu yazıp
+         sekmeyi kapatınca metin tamamen kayboluyordu (localStorage'a bile
+         girmiyordu). onchange odak kaybında kaydeder; kapanış anındaki
+         kurtarma da D'yi yerele yazdığı için yazılan metin artık durur. -->
+    <textarea id="rNot" rows="4" placeholder="Nerede zorlandın? Neyi anlamadın? Bu hafta seni ne engelledi?" oninput="D.not=this.value" onchange="D.not=this.value;save()">${esc(D.not||'')}</textarea>
     <div class="hint">Bu kısım en değerli yer. "Türevde zincir kuralını anlamadım" gibi tek cümle, bir sonraki haftanı değiştirir.</div>
   </div></div>
 
@@ -3588,7 +3598,7 @@ function videoBolumu(baslikli){
 }
 
 /* ---------- SUNUCU: giriş / kod / kurulum ---------- */
-let GMOD='giris', GHATA='', GBEKLE=false, SYAZ='', SKUYRUK=null, BEKLEYENKOD='';
+let GMOD='giris', GHATA='', GBEKLE=false, SYAZ='', SKUYRUK=null, BEKLEYENKOD='', SBEKLEYEN=0;
 function sbAyarla(a,v){ SB[a]=v.trim(); sbSakla(); render(); }
 async function gTest(){
   GHATA='';
@@ -3771,13 +3781,40 @@ async function sunucuAc(){
 }
 function sunucuKaydet(){
   if(!sbOturum()||!OGRID) return;
+  const simdi=Date.now();
+  if(!SBEKLEYEN) SBEKLEYEN=simdi;
   clearTimeout(SKUYRUK);
+  /* AÇLIK KORUMASI (4 Eyl 2026) — koç panelinde vardı, burada yoktu.
+     Eskiden her değişiklik 900 ms'lik sayacı sıfırdan başlatıyordu; öğrenci
+     ödevleri arka arkaya işaretlerse (mobilde sık) yazma HİÇ tetiklenmiyor,
+     sekme kapanınca hepsi gidiyordu. Artık ilk bekleyen değişiklikten 3 sn
+     sonra gecikme sıfırlanır ve yazma zorla gönderilir. */
+  const gecikme = (simdi - SBEKLEYEN > 3000) ? 0 : 900;
   SKUYRUK=setTimeout(async()=>{
+    SKUYRUK=null; SBEKLEYEN=0;
     try{ SYAZ='y'; sYaz(); await ogrSunucuyaYaz(); SYAZ='ok'; sYaz();
       setTimeout(()=>{ if(SYAZ==='ok'){SYAZ='';sYaz();} },1600);
     }catch(e){ SYAZ='h|'+(e.message||e); sYaz(); }
-  },900);
+  }, gecikme);
 }
+/* SAYFA KAPANIRKEN KURTARMA (4 Eyl 2026) — öğrenci panelinde hiçbir kapanış
+   koruması yoktu: koçta beforeunload uyarısı, program.js'te pagehide flush'ı
+   varken burada ikisi de yoktu. Son 900 ms içinde yapılan her değişiklik
+   sessizce kayboluyordu; öğrenciler mobilde sekmeyi sürekli kapatır.
+   Yerel kopya her hâlükârda yazılır (ucuz ve senkron); sunucu yazması
+   keepalive ile gönderilir, yoksa tarayıcı belgeyi yıkarken isteği iptal eder. */
+function ogrBekleyeniHemenYaz(){
+  try{ window.KAPANIYOR=true; }catch(e){}   // sbCagri bunu görüp keepalive ekler
+  if(typeof ORNEKMOD!=='undefined' && ORNEKMOD) return;
+  try{ if(D) localStorage.setItem(KEY,JSON.stringify(D)); }catch(e){}
+  if(!SKUYRUK) return;
+  clearTimeout(SKUYRUK); SKUYRUK=null; SBEKLEYEN=0;
+  try{ ogrSunucuyaYaz(); }catch(e){}
+}
+window.addEventListener('pagehide', ogrBekleyeniHemenYaz);
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='hidden') ogrBekleyeniHemenYaz();
+});
 function sYaz(){
   const el=document.getElementById('sbDurum'); if(!el) return;
   el.innerHTML = SYAZ==='y'?'<span style="color:#7E9BB8">kaydediliyor…</span>'
