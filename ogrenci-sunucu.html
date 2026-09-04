@@ -1005,6 +1005,24 @@ async function ogrSunucuyaYaz(){
         dogru:+t.dg||0, yanlis:+t.yn||0, bos:+t.bs||0 };
     }), 'id');
   }
+  /* KOÇSUZ (SOLO) ÖĞRENCİNİN KENDİNE VERDİĞİ ÖDEV — 4 Eyl 2026.
+     soloOdevVer / haftalık plan bunları {id:'s…', kendi:true} ile üretiyor.
+     Ne uuidMi() süzgecine ne de ekstra süzgecine takılıyorlardı; yani
+     sunucuya HİÇ yazılmıyorlardı. Sayfa yenilenince D.tasks sunucudan boş
+     geliyor, haftalık program "0 ödev" görüyor ve dağıtacak bir şey
+     bulamıyordu — "programa dağıtmıyor" şikâyetinin kaynağı buydu.
+     Bunlar gerçek ödevdir (öğrenci kendi koçudur), 'ekstra' değil:
+     ekstra=true "öğrencinin kendi fazladan çalışması" anlamına geliyor ve
+     ödev sayılmıyor. */
+  var yeniOdev=(D.tasks||[]).filter(function(t){ return t.kendi && !t.ekstra && !uuidMi(t.id); });
+  if(yeniOdev.length){
+    yeniOdev.forEach(function(t){ t.id=yeniKimlik(); });
+    await sbYaz('odevler', yeniOdev.map(function(t){
+      return { id:t.id, ogrenci_id:OGRID, tarih:t.date, ders:t.sub, konu:t.konu||'',
+        soru:t.q||0, yapilan:t.yap||0, durum:t.s||0, rutin:!!t.rutin, ekstra:false,
+        dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'' };
+    }), 'id');
+  }
   /* öğrencinin kendi eklediği çalışmalar */
   var yeniEk=(D.tasks||[]).filter(function(t){ return t.ekstra && !uuidMi(t.id); });
   if(yeniEk.length){
