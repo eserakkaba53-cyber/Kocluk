@@ -1651,7 +1651,13 @@ function haftaKalan(){ const t=genelSinav()||(typeof D!=='undefined'&&D&&D.sinav
 // gerekli: haftada gereken saat, hs: haftalık çalışma saati.
 // m: gereken saate uygulanan pay katsayısı (1.00 öncelikli, 1.15 güvenlik payı, 1.30 genişleme).
 function yetSenaryo(gerekli, hs, m){
-  if(!gerekli||!hs) return {v:'—',c:'var(--ink-3)',n:'sınav tarihi ve haftalık süreni gir'};
+  /* SINAV TARİHİ ARTIK İSTENMİYOR (4 Eyl 2026): tarih genelSinav() ile
+     tüm öğrenciler için ORTAK ve öğretmen belirliyor — öğrencide girilecek
+     bir alan bile yok (kutu salt-okunur). Mesaj "sınav tarihi ve haftalık
+     süreni gir" diyerek öğrenciyi olmayan bir eksiği aramaya itiyordu.
+     Gerçekte eksik olan tek şey haftalık çalışma süresi. */
+  if(!hs)      return {v:'—',c:'var(--ink-3)',n:'haftalık çalışma süreni gir'};
+  if(!gerekli) return {v:'—',c:'var(--ink-3)',n:'hesaplanacak konu kalmadı'};
   const need=gerekli*m, ok=need<=hs;
   return {v:ok?'Yetişir':'Yetişmez', c:ok?'var(--ok)':'var(--bad)',
     n: ok?`${saatY(hs-need)} payın var`:`haftada ${saatY(need-hs)} açık`};
@@ -1820,21 +1826,51 @@ async function progKapaliYaz(liste){
   if(D){ D.program=D.program||{}; D.program.kapali=liste; }
 }
 
+/* Blok dalını YALNIZCA koçsuz (solo) öğrenci yazar — o kendi koçudur.
+   Koçu olan öğrencide bu fonksiyon progMont'ta HİÇ bağlanmaz; sahiplik
+   ayrımı korunur (bloklar koçun, kapalı saatler öğrencinin).
+   Sunucu tarafı zaten izin veriyor: program_yetkim_var,
+   koc_id = auth.uid() OR auth_id = auth.uid() diyor; solo öğrencide
+   ikisi de aynı kişi. */
+async function progBloklarYaz(liste){
+  if(typeof ORNEKMOD!=='undefined' && ORNEKMOD) return;   // örnek veri yazılmaz
+  if(!OGRID || !sbOturum()) throw new Error('Oturumun kapanmış. Yeniden giriş yap.');
+  await sbGuvenli(function(){
+    return sbCagri('/rest/v1/rpc/program_bloklar_yaz',
+      {method:'POST',body:{p_ogr:OGRID,p_bloklar:liste}});
+  });
+  if(D){ D.program=D.program||{}; D.program.bloklar=liste; }
+}
+
 function progMont(){
   if(typeof PROG==='undefined' || !document.getElementById('pg-kok')) return;
   const wk=weekKey(today());
   const ornek=(typeof ORNEKMOD!=='undefined' && ORNEKMOD);
+  /* KOÇSUZ (SOLO) ÖĞRENCİ KENDİ KOÇUDUR — 4 Eyl 2026.
+     Eskiden rol her zaman 'ogrenci' idi ve otoDagit yalnız örnek modda
+     açılıyordu. Sonuç: koçu olmayan öğrencide programı dağıtacak kimse
+     yoktu — ızgara boş kalıyor, "Yeniden dağıt" düğmesi de görünmüyordu
+     (o düğme kocMu() ile korunuyor). Üstelik kaydet içinde 'bloklar'
+     olmadığı için dağıtsa bile kaydedilemezdi.
+     Solo öğrencide üçü birden açılır; koçu olan öğrencide hiçbiri
+     değişmez, sahiplik ayrımı aynen korunur. */
+  const solo=(typeof soloMu==='function' && soloMu());
   PROG.mont({
     anahtar: (ornek?'ornek':(OGRID||'yerel'))+'|'+wk,
-    rol: 'ogrenci',
+    /* Örnek mod ÖĞRENCİ deneyimini gösterir, rolü değişmez;
+       yalnız solo öğrenci koç yetkisi alır. */
+    rol: solo ? 'koc' : 'ogrenci',
     odevler: progOdevleri(wk),
     program: (D&&D.program)||{},
     dersAdi: (typeof subName==='function')?subName:null,
-    /* Örnek öğrencide koç yok; ızgarayı bir kez kendimiz dolduruyoruz ki
-       tanıtımda boş takvim görünmesin. Kaydedilmez. */
-    otoDagit: ornek,
-    /* Örnek öğrencide hiçbir şey kaydedilmez. */
-    kaydet: ornek ? {} : { kapali: progKapaliYaz }
+    /* Örnekte tanıtım için, soloda gerçekten gerekli olduğu için dağıtılır. */
+    otoDagit: ornek || solo,
+    /* Örnek öğrencide hiçbir şey kaydedilmez.
+       Solo öğrenci hem blokları hem kapalı saatleri yazar;
+       koçu olan öğrenci YALNIZCA kapalı saatleri yazar. */
+    kaydet: ornek ? {}
+          : solo  ? { kapali: progKapaliYaz, bloklar: progBloklarYaz }
+                  : { kapali: progKapaliYaz }
   });
 }
 
@@ -3150,7 +3186,9 @@ function vHedef(){
   <div class="card"><div class="stats">
     <div class="stat"><div class="k">Sınava kalan</div>
       <div class="v">${hk===null?'—':hk}</div>
-      <div class="n">${hk===null?'sınav tarihi gir':'hafta'}</div></div>
+      <!-- Tarih ortak ve öğretmen belirliyor; öğrenciden istenmez.
+           hk yalnızca tarih tanımsızsa null olur — bu bir ayar sorunudur. -->
+      <div class="n">${hk===null?'sınav tarihi tanımlı değil':'hafta'}</div></div>
     <div class="stat"><div class="k">Kalan süre — yalnız konu</div>
       <div class="v">${topKonuSaat?Math.round(topKonuSaat):'—'}</div>
       <div class="n">saat · konu çalışması</div></div>
@@ -3167,8 +3205,10 @@ function vHedef(){
       <div class="n">saat/hafta${hs?' · senin beyanın '+hs:''}</div></div>
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint">${!gerekli||!hs
-      ? 'Aşağıdaki <b>Hedefim</b> kartından sınav tarihini ve haftalık çalışma süreni gir; aşağıdaki senaryolar dolacak.'
+    <div class="hint">${!hs
+      ? 'Aşağıdaki <b>Hedefim</b> kartından <b>haftalık çalışma süreni</b> gir; senaryolar dolacak. (Sınav tarihi ortaktır, öğretmenin belirler — senden istenmez.)'
+      : !gerekli
+      ? 'Kalan konu görünmüyor. Konularım sekmesinden konu durumlarını işaretlersen buradaki hesap dolar.'
       : gerekli<=hs
         ? 'Bu hızla gidersen kalan konuları sınava kadar bitirirsin. Süre tahminleri planlama içindir, kesin ölçüm değildir.'
         : 'Bu hızla kalan konular yetişmiyor. Ya haftalık süreni artır ya da öğretmeninle konu önceliklerini konuş.'}</div>
@@ -4020,7 +4060,8 @@ async function sunucuAc(){
   const d=await ogrSunucudanOku();
   if(!d){
     GMOD='kod';
-    if(!GHATA) GHATA='OK|Hesabın açıldı. Öğretmenin varsa kodunu gir; öğretmenin yoksa aşağıdan "Kendi başıma başla" de.';
+    /* Metin ekrandaki SIRAYI anlatır: solo kart üstte, kod kartı altta. */
+    if(!GHATA) GHATA='OK|Hesabın açıldı. Öğretmenin yoksa hemen aşağıdan "Kendi başıma başla" de; öğretmenin varsa en alttaki kutuya 6 haneli kodunu yaz.';
     render(); return;
   }
   if(SONKIM && SONKIM.lisans===false){
@@ -4223,15 +4264,13 @@ function girisEkrani(){
     <button class="btn ghost wide" style="margin-top:10px" onclick="sbCikis();SOLO=false;GMOD='giris';GHATA='';render()">Çıkış yap</button>
   </div></div>`;
 
-  if(GMOD==='kod') return `<div class="card"><h2>Öğretmeninin kodu</h2><div class="body">
-    <div class="hint" style="margin-bottom:10px">Hesabın açıldı. Şimdi öğretmeninin verdiği <b>6 haneli kodu</b> yaz — böylece ödevlerin gelmeye başlar.</div>
-    <div class="fr"><div style="flex:1"><label class="f">Kod</label>
-      <input type="text" id="gKod" placeholder="ABC123" style="text-transform:uppercase;font-family:var(--mono);font-size:18px;letter-spacing:2px;text-align:center"
-        onkeydown="if(event.key==='Enter')gKodGir()"></div></div>
-    <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gKodGir()">${GBEKLE?'Bekle...':'Bağlan'}</button>
-    <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>
-    <button class="btn ghost wide" style="margin-top:8px" onclick="teshisAl()">Sorun mu var? Kontrol et</button>${hata}
-  </div></div>
+  /* SIRA (4 Eyl 2026): "Öğretmenim yok" kartı ÜSTTE.
+     Bu ekrana gelenlerin çoğu doğrudan kayıt olan, öğretmeni olmayan
+     öğrenci; onlara önce kod soran bir ekran çıkması "kodum yok, giremem"
+     hissi veriyordu. Kayıt onayı da en üste alındı — seçeneklerin altında
+     kalınca kimse görmüyordu. */
+  if(GMOD==='kod') return `
+  ${GHATA?`<div class="card"><div class="body" style="padding-bottom:14px">${hata}</div></div>`:''}
 
   <div class="card"><h2>Öğretmenim yok<small>Kendi başına da kullanabilirsin.</small></h2><div class="body">
     <div class="hint" style="margin-bottom:10px">
@@ -4251,6 +4290,16 @@ function girisEkrani(){
     <button class="btn wide" style="margin-top:10px" ${GBEKLE?'disabled':''} onclick="soloKur()">
       ${GBEKLE?'Bekle...':'Kendi başıma başla'}</button>
     <div class="hint" style="margin-top:8px">Sonradan bir öğretmene bağlanmak istersen hesabını taşıyabilirsin.</div>
+  </div></div>
+
+  <div class="card"><h2>Öğretmenin var mı?<small>Kodu varsa buraya yaz.</small></h2><div class="body">
+    <div class="hint" style="margin-bottom:10px">Öğretmeninin verdiği <b>6 haneli kodu</b> yaz — böylece ödevlerin gelmeye başlar.</div>
+    <div class="fr"><div style="flex:1"><label class="f">Kod</label>
+      <input type="text" id="gKod" placeholder="ABC123" style="text-transform:uppercase;font-family:var(--mono);font-size:18px;letter-spacing:2px;text-align:center"
+        onkeydown="if(event.key==='Enter')gKodGir()"></div></div>
+    <button class="btn wide" ${GBEKLE?'disabled':''} onclick="gKodGir()">${GBEKLE?'Bekle...':'Bağlan'}</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="sbCikis();GMOD='giris';GHATA='';render()">Farklı hesapla gir</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="teshisAl()">Sorun mu var? Kontrol et</button>
   </div></div>
   ${videoBolumu()}`;
   return `<div class="giris-fon" aria-hidden="true"><i></i><i></i><i></i></div><div class="${GMOD==='giris'?'gcift':''}" style="margin-top:16px"><div class="gkart ga"><div class="gbas"><div class="gikon">${GMOD==='kayit'?'📝':'🔑'}</div>
@@ -4304,7 +4353,7 @@ function girisEkrani(){
     <div class="gmadde">Ödevini kendin ver, konularını kendin işaretle</div>
     <button class="btn wide" style="margin-top:auto" onclick="GMOD='kayit';BEKLEYENKOD='';GHATA='';render();window.scrollTo(0,0)">
       Kendi hesabımı açmak istiyorum</button>
-    <div class="gdip">Önce <b>hesabını oluştur</b>, kod ekranı gelince <b>"Kendi başıma başla"</b> de. Öğretmen kodu istemiyoruz.</div>
+    <div class="gdip">Önce <b>hesabını oluştur</b>, sonraki ekranda en üstteki <b>"Kendi başıma başla"</b>ya bas. Öğretmen kodu istemiyoruz.</div>
   </div></div>`:''}
   </div>
   ${videoBolumu()}`;
