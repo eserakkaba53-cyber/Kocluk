@@ -774,6 +774,8 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260904a"></script>
+<!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
+<script src="mesaj.js?v=20260904a"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -941,6 +943,16 @@ async function ogrBaglan(kod){
 
 /* ---------- SUNUCUDAN OKU ---------- */
 var SONKIM=null;
+/* Mesaj modülünü panele bağla: sunucu çağrısı + yeniden çizim.
+   Modül panel değişkenlerini tanımaz, ikisini buradan alır. */
+if(typeof MESAJ!=='undefined'){
+  MESAJ.kur({
+    cagir: (ad,govde)=>sbGuvenli(()=>sbCagri('/rest/v1/rpc/'+ad,{method:'POST',body:govde||{}})),
+    ciz  : ()=>{ try{ render(); }catch(e){} }
+  });
+  MESAJ.stil();
+}
+
 async function ogrSunucudanOku(){
   var k = await ogrKimlik();
   SONKIM=k;
@@ -3908,6 +3920,12 @@ function gorunumKart(){
 function vYardim(){
   const v=videoListesi();
   return `
+  ${/* Yönetime mesaj kutusu EN ÜSTTE: yardım arayan öğrencinin ilk
+       göreceği şey soru sorabileceği yer olmalı. Örnek öğrencide
+       gösterilmez — orada oturum yok, mesaj gönderilemez. */
+    (typeof MESAJ!=='undefined' && !(typeof ORNEKMOD!=='undefined'&&ORNEKMOD) && sbOturum())
+      ? MESAJ.kartKullanici() : ''}
+
   <div class="card"><h2>Başlangıç rehberi</h2><div class="body">
     <div class="hint" style="margin:0 0 10px">Panele yeni başladıysan ya da adımları hatırlamak istersen aç.</div>
     <button class="btn ghost wide" onclick="karsilamaAc()">Başlangıç rehberini aç</button>
@@ -4150,6 +4168,9 @@ async function sunucuAc(){
   }
   D=d; try{ localStorage.setItem(KEY,JSON.stringify(D)); }catch(e){}
   TAB='odev'; GHATA=''; render();
+  /* Mesaj rozeti: giriş tamamlandıktan sonra okunmamış sayısı alınır —
+     "sekmeyi açmadan fark edilsin" isteği bunu gerektiriyor. */
+  try{ if(typeof MESAJ!=='undefined') MESAJ.sayaciTazele(); }catch(e){}
 }
 function sunucuKaydet(){
   if(!sbOturum()||!OGRID) return;
@@ -4608,7 +4629,11 @@ function sekmeAgaci(){
     return '<button class="sgrup '+(acik?'acik':'')+'" onclick="grupSec(\''+g+'\')">'+
       '<span class="sgi">'+(g==='ornek'?'◉':'●')+'</span><span class="sgt">'+esc(ad)+'</span><span class="sgok">▾</span></button>'+
       '<div class="sgic '+(acik?'acik':'')+' '+(acik&&yeni?'yeni':'')+'"><div>'+
-      alt.map(t=>'<button class="tab '+(acik&&TAB===t[0]?'on':'')+'" onclick="'+sec+'(\''+t[0]+'\')">'+t[1]+'</button>').join('')+
+      /* MESAJ ROZETİ — Yardım sekmesinde, açmadan fark edilsin.
+         Yalnız gerçek öğrencide ('benSec'); örnek öğrencide anlamsız. */
+      alt.map(t=>'<button class="tab '+(acik&&TAB===t[0]?'on':'')+'" onclick="'+sec+'(\''+t[0]+'\')">'+t[1]+
+        ((sec==='benSec' && t[0]==='yardim' && typeof MESAJ!=='undefined') ? MESAJ.rozet() : '')+
+        '</button>').join('')+
       '</div></div>';
   };
   return grup('ornek','Örnek Öğrenci',ORNEK_ALT,'ornekSec')

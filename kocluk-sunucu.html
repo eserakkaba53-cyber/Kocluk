@@ -807,6 +807,8 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260904a"></script>
+<!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
+<script src="mesaj.js?v=20260904a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -3079,7 +3081,11 @@ function render(){
   }
   if(TAB==='yonetim'){
     if(!KOCLAR.length && !YONDURUM){ YONDURUM='Yükleniyor...'; setTimeout(koclariOku,10); }
-    v.innerHTML=kaynakUyarisi()+vYonetici()+((typeof odYonetimKart==='function')?odYonetimKart():'');
+    /* Gelen mesajlar EN ÜSTTE: yönetici sekmeye girdiğinde ilk göreceği
+       şey bekleyen mesaj olmalı, koç tablosunun altında kalmamalı. */
+    v.innerHTML=kaynakUyarisi()
+      +((typeof MESAJ!=='undefined')?MESAJ.kartYonetici():'')
+      +vYonetici()+((typeof odYonetimKart==='function')?odYonetimKart():'');
     if(_aid){ const _el=document.getElementById(_aid);
       if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
     return;
@@ -5550,6 +5556,11 @@ function vHesap(st){
   return `
   ${lisansUyarisi()}
 
+  ${/* Yöneticinin kendine mesaj yazmasının anlamı yok — kutu yalnız
+       normal koçlarda çıkar. Yönetici aynı yazışmayı Yönetim
+       sekmesinden görür. */
+    (typeof MESAJ!=='undefined' && !(LISANS&&LISANS.yonetici)) ? MESAJ.kartKullanici() : ''}
+
   <div class="card"><h2>Başlangıç rehberi</h2><div class="body">
     <div class="hint" style="margin:0 0 10px">Panele yeni başladıysan ya da öğrenci ekleme adımlarını hatırlamak istersen aç.</div>
     <button class="btn ghost" onclick="karsilamaAc()">Başlangıç rehberini aç</button>
@@ -6535,9 +6546,22 @@ function cihazAdi(){
   const t = /Edg\//.test(u)?'Edge':/Chrome/.test(u)?'Chrome':/Firefox/.test(u)?'Firefox':/Safari/.test(u)?'Safari':'';
   return (s+(t?' · '+t:'')).slice(0,40);
 }
+/* Mesaj modülünü panele bağla: sunucu çağrısı + yeniden çizim.
+   Modül panel değişkenlerini tanımaz, ikisini buradan alır. */
+if(typeof MESAJ!=='undefined'){
+  MESAJ.kur({
+    cagir: (ad,govde)=>sbGuvenli(()=>sbCagri('/rest/v1/rpc/'+ad,{method:'POST',body:govde||{}})),
+    ciz  : ()=>{ try{ render(); }catch(e){} }
+  });
+  MESAJ.stil();
+}
+
 async function lisansOku(){
   try{ LISANS=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/lisans_durum',{method:'POST',body:{}})); }
   catch(e){ LISANS=null; }
+  /* Mesaj rozeti: oturum kurulduktan sonra okunmamış sayısı alınır.
+     "Sekmeyi açmadan fark edilsin" istendiği için burada, girişte. */
+  try{ if(typeof MESAJ!=='undefined') await MESAJ.sayaciTazele(); }catch(e){}
 }
 async function cihazlariOku(){
   try{ CIHAZLAR=await sbSorgu('cihazlar','?kullanici=eq.'+SB.uid+'&select=*&order=son_giris.desc'); }
@@ -7481,8 +7505,17 @@ function railAgaci(liste){
 
   const genelAktif=(!KOKPIT&&!ABONE&&!YENIOGR);
   const genel=(cur()||LISANS)
-    ? '<div class="raybas">Hesap</div>'+genSek.map(t=>
-        '<button class="rtab genel '+(genelAktif&&TAB===t[0]?'on':'')+'" onclick="kocGenel(\''+t[0]+'\')">'+t[1]+'</button>').join('')
+    /* MESAJ ROZETİ — sekmeye girmeden okunmamış mesaj fark edilsin.
+       Yöneticide sayaç "kullanıcılardan gelen okunmamış", normal koçta
+       "yöneticiden gelen cevap" demek; bu yüzden rozet TEK sekmede çıkar:
+       yöneticide Yönetim'de, normal koçta Hesap'ta. */
+    ? '<div class="raybas">Hesap</div>'+genSek.map(t=>{
+        const _yon=!!(LISANS&&LISANS.yonetici);
+        const _rz=(typeof MESAJ!=='undefined' &&
+                   ((_yon && t[0]==='yonetim') || (!_yon && t[0]==='hesap')))
+                  ? MESAJ.rozet() : '';
+        return '<button class="rtab genel '+(genelAktif&&TAB===t[0]?'on':'')+'" onclick="kocGenel(\''+t[0]+'\')">'+t[1]+_rz+'</button>';
+      }).join('')
     : '';
   return kokpit + ogr + genel;
 }
