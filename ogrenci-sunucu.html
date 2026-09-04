@@ -770,7 +770,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260904b"></script>
+<script src="program.js?v=20260904c"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -822,11 +822,18 @@ async function sbCagri(yol, secenek){
   /* keepalive: sayfa kapanırken gönderilen son yazmanın tarayıcı tarafından
      iptal edilmesini engeller. Yalnız kapanış anında açılır — normal akışta
      keepalive'ın 64 KB gövde sınırı vardır, gereksiz yere riske girmeyelim. */
+  var govde = secenek.body ? JSON.stringify(secenek.body) : undefined;
+  /* DİKKAT: keepalive'ın gövde sınırı 64 KB'dir. Aşan istek fetch tarafından
+     doğrudan REDDEDİLİR — yani kayıt hiç gitmez. Öğrencinin ödev listesi bu
+     sınırı aşabiliyor. Bu yüzden keepalive yalnızca KÜÇÜK gövdelerde açılır;
+     büyük gövdede kapanış anında gitme şansı azalır ama kesin başarısızlıktan
+     iyidir. (4 Eyl 2026 — bayrak takılı kalınca her kayıt patlıyordu.) */
+  var kalici = !!window.KAPANIYOR && (!govde || govde.length < 60000);
   var cevap = await fetch(SB.url.replace(/\/+$/,'') + yol, {
     method: secenek.method || 'GET',
     headers: bas,
-    keepalive: !!window.KAPANIYOR,
-    body: secenek.body ? JSON.stringify(secenek.body) : undefined
+    keepalive: kalici,
+    body: govde
   });
   var metin = await cevap.text();
   var veri = null;
@@ -3667,6 +3674,10 @@ function videoBolumu(baslikli){
 
 /* ---------- SUNUCU: giriş / kod / kurulum ---------- */
 let GMOD='giris', GHATA='', GBEKLE=false, SYAZ='', SKUYRUK=null, BEKLEYENKOD='', SBEKLEYEN=0;
+/* Üst üste kaçıncı kez başarısız olduğumuz. İlk hatada uyarı penceresi
+   AÇILMAZ — mobilde kısa bağlantı kopmaları çok yaygın ve her birinde
+   ekranı kilitlemek paneli kullanılmaz yapıyor. Sessizce bir kez daha denenir. */
+let SKAYITHATA=0;
 function sbAyarla(a,v){ SB[a]=v.trim(); sbSakla(); render(); }
 async function gTest(){
   GHATA='';
@@ -3861,11 +3872,15 @@ function sunucuKaydet(){
   SKUYRUK=setTimeout(async()=>{
     SKUYRUK=null; SBEKLEYEN=0;
     try{ SYAZ='y'; sYaz(); await ogrSunucuyaYaz(); SYAZ='ok'; sYaz();
+      SKAYITHATA=0;                    // seri bozuldu
       kayitUyariKapat(); KU_SUS=0;     // yazma tuttu: uyarı kalksın, susturma sıfırlansın
       setTimeout(()=>{ if(SYAZ==='ok'){SYAZ='';sYaz();} },1600);
     }catch(e){ SYAZ='h|'+(e.message||e); sYaz();
-      /* Köşedeki yazı yetmiyor — ekranı kapatan pencereyi aç. */
-      kayitUyariGoster(e.message||e, sunucuKaydet); }
+      SKAYITHATA++;
+      /* İlk hatada köşedeki "⚠ kaydedilemedi" yazısıyla yetin ve sessizce
+         bir kez daha dene. Pencere ancak İKİNCİ kez de olmazsa açılır. */
+      if(SKAYITHATA<2) setTimeout(sunucuKaydet, 2500);
+      else kayitUyariGoster(e.message||e, sunucuKaydet); }
   }, gecikme);
 }
 /* SAYFA KAPANIRKEN KURTARMA (4 Eyl 2026) — öğrenci panelinde hiçbir kapanış
@@ -3883,8 +3898,13 @@ function ogrBekleyeniHemenYaz(){
   try{ ogrSunucuyaYaz(); }catch(e){}
 }
 window.addEventListener('pagehide', ogrBekleyeniHemenYaz);
+/* Bayrak İNMELİ — program.js'tekiyle aynı gerekçe: bir kere açılıp açık
+   kalırsa her istek keepalive ile gider, 64 KB'ı aşanlar reddedilir ve
+   panel durmadan "kaydedilmedi" der. */
+window.addEventListener('pageshow', function(){ try{ window.KAPANIYOR=false; }catch(e){} });
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState==='hidden') ogrBekleyeniHemenYaz();
+  else { try{ window.KAPANIYOR=false; }catch(e){} }   // geri döndük
 });
 function sYaz(){
   const el=document.getElementById('sbDurum'); if(!el) return;

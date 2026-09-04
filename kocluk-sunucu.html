@@ -803,7 +803,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260904b"></script>
+<script src="program.js?v=20260904c"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -830,6 +830,10 @@ async function load(){
   return MEM;
 }
 let YAZKUYRUK=null, YAZDURUM='', YAZBEKLEYEN=0;
+/* Üst üste kaçıncı kez başarısız olduğumuz. İlk hatada uyarı penceresi
+   AÇILMAZ — kısa bağlantı takılmaları çok yaygın ve her birinde ekranı
+   kilitlemek paneli kullanılmaz yapıyor. Sessizce bir kez daha denenir. */
+let KAYITHATA=0;
 function sunucuyaKaydet(){
   if(DEMO) return;              // tanıtım modu: hiçbir şey kaydedilmez
   if(!sbOturum()) return;
@@ -855,16 +859,29 @@ function sunucuyaKaydet(){
       if(st && !ornekMi(st.id)) await ogrenciYaz(st);   // örnek öğrencinin verisi sunucuya yazılmaz
       await kocYaz();                                   // koç ayarları (süre/soru) HER ZAMAN yazılır
       YAZDURUM='ok'; rayDurum();
+      KAYITHATA=0;                      // seri bozuldu
       kayitUyariKapat(); KU_SUS=0;      // yazma tuttu: uyarı varsa kalksın, susturma sıfırlansın
       setTimeout(()=>{ if(YAZDURUM==='ok'){YAZDURUM=''; rayDurum();} },1800);
     }catch(e){ YAZDURUM='hata|'+(e.message||e); rayDurum();
-      /* Köşedeki yazı yetmiyor — ekranı kapatan pencereyi aç. */
-      kayitUyariGoster(e.message||e, sunucuyaKaydet); }
+      KAYITHATA++;
+      /* İlk hatada köşedeki "⚠ kaydedilemedi" yazısıyla yetin ve sessizce
+         bir kez daha dene. Pencere ancak İKİNCİ kez de olmazsa açılır —
+         yani gerçekten kalıcı bir sorun varsa. */
+      if(KAYITHATA<2) setTimeout(sunucuyaKaydet, 2500);
+      else kayitUyariGoster(e.message||e, sunucuyaKaydet); }
   }, gecikme);
 }
 /* Bekleyen yazma varken sekme kapatılırsa uyar — aksi halde son değişiklikler kaybolur. */
 window.addEventListener('beforeunload', function(ev){
   if(YAZKUYRUK || YAZDURUM==='yaziliyor'){ ev.preventDefault(); ev.returnValue=''; return ''; }
+});
+/* KAPANIYOR bayrağını burada da indir. program.js'in dinleyicisi yalnızca
+   program sekmesi açıldığında kuruluyor; koç o sekmeye hiç girmezse bayrak
+   inmeden kalabilirdi. Takılı kalınca her istek keepalive ile gidiyor,
+   64 KB'ı aşan gövdeler reddediliyor, panel durmadan "kaydedilmedi" diyordu. */
+window.addEventListener('pageshow', function(){ try{ window.KAPANIYOR=false; }catch(e){} });
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState!=='hidden'){ try{ window.KAPANIYOR=false; }catch(e){} }
 });
 function rayDurum(){
   const lr=document.getElementById('lisansRozet');
@@ -2132,11 +2149,18 @@ async function sbCagri(yol, secenek){
   /* keepalive: sayfa kapanırken program.js'in son yazması iptal edilmesin.
      Yalnız kapanış anında açılır (window.KAPANIYOR); keepalive'ın 64 KB
      gövde sınırı olduğu için normal akışta kullanılmaz. */
+  var govde = secenek.body ? JSON.stringify(secenek.body) : undefined;
+  /* DİKKAT: keepalive'ın gövde sınırı 64 KB'dir. Aşan istek fetch tarafından
+     doğrudan REDDEDİLİR — yani kayıt hiç gitmez. Öğrenci verisi bu sınırı
+     rahat aşıyor. Bu yüzden keepalive yalnızca KÜÇÜK gövdelerde açılır;
+     büyük gövdede kapanış anında gitme şansı azalır ama kesin başarısızlıktan
+     iyidir. (4 Eyl 2026 — bayrak takılı kalınca her kayıt patlıyordu.) */
+  var kalici = !!window.KAPANIYOR && (!govde || govde.length < 60000);
   var cevap = await fetch(SB.url.replace(/\/+$/,'') + yol, {
     method: secenek.method || 'GET',
     headers: bas,
-    keepalive: !!window.KAPANIYOR,
-    body: secenek.body ? JSON.stringify(secenek.body) : undefined
+    keepalive: kalici,
+    body: govde
   });
   var metin = await cevap.text();
   var veri = null;
