@@ -520,6 +520,8 @@ function blokCakisiyor(b,g,d,haric){
    lisansı bitmiştir, hiçbir şey kaydolmaz ve panel bunu hiç söylemez —
    koç ertesi gün emeğinin yok olduğunu görür. Hata artık ekranda. */
 var kayitHatasi=null;
+/* Üst üste kaçıncı kez başarısız olduğumuz — ilk hatada pencere açılmaz. */
+var progKayitHata=0;
 /* AÇLIK KORUMASI (4 Eyl 2026) — koç panelindeki sunucuyaKaydet'te vardı,
    burada yoktu. Her isaretle() 900 ms'lik sayacı sıfırdan başlatıyordu;
    ızgarada sürükleyerek saat kapatmak ya da blokları arka arkaya taşımak
@@ -551,6 +553,7 @@ function isaretle(dal){
     Promise.all(isler.map(function(x){ return Promise.resolve(x); }))
       .then(function(){
         if(kayitHatasi){ kayitHatasi=null; if(suAnahtar===hedefAnahtar) ciz(); }
+        progKayitHata=0;                                  // seri bozuldu
         /* Yazma tuttu: paneldeki uyarı penceresi varsa kapansın. */
         if(typeof window.kayitUyariKapat==='function') window.kayitUyariKapat();
       })
@@ -558,9 +561,14 @@ function isaretle(dal){
         kayitHatasi = (e && e.message) ? String(e.message) : 'Sunucuya yazılamadı.';
         if(window.console) console.warn('program kaydı:',e);
         if(suAnahtar===hedefAnahtar) ciz();
-        /* Izgaranın üstündeki kırmızı şerit tek başına yetmiyordu — koç
-           blokları sürüklemeye devam edip hepsinin kaydedildiğini sanıyordu.
-           Panelde uyarı penceresi varsa onu da aç. */
+        progKayitHata++;
+        /* İlk hatada ızgaranın üstündeki kırmızı şerit yeter; sessizce bir kez
+           daha denenir. Pencere ancak İKİNCİ kez de olmazsa açılır — yoksa
+           kısa bir bağlantı takılmasında koç ekranı kilitleniyor. */
+        if(progKayitHata<2){
+          setTimeout(function(){ yazilanDallar.forEach(function(d){ isaretle(d); }); },2500);
+          return;
+        }
         if(typeof window.kayitUyariGoster==='function')
           window.kayitUyariGoster(kayitHatasi, function(){
             yazilanDallar.forEach(function(d){ isaretle(d); });
@@ -968,8 +976,15 @@ function bagla(){
   if(baglandi) return;
   baglandi=true;
   window.addEventListener('pagehide', bekleyeniHemenYaz);
+  /* Bayrak İNMELİ. Eskiden bir kere açılıp sonsuza dek açık kalıyordu:
+     kullanıcı sekme değiştirir (ya da telefonda uygulamadan çıkar),
+     visibilitychange tetiklenir, KAPANIYOR true olur ve bir daha kapanmazdı.
+     Sonrasında HER istek keepalive ile gidiyor, 64 KB'ı aşan gövdeler
+     reddediliyor ve panel "kaydedilmedi" penceresini üst üste açıyordu. */
+  window.addEventListener('pageshow', function(){ try{ window.KAPANIYOR=false; }catch(e){} });
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState==='hidden') bekleyeniHemenYaz();
+    else { try{ window.KAPANIYOR=false; }catch(e){} }   // geri döndük
   });
 
   document.addEventListener('pointerdown', function(e){
