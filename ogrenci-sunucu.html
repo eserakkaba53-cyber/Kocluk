@@ -2471,7 +2471,7 @@ function karsilamaAc(){
         '<div class="km-sec">Önce şunları yap</div>'+
         '<ol class="km-steps">'+
           '<li><b>Hedefini seç.</b> "Hedefe uzaklık" sekmesinden hayalindeki bölümü seç (YÖK verisinden). Sistem, o bölüm için hangi dersten kaç net gerektiğini senin için hesaplar.</li>'+
-          '<li><b>Haftalık çalışma süreni gir.</b> Aynı sekmedeki "Hedefim" kartına, okul dışında haftada kaç saat çalıştığını yaz. <b>Bunu girmezsen "Yetişir mi" bölümleri hiç çalışmaz</b>, kutular "—" kalır.</li>'+
+          '<li><b>Haftalık çalışma süreni gir.</b> Aynı sekmedeki "Hedefim" kartına, okul dışında haftada kaç saat çalıştığını yaz. <b>Bunu girmezsen "Yetişir mi" bölümleri hiç çalışmaz</b> — Konularım sekmesindeki kutular "—" kalır.</li>'+
           '<li><b>Konularını işaretle.</b> "Konularım" sekmesinde bildiğin/bilmediğin konuları işaretle (Bitirdim · İşliyorum · Eksiğim var · Görmedim). Böylece sistem nereden başlayacağını bilir.</li>'+
           '<li><b>Son denemelerini gir.</b> "Denememi gir" sekmesinden karneyi yapıştır — netlerin ve <b>%50\'nin altında kaldığın konular</b> otomatik çıkar.</li>'+
           '<li><b>Ödevlerini yap ve işaretle.</b> "Ödevlerim" sekmesinde ödevlerini gör; bitirince Yaptım / Yarım / Yapamadım işaretle, çözdüğün soruyu gir.</li>'+
@@ -2663,6 +2663,12 @@ function vKonu(){
   const oz=list.map(([k,nm])=>({k,nm,...dersOzet(k),dk:kalanSure(k)}));
   const gTop=oz.reduce((a,o)=>a+o.top,0), gBit=oz.reduce((a,o)=>a+o.bit,0);
   const gDk=oz.reduce((a,o)=>a+o.dk,0), hk=haftaKalan();
+  /* YALNIZ KONU SÜRESİ (5 Eyl 2026 — hata düzeltmesi).
+     ucSenaryoKart üç parametre bekliyor ama buradan yalnız ikisi
+     geçiliyordu; gerekliKonu undefined kalıyor ve üstteki kart HER ZAMAN
+     "—  hesaplanacak konu kalmadı" gösteriyordu, konu dururken.
+     Hesap vHedef'tekiyle aynı: soru çözümü hariç, sınava kalan haftaya bölünmüş. */
+  const gKonuDk=list.reduce((t,[k])=>t+kalanSureAyrik(k).konu,0);
   const say=oz.find(o=>o.k===KSUB).top, bit=oz.find(o=>o.k===KSUB).bit;
   return `
   <div class="card"><div class="stats">
@@ -2672,7 +2678,7 @@ function vKonu(){
     <div class="stat"><div class="k">Gereken süre</div><div class="v" style="font-size:21px">${sa(gDk)}</div><div class="n">${hk?`sınava ${hk} hafta`:'kalan konuların tamamı için'}</div></div>
   </div>
   </div>
-  ${ucSenaryoKart(hk?(gDk/60/hk):null, +D.haftalikSaat||0)}
+  ${ucSenaryoKart(hk?(gDk/60/hk):null, +D.haftalikSaat||0, hk?(gKonuDk/60/hk):null)}
 
   <div class="card"><h2>Ders ders durumun</h2><div class="body" style="padding:0;overflow:auto">
     <table><thead><tr><th>Ders</th><th class="num">Bitti</th><th class="num">Kalan</th><th class="num">Eksik</th><th class="num">Süre</th><th style="width:110px">Tamamlanma</th></tr></thead><tbody>
@@ -3338,14 +3344,19 @@ function vHedef(){
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
     <div class="hint">${!hs
-      ? 'Aşağıdaki <b>Hedefim</b> kartından <b>haftalık çalışma süreni</b> gir; senaryolar dolacak. (Sınav tarihi ortaktır, öğretmenin belirler — senden istenmez.)'
+      ? 'Aşağıdaki <b>Hedefim</b> kartından <b>haftalık çalışma süreni</b> gir; yukarıdaki karşılaştırma dolacak. (Sınav tarihi ortaktır, öğretmenin belirler — senden istenmez.)'
       : !gerekli
       ? 'Kalan konu görünmüyor. Konularım sekmesinden konu durumlarını işaretlersen buradaki hesap dolar.'
       : gerekli<=hs
         ? 'Bu hızla gidersen kalan konuları sınava kadar bitirirsin. Süre tahminleri planlama içindir, kesin ölçüm değildir.'
         : 'Bu hızla kalan konular yetişmiyor. Ya haftalık süreni artır ya da öğretmeninle konu önceliklerini konuş.'}</div>
-  </div></div>
-  ${ucSenaryoKart(gerekli, hs, gerekliKonu)}`;
+    ${/* "Yetişir mi" üç senaryo kartları buradan KALDIRILDI (5 Eyl 2026).
+         Aynı kartlar Konularım sekmesinde de duruyordu; iki sekmede iki kopya
+         hem yer kaplıyor hem hangisine bakılacağını belirsizleştiriyordu.
+         Tek yer: Konularım. Burada yalnız haftalık gereken/beyan karşılaştırması kalır. */''}
+    <div class="hint" style="margin-top:8px"><b>"Yetişir mi" senaryoları</b> (öncelikli · güvenlik payı · genişleme)
+      <b>Konularım</b> sekmesinde. <button class="btn ghost mini" onclick="TAB='konu';render();window.scrollTo(0,0)">Konularım'a git</button></div>
+  </div></div>`;
   let cN=0,hN=0,varH=false;
   list.forEach(([k])=>{ cN+=a.nets[k]||0; const t=+hedefNet(k)||0; if(t){hN+=t;varH=true;} });
   const bar=([k,nm,q])=>{
@@ -3416,9 +3427,9 @@ function vHedef(){
          iletilir" yalnız paket modunda doğru. Eskiden ikisinde de bu yazıyordu. */
       ((typeof sbOturum==='function') && sbOturum() && OGRID)
       ? `<div class="flag ok" style="margin-top:12px"><span class="ic">✓</span><span>Buradaki değişiklikler <b>anında kaydedilir</b>${(typeof soloMu==='function'&&soloMu())?'':' ve öğretmenine yansır'}. Ayrıca rapor göndermene gerek yok.</span></div>
-         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> aşağıdaki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`
+         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> yukarıdaki karşılaştırma ve <b>Konularım</b> sekmesindeki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`
       : `<div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>Burada yaptığın değişiklikler <b>rapor gönderdiğinde</b> öğretmenine iletilir. O onaylayınca onun sisteminde de güncellenir.</span></div>
-         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> aşağıdaki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`}
+         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> yukarıdaki karşılaştırma ve <b>Konularım</b> sekmesindeki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`}
   </div></div>
 
   ${yetisKart}
@@ -3776,10 +3787,10 @@ function vKilavuz(){
   <div class="card k-dikkat"><h2>⚠ Doldurmazsan çalışmayan yerler</h2><div class="body">
     <div class="flag bad"><span class="ic">1</span><span>
       <b>Haftalık çalışma süreni girmezsen "Yetişir mi" hiçbir şey göstermez.</b>
-      <b>Hedefe uzaklık</b> sekmesindeki <b>Hedefim</b> kartında
-      <b>"Haftalık çalışma sürem"</b> kutusu var; okul dışında haftada kaç saat
-      çalıştığını oraya yaz. Girmezsen o sekmedeki bütün "yetişir mi" kutuları
-      <b>"—"</b> kalır — sistem senin tempoyu bilmeden yetişir mi diyemez.</span></div>
+      Süreyi <b>Hedefe uzaklık</b> sekmesindeki <b>Hedefim</b> kartından girersin
+      (<b>"Haftalık çalışma sürem"</b> kutusu); okul dışında haftada kaç saat
+      çalıştığını yaz. Girmezsen <b>Konularım</b> sekmesindeki bütün "yetişir mi"
+      kutuları <b>"—"</b> kalır — sistem senin tempoyu bilmeden yetişir mi diyemez.</span></div>
     <div class="flag bad"><span class="ic">2</span><span>
       <b>Konularını işaretlemezsen kalan süre yanlış çıkar.</b>
       <b>Konularım</b> sekmesinde bitirdiğin konuları işaretle. Sistem bitmemiş
@@ -3848,6 +3859,24 @@ function vKilavuz(){
     <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>
       Konuları sonradan işaretlemen ${solo?'bu haftaki ödevini bozmaz':'öğretmeninin verdiği bu haftaki ödevi bozmaz'} —
       yalnız <b>bundan sonraki</b> plan değişir. Bitirdiğin konudan yeni ödev gelmez.</span></div>
+
+    <p style="margin:16px 0 10px"><b>Yetişir mi — iki kart, iki ayrı soru.</b>
+      Sekmenin üstünde, kalan konuların sınava yetişip yetişmediği burada çıkar:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yalnız konu çalışması</b> — soru çözümü hariç, sadece konuları bitirmeye yeter mi</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Konu + soru çözümü</b> — gerçek hazırlık: konuyu bitirmek <b>ve</b> hedeflenen soruyu çözmek</span></div>
+    <p style="margin:12px 0 10px">Her kartta üç tampon var:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Öncelikli</b> — tam denk, hiç payı yok</span></div>
+    <div class="topic"><span class="dot t1"></span><span class="tn"><b>Güvenlik payı</b> — %15 fazla: hastalık, aksama, tekrar için</span></div>
+    <div class="topic"><span class="dot t1"></span><span class="tn"><b>Genişleme</b> — %30 fazla: daha çok tekrar için yer</span></div>
+    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
+      <b>Hangisine bakmalısın:</b> üstteki kart "konuları ne zaman bitiririm", alttaki
+      "sınava hazır olur muyum" sorusuna cevap verir. Üstte <b>Yetişir</b> ama altta
+      <b>Yetişmez</b> ise konuları bitirirsin fakat yeterince soru çözemezsin —
+      netlerin bildiğinin gerisinde kalır.</span></div>
+    <div class="flag bad" style="margin-top:8px"><span class="ic">!</span><span>
+      <b>Altı kutu da "—" gösteriyorsa haftalık çalışma süreni girmemişsindir.</b>
+      <b>Hedefe uzaklık → Hedefim</b> kartından gir; kutular anında dolar.
+      Süreni abartma — gerçekte çalıştığın saati yaz, yoksa sistem sana yalan söyler.</span></div>
   </div></div>
 
   <div class="card"><h2>Denememi gir sekmesi</h2><div class="body">
@@ -3882,17 +3911,16 @@ function vKilavuz(){
 
   <div class="card"><h2>Hedefe uzaklık sekmesi</h2><div class="body">
     <p style="margin:0 0 12px">Hedef bölümünü seçersin; taban puan, başarı sırası ve
-      <b>ders ders hedef netler</b> YÖK verisinden dolar. Sonra üç şey görürsün:</p>
+      <b>ders ders hedef netler</b> YÖK verisinden dolar. Sonra şunları görürsün:</p>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Sınava kalan hafta</b> — ortak sınav tarihinden hesaplanır</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kalan süre</b> — iki ayrı sayı: yalnız konu çalışması, ve konu + soru çözümü</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yetişir mi</b> — üç tamponla: Öncelikli, Güvenlik payı (%15), Genişleme (%30)</span></div>
-    <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
-      <b>Haftalık çalışma süreni girmezsen bu sekmenin yarısı çalışmaz.</b>
-      "Yetişir mi" kutuları <b>"—"</b> kalır. Aynı sekmedeki <b>Hedefim</b> kartından süreni gir;
-      kutular anında dolar. Süreni abartma — gerçekte çalıştığın saati yaz, yoksa sistem sana yalan söyler.</span></div>
-    <div class="hint" style="margin-top:10px"><b>Güvenlik payı:</b> hastalık, aksama ve tekrar için ayrılan fazladan süre.
-      <b>Genişleme:</b> daha çok tekrar için yer. "Öncelikli yetişiyor ama güvenlik payı yetişmiyor" çıkıyorsa
-      planın çok gergin demektir — bir aksilikte açık verirsin.</div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Haftada gereken saat</b> — senin beyan ettiğin süreyle yan yana</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hedef net karşılaştırması</b> — ders ders, nerede olduğun ve nerede olman gerektiği</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hedefim kartı</b> — hedefin, sınav tarihi (kapalı) ve <b>haftalık çalışma süren</b></span></div>
+    <div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>
+      <b>"Yetişir mi" senaryoları burada değil, Konularım sekmesinde.</b>
+      Burası "hedefe ne kadar uzaktayım" sorusuna, orası "kalan konular yetişir mi" sorusuna bakar.
+      Haftalık çalışma süresini yine buradan girersin — ikisi de o sayıyı kullanır.</span></div>
   </div></div>
 
   <div class="card"><h2>Puan hesapla sekmesi</h2><div class="body">
@@ -3960,7 +3988,8 @@ function vKilavuz(){
     ${sunucu?kAdim('?','Programım boş görünüyor', solo
       ? '<b>Bu haftanın planını kabul etmemişsindir.</b> Ödevlerim sekmesine git, plan kartından kabul et — takvim o anda dolar.'
       : 'Öğretmenin bu hafta için henüz ödev vermemiş ya da programı dağıtmamıştır. Ödevlerim sekmesinde de ödev yoksa öğretmenine sor.'):''}
-    ${kAdim('?','"Yetişir mi" hep "—" gösteriyor','<b>Haftalık çalışma süreni girmemişsindir.</b> Hedefe uzaklık → Hedefim kartından gir. Hedef bölümünü de seçmediysen onu da seç.')}
+    ${kAdim('?','"Yetişir mi" kutuları hep "—" gösteriyor','<b>Haftalık çalışma süreni girmemişsindir.</b> Kutular <b>Konularım</b> sekmesinde, süre ise <b>Hedefe uzaklık → Hedefim</b> kartında. Süreyi gir, kutular dolar.')}
+    ${kAdim('?','"Yetişir mi" kartını Hedefe uzaklık\'ta bulamıyorum','Doğru yerdesin — o kartlar <b>Konularım</b> sekmesine taşındı. Hedefe uzaklık artık yalnız hedefe ne kadar uzakta olduğunu gösteriyor.')}
     ${kAdim('?','Yanlış işaretledim','Aynı yere tekrar dokun, durum sırayla değişir. İstediğin kadar düzeltebilirsin, hiçbir şey kilitlenmez.')}
     ${kAdim('?','Konuyu bitirdim ama ödevi hâlâ duruyor','Konuyu bitirirken çıkan soruya "Hayır" demişsindir. Ödevi Ödevlerim sekmesinden elle <b>Yaptım</b> işaretle.')}
     ${sunucu?kAdim('?','"Son işlem kayıt olmadı" penceresi çıktı','İnternetin kesilmiş ya da oturumun kapanmış olabilir. Önce <b>Tekrar dene</b>ye bas. Düzelmezse sayfayı yenile — ama şunu bil: <b>kaydedilemeyen son değişiklik gider</b>, yenileyince onu tekrar yapman gerekir.'):''}
@@ -4181,10 +4210,10 @@ function vYardim(){
   <div class="card"><h2>Kısa kılavuz<small>Panelde ne nerede.</small></h2><div class="body">
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Ödevlerim</b> — ${yKoc?'Öğretmeninin verdiği ödevler':'Sistemin senin için çıkardığı haftalık ödevler'}. Yaptım / Yarım / Yapamadım işaretlersin, soru hedefi varsa kaç soru çözdüğünü girersin.${yKoc?'':' <b>Kabul etmeden ödev oluşmaz.</b>'}</span></div>
     ${ySun?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Programım</b> — Ödevlerinin haftalık takvimi. Meşgul olduğun saatleri kapatırsın${yKoc?'':', blokları sürükleyip taşırsın'}.</span></div>`:''}
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Konularım</b> — 628 konunun tamamı. Her biri için görmedim · işliyorum · bitirdim · eksiğim var.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Konularım</b> — 628 konunun tamamı. Her biri için görmedim · işliyorum · bitirdim · eksiğim var. <b>"Yetişir mi" senaryoları da burada.</b></span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Denememi gir</b> — Karneyi yapıştır, netler otomatik çıksın. <b>%50'nin altında</b> kaldığın konular ayrı kartta listelenir.</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Gelişimim</b> — Net grafiğin ve ders ders seyrin.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hedefe uzaklık</b> — Bölüm seçersin; kalan süre ve <b>yetişir mi</b> hesabı burada. <b>Haftalık çalışma süreni de buradan girersin.</b></span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hedefe uzaklık</b> — Bölüm seçersin; hedef netler, kalan süre ve haftada gereken saat burada. <b>Haftalık çalışma süreni de buradan girersin.</b></span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Puan hesapla</b> — Diploma notunla birlikte anlık puanın.</span></div>
     ${ySun?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Özel Ders</b> — Tek konuda takıldıysan tek seferlik ders talebi açarsın.</span></div>`:''}
     ${(ySun&&!yKoc)?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Paketim</b> — Paketin ve kalan süren.</span></div>`:''}
@@ -4193,7 +4222,7 @@ function vYardim(){
 
     <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
       <b>Haftalık çalışma süreni girmezsen "Yetişir mi" bölümleri çalışmaz</b> — kutular "—" kalır.
-      Hedefe uzaklık → Hedefim kartından gir.</span></div>
+      Kutular <b>Konularım</b>'da, süre <b>Hedefe uzaklık → Hedefim</b> kartında.</span></div>
     ${ySun?`<div class="hint" style="margin-top:10px">Ödevlerini işaretlemen ve denemelerini girmen yeterli — her şey kendiliğinden ${yKoc?'öğretmenine ulaşıyor':'kaydediliyor'}.</div>`
       :`<div class="hint" style="margin-top:10px">Paket modundasın: işaretlerin yalnız bu tarayıcıda durur. Ayda bir yedek al.</div>`}
     <button class="btn ghost wide" style="margin-top:12px" onclick="TAB='kilavuz';render()">Tam kullanım kılavuzunu aç</button>
