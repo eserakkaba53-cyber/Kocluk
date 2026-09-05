@@ -61,7 +61,7 @@ header{background:var(--lacivert);color:#fff;padding:14px 0}
 header .sar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 header img{height:38px;width:auto;display:block}
 header a{color:#fff;text-decoration:none;font-weight:700;letter-spacing:.02em}
-header nav{margin-left:auto;font-size:14px}
+header nav{margin-left:auto;font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
 header nav a{color:#B9CBDA;font-weight:500}
 header nav a:hover{color:#fff;text-decoration:underline}
 
@@ -121,7 +121,11 @@ footer a{color:#B9CBDA}
 <header><div class="sar">
   <a href="/"><img src="/favicon-192.png" alt="Biyoser" width="38" height="38"></a>
   <a href="/">Biyoser</a>
-  <nav><a href="/">Koçluk sistemi</a></nav>
+  <nav>
+    <a href="/yks-geri-sayim.html">Geri sayım</a>
+    <a href="/yks-konu-listesi.html">Konu listesi</a>
+    <a href="/">Koçluk sistemi</a>
+  </nav>
 </div></header>
 
 <main class="sar">
@@ -247,7 +251,9 @@ konular kendiliğinden çıkıyor.</p></details>
 
 <footer><div class="sar">
   <b style="color:#fff">Biyoser</b> — YKS öğrenci takip sistemi ·
-  <a href="/">biyoser.com.tr</a><br>
+  <a href="/">biyoser.com.tr</a> ·
+  <a href="/yks-geri-sayim.html">Geri sayım</a> ·
+  <a href="/yks-konu-listesi.html">Konu listesi</a><br>
   <span style="font-size:13px">Bu sayfadaki hesap tahminidir, ÖSYM'nin resmi puan hesabı değildir.</span>
 </div></footer>
 
