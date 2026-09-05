@@ -1347,6 +1347,21 @@ return {
   veri: function(){ return {kapali:disaKapali(), bloklar:disaBloklar()}; },
   /* Panel dışarıdan tazeleme yaptıysa (sunucudan yeni program geldi) */
   tazele: function(program){ iceriAl(program); ciz(); },
+  /* ÖDEV İPTALİ — takvimi de temizler.                    5 Eyl 2026
+     Panel bir ödevi sildiğinde blokları öksüz kalıyordu: tazelikOlc()
+     bunları yalnız SAYIYOR ("N iş artık ödev listesinde değil"), takvimden
+     düşürmüyor. Sonuç: öğrenci ödevi iptal ediyor ama Programım'da
+     duruyor. Bu yol, o ödeve ait yerleşmiş ve bekleyen blokları birlikte
+     kaldırır ve kaydı işaretler. Kaç blok gittiğini döndürür. */
+  odevKaldir: function(odevId){
+    if(!odevId) return 0;
+    var once = bloklar.length + bekleyenler.length;
+    bloklar     = bloklar.filter(function(b){ return b.odevId !== odevId; });
+    bekleyenler = bekleyenler.filter(function(b){ return b.odevId !== odevId; });
+    var n = once - (bloklar.length + bekleyenler.length);
+    if(n){ isaretle('bloklar'); ciz(); }
+    return n;
+  },
   /* Ölçüm — sınama ve panelin özet satırı için */
   olcum: function(){
     var y=gunYukleri();
