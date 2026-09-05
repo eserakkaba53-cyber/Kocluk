@@ -85,6 +85,27 @@ window.MESAJ = (function(){
     ciz();
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     ✓ / ✓✓ İŞARETİ                                    5 Eyl 2026
+     Yalnız KENDİ gönderdiğin mesajda çıkar — karşı tarafınkinde
+     anlamsız olurdu.
+        ✓   iletildi : sunucuya yazıldı
+        ✓✓  okundu   : karşı taraf konuşmayı açtı
+
+     "Cihaza ulaştı" diye bir ara kademe YOK ve uydurulmuyor: panel bir
+     web sayfası, arka planda çalışan bir uygulama değil; mesaj sunucuya
+     yazıldığı an iletilmiş sayılır.
+
+     okundu alanı TANIMSIZSA hiçbir şey çizilmez. Sebep: sunucudaki
+     MESAJ-okundu-isareti.sql henüz çalıştırılmamış olabilir; o durumda
+     her mesajı "okunmadı" göstermek yanlış bilgi vermek olurdu. */
+  function tik(m, ben){
+    if(!ben || !m || m.okundu === undefined || m.okundu === null) return '';
+    return m.okundu
+      ? ' <span class="msj-tik okundu" title="Okundu">✓✓</span>'
+      : ' <span class="msj-tik" title="İletildi — henüz okunmadı">✓</span>';
+  }
+
   function kartKullanici(){
     if(D.benim === null && !D.yukleniyor){ setTimeout(benimYukle, 10); }
     var liste;
@@ -96,7 +117,7 @@ window.MESAJ = (function(){
       liste = '<div class="msj-akis">' + D.benim.map(function(m){
         var ben = (m.kimden === 'kullanici');
         return '<div class="msj '+(ben?'ben':'kars')+'">'+
-                 '<div class="msj-ust">'+(ben?'Sen':'Yönetim')+' · '+esc(zaman(m.eklendi))+'</div>'+
+                 '<div class="msj-ust">'+(ben?'Sen':'Yönetim')+' · '+esc(zaman(m.eklendi))+tik(m,ben)+'</div>'+
                  '<div class="msj-govde">'+esc(m.metin).replace(/\n/g,'<br>')+'</div>'+
                '</div>';
       }).join('') + '</div>';
@@ -176,7 +197,7 @@ window.MESAJ = (function(){
         : '<div class="msj-akis">' + (v.mesajlar||[]).map(function(m){
             var ben = (m.kimden === 'yonetici');
             return '<div class="msj '+(ben?'ben':'kars')+'">'+
-                     '<div class="msj-ust">'+(ben?'Sen (yönetim)':esc(kisi.ad||'Kullanıcı'))+' · '+esc(zaman(m.eklendi))+'</div>'+
+                     '<div class="msj-ust">'+(ben?'Sen (yönetim)':esc(kisi.ad||'Kullanıcı'))+' · '+esc(zaman(m.eklendi))+tik(m,ben)+'</div>'+
                      '<div class="msj-govde">'+esc(m.metin).replace(/\n/g,'<br>')+'</div>'+
                    '</div>';
           }).join('') + '</div>';
@@ -242,7 +263,11 @@ window.MESAJ = (function(){
       '.msj.kars{align-self:flex-start;background:var(--paper,#f4f6f8);'+
         'border:1px solid var(--line,#d8e2e8)}'+
       '.msj-ust{font-size:11px;color:var(--ink-3,#6E8E9B);margin-bottom:3px;font-family:var(--mono,monospace)}'+
-      '.msj-govde{color:var(--ink,#12242e);word-break:break-word}';
+      '.msj-govde{color:var(--ink,#12242e);word-break:break-word}'+
+      /* tikler: okunmamis soluk, okunmus vurgulu — WhatsApp mantigi */
+      '.msj-tik{font-family:var(--sans,sans-serif);letter-spacing:-2px;margin-left:2px;'+
+      'color:var(--ink-3,#8aa0ab)}'+
+      '.msj-tik.okundu{color:var(--accent,#2E4A7D);font-weight:700}';
     document.head.appendChild(s);
   }
 
