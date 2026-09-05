@@ -593,6 +593,46 @@ function bekleyeniHemenYaz(){
     if(k.bloklar && C.kaydet.bloklar) C.kaydet.bloklar(disaBloklar());
   }catch(e){}
 }
+/* ═══════════════════════════════════════════════════════════
+   PARÇA ETİKETİ (1/2 · 2/2)                       5 Eyl 2026
+   ───────────────────────────────────────────────────────────
+   SORUN: Etiket blok ÜRETİLİRKEN yazılıp kayda gömülüyordu
+   (blokListesi → parca). Kayıttan geri gelen, eşitlemeyle
+   eklenen ya da elle taşınan bloklarda alan boş kalıyordu;
+   aynı işin bir parçası "1/2" derken diğeri hiçbir şey
+   demiyordu. Ekranda görülen karışıklığın sebebi buydu.
+
+   ÇÖZÜM: Etiket artık o an ELDEKİ bloklara bakılarak yeniden
+   hesaplanır. Blok nereden gelirse gelsin sonuç aynı:
+   bir işin (ödev + tür) tek parçası varsa etiket YOK (1/1
+   yazılmaz), birden çoksa HEPSİ numaralanır.
+   Yerleşemeyen (bekleyen) parçalar da sayıya dahildir —
+   "2/3" görüp üçüncüsünün sığmadığını bilmek gerekir.
+   ═══════════════════════════════════════════════════════════ */
+function parcaSirasi(b){
+  if(typeof b.pi==='number' && isFinite(b.pi)) return b.pi;
+  /* Eski kayıtlarda pi olmayabilir; kimlik "odevId|tur|i" biçiminde. */
+  var m=String(b.id||'').match(/\|(\d+)$/);
+  return m ? +m[1] : 9999;
+}
+function parcalariTazele(){
+  var grup={};
+  bloklar.concat(bekleyenler).forEach(function(b){
+    if(!b) return;
+    var k=(b.odevId||b.id)+'|'+(b.tur||'');
+    (grup[k]=grup[k] || []).push(b);
+  });
+  Object.keys(grup).forEach(function(k){
+    var l=grup[k];
+    if(l.length<2){ l[0].parca=''; return; }   /* tek parça: 1/1 yazılmaz */
+    l.sort(function(a,b){
+      var f=parcaSirasi(a)-parcaSirasi(b);
+      return f || String(a.id).localeCompare(String(b.id));
+    });
+    l.forEach(function(b,i){ b.parca=(i+1)+'/'+l.length; });
+  });
+}
+
 /* "3-20" ya da sebepliyse "3-20|OKUL" */
 function disaKapali(){
   var l=[];
@@ -612,6 +652,7 @@ function blokDisa(b, yerlesmis){
           kilit:yerlesmis?!!b.kilit:false};
 }
 function disaBloklar(){
+  parcalariTazele();          /* kayda da doğru etiket gitsin */
   return bloklar.map(function(b){ return blokDisa(b,true); })
     .concat(bekleyenler.map(function(b){ return blokDisa(b,false); }));
 }
@@ -673,6 +714,9 @@ function iskelet(){
 function ciz(){
   var t=document.getElementById('pg-tablo');
   if(!t) return;
+  /* Etiketler her çizimde yeniden hesaplanır: blok kayıttan mı geldi,
+     eşitlemeyle mi eklendi, elle mi taşındı — hiç fark etmez. */
+  parcalariTazele();
   var h='<thead><tr><th class="sa">SAAT</th>';
   for(var gi=0;gi<GUN;gi++)
     h+='<th>'+GUN_KISA[gi]+'<i>'+GUNLER[gi]+'</i></th>';
@@ -891,7 +935,10 @@ function cizAlt(){
        sa(bekleyenler.reduce(function(a,b){ return a+b.dk; },0))+'</div>';
     h+='<div class="pg-bek" id="pg-bek">'+bekleyenler.map(function(b){
       return '<div class="bl" data-bek="'+esc(b.id)+'" style="background:'+renkOf(b.sub)+'">'+
-        '<b>'+esc(kisaAd(b.sub))+(b.tur==='soru'?' · SORU':b.tur==='konu'?' · KONU':'')+'</b>'+
+        /* Parça numarası burada da lazım: "2/3 sığmadı" ile "hepsi sığmadı"
+           çok farklı iki durum; etiketsiz liste ikisini aynı gösteriyordu. */
+        '<b>'+esc(kisaAd(b.sub))+(b.tur==='soru'?' · SORU':b.tur==='konu'?' · KONU':'')+
+        (b.parca?' '+esc(b.parca):'')+'</b>'+
         esc(b.konu)+' — '+sa(b.dk)+'</div>';
     }).join('')+'</div>';
     h+='<div class="pg-flag warn"><span class="ic">!</span><span>'+

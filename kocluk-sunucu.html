@@ -803,7 +803,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260904c"></script>
+<script src="program.js?v=20260905a"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260904a"></script>
@@ -6611,6 +6611,9 @@ async function koclariOku(){
       bugun_aktif: false
     }));
     YONDURUM = KOCLAR.length ? '' : 'HATA|Liste boş döndü. Hesabında yönetici yetkisi var mı?';
+    /* Gerçek son giriş (auth.users). Kurulu değilse sessizce atlanır ve
+       koc_listesi'nin cihazlar tabanlı değeri kullanılmaya devam eder. */
+    await kocGirisleriOku();
   }catch(e){
     KOCLAR=[];
     YONDURUM = 'HATA|Liste alınamadı: ' + (e.message||e) +
@@ -6667,14 +6670,59 @@ async function kocKaydet(id){
   render();
 }
 
+/* Tarih + saat, tam hâliyle. gun() yalnız "3 gün önce" diyor; yönetimde
+   "tam olarak ne zaman" sorusunun cevabı da gerekiyor. */
+function tarihSaat(t){
+  if(!t) return '';
+  const d=new Date(t); if(isNaN(d)) return '';
+  return d.toLocaleString('tr-TR',{day:'2-digit',month:'short',year:'numeric',
+                                   hour:'2-digit',minute:'2-digit'});
+}
+/* "3 gün önce" + altında tam tarih-saat — iki satırlık hücre. */
+function girisHucre(t, bugun){
+  if(!t) return '<span style="color:var(--ink-3)">—</span>';
+  const f=Math.floor((Date.now()-new Date(t))/864e5);
+  const bagil = f===0?'bugün' : f===1?'dün' : f+' gün önce';
+  const taze  = String(t).slice(0,10)===bugun;
+  return `<div style="font-size:12px;color:${taze?'var(--ok)':f<=7?'var(--ink-2)':'var(--ink-3)'};font-weight:${taze?'650':'400'}">${bagil}</div>
+    <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono);white-space:nowrap">${esc(tarihSaat(t))}</div>`;
+}
+
+/* Yöneticinin gördüğü koç son-giriş bilgisi: auth.users'tan gelen gerçek
+   değer (YONETIM-son-giris.sql). Yoksa koc_listesi'nin cihazlar tabanlı
+   değeri kullanılır. */
+var KOCGIRIS={};
+var YOGRSURUM='';          /* 'v2' = son giriş sütunu dolu · 'eski' = SQL çalıştırılmamış */
+async function kocGirisleriOku(){
+  try{
+    let r=await sbCagri('/rest/v1/rpc/yonetici_koc_girisleri',{method:'POST',body:{}});
+    if(typeof r==='string'){ try{ r=JSON.parse(r); }catch(e){} }
+    const h={}; (Array.isArray(r)?r:[]).forEach(x=>{ if(x&&x.id) h[x.id]=x.son_giris||''; });
+    KOCGIRIS=h;
+  }catch(e){ KOCGIRIS={}; }   /* SQL henüz çalıştırılmadıysa sessizce eski değere düş */
+}
+
 async function kocOgrencileri(id, ad){
   /* RLS, koçların birbirinin öğrencisini okumasını engeller; yönetici bu
      yüzden doğrudan tablodan DEĞİL, sunucudaki yonetici_ogrenciler()
      fonksiyonuyla okur (security definer — yonetici_mi kontrolü sunucuda). */
   const koc=(KOCLAR||[]).find(x=>x.id===id);
-  YOGRENCI={id:id, ad:ad||(koc?koc.ad:'')||''}; YOGRLISTE=[]; YOGRHATA='Yükleniyor...'; render();
+  YOGRENCI={id:id, ad:ad||(koc?koc.ad:'')||''}; YOGRLISTE=[]; YOGRHATA='Yükleniyor...';
+  YOGRSURUM=''; render();
   try{
-    let r=await sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:id}});
+    /* Önce _v2: öğrencinin SON GİRİŞ zamanını da getiriyor (auth.users).
+       Kurulmamışsa PostgREST 404 döner ve eski fonksiyona düşülür — böylece
+       SQL çalıştırılmadan önce de liste açılmaya devam eder. */
+    let r=null;
+    try{
+      r=await sbCagri('/rest/v1/rpc/yonetici_ogrenciler_v2',{method:'POST',body:{koc:id}});
+      YOGRSURUM='v2';
+    }catch(e){
+      if(e && (e.kod===404 || /yonetici_ogrenciler_v2/.test(e.message||''))){
+        r=await sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:id}});
+        YOGRSURUM='eski';
+      } else throw e;
+    }
     if(typeof r==='string'){ try{ r=JSON.parse(r); }catch(e){} }
     YOGRLISTE=Array.isArray(r)?r:[]; YOGRHATA='';
   }catch(e){ YOGRHATA='Öğrenciler alınamadı: '+(e.message||e)+
@@ -6688,17 +6736,38 @@ function vKocOgrencileri(){
     <button class="btn ghost" onclick="YOGRENCI=null;YOGRLISTE=[];render()">← Koç listesine dön</button>
     ${YOGRHATA?`<div class="flag ${/Yükleniyor/.test(YOGRHATA)?'warn':'bad'}" style="margin-top:12px">
       <span class="ic">${/Yükleniyor/.test(YOGRHATA)?'·':'!'}</span><span>${esc(YOGRHATA)}</span></div>`:''}
-    ${YOGRLISTE.length?`<div style="margin-top:12px"><table>
-      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>E-posta</th><th>Hesap</th><th>Onay</th><th class="num">Deneme</th><th class="num">Ödev</th><th class="num">Kayıt</th></tr></thead>
+    ${YOGRSURUM==='eski'?`<div class="flag warn" style="margin-top:12px"><span class="ic">!</span><span>
+      <b>Son giriş sütunu boş görünüyor.</b> Sunucuda <b>YONETIM-son-giris.sql</b> henüz çalıştırılmamış —
+      liste eski fonksiyondan geliyor. Dosyayı Supabase → SQL Editor'de bir kez çalıştır.</span></div>`:''}
+    ${YOGRLISTE.length?(()=>{
+      const bugunT=new Date().toISOString().slice(0,10);
+      /* Hiç girmemiş ve 14 günden uzun süredir uğramamış öğrenciler,
+         listeye bakınca ilk fark edilmesi gereken şey. */
+      const hicGirmemis=YOGRLISTE.filter(o=>o.bagli&&!o.son_giris).length;
+      const uyuyan=YOGRLISTE.filter(o=>o.son_giris&&
+        (Date.now()-new Date(o.son_giris))/864e5>14).length;
+      const bugunGiren=YOGRLISTE.filter(o=>String(o.son_giris||'').slice(0,10)===bugunT).length;
+      return `${YOGRSURUM==='v2'?`<div class="stats" style="margin-top:12px">
+        <div class="stat"><div class="k">Bugün giren</div><div class="v" style="color:var(--ok)">${bugunGiren}</div><div class="n">${YOGRLISTE.length} öğrenciden</div></div>
+        <div class="stat"><div class="k">14 gündür yok</div><div class="v" style="color:${uyuyan?'var(--warn)':'inherit'}">${uyuyan}</div><div class="n">girişi eskimiş</div></div>
+        <div class="stat"><div class="k">Hiç girmemiş</div><div class="v" style="color:${hicGirmemis?'var(--bad)':'inherit'}">${hicGirmemis}</div><div class="n">hesabı var, kullanmamış</div></div>
+      </div>`:''}
+      <div style="margin-top:12px;overflow:auto"><table>
+      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>E-posta</th><th>Hesap</th><th>Son giriş</th><th>Onay</th><th class="num">Deneme</th><th class="num">Ödev</th><th class="num">Kayıt</th></tr></thead>
       <tbody>${YOGRLISTE.map(o=>`<tr>
         <td><b>${esc(o.ad||'—')}</b></td><td>${esc(o.sinif||'—')}</td>
         <td>${esc(o.alan||'—')}</td>
         <td style="font-size:12px">${esc(o.eposta||'—')}</td>
         <td>${o.bagli?'<span class="pill s1" style="font-size:10.5px">bağlı</span>':'<span class="pill s0" style="font-size:10.5px">girmedi</span>'}</td>
+        <td style="min-width:118px">${
+          o.son_giris ? girisHucre(o.son_giris, bugunT)
+          : (!o.bagli ? '<span style="font-size:11.5px;color:var(--ink-3)">hesap yok</span>'
+             : YOGRSURUM==='v2' ? '<span style="font-size:11.5px;color:var(--bad)">hiç girmemiş</span>'
+             : '<span style="color:var(--ink-3)">—</span>')}</td>
         <td>${o.onay?'<span class="pill s1" style="font-size:10.5px">✓</span>':'<span class="pill s3" style="font-size:10.5px">eksik</span>'}</td>
         <td class="num">${o.deneme??'—'}</td><td class="num">${o.odev??'—'}</td>
-        <td class="num">${esc(String(o.kayit||o.olusturuldu||'').slice(0,10))}</td></tr>`).join('')}</tbody>
-    </table></div>`:(YOGRHATA?'':'<div class="empty" style="margin-top:12px">Bu koçun kayıtlı öğrencisi yok.</div>')}
+        <td class="num">${esc(String(o.kayit||o.olusturuldu||'').slice(0,10)||'—')}</td></tr>`).join('')}</tbody>
+    </table></div>`;})():(YOGRHATA?'':'<div class="empty" style="margin-top:12px">Bu koçun kayıtlı öğrencisi yok.</div>')}
   </div></div>`;
 }
 
@@ -6709,7 +6778,10 @@ function vYonetici(){
   const ucretli=KOCLAR.filter(k=>k.ucretli||(k.lisans_bitis&&k.lisans_bitis>=bugun));
   const denemede=KOCLAR.filter(k=>!k.lisans_bitis&&k.deneme_bitis&&k.deneme_bitis>=bugun);
   const dolan=KOCLAR.filter(k=>!k.gecerli);
-  const bugunAktif=KOCLAR.filter(k=>k.bugun_aktif||(k.son_giris||'').slice(0,10)===bugun);
+  /* Son giriş için gerçek kaynak varsa (auth.users) o kullanılır. */
+  const sonG=(k)=>KOCGIRIS[k.id]||k.son_giris||'';
+  const bugunAktif=KOCLAR.filter(k=>k.bugun_aktif||String(sonG(k)).slice(0,10)===bugun);
+  const haftaAktif=KOCLAR.filter(k=>sonG(k)&&(Date.now()-new Date(sonG(k)))/864e5<=7);
   const yakinda=KOCLAR.filter(k=>k.gecerli&&k.lisans_bitis&&k.lisans_bitis<=otuzGun);
   const gelir=ucretli.reduce((a,k)=>a+({ogrenci:99,koc:449,sinif:2999,okul:19999}[k.paket]||0),0);
   const ogrToplam=KOCLAR.reduce((a,k)=>a+(k.ogrenci||0),0);
@@ -6725,7 +6797,7 @@ function vYonetici(){
     <div class="stat"><div class="k">Süresi dolan</div><div class="v" style="color:${dolan.length?'var(--bad)':'inherit'}">${dolan.length}</div>
       <div class="n">kazanılabilir</div></div>
     <div class="stat"><div class="k">Bugün giriş yapan</div><div class="v" style="color:var(--accent)">${bugunAktif.length}</div>
-      <div class="n">${toplam} koçtan</div></div>
+      <div class="n">${toplam} koçtan · son 7 günde ${haftaAktif.length}</div></div>
   </div>
   <div class="stats" style="border-top:1px solid var(--line-soft)">
     <div class="stat"><div class="k">Toplam koç</div><div class="v">${toplam}</div><div class="n">kayıtlı hesap</div></div>
@@ -6771,8 +6843,12 @@ function vYonetici(){
              gönderiyordu ama panel hiç göstermiyordu; "bugün kayıt oldu ama
              — yazıyor" karışıklığının sebebi buydu: yandaki sütun kayıt
              değil, SON GİRİŞ (cihazlar tablosundan). -->
-        <td style="font-size:12px;color:${(k.kayit||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'}">${gun(k.kayit)}</td>
-        <td style="font-size:12px;color:${(k.son_giris||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'}">${gun(k.son_giris)}</td>
+        <td style="font-size:12px;color:${(k.kayit||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'}">${gun(k.kayit)}
+          ${k.kayit?`<div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono);white-space:nowrap">${esc(String(k.kayit).slice(0,10))}</div>`:''}</td>
+        <!-- Son giriş: KOCGIRIS varsa auth.users'tan gelen gerçek değer,
+             yoksa koc_listesi'nin cihazlar tabanlı değeri. Artık yalnız
+             "3 gün önce" değil, altında tam tarih ve saat de var. -->
+        <td style="min-width:118px">${girisHucre(KOCGIRIS[k.id]||k.son_giris, bugun)}</td>
         <td><label style="display:flex;gap:6px;align-items:center;font-size:12.5px">
           <input type="checkbox" id="ya_${k.id}" ${k.aktif?'checked':''} style="width:auto">aktif</label>
           <div style="font-size:11px;color:${k.gecerli?'var(--ok)':'var(--bad)'};margin-top:3px">${k.gecerli?'çalışıyor':'durdu'}</div></td>
