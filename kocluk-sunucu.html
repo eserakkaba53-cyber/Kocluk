@@ -6889,7 +6889,7 @@ function vYonetici(){
 
   <div class="card"><h2>Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2>
   <div class="body" style="padding:0;overflow:auto">
-    <table><thead><tr>${ykBaslik('ad','Koç')}<th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th>${ykBaslik('kayit','Kayıt')}${ykBaslik('giris','Son giriş')}<th>Durum</th><th></th></tr></thead><tbody>
+    <table><thead><tr>${ykBaslik('ad','Koç')}<th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th>${ykBaslik('kayit','Kayıt')}${ykBaslik('giris','Son giriş')}<th>Durum</th><th></th></tr></thead><tbody>
     ${koclarSirali().map(k=>{
       const dolu=k.ogrenci>=k.limit;
       const bit=k.lisans_bitis||k.deneme_bitis||'';
@@ -6915,7 +6915,10 @@ function vYonetici(){
         <td><input type="date" id="yb_${k.id}" value="${k.lisans_bitis||''}" style="width:140px">
           <button class="btn ghost mini" style="margin-top:4px" onclick="yilEkle('${k.id}')">+1 yıl</button>
           ${bit?`<div style="font-size:10.5px;color:${yakin?'var(--warn)':'var(--ink-3)'};margin-top:2px">${k.lisans_bitis?'lisans':'deneme'} ${bit}</div>`:''}</td>
-        <td class="num"><input type="number" id="yc_${k.id}" min="1" max="20" value="${k.cihaz_limiti||2}" style="width:64px"></td>
+        <!-- Cihaz sınırı sütunu kaldırıldı: sınır artık uygulanmıyor, kutu
+             hiçbir işe yaramadığı hâlde çalışıyormuş gibi görünüyordu.
+             koclar.cihaz_limiti kolonu duruyor; kocKaydet alan yokken null
+             gönderiyor, koc_guncelle de coalesce ile eski değeri koruyor. -->
         <!-- KAYIT tarihi (koclar.olusturuldu). koc_listesi bunu zaten
              gönderiyordu ama panel hiç göstermiyordu; "bugün kayıt oldu ama
              — yazıyor" karışıklığının sebebi buydu: yandaki sütun kayıt
@@ -6994,14 +6997,36 @@ let LISANS=null, CIHAZLAR=[], CIHAZHATA='';
    'is not defined' hatası veriyor, render duruyor ve sekme açılmıyordu. */
 let KOCLAR=[], YONDURUM='';
 let YOGRENCI=null, YOGRLISTE=[], YOGRHATA='';
-function cihazParmakIzi(){
-  // Tarayıcı + ekran + saat dilimi karışımı. Kimlik değil, cihaz ayırt edici.
+/* Eski yöntem: tarayıcı + ekran + saat dilimi karışımından türetilen imza.
+   SORUN: userAgent her tarayıcı güncellemesinde değişiyor, ekran boyutu
+   harici monitör takınca değişiyor. Aynı bilgisayar birkaç haftada bir
+   YENİ cihaz sayılıyor ve liste şişiyordu (3 cihaz -> 7 kayıt).
+   Artık yalnız ilk seferde, mevcut kaydı yakalamak için kullanılıyor. */
+function cihazImzasiEski(){
   const p=[navigator.userAgent, navigator.language, screen.width+'x'+screen.height,
            screen.colorDepth, new Date().getTimezoneOffset(),
            navigator.hardwareConcurrency||0, navigator.platform||''].join('|');
   let h1=5381, h2=52711;
   for(let i=0;i<p.length;i++){ const c=p.charCodeAt(i); h1=((h1<<5)+h1+c)|0; h2=((h2<<5)+h2^c)|0; }
   return (h1>>>0).toString(36)+'-'+(h2>>>0).toString(36);
+}
+
+/* Kalıcı cihaz kimliği. İlk çalışmada ESKİ imzayı hesaplayıp saklıyoruz;
+   böylece o tarayıcının hâlihazırdaki kaydı bulunur, yeni satır açılmaz.
+   Sonrasında değer donar — tarayıcı güncellense de aynı kalır. */
+function cihazParmakIzi(){
+  const anahtar='biyoser_cihaz_kimlik';
+  try{
+    const v=localStorage.getItem(anahtar);
+    if(v) return v;
+    const y=cihazImzasiEski();
+    localStorage.setItem(anahtar, y);
+    return y;
+  }catch(e){
+    /* Gizli sekme ya da katı gizlilik ayarı: saklayamıyoruz, eski
+       yönteme düşüyoruz. Sınır kalktığı için fazladan kayıt zarar vermez. */
+    return cihazImzasiEski();
+  }
 }
 function cihazAdi(){
   const u=navigator.userAgent;
@@ -7127,7 +7152,9 @@ function hesapKarti(){
       <div class="stat"><div class="k">Durum</div><div class="v" style="font-size:15px;color:${LISANS&&LISANS.gecerli?'var(--ok)':'var(--bad)'}">${LISANS?(LISANS.gecerli?'Aktif':'Süre doldu'):'—'}</div>
         <div class="n">${LISANS?(LISANS.suresiz?'süresiz':(LISANS.lisans_bitis?'lisans '+LISANS.lisans_bitis:'deneme '+(LISANS.deneme_bitis||'—'))):''}</div></div>
       <div class="stat"><div class="k">Kalan</div><div class="v" style="font-size:20px">${LISANS?(LISANS.suresiz?'∞':LISANS.kalan_gun):'—'}</div><div class="n">gün</div></div>
-      <div class="stat"><div class="k">Cihaz</div><div class="v" style="font-size:20px">${LISANS?LISANS.cihaz_sayisi+'/'+LISANS.cihaz_limiti:'—'}</div><div class="n">kayıtlı</div></div>
+      <!-- Cihaz sınırı kaldırıldı; "3/6" biçimi artık olmayan bir sınırı
+           gösterip yanıltıyordu. Sayı bilgi olarak duruyor. -->
+      <div class="stat"><div class="k">Cihaz</div><div class="v" style="font-size:20px">${LISANS?LISANS.cihaz_sayisi:'—'}</div><div class="n">kayıtlı · sınır yok</div></div>
     </div>
     ${LISANS?`<div class="flag ${LISANS.kota_var?'ok':'warn'}" style="margin-bottom:12px"><span class="ic">${LISANS.kota_var?'✓':'!'}</span><span>
       <b>${esc(LISANS.paket_adi)}</b> · ${LISANS.ogrenci_sayisi}/${LISANS.ogrenci_limiti} öğrenci
