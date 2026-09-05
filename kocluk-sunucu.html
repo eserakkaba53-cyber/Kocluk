@@ -2391,10 +2391,28 @@ async function ogrenciYaz(st){
   await fazlaSil('denemeler', st.id, (st.exams||[]).map(function(e){return e.id;}));
 }
 
+/* Öğrencinin kendi eklediği kayıtların işareti. Öğrenci panelindeki
+   KENDI_RUTIN_ETIKET ile AYNI olmak zorunda — iki panel bu dizeyle
+   anlaşıyor. Değiştirirsen ikisini birden değiştir. */
+var KENDI_RUTIN_ETIKET = 'Kendi rutinim';
+
+/* ÖĞRENCİNİN KENDİ KAYITLARI SİLİNMEZ — 5 Eyl 2026.
+   Bu fonksiyon "yerelde olmayan uzak satırı sil" diyordu. Koç paneli
+   öğrencinin verisini AÇILIŞTA okuyor; öğrenci paneli açıkken bir şey
+   eklerse (kendi çalışması, kendi rutini) koçun elindeki liste eskimiş
+   olur ve ilk kayıtta o satır SESSİZCE siliniyordu. Öğrencinin ekranında
+   iş kayboluyor, kimse sebebini bilmiyor.
+   Artık öğrencinin yazdığı satırlar korunur: ekstra=true (kendi çalışması)
+   ve aciklama='Kendi rutinim' (kendi rutini). Koçun verdiği ödevlerde
+   davranış değişmez — onları yine temizler. */
 async function fazlaSil(tablo, ogrId, kalanlar){
-  var uzak = await sbSorgu(tablo, '?ogrenci_id=eq.'+ogrId+'&select=id');
+  var odev = (tablo==='odevler');
+  var uzak = await sbSorgu(tablo, '?ogrenci_id=eq.'+ogrId+'&select=id'+(odev?',ekstra,aciklama':''));
   var kal = {}; kalanlar.forEach(function(i){ kal[i]=1; });
-  var silinecek = uzak.filter(function(r){ return !kal[r.id]; }).map(function(r){ return r.id; });
+  var silinecek = uzak.filter(function(r){
+    if(odev && (r.ekstra===true || r.aciklama===KENDI_RUTIN_ETIKET)) return false;
+    return !kal[r.id];
+  }).map(function(r){ return r.id; });
   if(silinecek.length) await sbSil(tablo, '?id=in.('+silinecek.join(',')+')');
 }
 

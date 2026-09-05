@@ -2096,6 +2096,120 @@ function ekstraEkle(){
   save(); render();
 }
 function ekstraSil(id){ D.ekstra=(D.ekstra||[]).filter(x=>x.id!==id); save(); render(); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ÖĞRENCİNİN KENDİ RUTİNİ                             (5 Eyl 2026)
+   Her hafta tekrar eden, konuya bağlı olmayan iş: paragraf, problem,
+   kelime… Koçun tanımladığı rutinler açıklamaya "Sabit haftalık rutin"
+   yazar; öğrencininki bu etiketle ayrılır ve koç panelinde SİLİNMEZ
+   (bkz. kocluk-sunucu.html → fazlaSil).
+
+   NEDEN AZ KOD: rutin altyapısı zaten vardı. progOdevleri() rutin
+   görevleri  calisma:0 + soruDk = q*dks  olarak programa taşıyor,
+   vOdev() de "Sabit rutin" kartında gösteriyor. Burada yalnızca DOĞRU
+   BİÇİMDE görev üretiliyor; ödev listesine ve haftalık takvime düşmesi
+   kendiliğinden oluyor.
+   ═══════════════════════════════════════════════════════════════════ */
+const KENDI_RUTIN_ETIKET='Kendi rutinim';
+
+function kendiRutinleri(hafta){
+  const wk=hafta||weekKey(today());
+  return (D.tasks||[]).filter(t=>t.rutin && t.txt===KENDI_RUTIN_ETIKET && weekKey(t.date)===wk);
+}
+/* Geçen haftalarda tanımlanmış ama bu hafta olmayanlar — tek tıkla geri gelir */
+function gecenRutinler(){
+  const wk=weekKey(today());
+  const buHafta=new Set(kendiRutinleri(wk).map(t=>t.sub+'|'+(t.konu||'')));
+  const son={};
+  (D.tasks||[]).forEach(t=>{
+    if(!t.rutin || t.txt!==KENDI_RUTIN_ETIKET) return;
+    if(weekKey(t.date)>=wk) return;
+    const k=t.sub+'|'+(t.konu||'');
+    if(!son[k] || t.date>son[k].date) son[k]=t;
+  });
+  return Object.keys(son).filter(k=>!buHafta.has(k)).map(k=>son[k]);
+}
+function rutinYeniKimlik(ek){ return 's'+Date.now().toString(36)+(ek||''); }
+
+function kendiRutinEkle(){
+  const sub=(document.getElementById('rtDers')||{}).value||'';
+  const ad =((document.getElementById('rtAd')||{}).value||'').trim();
+  const q  =parseInt((document.getElementById('rtQ')||{}).value,10)||0;
+  let  dks =parseFloat((document.getElementById('rtDk')||{}).value);
+  if(!isFinite(dks)||dks<=0) dks=1.5;
+  if(!ad){ alert('Rutine bir ad ver.\n\nÖrnek: Paragraf, Problem, Kelime çalışması'); return; }
+  if(q<1){ alert('Kaç soru çözeceğini yaz.\n\nSüre bu sayıdan hesaplanıyor; boş bırakırsan programa yerleşmez.'); return; }
+  if(kendiRutinleri().some(t=>t.sub===sub && (t.konu||'').toLocaleLowerCase('tr')===ad.toLocaleLowerCase('tr'))){
+    alert('Bu rutin bu hafta zaten var.'); return;
+  }
+  D.tasks.push({ id:rutinYeniKimlik(), date:today(), sub:sub, konu:ad,
+                 q:q, yap:0, s:0, dks:dks, rutin:true,
+                 txt:KENDI_RUTIN_ETIKET, kendi:true });
+  save(); render();
+}
+function kendiRutinKaldir(id){
+  const t=(D.tasks||[]).find(x=>x.id===id);
+  if(!t) return;
+  if(!confirm('"'+(t.konu||'Rutin')+'" bu haftadan kaldırılsın mı?\n\nGeçmiş haftalar durur; aşağıdan tekrar ekleyebilirsin.')) return;
+  D.tasks=(D.tasks||[]).filter(x=>x.id!==id);
+  save(); render();
+}
+/* Geçen haftanın rutinlerini bu haftaya taşı. Koç panelindeki "rutinleri
+   uygula" ile aynı mantık: otomatik değil, tek tuşla. Otomatik yapmıyoruz —
+   açılışta kendiliğinden kayıt yazmak, iki cihaz aynı anda açıkken kopya
+   rutin üretir. */
+function kendiRutinleriGetir(){
+  const g=gecenRutinler();
+  if(!g.length){ alert('Geri getirilecek rutin yok.'); return; }
+  g.forEach((t,i)=>{
+    D.tasks.push({ id:rutinYeniKimlik(String(i)), date:today(), sub:t.sub, konu:t.konu,
+                   q:t.q||0, yap:0, s:0, dks:t.dks, rutin:true,
+                   txt:KENDI_RUTIN_ETIKET, kendi:true });
+  });
+  save(); render();
+}
+
+function kendiRutinKart(){
+  const liste=kendiRutinleri();
+  const gecen=gecenRutinler();
+  const dersler=subs(D);
+  const dkOf=(t)=>Math.round((+t.q||0)*(t.dks==null?1.5:+t.dks));
+  return `<div class="card"><h2>Kendime rutin ekle<small>Her hafta tekrar eden, konuya bağlı olmayan çalışma.</small></h2><div class="body">
+    <div class="hint" style="margin:0 0 12px">Paragraf, problem, kelime gibi düzenli işler için.
+      Eklediğin rutin yukarıdaki <b>Sabit rutin</b> kartına ve
+      <b>Programım</b> takvimine kendiliğinden düşer.</div>
+    <div class="fr">
+      <div><label class="f">Ders</label><select id="rtDers">
+        ${dersler.map(([k,nm])=>`<option value="${esc(k)}">${esc(nm)}</option>`).join('')}</select></div>
+      <div style="flex:1.4"><label class="f">Rutinin adı</label>
+        <input type="text" id="rtAd" maxlength="40" placeholder="ör. Paragraf"></div>
+    </div>
+    <div class="fr">
+      <div><label class="f">Kaç soru</label>
+        <input type="number" id="rtQ" min="1" max="500" placeholder="ör. 40"></div>
+      <div><label class="f">Soru başına dakika</label>
+        <input type="number" id="rtDk" min="0.5" max="10" step="0.5" value="1.5"></div>
+    </div>
+    <div class="hint" style="margin:0 0 12px">Süre = soru sayısı × soru başına dakika.
+      40 soru × 1,5 dk = <b>60 dakika</b>; takvimde o kadar yer kaplar.</div>
+    <button class="btn wide" onclick="kendiRutinEkle()">Rutini ekle</button>
+    ${gecen.length?`<button class="btn ghost wide" style="margin-top:8px" onclick="kendiRutinleriGetir()">
+      Geçen haftanın rutinlerini geri getir (${gecen.length})</button>`:''}
+
+    ${liste.length?`<div style="margin-top:14px;border-top:1px solid var(--line-soft);padding-top:10px">
+      <div class="f" style="margin-bottom:6px">Bu haftaki rutinlerin</div>
+      ${liste.map(t=>`<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:13px">
+        <span class="dot t${t.s===1?2:0}"></span>
+        <span style="flex:1"><b>${esc(t.konu||'Rutin')}</b>
+          <div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(subName(t.sub))} · ${+t.q||0} soru · ${sa(dkOf(t))}</div></span>
+        <button class="btn ghost mini" onclick="kendiRutinKaldir('${esc(t.id)}')">kaldır</button></div>`).join('')}
+    </div>`:`<div class="hint" style="margin-top:12px">Henüz kendi rutinin yok.</div>`}
+    <div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>
+      <b>Rutinler haftalıktır.</b> Yeni hafta başladığında yukarıdaki
+      <b>"geçen haftanın rutinlerini geri getir"</b> düğmesiyle hepsini tek tıkla eklersin.</span></div>
+  </div></div>`;
+}
+
 function ekstraKart(){
   const sk=ekstraDers();
   const un=KONU[sk]||[];
@@ -2364,26 +2478,6 @@ function vOdev(){
     <b>Deneme sürenin ${_kalan>0?_kalan+' günü kaldı.':'son günü.'}</b>
     Süre dolunca panel donar, verilerin silinmez.
     <a href="#" onclick="ogrPaketTalep();return false" style="color:var(--accent);text-decoration:underline">Koçsuz öğrenci paketi al — 99 TL/yıl</a></span></div>`:''}
-  ${_solo?tavsiyeHaftalikKart():''}
-  ${_solo?`<div class="card"><h2>Kendine ödev ver<small>Hedefine göre sıradaki konular. Öğretmenin yok — planı sen kuruyorsun.</small></h2><div class="body">
-    <div class="fr" style="margin-bottom:10px">
-      <div style="max-width:190px"><label class="f">Soru sayısı <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(boş = otomatik)</span></label>
-        <input type="number" id="soloQ" min="5" max="600" placeholder="otomatik"></div><div></div>
-    </div>
-    ${_sira.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Ders</th><th>Sıradaki konu</th><th class="num">Süre</th><th></th></tr></thead><tbody>
-      ${_sira.map(x=>`<tr>
-        <td>${esc(x.ad)}</td>
-        <td><b>${esc(x.konu)}</b>
-          ${x.oncelik?`<div style="margin-top:3px">${oncRozet(x.oncelik,x.kilit)}</div>`:''}
-          ${x.unite?`<div style="font-size:10.5px;color:var(--ink-3)">${esc(x.unite)}</div>`:''}</td>
-        <td class="num">${sa(x.dk)}</td>
-        <td><button class="btn mini" onclick="soloOdevVer('${x.sub}',${JSON.stringify(x.konu).replace(/"/g,'&quot;')})">ödev ver</button></td>
-      </tr>`).join('')}
-    </tbody></table></div>`:`<div class="empty">Tüm konuları bitirmişsin ya da hepsine ödev vermişsin.</div>`}
-    <div class="hint" style="margin-top:10px">Sıralama <b>hedef bölümüne</b> göre yapılır.
-      Hedefini <b>Hedefe uzaklık</b> sekmesinden seçmediysen müfredat sırası kullanılır.</div>
-  </div></div>`:''}
   `+(()=>{
     /* KAHRAMAN ŞERİDİ — "beş şey eşit derecede önemliyse hiçbiri önemli değildir".
        Öğrencinin panele girme sebebi tek soru: şimdi ne kadar işim kaldı?
@@ -2434,6 +2528,12 @@ function vOdev(){
     ${devreden.map(t=>odevSatiri(t,true)).join('')}
   </div></div>`:''}
 
+  <div class="card"><h2>Bu haftanın konu ödevleri</h2><div class="body">
+    ${kon.length?kon.map(t=>odevSatiri(t,false)).join(''):'<div class="empty">Bu hafta bekleyen konu ödevin yok.</div>'}
+  </div></div>
+
+  ${/* Plan kurma araclari ODEV LISTESININ ALTINDA (5 Eyl 2026):
+       once "ne kadar isim var", sonra "yenisini nasil eklerim". */''}
   ${rut.length?`<div class="card"><h2>Sabit rutin — her hafta zorunlu</h2><div class="body">
     ${rut.map(t=>{const o=t.q?Math.min(100,Math.round((t.yap||0)/t.q*100)):0;
       return `<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line-soft)">
@@ -2448,10 +2548,26 @@ function vOdev(){
       </div>`;}).join('')}
   </div></div>`:''}
 
-  <div class="card"><h2>Bu haftanın konu ödevleri</h2><div class="body">
-    ${kon.length?kon.map(t=>odevSatiri(t,false)).join(''):'<div class="empty">Bu hafta bekleyen konu ödevin yok.</div>'}
-  </div></div>
-
+  ${_solo?tavsiyeHaftalikKart():''}
+${_solo?`<div class="card"><h2>Kendine ödev ver<small>Hedefine göre sıradaki konular. Öğretmenin yok — planı sen kuruyorsun.</small></h2><div class="body">
+    <div class="fr" style="margin-bottom:10px">
+      <div style="max-width:190px"><label class="f">Soru sayısı <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(boş = otomatik)</span></label>
+        <input type="number" id="soloQ" min="5" max="600" placeholder="otomatik"></div><div></div>
+    </div>
+    ${_sira.length?`<div style="overflow-x:auto"><table>
+      <thead><tr><th>Ders</th><th>Sıradaki konu</th><th class="num">Süre</th><th></th></tr></thead><tbody>
+      ${_sira.map(x=>`<tr>
+        <td>${esc(x.ad)}</td>
+        <td><b>${esc(x.konu)}</b>
+          ${x.oncelik?`<div style="margin-top:3px">${oncRozet(x.oncelik,x.kilit)}</div>`:''}
+          ${x.unite?`<div style="font-size:10.5px;color:var(--ink-3)">${esc(x.unite)}</div>`:''}</td>
+        <td class="num">${sa(x.dk)}</td>
+        <td><button class="btn mini" onclick="soloOdevVer('${x.sub}',${JSON.stringify(x.konu).replace(/"/g,'&quot;')})">ödev ver</button></td>
+      </tr>`).join('')}
+    </tbody></table></div>`:`<div class="empty">Tüm konuları bitirmişsin ya da hepsine ödev vermişsin.</div>`}
+    <div class="hint" style="margin-top:10px">Sıralama <b>hedef bölümüne</b> göre yapılır.
+      Hedefini <b>Hedefe uzaklık</b> sekmesinden seçmediysen müfredat sırası kullanılır.</div>
+  </div></div>`:''}
   ${ekstraKart()}
 
   ${tamam.length?`<div class="card k-sakin"><h2>Tamamladıkların<small>${tamam.length} ödev · iş bitti, burada duruyor</small></h2><div class="body sessiz">
@@ -2460,7 +2576,10 @@ function vOdev(){
       <span class="dot t2"></span><span style="flex:1"><b>${esc(t.konu)}</b><div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${t.date} · ${subName(t.sub)}${t.yap?' · '+t.yap+' soru':''}</div></span>
       <button class="btn ghost mini" onclick="setTask('${t.id}',2)">geri al</button></div>`).join('')}</div>`:''}
     <div class="hint" style="margin-top:8px">Tamamladığın ödevler listeden çıkar ama kaydı durur; öğretmenin hepsini görüyor.</div>
-  </div></div>`:''}`;
+  </div></div>`:''}
+  ${/* Sekmenin EN ALTI: önce bu haftanın işi görülür, en sonda
+       "kendime yeni bir düzen kurayım" araci gelir. */''}
+  ${kendiRutinKart()}`;
 }
 
 /* ---------- konularım ---------- */
@@ -3868,6 +3987,17 @@ function vKilavuz(){
       <b>"Yapamadım" demek suç değil.</b> ${solo?'Plan buna göre düzelir.':'Öğretmenin planı buna göre düzeltir.'}
       Yapmadığın işe yaptım demek planı bozar ve eksik konu sınavda karşına çıkar.</span></div>
     <div class="hint" style="margin-top:10px">Ödevin <b>adına tıklarsan</b> o konunun anlatım videolarını arayan bir kutu açılır.</div>
+
+    <p style="margin:16px 0 10px"><b>Kendine rutin ekleyebilirsin.</b>
+      Sekmenin en altındaki <b>"Kendime rutin ekle"</b> kartından, her hafta tekrar eden
+      ve konuya bağlı olmayan işleri tanımlarsın: paragraf, problem, kelime…</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Ders, ad, <b>kaç soru</b> ve soru başına dakika yazarsın</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Süre = soru × dakika. 40 soru × 1,5 dk = <b>60 dakika</b></span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Eklediğin rutin <b>Sabit rutin</b> kartına ve <b>Programım</b> takvimine kendiliğinden düşer</span></div>
+    <div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
+      <b>Kaç soru çözeceğini yazmazsan programa yerleşmez</b> — süre o sayıdan hesaplanıyor.
+      Rutinler haftalıktır; yeni hafta başında aynı karttan
+      <b>"geçen haftanın rutinlerini geri getir"</b> ile hepsini tek tıkla eklersin.</span></div>
   </div></div>
 
   ${sunucu?`
