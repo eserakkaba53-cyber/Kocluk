@@ -3134,7 +3134,9 @@ function render(){
        şey bekleyen mesaj olmalı, koç tablosunun altında kalmamalı. */
     v.innerHTML=kaynakUyarisi()
       +((typeof MESAJ!=='undefined')?MESAJ.kartYonetici():'')
-      +vYonetici()+((typeof odYonetimKart==='function')?odYonetimKart():'');
+      +vYonetici()
+      +((typeof odAcikKart==='function')?odAcikKart():'')
+      +((typeof odYonetimKart==='function')?odYonetimKart():'');
     if(_aid){ const _el=document.getElementById(_aid);
       if(_el){ try{ _el.focus({preventScroll:true}); if(_s!==null&&('setSelectionRange' in _el)) _el.setSelectionRange(_s,_e); }catch(x){} } }
     return;
@@ -7941,6 +7943,9 @@ const OD_KATLAR=[['uygunsuz','Uygunsuz davranış'],['yapilmadi','Ders yapılmad
 const OD_KAT_AD={uygunsuz:'Uygunsuz davranış',yapilmadi:'Ders yapılmadı',odeme:'Ödeme sorunu',gelmedi:'Öğrenci gelmedi',diger:'Diğer'};
 var OD_K={prof:null,acik:null,benim:null,yuk:false,hata:'',telForm:'',sorun:null};
 var OD_Y={liste:null,yuk:false,hata:''};
+/* Yonetici: kabul edilmemis (acik) ozel ders talepleri. Ayri durum —
+   sikayet listesiyle karismasin diye kendi degiskeni var. */
+var OD_A={liste:null,yuk:false,hata:'',surum:''};
 
 function odHataYaz(e){
   const m=String((e&&e.message)||e);
@@ -8198,6 +8203,114 @@ async function odMenKaldir(auth){
   try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_engel_kaldir',{method:'POST',body:{p_auth:auth}})); await odYonetimYukle(); }
   catch(e){ alert(odHataYaz(e)); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   YÖNETİCİ: KABUL EDİLMEMİŞ ÖZEL DERS TALEPLERİ      (5 Eyl 2026)
+   Koçun gördüğü od_acik() koçun kendi branşlarına göre süzüyor ve
+   yönetici hesabından çağrılamıyor (od_koc_mu() şartı var). Bu yüzden
+   yöneticiye özel od_yonetim_acik() kullanılıyor: bütün açık talepler,
+   en uzun bekleyen en üstte.
+   Sunucu tarafı: OZEL-DERS-yonetim-acik-talepler.sql
+   ═══════════════════════════════════════════════════════════════════ */
+async function odAcikYukle(){
+  OD_A.yuk=true; OD_A.hata=''; render();
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/od_yonetim_acik',{method:'POST',body:{}}));
+    OD_A.liste=Array.isArray(r)?r:[]; OD_A.surum='v1';
+  }catch(e){
+    /* SQL henüz çalıştırılmadıysa 404 döner — panel çökmesin, sebebi yazsın. */
+    OD_A.hata = (e && (e.kod===404 || /od_yonetim_acik/.test(e.message||'')))
+      ? 'KURULUM'
+      : odHataYaz(e);
+    OD_A.liste=[];
+  }
+  OD_A.yuk=false; render();
+}
+
+function odAcikKart(){
+  if(!(LISANS&&LISANS.yonetici)) return '';
+  if(OD_A.liste===null && !OD_A.yuk){ setTimeout(odAcikYukle,0); }
+  const L=OD_A.liste||[];
+
+  if(OD_A.hata==='KURULUM'){
+    return `<div class="card"><h2>Bekleyen özel ders talepleri</h2><div class="body">
+      <div class="flag warn"><span class="ic">!</span><span>
+        <b>Sunucu tarafı kurulmamış.</b> Supabase → SQL Editor'de
+        <b>OZEL-DERS-yonetim-acik-talepler.sql</b> dosyasını bir kez çalıştır.</span></div>
+    </div></div>`;
+  }
+
+  /* Branş kırılımı: hangi branşta talep birikiyor ve o branşta koç var mı.
+     "Koç yok" durumu tek başına en önemli bilgi — talep sonsuza kadar bekler. */
+  const brans={};
+  L.forEach(t=>{
+    const b=t.brans||'—';
+    brans[b]=brans[b]||{adet:0, koc:+t.brans_koc||0, enEski:0};
+    brans[b].adet++;
+    brans[b].enEski=Math.max(brans[b].enEski, +t.bekleme_sa||0);
+  });
+  const brSira=Object.keys(brans).sort((a,b)=>brans[b].adet-brans[a].adet);
+  const kocsuz=brSira.filter(b=>!brans[b].koc);
+  const bekleyenGun=(sa)=>{
+    const s=+sa||0;
+    if(s<1) return 'yeni';
+    if(s<24) return Math.round(s)+' saattir';
+    return Math.floor(s/24)+' gündür';
+  };
+  const uzun=L.filter(t=>(+t.bekleme_sa||0)>=48).length;
+
+  const satir=(t)=>`<div class="od-talep"${(+t.bekleme_sa||0)>=48?' style="border:2px solid var(--warn)"':''}>
+    <div class="ust">
+      <span class="od-brozet">${esc((t.brans||'').toUpperCase())}</span>
+      <span class="od-tarih">${odTarihYaz(t.tarih,t.saat)}</span>
+      <span class="od-durum acik">${esc(bekleyenGun(t.bekleme_sa))} BEKLİYOR</span>
+      ${!(+t.brans_koc)?'<span class="od-durum gelmedi">BU BRANŞTA KOÇ YOK</span>':''}
+      ${t.ogr_engelli?'<span class="od-durum gelmedi">ÖĞRENCİ MENLİ</span>':''}
+    </div>
+    <div class="konu">${esc(t.aciklama||'—')}</div>
+    <div class="alt" style="color:var(--ink-2);font-size:12.5px">
+      <b>${esc(t.ogr_ad||'—')}</b>${t.ogr_sinif?' · '+esc(t.ogr_sinif)+'. sınıf':''}${t.ogr_alan?' · '+esc(t.ogr_alan):''}
+      · açıldı ${esc(String(t.olusma||'').slice(0,16).replace('T',' '))}
+      · bu branşta <b>${+t.brans_koc||0}</b> koç
+    </div>
+  </div>`;
+
+  return `<div class="card"><h2>Bekleyen özel ders talepleri<small>Öğrenci açtı, henüz hiçbir öğretmen kabul etmedi.</small></h2><div class="body">
+    <div class="stats" style="margin-bottom:12px">
+      <div class="stat"><div class="k">Bekleyen talep</div>
+        <div class="v" style="color:${L.length?'var(--warn)':'var(--ok)'}">${L.length}</div>
+        <div class="n">kabul edilmemiş</div></div>
+      <div class="stat"><div class="k">2 günden uzun</div>
+        <div class="v" style="color:${uzun?'var(--bad)':'inherit'}">${uzun}</div>
+        <div class="n">acil bakılmalı</div></div>
+      <div class="stat"><div class="k">Koçu olmayan branş</div>
+        <div class="v" style="color:${kocsuz.length?'var(--bad)':'inherit'}">${kocsuz.length}</div>
+        <div class="n">${kocsuz.length?esc(kocsuz.join(', ')):'hepsinde koç var'}</div></div>
+    </div>
+
+    ${OD_A.yuk?'<div class="empty">Yükleniyor…</div>':''}
+    ${(OD_A.hata&&OD_A.hata!=='KURULUM')?`<div class="flag bad"><span class="ic">!</span><span>${esc(OD_A.hata)}</span></div>`:''}
+
+    ${brSira.length?`<div style="margin-bottom:12px;overflow-x:auto"><table>
+      <thead><tr><th>Branş</th><th class="num">Bekleyen</th><th class="num">Bu branşta koç</th><th>En uzun bekleyen</th></tr></thead>
+      <tbody>${brSira.map(b=>`<tr>
+        <td>${esc(b)}</td>
+        <td class="num"><b>${brans[b].adet}</b></td>
+        <td class="num" style="color:${brans[b].koc?'var(--ink)':'var(--bad)'}"><b>${brans[b].koc}</b></td>
+        <td style="color:${brans[b].enEski>=48?'var(--bad)':'var(--ink-2)'}">${esc(bekleyenGun(brans[b].enEski))}</td>
+      </tr>`).join('')}</tbody></table></div>`:''}
+
+    ${L.length?L.map(satir).join(''):(OD_A.yuk?'':'<div class="empty">Bekleyen talep yok — açılan her talep bir öğretmen tarafından alınmış.</div>')}
+
+    <div class="body" style="border-top:1px solid var(--line-soft);padding:10px 0 0">
+      <button class="btn ghost" onclick="odAcikYukle()">Listeyi yenile</button>
+      <div class="hint" style="margin-top:8px">Öğrencinin <b>telefonu burada gösterilmez</b> — numara yalnız
+        dersi kabul eden öğretmene açılır. Bir talep uzun süre bekliyorsa sebebi genelde tek şeydir:
+        o branşta profiline o branşı eklemiş koç yoktur.</div>
+    </div>
+  </div></div>`;
+}
+
 function odYonetimKart(){
   if(!(LISANS&&LISANS.yonetici)) return '';
   if(OD_Y.liste===null && !OD_Y.yuk){ setTimeout(odYonetimYukle,0); }
