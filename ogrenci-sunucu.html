@@ -812,7 +812,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260905a"></script>
+<script src="program.js?v=20260905c"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260904a"></script>
@@ -2036,6 +2036,77 @@ function dybAc(id){ DYBACIK[id]=!DYBACIK[id]; render(); }
 let DYBACIK={};
 /* Kendi çalışmam bölümünün seçili ders/ünite durumu ve arşiv görünürlüğü */
 let ARSIV=false, EDERS=null, EUNITE='';
+
+/* ═══════════════════════════════════════════════════════════════════
+   ÖDEV İPTALİ — YALNIZ KOÇSUZ ÖĞRENCİ                 (5 Eyl 2026)
+
+   NİYE YALNIZ KOÇSUZ: sunucudaki RLS zaten böyle diyor.
+     odevler / DELETE politikasi:  kocum_mu(ogrenci_id)
+     kocum_mu(o) = ogrenciler'de id=o ve koc_id = auth.uid()
+   Koçsuz öğrencide koc_id kendi kimliğidir (kendi koçudur), dolayısıyla
+   bu koşul SAĞLANIR. Koçu olan öğrencide sağlanmaz — koçun verdiği ödevi
+   öğrenci silemez, doğrusu da budur. Yani sunucuda hiçbir değişiklik
+   gerekmedi; panel yalnız var olan yetkiyi kullanıyor.
+
+   SIRA ÖNEMLİ: önce SUNUCUDAN, sonra yerelden silinir. Ters sırada,
+   sunucu silmesi başarısız olursa ödev ekrandan kalkar ama sayfa
+   yenilenince geri gelir — kullanıcı için en kafa karıştırıcı hata türü.
+   PostgREST, hiçbir satır eşleşmese de DELETE'e 204 döndürdüğü için
+   "sildim" demek yetmez; silinen satır GERİ OKUNARAK doğrulanır.
+   ═══════════════════════════════════════════════════════════════════ */
+function odevIptalEdilebilir(t){
+  if(!t || t.rutin) return false;                 /* rutinin kendi "kaldır"ı var */
+  if(typeof soloMu!=='function' || !soloMu()) return false;
+  return true;
+}
+
+async function soloOdevIptal(id){
+  const t=(D.tasks||[]).find(x=>x.id===id);
+  if(!t) return;
+  if(!odevIptalEdilebilir(t)){
+    alert('Bu ödevi sen kaldıramazsın.\n\nÖdevi öğretmenin verdi; kaldırmasını ondan istemelisin.');
+    return;
+  }
+  const ad=t.konu||'Bu ödev';
+  if(!confirm('"'+ad+'" iptal edilsin mi?\n\n'+
+              '· Ödevlerim listesinden kalkar\n'+
+              '· Programım takviminden de silinir\n'+
+              '· Konu işaretin değişmez\n\n'+
+              'Geri alınamaz; istersen sonra kendine yeniden verebilirsin.')) return;
+
+  /* 1) SUNUCU — yalnız sunucuya yazılmış (uuid'li) satırlar için */
+  if(uuidMi(t.id)){
+    if(!OGRID || !sbOturum()){
+      alert('Oturumun kapanmış görünüyor. Sayfayı yenileyip tekrar dene.');
+      return;
+    }
+    try{
+      await sbSil('odevler','?id=eq.'+encodeURIComponent(t.id)+'&ogrenci_id=eq.'+encodeURIComponent(OGRID));
+      /* DOĞRULA: PostgREST eşleşme olmasa da 204 döner. Satır hâlâ
+         duruyorsa yetki yok demektir; yerelden silmiyoruz. */
+      const kalan=await sbSorgu('odevler','?id=eq.'+encodeURIComponent(t.id)+'&select=id');
+      if(Array.isArray(kalan) && kalan.length){
+        alert('Ödev sunucudan kaldırılamadı.\n\n'+
+              'Bu genelde şu demek: kaydın bir öğretmene bağlı, o yüzden silme yetkin yok.\n'+
+              'Ödevi öğretmeninden kaldırmasını iste.');
+        return;
+      }
+    }catch(e){
+      alert('Ödev kaldırılamadı: '+((e&&e.message)||e)+'\n\nİnternetini kontrol edip tekrar dene.');
+      return;
+    }
+  }
+
+  /* 2) YEREL — ödevi ve varsa açık döküm kutusunu düşür */
+  D.tasks=(D.tasks||[]).filter(x=>x.id!==id);
+  if(typeof DYBACIK!=='undefined' && DYBACIK) delete DYBACIK[id];
+
+  /* 3) TAKVİM — bloklar öksüz kalmasın */
+  try{ if(typeof PROG!=='undefined' && PROG.odevKaldir) PROG.odevKaldir(id); }catch(e){}
+
+  save(); render();
+}
+
 function odevSatiri(t,devreden){
   const hf=devreden?haftaFarki(t.date):0;
   const v=dyb(t), top=v.d+v.y+v.b;
@@ -2054,6 +2125,11 @@ function odevSatiri(t,devreden){
       <div class="seg">${[1,2,3].map(s=>`<button data-v="${s}" class="${t.s===s?'on':''}"
         ${(s===1&&t.q)?`title="Doğru / yanlış / boş dökümünü girmen gerekiyor"`:''}
         onclick="setTask('${t.id}',${s})">${SL[s]}</button>`).join('')}</div>
+      ${/* İPTAL — yalnız koçsuz öğrencide. Koçu olan öğrencide sunucu zaten
+           izin vermez (RLS), düğmeyi göstermek boş umut olurdu. */''}
+      ${odevIptalEdilebilir(t)?`<button class="btn ghost mini" title="Bu ödevi iptal et"
+        onclick="soloOdevIptal('${t.id}')"
+        style="color:var(--bad);border-color:var(--bad)">iptal</button>`:''}
       ${t.q?`<button class="btn ghost mini" onclick="dybAc('${t.id}')" style="margin-left:auto">
         ${acik?'Dökümü gizle':(top?`${v.d} D · ${v.y} Y · ${v.b} B`:'Doğru / yanlış / boş gir')}</button>`
       :`<div style="display:flex;align-items:center;gap:6px;margin-left:auto">
@@ -3987,6 +4063,12 @@ function vKilavuz(){
       <b>"Yapamadım" demek suç değil.</b> ${solo?'Plan buna göre düzelir.':'Öğretmenin planı buna göre düzeltir.'}
       Yapmadığın işe yaptım demek planı bozar ve eksik konu sınavda karşına çıkar.</span></div>
     <div class="hint" style="margin-top:10px">Ödevin <b>adına tıklarsan</b> o konunun anlatım videolarını arayan bir kutu açılır.</div>
+
+    ${solo?`<div class="flag ok" style="margin-top:10px"><span class="ic">i</span><span>
+      <b>Aldığın ödevi tek tek iptal edebilirsin.</b> Her ödevin yanındaki <b>iptal</b>
+      düğmesi ödevi listeden kaldırır ve <b>Programım</b> takviminden de siler.
+      Konu işaretin değişmez; istersen sonra kendine yeniden verirsin.
+      (Öğretmeni olan öğrencilerde bu düğme çıkmaz — o ödevi öğretmeni kaldırır.)</span></div>`:''}
 
     <p style="margin:16px 0 10px"><b>Kendine rutin ekleyebilirsin.</b>
       Sekmenin en altındaki <b>"Kendime rutin ekle"</b> kartından, her hafta tekrar eden
