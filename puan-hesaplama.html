@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YKS Puan Hesaplama 2027 — TYT ve AYT Puan Hesaplama | Biyoser</title>
+<meta name="description" content="Netlerini gir, TYT ve yerleştirme puanını anında gör. Sayısal, Eşit Ağırlık, Sözel ve Dil için ayrı hesap. Diploma notu (OBP) dahil, ücretsiz ve üyeliksiz.">
+<link rel="canonical" href="https://biyoser.com.tr/puan-hesaplama.html">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#03182B">
+
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48">
+<link rel="apple-touch-icon" href="/favicon-192.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Biyoser">
+<meta property="og:title" content="YKS Puan Hesaplama — TYT ve AYT">
+<meta property="og:description" content="Netlerini gir, TYT ve yerleştirme puanını anında gör. Ücretsiz, üyeliksiz.">
+<meta property="og:url" content="https://biyoser.com.tr/puan-hesaplama.html">
+<meta property="og:image" content="https://biyoser.com.tr/kapak.png">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication",
+ "name":"YKS Puan Hesaplama",
+ "url":"https://biyoser.com.tr/puan-hesaplama.html",
+ "applicationCategory":"EducationalApplication",
+ "operatingSystem":"Web",
+ "inLanguage":"tr-TR",
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"TRY"},
+ "publisher":{"@type":"Organization","name":"Biyoser","url":"https://biyoser.com.tr/"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+ {"@type":"ListItem","position":1,"name":"Biyoser","item":"https://biyoser.com.tr/"},
+ {"@type":"ListItem","position":2,"name":"YKS Puan Hesaplama","item":"https://biyoser.com.tr/puan-hesaplama.html"}]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+ {"@type":"Question","name":"YKS puanı nasıl hesaplanır?","acceptedAnswer":{"@type":"Answer","text":"Her dersin neti o dersin katsayısıyla çarpılır, hepsi toplanır ve 100 taban puan eklenir. Diploma notundan gelen OBP de eklenir. TYT puanı yalnız TYT netlerinden çıkar; yerleştirme puanı ise TYT ham puanın %40'ı ile AYT ham puanının toplamıdır."}},
+ {"@type":"Question","name":"Net nasıl hesaplanır?","acceptedAnswer":{"@type":"Answer","text":"Net = doğru sayısı − (yanlış sayısı ÷ 4). Dört yanlış bir doğruyu götürür. Boş bıraktığın sorular neti etkilemez."}},
+ {"@type":"Question","name":"OBP nedir, puana ne kadar etki eder?","acceptedAnswer":{"@type":"Answer","text":"OBP, diploma notunun 5 ile çarpılmasıyla bulunur (100 üzerinden 80 not = 400 OBP). Puana OBP'nin 0,12 katı eklenir; en fazla 60 puan katkı sağlar. Bir önceki yıl bir yükseköğretim programına yerleşmişsen katsayı 0,06'ya düşer."}},
+ {"@type":"Question","name":"Bu hesaplama kesin sonuç verir mi?","acceptedAnswer":{"@type":"Answer","text":"Hayır, tahminidir. ÖSYM gerçek puanı hesaplarken o yıl sınava giren tüm adayların net dağılımına göre standart puan üretir. Bu sayfa katsayı modeliyle yaklaşık sonuç verir; sıralama tahmini için değil, gidişatı görmek için kullanılmalıdır."}},
+ {"@type":"Question","name":"Barajı geçmek için kaç net gerekir?","acceptedAnswer":{"@type":"Answer","text":"Lisans programlarına başvurabilmek için TYT puanının en az 150 olması gerekir. Ön lisans ve açıköğretim için baraj 150'dir. Özel yetenek sınavları için de TYT şartı aranır. Baraj her yıl ÖSYM kılavuzunda açıklanır."}}]}
+</script>
+
+<style>
+:root{
+  --ink:#122430; --ink-2:#3D5566; --ink-3:#7E939F;
+  --paper:#F4F7F8; --panel:#fff; --line:#CBD6DB; --line-soft:#E2E9EC;
+  --accent:#186C68; --accent-2:#2FA79E; --accent-soft:#D8E8E6;
+  --lacivert:#03182B; --turuncu:#E8873A;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Consolas,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.65;-webkit-text-size-adjust:100%}
+.sar{max-width:920px;margin:0 auto;padding:0 16px}
+header{background:var(--lacivert);color:#fff;padding:14px 0}
+header .sar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header img{height:38px;width:auto;display:block}
+header a{color:#fff;text-decoration:none;font-weight:700;letter-spacing:.02em}
+header nav{margin-left:auto;font-size:14px}
+header nav a{color:#B9CBDA;font-weight:500}
+header nav a:hover{color:#fff;text-decoration:underline}
+
+h1{font-size:30px;line-height:1.25;margin:26px 0 8px;letter-spacing:-.01em}
+h2{font-size:21px;margin:32px 0 10px;letter-spacing:-.01em}
+h3{font-size:17px;margin:20px 0 6px}
+.ust{color:var(--ink-2);font-size:17px;margin:0 0 22px}
+.kart{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:18px;margin:0 0 18px}
+.kart h2{margin-top:0}
+
+.sek{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.sek button{font:inherit;font-weight:650;padding:9px 15px;border-radius:9px;
+  border:1.5px solid var(--accent);background:none;color:var(--accent);cursor:pointer}
+.sek button[aria-pressed="true"]{background:var(--accent);color:#fff}
+
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:700}
+td.sy,th.sy{text-align:right;font-family:var(--mono)}
+input[type=number]{width:72px;padding:7px 8px;border:1px solid var(--line);border-radius:7px;
+  font:inherit;font-family:var(--mono);text-align:right;background:#fff;color:var(--ink)}
+input[type=number]:focus{outline:2px solid var(--accent-2);outline-offset:1px}
+input.hata{border-color:#A73A2C;background:#F6E3E0}
+.net{font-family:var(--mono);font-weight:700;color:var(--accent)}
+.net.eksi{color:#A73A2C}
+
+.sonuc{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:4px 0 0}
+.kutu{background:linear-gradient(135deg,#0B2033,#123049);color:#fff;border-radius:12px;padding:16px 18px}
+.kutu .et{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#8FB6C9}
+.kutu .dg{font-family:var(--mono);font-size:34px;font-weight:700;line-height:1.15;margin:4px 0 2px}
+.kutu .alt{font-size:12.5px;color:#B9CBDA}
+.kutu.vurgu{background:linear-gradient(135deg,#0E4A46,#186C68)}
+.kutu.pas{background:#E7EDF0;color:var(--ink)}
+.kutu.pas .et{color:var(--ink-2)} .kutu.pas .alt{color:var(--ink-3)}
+
+.uyari{background:#F8EEDA;border-left:4px solid var(--turuncu);color:#5A3B08;
+  padding:12px 14px;border-radius:0 8px 8px 0;font-size:14.5px;margin:16px 0}
+.ipucu{color:var(--ink-2);font-size:14.5px}
+.cta{display:block;background:var(--accent);color:#fff;text-align:center;
+  padding:14px 18px;border-radius:11px;text-decoration:none;font-weight:700;margin:8px 0 0}
+.cta:hover{background:#12534F}
+.cta.ikinci{background:none;border:1.5px solid var(--accent);color:var(--accent)}
+details{border-bottom:1px solid var(--line-soft);padding:12px 0}
+details summary{cursor:pointer;font-weight:650;font-size:16px}
+details p{margin:8px 0 0;color:var(--ink-2)}
+footer{background:var(--lacivert);color:#8FA6B5;margin-top:40px;padding:26px 0;font-size:14px}
+footer a{color:#B9CBDA}
+@media(max-width:560px){
+  h1{font-size:25px} .kutu .dg{font-size:29px}
+  input[type=number]{width:60px} table{font-size:14px} th,td{padding:7px 3px}
+}
+</style>
+</head>
+<body>
+
+<header><div class="sar">
+  <a href="/"><img src="/favicon-192.png" alt="Biyoser" width="38" height="38"></a>
+  <a href="/">Biyoser</a>
+  <nav><a href="/">Koçluk sistemi</a></nav>
+</div></header>
+
+<main class="sar">
+
+<h1>YKS Puan Hesaplama</h1>
+<p class="ust">Netlerini gir, <strong>TYT puanın</strong> ve <strong>yerleştirme puanın</strong> anında çıksın.
+Üyelik yok, ücretsiz. Doğru–yanlış girersen net kendiliğinden hesaplanır.</p>
+
+<div class="kart">
+  <h2>Alanını seç</h2>
+  <div class="sek" id="alanSek" role="group" aria-label="Alan seçimi">
+    <button type="button" data-alan="SAY" aria-pressed="true">Sayısal</button>
+    <button type="button" data-alan="EA"  aria-pressed="false">Eşit Ağırlık</button>
+    <button type="button" data-alan="SOZ" aria-pressed="false">Sözel</button>
+    <button type="button" data-alan="DIL" aria-pressed="false">Dil</button>
+  </div>
+
+  <h3>TYT netleri</h3>
+  <table><thead><tr>
+    <th>Ders</th><th class="sy">Doğru</th><th class="sy">Yanlış</th><th class="sy">Net</th>
+  </tr></thead><tbody id="tytGovde"></tbody></table>
+
+  <h3 id="aytBaslik">AYT netleri</h3>
+  <table><thead><tr>
+    <th>Ders</th><th class="sy">Doğru</th><th class="sy">Yanlış</th><th class="sy">Net</th>
+  </tr></thead><tbody id="aytGovde"></tbody></table>
+
+  <h3>Diploma notu</h3>
+  <table><tbody>
+    <tr><td>Diploma notun <span class="ipucu">(100 üzerinden)</span></td>
+      <td class="sy"><input type="number" id="dip" min="0" max="100" step="0.01" placeholder="ör. 82"></td>
+      <td colspan="2" class="ipucu">OBP = diploma notu × 5</td></tr>
+    <tr><td colspan="4"><label style="display:flex;gap:9px;align-items:flex-start;font-size:14.5px;cursor:pointer">
+      <input type="checkbox" id="yerlesti" style="width:18px;height:18px;flex:none;margin-top:2px">
+      <span>Geçen yıl bir yükseköğretim programına <b>yerleştim</b>
+        <span class="ipucu">— bu durumda OBP katkısı yarıya iner (0,12 yerine 0,06)</span></span></label></td></tr>
+  </tbody></table>
+
+  <div class="sonuc" id="sonuc" aria-live="polite"></div>
+
+  <div class="uyari">
+    <b>Bu sonuç tahminidir.</b> ÖSYM gerçek puanı hesaplarken o yıl sınava giren
+    <b>tüm adayların net dağılımına</b> göre standart puan üretir; bu sayfa katsayı modeliyle
+    yaklaşık sonuç verir. Sıralama tahmini için değil, <b>gidişatını görmek</b> için kullan.
+  </div>
+</div>
+
+<h2>YKS puanı nasıl hesaplanır?</h2>
+<p>Hesap üç parçadan oluşur: <b>net</b>, <b>katsayı</b> ve <b>diploma notu</b>.</p>
+
+<h3>1. Net</h3>
+<p><b>Net = doğru − (yanlış ÷ 4).</b> Dört yanlış bir doğruyu götürür; boş bıraktığın sorular neti etkilemez.
+20 doğru 4 yanlış yaptıysan netin 19'dur.</p>
+
+<h3>2. Katsayı</h3>
+<p>Her dersin neti kendi katsayısıyla çarpılır. TYT'de katsayılar birbirine yakındır;
+AYT'de alana göre değişir.</p>
+
+<table><thead><tr><th>TYT dersi</th><th class="sy">Soru</th><th class="sy">Katsayı</th></tr></thead>
+<tbody>
+<tr><td>Türkçe</td><td class="sy">40</td><td class="sy">3,3</td></tr>
+<tr><td>Temel Matematik (geometri dahil)</td><td class="sy">40</td><td class="sy">3,3</td></tr>
+<tr><td>Fizik</td><td class="sy">7</td><td class="sy">3,4</td></tr>
+<tr><td>Kimya</td><td class="sy">7</td><td class="sy">3,4</td></tr>
+<tr><td>Biyoloji</td><td class="sy">6</td><td class="sy">3,4</td></tr>
+<tr><td>Tarih</td><td class="sy">5</td><td class="sy">3,4</td></tr>
+<tr><td>Coğrafya</td><td class="sy">5</td><td class="sy">3,4</td></tr>
+<tr><td>Felsefe</td><td class="sy">5</td><td class="sy">3,4</td></tr>
+<tr><td>Din Kültürü</td><td class="sy">5</td><td class="sy">3,4</td></tr>
+</tbody></table>
+
+<h3>3. Diploma notu (OBP)</h3>
+<p><b>OBP = diploma notu × 5.</b> 100 üzerinden 80 alan birinin OBP'si 400 olur.
+Puana OBP'nin <b>0,12 katı</b> eklenir — yani en fazla <b>60 puan</b> katkı sağlar.
+Bir önceki yıl bir programa yerleşmişsen bu katsayı <b>0,06</b>'ya iner.</p>
+
+<h3>Formül</h3>
+<p style="font-family:var(--mono);font-size:14.5px;background:var(--panel);
+  border:1px solid var(--line);border-radius:9px;padding:14px">
+TYT ham = Σ (TYT net × katsayı)<br>
+AYT ham = Σ (AYT net × katsayı)<br><br>
+<b>TYT puanı</b> = 100 + TYT ham + (OBP × 0,12)<br>
+<b>Yerleştirme puanı</b> = 100 + (0,4 × TYT ham) + AYT ham + (OBP × 0,12)
+</p>
+
+<h2>Sık sorulanlar</h2>
+<details><summary>Barajı geçmek için kaç net gerekir?</summary>
+<p>Lisans programlarına başvurabilmek için <b>TYT puanının en az 150</b> olması gerekir.
+Ön lisans ve açıköğretim için de baraj 150'dir. Net karşılığı her yıl adayların
+dağılımına göre değiştiği için sabit bir sayı verilemez; kaba bir ölçü olarak
+TYT'de 10–12 net civarı bu sınıra yakındır.</p></details>
+
+<details><summary>Boş bırakmak mı, işaretlemek mi daha iyi?</summary>
+<p>Dört yanlış bir doğruyu götürdüğü için, hiçbir fikrin yoksa boş bırakmak
+istatistiksel olarak daha güvenlidir. İki şıkkı eleyebiliyorsan işaretlemek
+lehine döner.</p></details>
+
+<details><summary>TYT puanı ile yerleştirme puanı arasındaki fark ne?</summary>
+<p>TYT puanı yalnız TYT netlerinden çıkar; ön lisans ve bazı programlar için kullanılır.
+Yerleştirme puanı ise TYT ham puanının <b>%40'ı</b> ile AYT ham puanının toplamıdır —
+lisans tercihlerinde bu puana bakılır.</p></details>
+
+<details><summary>Bu sayfa hangi yıl için geçerli?</summary>
+<p>Katsayı yapısı ÖSYM'nin güncel YKS modeline göredir ve yıldan yıla nadiren değişir.
+Yine de kesin bilgi için her yıl yayımlanan <b>ÖSYM kılavuzunu</b> esas al.</p></details>
+
+<details><summary>Netlerimi düzenli takip etmek istiyorum, ne yapmalıyım?</summary>
+<p>Tek tek hesaplamak yerine denemelerini bir yerde biriktirmen gerekir; ancak o zaman
+<b>hangi konuda geride kaldığını</b> ve gidişatının hedefine yetip yetmediğini görebilirsin.
+Biyoser tam bunun için var: deneme karneni yapıştırıyorsun, netler ve yanlış yaptığın
+konular kendiliğinden çıkıyor.</p></details>
+
+<div class="kart" style="margin-top:26px">
+  <h2 style="margin-top:0">Puanını hesapladın — peki nasıl yükselteceksin?</h2>
+  <p style="margin-top:0;color:var(--ink-2)">Puan bir sonuçtur; asıl mesele hangi konuda kaybettiğin.
+  Biyoser deneme karneni okuyup <b>doğru oranı %50'nin altında kalan konuları</b> ayrı listeliyor,
+  kalan konuların sınava <b>yetişip yetişmediğini</b> hesaplıyor ve haftalık çalışma programını çıkarıyor.</p>
+  <a class="cta" href="/">Biyoser'i incele — 7 gün ücretsiz</a>
+  <a class="cta ikinci" href="/kocluk-sunucu.html#demo" style="margin-top:9px">Kayıt olmadan sistemi gez</a>
+</div>
+
+</main>
+
+<footer><div class="sar">
+  <b style="color:#fff">Biyoser</b> — YKS öğrenci takip sistemi ·
+  <a href="/">biyoser.com.tr</a><br>
+  <span style="font-size:13px">Bu sayfadaki hesap tahminidir, ÖSYM'nin resmi puan hesabı değildir.</span>
+</div></footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   YKS PUAN HESAPLAMA
+   Katsayılar panelin kendi hesabıyla aynı (KTYT / KAYT). TYT'de matematik
+   ve geometri aynı katsayıya (3,3) sahip olduğu için tek satırda birleştirildi
+   — sonuç matematiksel olarak birebir aynı, form daha kısa.
+   ═══════════════════════════════════════════════════════════════════ */
+var TYT = [
+  ['tur','Türkçe',40,3.3],
+  ['mat','Temel Matematik (geometri dahil)',40,3.3],
+  ['fiz','Fizik',7,3.4],
+  ['kim','Kimya',7,3.4],
+  ['biy','Biyoloji',6,3.4],
+  ['tar','Tarih',5,3.4],
+  ['cog','Coğrafya',5,3.4],
+  ['fel','Felsefe',5,3.4],
+  ['din','Din Kültürü',5,3.4]
+];
+var AYT = {
+  SAY:[['amat','Matematik (geometri dahil)',40,3.0],['afiz','Fizik',14,2.85],
+       ['akim','Kimya',13,3.07],['abiy','Biyoloji',13,3.07]],
+  EA: [['amat','Matematik (geometri dahil)',40,3.0],['aedb','Türk Dili ve Edebiyatı',24,3.0],
+       ['atar1','Tarih-1',10,2.8],['acog1','Coğrafya-1',6,3.33]],
+  SOZ:[['aedb','Türk Dili ve Edebiyatı',24,3.0],['atar1','Tarih-1',10,2.8],
+       ['acog1','Coğrafya-1',6,3.33],['atar2','Tarih-2',11,2.91],['acog2','Coğrafya-2',11,2.91],
+       ['afel','Felsefe Grubu',12,3.0],['adin','Din Kültürü',6,3.33]],
+  DIL:[['ydt','Yabancı Dil (YDT)',80,3.0]]
+};
+var ALAN_AD = {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'};
+var alan = 'SAY';
+
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+function satir(kod,ad,soru,kat){
+  return '<tr>'+
+    '<td>'+esc(ad)+' <span class="ipucu">('+soru+')</span></td>'+
+    '<td class="sy"><input type="number" min="0" max="'+soru+'" data-k="'+kod+'" data-t="d" '+
+      'inputmode="numeric" aria-label="'+esc(ad)+' doğru"></td>'+
+    '<td class="sy"><input type="number" min="0" max="'+soru+'" data-k="'+kod+'" data-t="y" '+
+      'inputmode="numeric" aria-label="'+esc(ad)+' yanlış"></td>'+
+    '<td class="sy"><span class="net" id="net-'+kod+'">0</span></td></tr>';
+}
+
+/* TYT tablosu YALNIZ BIR KEZ cizilir. Eskiden alan degistikce
+   ikisi birden yeniden ciziliyordu; ogrenci TYT netlerini girip sonra
+   alanini secince girdigi her sey siliniyordu. */
+var tytCizildi = false;
+function ciz(){
+  if(!tytCizildi){
+    document.getElementById('tytGovde').innerHTML =
+      TYT.map(function(r){ return satir('t_'+r[0],r[1],r[2],r[3]); }).join('');
+    tytCizildi = true;
+  }
+  document.getElementById('aytGovde').innerHTML =
+    AYT[alan].map(function(r){ return satir('a_'+r[0],r[1],r[2],r[3]); }).join('');
+  document.getElementById('aytBaslik').textContent = 'AYT netleri — '+ALAN_AD[alan];
+  Array.prototype.forEach.call(document.querySelectorAll('#alanSek button'),function(b){
+    b.setAttribute('aria-pressed', String(b.dataset.alan===alan));
+  });
+  hesapla();
+}
+
+function deger(kod,t){
+  var el=document.querySelector('input[data-k="'+kod+'"][data-t="'+t+'"]');
+  return el ? (parseFloat(el.value)||0) : 0;
+}
+
+/* Soru sayısını aşan giriş sessizce kabul edilmez — yanlış puan göstermek,
+   hiç göstermemekten kötüdür. Alan kırmızıya döner ve o ders 0 sayılır. */
+function gecerli(kod,soru){
+  var d=document.querySelector('input[data-k="'+kod+'"][data-t="d"]');
+  var y=document.querySelector('input[data-k="'+kod+'"][data-t="y"]');
+  var dv=deger(kod,'d'), yv=deger(kod,'y');
+  var kotu = dv<0 || yv<0 || (dv+yv)>soru;
+  if(d) d.classList.toggle('hata',kotu);
+  if(y) y.classList.toggle('hata',kotu);
+  return !kotu;
+}
+
+function hesapla(){
+  var tytHam=0, aytHam=0, hataVar=false;
+  TYT.forEach(function(r){
+    var kod='t_'+r[0], ok=gecerli(kod,r[2]);
+    var net = ok ? (deger(kod,'d') - deger(kod,'y')/4) : 0;
+    if(!ok) hataVar=true;
+    var el=document.getElementById('net-'+kod);
+    if(el){ el.textContent=net.toFixed(2).replace(/\.?0+$/,'').replace('.',',');
+            el.classList.toggle('eksi', net<0); }
+    tytHam += net*r[3];
+  });
+  AYT[alan].forEach(function(r){
+    var kod='a_'+r[0], ok=gecerli(kod,r[2]);
+    var net = ok ? (deger(kod,'d') - deger(kod,'y')/4) : 0;
+    if(!ok) hataVar=true;
+    var el=document.getElementById('net-'+kod);
+    if(el){ el.textContent=net.toFixed(2).replace(/\.?0+$/,'').replace('.',',');
+            el.classList.toggle('eksi', net<0); }
+    aytHam += net*r[3];
+  });
+
+  var dip = parseFloat(document.getElementById('dip').value)||0;
+  if(dip>100) dip=100; if(dip<0) dip=0;
+  var obp = dip*5;
+  var kat = document.getElementById('yerlesti').checked ? 0.06 : 0.12;
+  var obpKatki = obp*kat;
+
+  var tytPuan = 100 + tytHam + obpKatki;
+  var yerPuan = 100 + 0.4*tytHam + aytHam + obpKatki;
+
+  var yaz=function(v){ return v.toFixed(2).replace('.',','); };
+  var baraj = tytPuan>=150;
+
+  document.getElementById('sonuc').innerHTML =
+    '<div class="kutu"><div class="et">TYT Puanı</div>'+
+      '<div class="dg">'+yaz(tytPuan)+'</div>'+
+      '<div class="alt">'+(baraj?'150 barajının üstünde':'150 barajının altında')+'</div></div>'+
+    '<div class="kutu vurgu"><div class="et">Yerleştirme Puanı — '+esc(ALAN_AD[alan])+'</div>'+
+      '<div class="dg">'+yaz(yerPuan)+'</div>'+
+      '<div class="alt">lisans tercihlerinde bu puana bakılır</div></div>'+
+    '<div class="kutu pas"><div class="et">Diploma katkısı</div>'+
+      '<div class="dg">'+yaz(obpKatki)+'</div>'+
+      '<div class="alt">OBP '+yaz(obp)+' × '+String(kat).replace('.',',')+'</div></div>'+
+    (hataVar ? '<div class="kutu pas" style="grid-column:1/-1;background:#F6E3E0;color:#7C2B20">'+
+      '<div class="et" style="color:#7C2B20">Dikkat</div>'+
+      '<div class="alt" style="color:#7C2B20;font-size:14px">Kırmızı alanlarda doğru + yanlış toplamı '+
+      'soru sayısını aşıyor. O dersler hesaba 0 olarak girdi.</div></div>' : '');
+}
+
+document.getElementById('alanSek').addEventListener('click',function(e){
+  var b=e.target.closest('button[data-alan]'); if(!b) return;
+  alan=b.dataset.alan; ciz();
+});
+document.addEventListener('input',function(e){
+  if(e.target.matches('input[type=number],#dip')) hesapla();
+});
+document.getElementById('yerlesti').addEventListener('change',hesapla);
+ciz();
+</script>
+</body>
+</html>

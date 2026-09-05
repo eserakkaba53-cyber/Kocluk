@@ -4,6 +4,7 @@
 User-agent: *
 Allow: /$
 Allow: /index.html
+Allow: /puan-hesaplama.html
 Disallow: /kocluk-sunucu.html
 Disallow: /ogrenci-sunucu.html
 Disallow: /kocluk-paneli.html
