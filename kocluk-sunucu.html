@@ -2726,7 +2726,10 @@ function durumBul(L){
 let RAPOR_ON=null, GERIKORU=true;
 const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],
                   ['konu','Konular'],['hedef','Hedef'],['puan','Puan hesaplayıcı'],['veli','Veli raporu'],['ogrenci','Öğrenci bilgileri'],
-                  ['davet','Davet ve kullanım'],['ozel','Özel Ders'],['hesap','Hesap']];
+                  ['davet','Davet ve kullanım'],['ozel','Özel Ders'],['hesap','Hesap'],
+                  /* Kılavuz öğrenciden bağımsızdır — rayın altındaki "Hesap"
+                     bölümünde durur (bkz. KOC_GENEL_SEKME). */
+                  ['kilavuz','Kullanım kılavuzu']];
 function TABSAL(){ return (LISANS&&LISANS.yonetici) ? TABS_TEMEL.concat([['yonetim','Yönetim']]) : TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
 const ORNEK_ID='ornek-ogrenci';                 // geriye donuk uyumluluk
@@ -2957,10 +2960,29 @@ function gcOlay(ad){
 }
 var _gcSayildi={};
 function gcKayitSay(ad){ if(_gcSayildi[ad]) return; _gcSayildi[ad]=true; gcOlay(ad); }
+/* Giriş ekranından açılan kılavuz — oturum yokken sekme kullanılamıyor.
+   render() ile AYNI script bloğunda duruyor: farklı blokta olsaydı bu blok
+   çalışırken tanımsız olurdu. */
+var KOC_KILAVUZ_TEK=false;
 function render(){
   const _af0=document.activeElement, _aid0=_af0&&_af0.id;
   let _s0=null,_e0=null;
   try{ if(_af0&&('selectionStart' in _af0)){_s0=_af0.selectionStart;_e0=_af0.selectionEnd;} }catch(x){}
+  /* KILAVUZ GİRİŞ EKRANINDAN DA AÇILABİLİR (5 Eyl 2026).
+     Sekme olarak da var ama oraya ancak oturum açtıktan sonra ulaşılıyor;
+     kaydolmadan önce panelin ne yaptığını okumak isteyen kalıyordu.
+     Şifre yenileme akışını bölmemek için o modda devre dışı. */
+  if(KOC_KILAVUZ_TEK && GIRISMOD!=='yenisifre'){
+    document.getElementById('railList').innerHTML='';
+    document.getElementById('stName').textContent='Kullanım kılavuzu';
+    document.getElementById('stMeta').textContent='panelin tamamı · sekme sekme';
+    document.getElementById('tabs').innerHTML='';
+    { const _sg=document.getElementById('stGoal'); if(_sg) _sg.innerHTML=''; }
+    document.getElementById('view').innerHTML =
+      `<div style="padding:14px 0"><button class="btn ghost mini" onclick="KOC_KILAVUZ_TEK=false;render();window.scrollTo(0,0)">← Giriş ekranına dön</button></div>`
+      + vKocKilavuz();
+    rayDurum(); return;
+  }
   /* Şifre yenileme ekranı: sıfırlama bağlantısı GEÇERLİ BİR OTURUM açar,
      bu yüzden 'oturum yoksa giriş ekranı' kuralından önce kontrol edilmeli.
      Aksi halde panel açılır ve yeni şifre ekranı hiç görünmez. */
@@ -3059,6 +3081,15 @@ function render(){
     v.innerHTML=kaynakUyarisi()+vKokpit();
     karsilamaKontrol();
     return;
+  }
+  /* Kılavuz öğrenci seçili olmadan da açılabilmeli — yeni koç ilk girdiğinde
+     henüz öğrencisi yok ve panelin nasıl kullanıldığını orada okuyacak. */
+  if(TAB==='kilavuz'){
+    document.getElementById('stName').textContent='Kullanım kılavuzu';
+    document.getElementById('stMeta').textContent='panelin tamamı · sekme sekme';
+    document.getElementById('stGoal').innerHTML='';
+    v.innerHTML=kaynakUyarisi()+vKocKilavuz();
+    karsilamaKontrol(); return;
   }
   if(!st && TAB!=='yonetim' && TAB!=='davet' && TAB!=='ozel'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';karsilamaKontrol();return;}
   const uy=kaynakUyarisi();
@@ -5057,12 +5088,34 @@ function uniteAll(sk,u,v){
 }
 function cycleTopic(sk,tn){
   const st=cur(); st.topics[sk]=st.topics[sk]||{};
-  st.topics[sk][tn]=((st.topics[sk][tn]||0)+1)%4; save(); render();
+  const yeni=((st.topics[sk][tn]||0)+1)%4;
+  st.topics[sk][tn]=yeni;
+  /* KONU "BİTTİ" → ÖDEV eşitlemesi (5 Eyl 2026) — öğrenci panelindekinin
+     aynısı. Ters yön zaten vardı (cycleTask → odevKonuBitir); bu yön
+     eksikti. Eksik olunca konu bitmiş işaretlense bile o konunun ödevi
+     "Bekliyor"da kalıyor, takvimde yer kaplıyor ve her hafta DEVREDEN
+     olarak geri geliyordu.
+     Soru hedefi olan ödevi otomatik "çözüldü" saymak kaydı yanlışlar,
+     bu yüzden sessizce değil — sorarak. */
+  if(yeni===2){
+    const bek=(st.tasks||[]).filter(x=>!x.rutin && x.sub===sk && x.konu===tn && x.s!==1);
+    if(bek.length){
+      const soruVar=bek.some(x=>(+x.q||0)>0);
+      const ok=confirm('“'+tn+'” konusunun bekleyen '+bek.length+' ödevi var.\n\n'+
+        'Bunları da “Yapıldı” işaretleyeyim mi?\n'+
+        (soruVar?'(Soru hedefi olanlar tam çözülmüş sayılacak.)\n':'')+
+        '\nHayır dersen ödev “Bekliyor” kalır ve gelecek hafta devreden olarak görünür.');
+      if(ok) bek.forEach(x=>{ x.s=1; if((+x.q||0)>0 && !(+x.yap||0)) x.yap=x.q; });
+    }
+  }
+  save(); render();
 }
 /* ---------- KARŞILAMA KUTUSU (ilk girişte bir kez) ---------- */
 function kmKapat(){
   try{localStorage.setItem('biyoser_karsilama_koc','1');}catch(e){}
-  const w=document.getElementById('kmWrap'); if(w) w.remove();
+  const w=document.getElementById('kmWrap');
+  /* görsel pencere dinleyicisini bırak — yoksa her açılışta bir tane birikir */
+  if(w){ try{ const o=w.querySelector('.km-overlay'); if(o && typeof gorunurBirak==='function') gorunurBirak(o); }catch(e){} w.remove(); }
   document.removeEventListener('keydown',kmEsc);
   // Hesaba da işaretle: başka cihazda / sonraki girişte ilk-giriş akışı bunu tekrar açmasın.
   try{
@@ -5090,6 +5143,12 @@ function karsilamaAc(){
           '<li><b>Ödev ver.</b> "Ödevler" sekmesinden üç yolla:<br>· <b>Tavsiye edilen haftalık ödev</b> — sistemin öğrenciye özel otomatik planını tek tuşla ver.<br>· <b>Ödev ver</b> — ders → ünite → konu seç, elle ver (soru sayısı otomatik önerilir).<br>· <b>Hızlı ödev ata</b> — sıradaki konuyu tek tıkla ver.<br>"Rutin" ile her hafta tekrarlayan işleri (paragraf, problem) tanımlarsın.</li>'+
           '<li><b>Denemeleri gir.</b> "Denemeler" sekmesinden iki yol:<br>· <b>Karneden okut</b> (en kolayı) — deneme karnesinin (metni seçilebilen PDF) metnini yapıştır; netler ve yanlış/boş konular otomatik çıkar.<br>· <b>Yeni deneme gir</b> — her dersin doğru/yanlış sayısını elle yaz, net otomatik hesaplanır.<br>Başlangıç için son 3 denemeyi girmen önerilir.</li>'+
         '</ol>'+
+        /* 5 Eyl 2026 — kutuya eklenenler: haftalık çalışma saati uyarısı,
+           Haftalık program takvimi, zayıf konu kartı, yönetim yazışması ve
+           kayıt uyarısı. Hiçbiri anlatılmıyordu. */
+        '<div class="km-how" style="border:2px solid var(--warn)"><div class="km-sec" style="margin:0">⚠ Atlarsan çalışmayan yer</div><ul>'+
+          '<li><b>Öğrencinin haftalık çalışma saatini gir.</b> "Hedef" sekmesindeki <b>"Haftalık çalışma saati (beyan)"</b> kutusu boşsa <b>"Yetişir mi" üç senaryonun hepsi "—" kalır</b> ve Ödevler sekmesindeki <b>AŞILDI</b> uyarısı hiç çıkmaz — haftalık yükü fazla verdiğini fark edemezsin. Kutuyu sen doldurabilirsin; öğrenci kendi panelinden girerse sana da yansır.</li>'+
+        '</ul></div>'+
         '<div class="km-how"><div class="km-sec" style="margin:0">Sistem nasıl çalışır</div><ul>'+
           '<li><b>Kokpit:</b> Tüm öğrencilerini tek ekranda <b>risk sırasına göre</b> gösterir (Acil / İzle / Yolunda). Risk; ödev uyumu, biriken devreden ödev, deneme trendi ve "yetişir mi" hesabından üretilir — bugün önce kime bakman gerektiğini söyler.</li>'+
           '<li><b>Otomatik haftalık plan:</b> Her öğrenci için ön koşul + çekirdek + güvenlik payı konularını müfredat sırasında (önce TYT çekirdek, sonra AYT, sonra güvenlik payı) sıralar; sınava kalan süreye göre haftalık tempoyu çıkarır ve planın öğrencinin çalışma süresine sığıp sığmadığını ("gerçekçilik" uyarısı) söyler.</li>'+
@@ -5098,13 +5157,21 @@ function karsilamaAc(){
           '<li><b>Karne okuyucu:</b> Deneme karnesini yapıştır → netler, yanlış ve boş konular otomatik çıkar (yayınevi bağımsız).</li>'+
           '<li><b>Hedef & net takibi:</b> Bölüm seçince hedef netler otomatik dolar; TYT/AYT ve ders ders net grafikleri, hedefe uzaklık ve puan hesaplayıcı hep güncel kalır.</li>'+
           '<li><b>Veli raporu:</b> Tek tıkla, panelin verisinden veliye uygun haftalık rapor üretir; WhatsApp\'la gönderirsin (göndermeyi hep sen onaylarsın).</li>'+
+          '<li><b>Haftalık program takvimi:</b> "Haftalık" sekmesinde ödevler haftanın günlerine yarım saatlik bloklar hâlinde dağıtılır. Blokları sürükleyip taşırsın, "Yeniden dağıt" ile baştan kurarsın; elle taşıdıkların yerinde kalır. Öğrencinin kapattığı saatlere (okul, dershane) ödev konmaz.</li>'+
+          '<li><b>Zayıf konu kartı:</b> Denemeler sekmesinde, doğru oranı <b>%50\'nin altında</b> kalan konular ayrı listelenir — her konudan kaç soru çıktığıyla birlikte. Ödev vermeden önce bakılacak yer burasıdır.</li>'+
           '<li><b>Anlık senkron:</b> Öğrenci kendi panelinde ödev/deneme/konu işaretledikçe veriler sana <b>anında</b> yansır.</li>'+
-          '<li><b>Ortak ayarlar:</b> Konu süreleri ve sınav tarihi tüm öğrencilerde ortaktır — bir kez ayarlarsın, herkeste geçerli olur.</li>'+
+          '<li><b>Ortak ayarlar:</b> Konu süreleri ve sınav tarihi tüm öğrencilerde ortaktır — bir kez ayarlarsın, herkeste geçerli olur. Öğrenci panelinde sınav tarihi kutusu kapalı görünür.</li>'+
+          '<li><b>Yönetime mesaj:</b> "Hesap" sekmesinin üstündeki kutudan yazarsın; cevap gelince sol raydaki Hesap sekmesinin yanında kırmızı bir sayı çıkar.</li>'+
+          '<li><b>Kayıt uyarısı:</b> Bir değişiklik sunucuya yazılamazsa ekranı kaplayan bir pencere açılır ve "son işlem kayıt olmadı" der. <b>Tekrar dene</b>ye bas; kapatıp yenilersen o son değişiklik gider.</li>'+
         '</ul></div>'+
         '<button class="km-btn" onclick="kmKapat()">Anladım, başlayalım</button>'+
-        '<div class="km-foot">Bu rehbere sonra "Hesap" sekmesinden tekrar ulaşabilirsin.</div>'+
+        '<div class="km-foot">Bu rehbere ve <b>tam kullanım kılavuzuna</b> sonra "Hesap" sekmesinden ulaşabilirsin.</div>'+
       '</div></div></div>';
   document.body.appendChild(w);
+  /* Mobilde yakınlaştırma varken kutu ekran dışında açılıyordu — video
+     çekmecesi gibi bunu da o an görünen pencereye oturt. */
+  try{ var _km=w.querySelector('.km-overlay');
+       if(_km && typeof gorunureSabitle==='function') gorunureSabitle(_km); }catch(e){}
   document.addEventListener('keydown',kmEsc);
 }
 function karsilamaKontrol(){
@@ -5561,9 +5628,14 @@ function vHesap(st){
        sekmesinden görür. */
     (typeof MESAJ!=='undefined' && !(LISANS&&LISANS.yonetici)) ? MESAJ.kartKullanici() : ''}
 
-  <div class="card"><h2>Başlangıç rehberi</h2><div class="body">
-    <div class="hint" style="margin:0 0 10px">Panele yeni başladıysan ya da öğrenci ekleme adımlarını hatırlamak istersen aç.</div>
-    <button class="btn ghost" onclick="karsilamaAc()">Başlangıç rehberini aç</button>
+  <div class="card"><h2>Rehber ve kılavuz</h2><div class="body">
+    <div class="hint" style="margin:0 0 10px"><b>Başlangıç rehberi</b> ilk öğrencini eklerken izleyeceğin adımları anlatır.
+      <b>Kullanım kılavuzu</b> ise panelin tamamını sekme sekme, uyarılarıyla birlikte açıklar
+      (sol rayda "Hesap" bölümünde de durur).</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="karsilamaAc()">Başlangıç rehberini aç</button>
+      <button class="btn" onclick="kocGenel('kilavuz')">Kullanım kılavuzunu aç</button>
+    </div>
   </div></div>
 
   ${hesapKarti()}
@@ -6164,6 +6236,232 @@ function paketTalep(paket){
     `Hesap: ${SB.mail||''}\nAd: ${DB.kocAd||''}\n\nÖdeme ve kurulum için bilgi rica ederim.`;
   baglantiAc('https://wa.me/'+SATIS_TEL+'?text='+encodeURIComponent(mesaj),'WhatsApp — abonelik');
 }
+/* ═══════════════════════════════════════════════════════════════════
+   KULLANIM KILAVUZU — KOÇ  (5 Eyl 2026)
+   Koç panelinde bugüne kadar tam kılavuz yoktu: yalnız ilk girişte
+   çıkan karşılama kutusu vardı ve o da Haftalık program takvimini,
+   yönetim yazışmasını, zayıf konu kartını ve kayıt uyarısını
+   anlatmıyordu. Bu sekme öğrenci panelindeki kılavuzun karşılığıdır.
+   Öğrenci seçilmesi gerekmez — rayda "Hesap" bölümünde durur.
+   ═══════════════════════════════════════════════════════════════════ */
+function kKilavuzAdim(n,bas,icerik){
+  return `<div style="display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line-soft)">
+    <div style="flex:none;width:27px;height:27px;border-radius:50%;background:var(--accent);color:#fff;
+      display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700">${n}</div>
+    <div style="flex:1;min-width:0"><b>${bas}</b><div style="margin-top:3px;color:var(--ink-2);font-size:14px">${icerik}</div></div></div>`;
+}
+
+function vKocKilavuz(){
+  const yon = !!(LISANS && LISANS.yonetici);
+
+  return `
+  <div class="card"><h2>Kullanım kılavuzu<small>Panelin tamamı — sekme sekme, uyarılarıyla birlikte.</small></h2><div class="body">
+    <div class="hint" style="margin:0">Sol raydan bir öğrenci seçtiğinde onun altında <b>o öğrenciye ait sekmeler</b> açılır.
+      <b>Kokpit</b> en üstte, öğrenciden bağımsızdır; <b>Davet · Özel Ders · Hesap${yon?' · Yönetim':''}</b> ise rayın altında,
+      "Hesap" başlığı altında durur.</div>
+  </div></div>
+
+  <div class="card" style="border-width:2px;border-color:var(--warn)"><h2>⚠ Doldurulmazsa çalışmayan yerler</h2><div class="body">
+    <div class="flag bad"><span class="ic">1</span><span>
+      <b>Öğrencinin haftalık çalışma saati girilmezse "Yetişir mi" hiçbir şey göstermez.</b>
+      <b>Hedef</b> sekmesindeki <b>"Haftalık çalışma saati (beyan)"</b> kutusu boşsa,
+      üç senaryonun (Öncelikli · Güvenlik payı · Genişleme) hepsi <b>"—"</b> kalır.
+      Ödevler sekmesindeki <b>"öğrencinin beyanı / AŞILDI"</b> uyarısı da çıkmaz —
+      yani haftalık yükü fazla verdiğini fark edemezsin.
+      Kutuyu sen doldurabilirsin; öğrenci kendi panelinden girerse sana da yansır.</span></div>
+    <div class="flag bad"><span class="ic">2</span><span>
+      <b>Hedef bölüm seçilmezse ders ders hedef netler boş kalır</b> ve öğrencinin hedefe uzaklığı hesaplanamaz.
+      <b>Hedef</b> sekmesinden YÖK verisiyle bölümü seç — taban puan, başarı sırası ve hedef netler kendiliğinden dolar.</span></div>
+    <div class="flag bad"><span class="ic">3</span><span>
+      <b>Konu haritası boşsa plan yanlış çıkar.</b> Sistem, işaretlenmemiş her konuyu "bitmemiş" sayar
+      ve ona süre ayırır. Öğrenci kendi panelinden işaretlemiyorsa ilk kayıtta
+      <b>Konular</b> sekmesinden sen geç — 10 dakikalık iş, bütün hesabı düzeltir.</span></div>
+    <div class="flag warn"><span class="ic">i</span><span>
+      <b>Sınav tarihi ve konu süreleri tüm öğrencilerde ortaktır.</b> Bir kez ayarlarsın, herkeste geçerli olur;
+      öğrenci panelinde tarih kutusu kapalı görünür.</span></div>
+    <div class="flag warn"><span class="ic">i</span><span>
+      <b>Adın ve WhatsApp numaran girilmeden</b> davet mesajları ve KVKK belgeleri eksik çıkar.
+      <b>Hesap → İletişim bilgilerin</b>'den doldur.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Kokpit<small>Rayın en üstünde · öğrenci seçmeden açılır</small></h2><div class="body">
+    <p style="margin:0 0 12px">Bütün öğrencilerini tek ekranda <b>risk sırasına göre</b> gösterir:
+      <b>Acil · İzle · Yolunda</b>. Bugün önce kime bakman gerektiğini söyler.</p>
+    <p style="margin:0 0 10px">Risk şu dördünden üretilir:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Ödev uyumu — verilen ödevin ne kadarı yapıldı</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Biriken <b>devreden</b> ödev sayısı</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Deneme trendi — netler yükseliyor mu, düşüyor mu</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">"Yetişir mi" sonucu</span></div>
+    <div class="hint" style="margin-top:10px">Bir öğrenci hep "Acil"de kalıyorsa sorun genelde tek şeydir:
+      ödev haftalık çalışma süresine sığmıyordur. Ödevler sekmesindeki toplam süreyi öğrencinin beyanıyla karşılaştır.</div>
+  </div></div>
+
+  <div class="card"><h2>Haftalık sekmesi — çalışma programı takvimi</h2><div class="body">
+    <p style="margin:0 0 12px">Öğrencinin ödevleri haftanın günlerine <b>yarım saatlik bloklar</b> hâlinde dağıtılır.
+      Konu çalışması ve soru çözümü ayrı bloklar olarak görünür.</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Blokları sürükleyerek</b> istediğin güne ve saate taşırsın</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yeniden dağıt</b> — programı baştan kurar; elle taşıdığın bloklar (kilitli olanlar) yerinde kalır</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Öğrencinin <b>kapattığı saatler</b> burada görünür — okul, dershane, meşgul olduğu vakitler</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Blok adına tıklarsan o konunun <b>anlatım videoları</b> açılır</span></div>
+    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
+      Aralıksız çalışma <b>90 dakikayı geçmez</b>; sistem araya mola bırakır.
+      Pazar günü baştan kapalı gelir, istersen açarsın.</span></div>
+    <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>
+      <b>Takvim boşsa ödev yok demektir.</b> Önce Ödevler sekmesinden ödev ver;
+      program ödevlerden üretilir, tersi olmaz.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Durum sekmesi</h2><div class="body">
+    <p style="margin:0">Öğrencinin genel görüntüsü: net seyri, ödev uyumu, biten konu oranı ve
+      haftalık yükün beyan edilen süreye göre durumu. Veli görüşmesinden önce bakılacak ilk yer burasıdır.</p>
+  </div></div>
+
+  <div class="card"><h2>Denemeler sekmesi</h2><div class="body">
+    <p style="margin:0 0 10px">İki yol var:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Karneden okut</b> (en kolayı) — karnenin <b>metni seçilebilen PDF</b>'ini aç, Ctrl+A / Ctrl+C yap, kutuya yapıştır. Netler ve yanlış/boş konular kendiliğinden çıkar, yayınevi fark etmez.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yeni deneme gir</b> — her dersin doğru/yanlış sayısını yaz, net otomatik hesaplanır (D − Y/4).</span></div>
+    <div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
+      <b>Ekran görüntüsü ve fotoğraf okunmaz.</b> PDF'te bir kelimeye çift tıkla; seçilebiliyorsa okunur.</span></div>
+    <div class="flag ok" style="margin-top:10px"><span class="ic">★</span><span>
+      <b>Tekrar eden zayıf konular kartı</b> — doğru oranı <b>%50'nin altında</b> kalan konuları listeler.
+      Ölçü, konunun kaç denemede çıktığı değil, <b>çıkan soruların ne kadarının doğru yapıldığıdır</b>;
+      kartta her konudan kaç soru çıktığı da yazar.
+      Bu kart, ödev vermeden önce bakılacak yerdir: burada çıkan konu, öğrenci "bitti" demiş olsa bile bitmemiştir.</span></div>
+    <div class="hint" style="margin-top:10px">Her denemenin yanındaki <b>"konu gir"</b> ile yanlış/boş konuları ve
+      <b>kaç soru çıktığını</b> elle ekleyebilirsin. Soru sayısını girmek zayıf konu hesabını belirgin şekilde doğrular.</div>
+    <div class="hint" style="margin-top:8px"><b>Yayın farkı:</b> Farklı yayınlar aynı konuya farklı ad verebilir.
+      Karne okuyucu tanımadığı adı olduğu gibi saklar — o satır listede görünür ama konu haritasına bağlanmaz.
+      Bağlanmasını istiyorsan "konu gir"den doğru konuyu seç.</div>
+  </div></div>
+
+  <div class="card"><h2>Ödevler sekmesi</h2><div class="body">
+    <p style="margin:0 0 10px">Üç yolla ödev verirsin:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Tavsiye edilen haftalık ödev</b> — sistemin o öğrenciye özel planını tek tuşla verirsin</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Ödev ver</b> — ders → ünite → konu seçip elle verirsin (soru sayısı otomatik önerilir)</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hızlı ödev ata</b> — sıradaki konuyu tek tıkla verirsin</span></div>
+    <p style="margin:12px 0 0"><b>Rutin</b> ile her hafta tekrarlayan işleri tanımlarsın (paragraf, problem).
+      <b>Rutin tanımı bütün öğrencileri etkiler</b> — tek öğrenciye özel değildir.</p>
+    <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
+      <b>Kartın altındaki "Bu haftanın toplamı" satırını her ödev verişinde oku.</b>
+      Öğrencinin beyan ettiği süre girilmişse aşım olduğunda <b>AŞILDI</b> yazar ve satır kırmızıya döner.
+      Aşılmış bir hafta, yapılmamış ödev ve düşen motivasyon demektir.</span></div>
+    <div class="flag warn" style="margin-top:8px"><span class="ic">i</span><span>
+      <b>Devreden ödev:</b> yapılmayan ödev silinmez, sonraki haftaya taşınır ve
+      haftalık toplamın içinde sayılır. Devreden birikmişse yeni ödevi azalt.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Konular sekmesi</h2><div class="body">
+    <p style="margin:0 0 10px">628 konuluk harita. Her konunun dört durumu var:</p>
+    <div class="topic"><span class="dot t0"></span><span class="tn"><b>Görmedim</b> — hiç çalışılmadı</span></div>
+    <div class="topic"><span class="dot t1"></span><span class="tn"><b>İşliyor</b> — devam ediyor (yarım süreyle sayılır)</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Bitti</b> — öğrenildi ve soru çözüldü</span></div>
+    <div class="topic"><span class="dot t3"></span><span class="tn"><b>Eksik</b> — çalışıldı ama oturmadı</span></div>
+    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
+      İşaretler değiştikçe <b>kalan süre ve konu önceliği kendiliğinden güncellenir</b>.
+      Konu adına tıklarsan anlatım videoları açılır.</span></div>
+    <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>
+      <b>Öğrenci ödev aldıktan sonra konu işaretlemesi bu haftanın ödevini bozmaz</b> —
+      verilmiş ödev yerinde kalır, yalnız <b>bundan sonraki</b> plan değişir.
+      Öğrenci bir konuyu "Bitti" yaparken o konunun bekleyen ödevi varsa, panel ona
+      "ödevi de kapatayım mı?" diye sorar; "hayır" derse ödev devredene düşer.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Hedef sekmesi</h2><div class="body">
+    <p style="margin:0 0 12px">YÖK verisinden hedef bölümü seçersin; taban puan, başarı sırası ve
+      <b>ders ders hedef netler</b> kendiliğinden dolar. Burada ayrıca üç şey görürsün:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kalan süre</b> — iki ayrı sayı: yalnız konu çalışması, ve konu + soru çözümü</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yetişir mi</b> — üç tamponla: Öncelikli (tam denk), Güvenlik payı (%15), Genişleme (%30)</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Haftalık çalışma saati (beyan)</b> ve sınav tarihi</span></div>
+    <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
+      <b>Haftalık çalışma saati boşsa "Yetişir mi" kutuları "—" kalır</b> ve altlarında
+      "Hedef sekmesini doldur" yazar. Kutu bu sekmededir — doldur ya da öğrenciden istemesini iste.</span></div>
+    <div class="hint" style="margin-top:10px">"Öncelikli yetişiyor ama güvenlik payı yetişmiyor" çıkıyorsa plan gergindir:
+      bir hastalık, bir tatil ya da bir aksama açık verdirir. Bu, ödevi azaltma değil,
+      <b>haftalık süreyi artırma</b> sinyalidir.</div>
+  </div></div>
+
+  <div class="card"><h2>Puan hesaplayıcı sekmesi</h2><div class="body">
+    <p style="margin:0">Netlerden tahmini YKS puanı. Diploma notu ve OBP girilirse hesap daha doğru olur.
+      <b>Tahmindir</b> — gerçek sonuç o yılki katsayılara ve sıralamaya göre değişir; veliye bunu belirt.</p>
+  </div></div>
+
+  <div class="card"><h2>Veli raporu sekmesi</h2><div class="body">
+    <p style="margin:0 0 12px">Panelin verisinden veliye uygun dilde haftalık rapor üretir; WhatsApp'la gönderirsin.</p>
+    <div class="flag ok"><span class="ic">✓</span><span>
+      <b>Gönderme kararı hep sende.</b> Panel senin adına kimseye mesaj göndermez —
+      metni hazırlar, sen okur ve gönderirsin.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Öğrenci bilgileri sekmesi</h2><div class="body">
+    <div class="topic"><span class="dot t2"></span><span class="tn">Ad, sınıf, alan (Sayısal / EA / Sözel / Dil), telefon</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Veli onayı</b> — ad, telefon ve onay tarihi</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Davet kodu</b> — öğrenci tek tıkla kendi hesabını açar</span></div>
+    <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
+      <b>18 yaş altı öğrencide veli onayı kartı dolmadan sunucu davet kodu üretmez.</b>
+      Bu bir arıza değil, KVKK gereğidir. Önce <b>Hesap → KVKK belgeleri</b>'nden formu yazdır,
+      veliye imzalat, sonra onay bilgisini gir.</span></div>
+    <div class="flag warn" style="margin-top:8px"><span class="ic">i</span><span>
+      <b>Telefon numarası girilmeden</b> davet ve haftalık raporlar gönderilemez.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Davet ve kullanım sekmesi</h2><div class="body">
+    <p style="margin:0">Kendi davet bağlantın, kaç kişinin kaydolduğu ve kazandığın süre burada.
+      Öğretmen arkadaşlarını davet ettikçe kendi kullanım sürene ekleme yapılır.</p>
+  </div></div>
+
+  <div class="card"><h2>Özel Ders sekmesi</h2><div class="body">
+    <p style="margin:0 0 12px">Öğrencilerin açtığı <b>tek seferlik özel ders talepleri</b> burada listelenir.
+      Yalnız kendi branşındaki talepleri görürsün.</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Talebi kabul edersen öğrencinin adı ve numarası sana açılır</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Tavsiye edilen ücret <b>1.000 TL / 40 dk</b> — Biyoser komisyon almaz</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Öğrenci gelmezse <b>"gelmedi"</b> işaretlersin; 2 gelmedide öğrencinin talep açması kilitlenir</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Sorun bildir</b> — uygunsuz davranış, ders yapılmadı, ödeme sorunu</span></div>
+    <div class="flag warn" style="margin-top:10px"><span class="ic">i</span><span>
+      Ders, içerik ve ödeme öğrenciyle aranızdadır; Biyoser yalnızca sizi buluşturur.</span></div>
+  </div></div>
+
+  <div class="card"><h2>Hesap sekmesi</h2><div class="body">
+    ${yon?'':`<div class="flag ok"><span class="ic">✉</span><span><b>Yönetime mesaj yazabilirsin.</b>
+      Sekmenin en üstündeki kutudan yaz; cevap geldiğinde <b>sol raydaki Hesap sekmesinin yanında kırmızı bir sayı</b> çıkar —
+      sekmeyi açmadan fark edersin.</span></div>`}
+    <div class="topic" style="margin-top:10px"><span class="dot t2"></span><span class="tn"><b>Başlangıç rehberi</b> — ilk girişteki kutu, istediğin zaman tekrar açılır</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Paket ve kalan gün</b> · öğrenci kontenjanın</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Bağlı cihazlar</b> — istemediğini kaldırırsın</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>İletişim bilgilerin</b> — ad ve WhatsApp; davet mesajlarında ve KVKK belgelerinde kullanılır</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>KVKK belgeleri</b> — aydınlatma metni ve veli onay formu, adınla hazır, tek tıkla yazdırılır</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Şifre değiştirme ve <b>tüm verilerini indirme</b></span></div>
+    <div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
+      <b>İmzalı kâğıdı sen saklarsın.</b> Panel onay kaydını tutar, belgeyi saklamaz.</span></div>
+  </div></div>
+
+  ${yon?`
+  <div class="card"><h2>Yönetim sekmesi<small>Yalnız yöneticide görünür</small></h2><div class="body">
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Gelen mesajlar</b> en üstte — koç ve öğrencilerden. Okunmamış varsa raydaki Yönetim sekmesinde kırmızı sayı çıkar.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Bir sohbeti sildiğinde <b>iki taraftan da kalkar</b>.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Koç listesi: paket, öğrenci sayısı, son giriş ve <b>kayıt tarihi</b></span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Özel ders şikâyetleri ve men işlemleri</span></div>
+    <div class="flag warn" style="margin-top:10px"><span class="ic">i</span><span>
+      <b>Cihaz sütununda "—" görmen, koçun bugün kaydolup henüz panele girmemiş olması demektir.</b>
+      Cihaz kaydı ilk girişte oluşur; kayıt olmak tek başına cihaz yaratmaz.</span></div>
+  </div></div>`:''}
+
+  <div class="card"><h2>Sık karşılaşılan durumlar</h2><div class="body">
+    ${kKilavuzAdim('?','"Yetişir mi" hep — gösteriyor','Öğrencinin <b>haftalık çalışma saati</b> ya da <b>hedef bölümü</b> girilmemiştir. İkisi de Hedef sekmesinde.')}
+    ${kKilavuzAdim('?','Haftalık takvim boş','O hafta için ödev yoktur. Ödevler sekmesinden ödev ver; program ödevden üretilir. Koçsuz öğrencide ayrıca <b>öğrencinin planı kabul etmesi</b> gerekir.')}
+    ${kKilavuzAdim('?','Davet kodu üretilmiyor','18 yaş altı öğrencide <b>veli onayı</b> kartı eksiktir. Öğrenci bilgileri sekmesinden veli adı, telefonu ve onay tarihini gir.')}
+    ${kKilavuzAdim('?','Öğrenci ödev yapmıyor','Önce ödevi değil <b>süreyi</b> kontrol et: Ödevler sekmesindeki haftalık toplam, öğrencinin beyan ettiği süreyi aşıyor olabilir. Aşıyorsa ödev değil plan hatalıdır.')}
+    ${kKilavuzAdim('?','Karne okunmadı','Karne, metni seçilebilen bir PDF olmalı. Ekran görüntüsü ve fotoğraf okunmaz. Bir kelimeye çift tıkla — seçilemiyorsa elle gir.')}
+    ${kKilavuzAdim('?','"Son işlem kayıt olmadı" penceresi çıktı','İnternet kesilmiş ya da oturum kapanmış olabilir. Önce <b>Tekrar dene</b>ye bas. Düzelmezse sayfayı yenile — ancak <b>kaydedilemeyen son değişiklik gider</b>, yenileyince onu tekrar yapman gerekir.')}
+    ${kKilavuzAdim('?','Öğrencinin girdiği bende görünmüyor','Öğrenci sunucu hesabıyla bağlıysa veriler anında yansır; sayfayı yenile. Öğrenci hâlâ <b>paket modunda</b> (davet kodu kullanmadan) çalışıyorsa yalnız rapor gönderdiğinde görürsün — ona davet kodu üret.')}
+    ${kKilavuzAdim('?','Konu adları yayına göre değişiyor','Karne okuyucu tanımadığı adı olduğu gibi saklar; satır listede görünür ama konu haritasına bağlanmaz. "konu gir"den doğru konuyu seçersen bağlanır.')}
+  </div></div>
+
+  <div class="card"><h2>Üç kural</h2><div class="body">
+    <div class="flag ok"><span class="ic">1</span><span><b>Önce Kokpit.</b> Güne kimin acil olduğuna bakarak başla; sırayla bütün öğrencileri açmak vakit kaybıdır.</span></div>
+    <div class="flag ok"><span class="ic">2</span><span><b>Süreyi aşma.</b> Haftalık toplam, öğrencinin beyan ettiği süreyi geçmesin. Aşılmış hafta yapılmamış haftadır.</span></div>
+    <div class="flag ok"><span class="ic">3</span><span><b>Zayıf konu kartına güven.</b> Öğrencinin "bitti" dediği konu, %50'nin altında kalıyorsa bitmemiştir.</span></div>
+  </div></div>`;
+}
 function karsilamaEkrani(){
   const g=DENEME?DENEME.kalan_gun:7;
   return `<div style="max-width:620px;margin:30px auto">
@@ -6173,15 +6471,23 @@ function karsilamaEkrani(){
         2 öğrenciye kadar ödev verebilir, deneme takibi yapabilir, öğrenci paneli bağlayabilirsin.</span></div>
 
       <p style="margin:16px 0 8px"><b>Sırayla şunları yap:</b></p>
-      <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hesap</b> sekmesinden KVKK belgelerini yazdır</span></div>
-      <div class="topic"><span class="dot t2"></span><span class="tn">Veliden imzalı onay al</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hesap</b> sekmesinden adını ve WhatsApp numaranı gir <span style="color:var(--ink-3)">— davet mesajlarında ve KVKK belgelerinde kullanılır</span></span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn">Aynı sekmeden <b>KVKK belgelerini yazdır</b> ve veliden imzalı onay al</span></div>
       <div class="topic"><span class="dot t2"></span><span class="tn"><b>+ Öğrenci ekle</b> ile ilk öğrencini kaydet</span></div>
-      <div class="topic"><span class="dot t2"></span><span class="tn"><b>Ödevler</b> sekmesinden ödev ver</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hedef</b> sekmesinden bölümü ve <b>haftalık çalışma saatini</b> gir</span></div>
+      <div class="topic"><span class="dot t2"></span><span class="tn"><b>Ödevler</b> sekmesinden ödev ver — <b>Haftalık</b> sekmesinde takvime dağılır</span></div>
       <div class="topic"><span class="dot t2"></span><span class="tn"><b>Öğrenci bilgileri</b> sekmesinden davet kodu gönder</span></div>
 
       <div class="flag warn" style="margin-top:14px"><span class="ic">!</span><span>
+        <b>18 yaş altı öğrencide veli onayı girilmeden davet kodu üretilmez.</b>
+        Önce imzalı onayı al, sonra Öğrenci bilgileri sekmesine işle.</span></div>
+
+      <div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
         Deneme bitince veriler durur ama <b>yeni kayıt yapılamaz</b>. Devam etmek için sol alttan
         <b>Abonelik al</b> diyerek paket seçebilirsin.</span></div>
+
+      <div class="hint" style="margin-top:12px">Takıldığın yerde <b>Hesap → Kullanım kılavuzu</b>: panelin tamamı,
+        sekme sekme ve uyarılarıyla birlikte orada anlatılıyor.</div>
 
       <button class="btn wide" style="margin-top:14px" onclick="karsilamaKapat()">Başlayalım</button>
     </div></div>
@@ -6434,7 +6740,7 @@ function vYonetici(){
 
   <div class="card"><h2>Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2>
   <div class="body" style="padding:0;overflow:auto">
-    <table><thead><tr><th>Koç</th><th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th><th>Son giriş</th><th>Durum</th><th></th></tr></thead><tbody>
+    <table><thead><tr><th>Koç</th><th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th><th>Kayıt</th><th>Son giriş</th><th>Durum</th><th></th></tr></thead><tbody>
     ${KOCLAR.map(k=>{
       const dolu=k.ogrenci>=k.limit;
       const bit=k.lisans_bitis||k.deneme_bitis||'';
@@ -6461,6 +6767,11 @@ function vYonetici(){
           <button class="btn ghost mini" style="margin-top:4px" onclick="yilEkle('${k.id}')">+1 yıl</button>
           ${bit?`<div style="font-size:10.5px;color:${yakin?'var(--warn)':'var(--ink-3)'};margin-top:2px">${k.lisans_bitis?'lisans':'deneme'} ${bit}</div>`:''}</td>
         <td class="num"><input type="number" id="yc_${k.id}" min="1" max="20" value="${k.cihaz_limiti||2}" style="width:64px"></td>
+        <!-- KAYIT tarihi (koclar.olusturuldu). koc_listesi bunu zaten
+             gönderiyordu ama panel hiç göstermiyordu; "bugün kayıt oldu ama
+             — yazıyor" karışıklığının sebebi buydu: yandaki sütun kayıt
+             değil, SON GİRİŞ (cihazlar tablosundan). -->
+        <td style="font-size:12px;color:${(k.kayit||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'}">${gun(k.kayit)}</td>
         <td style="font-size:12px;color:${(k.son_giris||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'}">${gun(k.son_giris)}</td>
         <td><label style="display:flex;gap:6px;align-items:center;font-size:12.5px">
           <input type="checkbox" id="ya_${k.id}" ${k.aktif?'checked':''} style="width:auto">aktif</label>
@@ -7312,6 +7623,10 @@ function girisEkrani(){
           </div>`:''}
         <button class="btn ghost wide" style="margin-top:8px" onclick="demoBaslat()">Önce sistemi gezmek istiyorum</button>
         <div class="hint" style="margin-top:6px;text-align:center">Örnek bir öğrenci üzerinden, kayıt olmadan.</div>
+        ${/* Kılavuz giriş ekranından da açılabilsin — sekmeye ancak oturum
+             açtıktan sonra ulaşılıyor, oysa kaydolmadan önce okumak isteyen var. */''}
+        <button class="btn ghost wide" style="margin-top:8px" onclick="KOC_KILAVUZ_TEK=true;render();window.scrollTo(0,0)">Kullanım kılavuzunu oku</button>
+        <div class="hint" style="margin-top:6px;text-align:center">Panelin tamamı, sekme sekme.</div>
         ${GIRISMOD==='giris'?`<div style="text-align:center;margin-top:12px">
           <a href="#" onclick="sifreUnuttum();return false" style="color:var(--accent);font-size:13.5px;text-decoration:underline">Şifremi unuttum</a>
           <div class="hint" style="margin-top:4px">Önce e-postanı yaz, sonra buna bas.</div></div>`:''}
@@ -7472,7 +7787,7 @@ function kaynakUyarisi(){
    Üstteki sekme çubuğu kullanılmaz. Davet/Hesap/Yönetim öğrenciden
    bağımsız olduğundan rayın altında "Hesap" bölümünde durur. */
 var _RAYSEC=null;
-var KOC_GENEL_SEKME=['ozel','davet','hesap','yonetim'];
+var KOC_GENEL_SEKME=['ozel','davet','hesap','yonetim','kilavuz'];
 
 function kocSek(id,t,ornek){
   YENIOGR=null; ABONE=false; KOKPIT=false;

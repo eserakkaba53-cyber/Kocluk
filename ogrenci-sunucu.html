@@ -1738,6 +1738,16 @@ var _gcSayildi={};
 function gcKayitSay(ad){ if(_gcSayildi[ad]) return; _gcSayildi[ad]=true; gcOlay(ad); }
 function render(){
   const v=document.getElementById('view');
+  /* KILAVUZ HER YERDEN AÇILABİLİR (5 Eyl 2026).
+     Eskiden bu dal giriş ekranından SONRA geliyordu; sunucu kurulu olan
+     panelde giriş ekranı hep önce dönüyor ve kılavuz hiç açılamıyordu.
+     Şifre yenileme akışını bölmemek için o modda devre dışı. */
+  if(KILAVUZ_TEK && GMOD!=='yenisifre'){
+    document.getElementById('hAd').textContent='Kullanım Kılavuzu';
+    document.getElementById('hMeta').textContent='';
+    document.getElementById('tabs').innerHTML='';
+    v.innerHTML=vKilavuz(); return;
+  }
   // SUNUCU MODU: oturum yoksa ya da kayda bağlı değilse giriş ekranı
   /* Şifre yenileme ekranı oturum açıkken de gösterilmeli */
   if(GMOD==='yenisifre' || (sbKurulu() && (!sbOturum() || !OGRID))){
@@ -1748,12 +1758,6 @@ function render(){
     v.innerHTML='<div class="girisSarma">'+girisEkrani()+'</div>';
     if(GMOD==='kayit') gcKayitSay('kayit-ogrenci');   // kaç kişi öğrenci kayıt ekranına geldi
     return;
-  }
-  if(!D&&KILAVUZ_TEK){
-    document.getElementById('hAd').textContent='Kullanım Kılavuzu';
-    document.getElementById('hMeta').textContent='';
-    document.getElementById('tabs').innerHTML='';
-    v.innerHTML=vKilavuz(); return;
   }
   if(!D){
     document.getElementById('hAd').textContent='Çalışma Panelim';
@@ -2418,35 +2422,76 @@ function vOdev(){
 }
 
 /* ---------- konularım ---------- */
-function cycleT(sk,t){D.topics[sk]=D.topics[sk]||{};D.topics[sk][t]=((D.topics[sk][t]||0)+1)%4;save();render();}
+function cycleT(sk,t){
+  D.topics[sk]=D.topics[sk]||{};
+  const yeni=((D.topics[sk][t]||0)+1)%4;
+  D.topics[sk][t]=yeni;
+  /* KONU "BİTTİ" → ÖDEV eşitlemesi (5 Eyl 2026).
+     Ters yön zaten vardı: ödevi "Yaptım" işaretleyince konu Bitti oluyor
+     (odevKonuBitir). Bu yön eksikti ve şu soruna yol açıyordu: öğrenci
+     Konularım'dan konuyu bitmiş işaretliyor, ama o konunun ödevi
+     "Bekliyor"da kalıyor — takvimde yer kaplamaya devam ediyor ve HER
+     HAFTA "devreden" olarak geri geliyor. Ödev sonsuza kadar peşini
+     bırakmıyor.
+     Sessizce işaretlemiyoruz: ödevde soru hedefi olabilir ve onu
+     otomatik "çözüldü" saymak kaydı yanlışlar. Soruyoruz. */
+  if(yeni===2){
+    const bek=(D.tasks||[]).filter(x=>!x.rutin && x.sub===sk && x.konu===t && x.s!==1);
+    if(bek.length){
+      const soruVar=bek.some(x=>(+x.q||0)>0);
+      const ok=confirm('"'+t+'" konusunun bekleyen '+bek.length+' ödevi var.\n\n'+
+        'Bunları da "Yaptım" işaretleyeyim mi?\n'+
+        (soruVar?'(Soru hedefi olanlar tam çözülmüş sayılacak.)\n':'')+
+        '\nHayır dersen ödev "Bekliyor" kalır ve gelecek hafta devreden olarak görünür.');
+      if(ok) bek.forEach(x=>{ x.s=1; if((+x.q||0)>0 && !(+x.yap||0)) x.yap=x.q; });
+    }
+  }
+  save(); render();
+}
 /* ---------- KARŞILAMA KUTUSU (ilk girişte bir kez) ---------- */
-function karsilamaKapat(){ try{localStorage.setItem('biyoser_karsilama_ogr','1');}catch(e){} const w=document.getElementById('kmWrap'); if(w) w.remove(); document.removeEventListener('keydown',karsilamaEsc); }
+function karsilamaKapat(){ try{localStorage.setItem('biyoser_karsilama_ogr','1');}catch(e){} const w=document.getElementById('kmWrap');
+  /* görsel pencere dinleyicisini bırak — yoksa her açılışta bir tane birikiyor */
+  if(w){ try{ const o=w.querySelector('.km-overlay'); if(o && typeof gorunurBirak==='function') gorunurBirak(o); }catch(e){} w.remove(); }
+  document.removeEventListener('keydown',karsilamaEsc); }
 function karsilamaEsc(e){ if(e.key==='Escape') karsilamaKapat(); }
 function karsilamaAc(){
   if(document.getElementById('kmWrap')) return;
+  /* 5 Eyl 2026 — kutu güncellendi: haftalık çalışma süresi adımı eklendi
+     (girilmezse "Yetişir mi" bölümleri hiç çalışmıyor), Programım sekmesi
+     ve koçsuz öğrencinin kabul şartı anlatıldı. */
+  var kSolo = !!((typeof sbOturum==='function') && sbOturum() && OGRID &&
+                 typeof soloMu==='function' && soloMu());
   const w=document.createElement('div'); w.id='kmWrap';
   w.innerHTML =
     '<div class="km-overlay" onclick="if(event.target===this)karsilamaKapat()">'+
     '<div class="km-modal" role="dialog" aria-modal="true">'+
       '<button class="km-x" onclick="karsilamaKapat()" title="Kapat">✕</button>'+
-      '<div class="km-head"><div class="k">Hoş geldin 👋</div><h2>Başlamadan önce 4 adım</h2></div>'+
+      '<div class="km-head"><div class="k">Hoş geldin 👋</div><h2>Başlamadan önce 5 adım</h2></div>'+
       '<div class="km-body">'+
         '<div class="km-sec">Önce şunları yap</div>'+
         '<ol class="km-steps">'+
           '<li><b>Hedefini seç.</b> "Hedefe uzaklık" sekmesinden hayalindeki bölümü seç (YÖK verisinden). Sistem, o bölüm için hangi dersten kaç net gerektiğini senin için hesaplar.</li>'+
+          '<li><b>Haftalık çalışma süreni gir.</b> Aynı sekmedeki "Hedefim" kartına, okul dışında haftada kaç saat çalıştığını yaz. <b>Bunu girmezsen "Yetişir mi" bölümleri hiç çalışmaz</b>, kutular "—" kalır.</li>'+
           '<li><b>Konularını işaretle.</b> "Konularım" sekmesinde bildiğin/bilmediğin konuları işaretle (Bitirdim · İşliyorum · Eksiğim var · Görmedim). Böylece sistem nereden başlayacağını bilir.</li>'+
-          '<li><b>Son denemelerini gir.</b> "Denememi gir" sekmesinden karneyi yapıştır — netlerin ve zayıf konuların otomatik çıkar.</li>'+
-          '<li><b>Ödevlerini yap ve işaretle.</b> "Ödevlerim" sekmesinde sana verilen ödevleri gör; bitirince Yaptım / Yarım / Yapmadım işaretle, çözdüğün soruyu gir.</li>'+
+          '<li><b>Son denemelerini gir.</b> "Denememi gir" sekmesinden karneyi yapıştır — netlerin ve <b>%50\'nin altında kaldığın konular</b> otomatik çıkar.</li>'+
+          '<li><b>Ödevlerini yap ve işaretle.</b> "Ödevlerim" sekmesinde ödevlerini gör; bitirince Yaptım / Yarım / Yapamadım işaretle, çözdüğün soruyu gir.</li>'+
         '</ol>'+
         '<div class="km-how"><div class="km-sec" style="margin:0">Sistem nasıl çalışır</div><ul>'+
-          '<li>Öğretmenin her hafta sana ödev verir; <b>öğretmenin yoksa</b> sistem senin için haftalık planı otomatik çıkarır.</li>'+
+          (kSolo
+            ? '<li>Öğretmenin yok; haftalık planı <b>sistem senin için çıkarır</b>. <b>Ödevlerim sekmesinden planı kabul etmediğin sürece ödev oluşmaz</b> ve Programım takvimi boş kalır.</li>'
+            : '<li>Öğretmenin her hafta sana ödev verir; <b>öğretmenin yoksa</b> sistem senin için haftalık planı otomatik çıkarır.</li>')+
+          '<li>Ödevlerin <b>"Programım"</b> sekmesinde haftalık takvime dağıtılır — hangi gün ne çalışacağın bellidir. Meşgul olduğun saatleri oradan kapatırsın.</li>'+
           '<li>Sen işaretledikçe ve deneme girdikçe; hedefe ne kadar yaklaştığın, hangi konuda geride olduğun ve <b>sınava yetişip yetişmediğin</b> otomatik görünür.</li>'+
           '<li>Net hesabı, hedef karşılaştırması, konu önceliği — hepsi otomatik. Sen sadece dürüstçe işaretle.</li>'+
         '</ul></div>'+
         '<button class="km-btn" onclick="karsilamaKapat()">Anladım, başlayalım</button>'+
-        '<div class="km-foot">Bu kutuya sonra "Yardım" sekmesinden tekrar ulaşabilirsin.</div>'+
+        '<div class="km-foot">Bu kutuya ve tam kullanım kılavuzuna sonra "Yardım" sekmesinden ulaşabilirsin.</div>'+
       '</div></div></div>';
   document.body.appendChild(w);
+  /* Mobilde yakınlaştırma varken kutu ekran dışında açılıyordu — video
+     çekmecesi ve kayıt uyarısı gibi bunu da görünür pencereye oturt. */
+  try{ var _km=w.querySelector('.km-overlay');
+       if(_km && typeof gorunureSabitle==='function') gorunureSabitle(_km); }catch(e){}
   document.addEventListener('keydown',karsilamaEsc);
 }
 function karsilamaKontrol(){
@@ -3367,7 +3412,13 @@ function vHedef(){
           onchange="setHaftalik(this.value)">
         <div class="hint" style="margin-top:4px">Ders dışında, haftada kaç saat çalışıyorsun.</div></div>
     </div>
-    <div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>Burada yaptığın değişiklikler <b>rapor gönderdiğinde</b> öğretmenine iletilir. O onaylayınca onun sisteminde de güncellenir.</span></div>
+    ${/* Sunucu modunda değişiklikler anında yazılıyor; "rapor gönderdiğinde
+         iletilir" yalnız paket modunda doğru. Eskiden ikisinde de bu yazıyordu. */
+      ((typeof sbOturum==='function') && sbOturum() && OGRID)
+      ? `<div class="flag ok" style="margin-top:12px"><span class="ic">✓</span><span>Buradaki değişiklikler <b>anında kaydedilir</b>${(typeof soloMu==='function'&&soloMu())?'':' ve öğretmenine yansır'}. Ayrıca rapor göndermene gerek yok.</span></div>
+         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> aşağıdaki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`
+      : `<div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>Burada yaptığın değişiklikler <b>rapor gönderdiğinde</b> öğretmenine iletilir. O onaylayınca onun sisteminde de güncellenir.</span></div>
+         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> aşağıdaki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`}
   </div></div>
 
   ${yetisKart}
@@ -3651,6 +3702,10 @@ function waGonder(){
 
 /* ---------- kılavuz ---------- */
 let KILAVUZ_TEK=false;
+/* '' = moda kendisi karar versin · 'sunucu' / 'paket' = elle sabitle.
+   Giriş ekranından açılan kılavuz 'sunucu' ile açılır: oturum henüz yok
+   ama kullanıcı hesap açmak üzere. */
+let KILAVUZ_MOD='';
 function kAdim(n,bas,icerik){
   return `<div style="display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line-soft)">
     <div style="flex:none;width:27px;height:27px;border-radius:50%;background:var(--accent);color:#fff;
@@ -3658,88 +3713,268 @@ function kAdim(n,bas,icerik){
     <div style="flex:1;min-width:0"><b>${bas}</b><div style="margin-top:3px;color:var(--ink-2);font-size:14px">${icerik}</div></div></div>`;
 }
 function vKilavuz(){
-  return `
-  ${KILAVUZ_TEK?`<div style="padding-top:14px"><button class="btn ghost mini" onclick="KILAVUZ_TEK=false;render()">← Geri dön</button></div>`:''}
+  /* KILAVUZ MODA DUYARLI (5 Eyl 2026).
+     Eski kılavuz yalnız PAKET modunu anlatıyordu ve "verilerin sadece bu
+     tarayıcıda durur, hiçbir sunucuya gitmez" diyordu. Sunucu modunda bu
+     YANLIŞ ve gereksiz korkutucu; ayrıca Programım / Yardım / Özel Ders /
+     Paketim sekmeleri hiç anlatılmıyordu. Artık panel hangi moddaysa onu
+     anlatır ve sekmelerin tamamı burada. */
+  /* KILAVUZ_MOD: giriş ekranından açıldığında oturum henüz yok ama kullanıcı
+     hesap açmak üzere — ona paket modunun "verilerin tarayıcıda kalır"
+     uyarılarını göstermek yanlış olur. Bu değişken modu elle sabitler. */
+  const sunucu = KILAVUZ_MOD
+    ? (KILAVUZ_MOD==='sunucu')
+    : !!((typeof sbOturum==='function') && sbOturum() && OGRID);
+  const solo   = !!(sunucu && !KILAVUZ_MOD && typeof soloMu==='function' && soloMu());
 
-  <div class="card k-acil"><h2>⚠ Çok önemli — önce bunu oku</h2><div class="body">
+  return `
+  ${KILAVUZ_TEK
+    ? `<div style="padding-top:14px"><button class="btn ghost mini" onclick="KILAVUZ_TEK=false;KILAVUZ_MOD='';render()">← Geri dön</button></div>`
+    : (TAB==='kilavuz'
+        /* Sunucu modunda Ayarlar sekmesi gizli; kılavuza Yardım'dan
+           giriliyor. Dönüş yolu olmadan kullanıcı sekmesiz kalıyordu. */
+        ? `<div style="padding-top:14px"><button class="btn ghost mini" onclick="TAB='yardim';render()">← Yardıma dön</button></div>`
+        : '')}
+
+  <div class="card ${sunucu?'k-ok':'k-acil'}"><h2>${sunucu?'Bilgilerin nerede duruyor':'⚠ Çok önemli — önce bunu oku'}</h2><div class="body">
+  ${sunucu ? `
+    <div class="flag ok"><span class="ic">✓</span><span><b>Bilgilerin sunucuda saklanıyor.</b>
+      Telefondan, tabletten, bilgisayardan — <b>hangi cihazdan girersen gir aynı şeyleri görürsün</b>.
+      Tarayıcı geçmişini silsen bile kaybolmaz.</span></div>
+    <div class="flag ok"><span class="ic">✓</span><span><b>İşaretlediğin her şey ${solo?'kendiliğinden kaydedilir':'öğretmenine anında ulaşır'}.</b>
+      ${solo?'Ayrıca bir yere bir şey göndermene gerek yok.':'Ayrıca rapor göndermene gerek yok.'}</span></div>
+    <div class="flag warn"><span class="ic">!</span><span><b>Sayfayı kapatmadan önce kaydın bitmesini bekle.</b>
+      Bir sorun olursa ekranı kaplayan bir pencere açılır ve
+      <b>"son işlem kayıt olmadı"</b> der — o pencereyi görmezden gelme,
+      <b>Tekrar dene</b>ye bas. Kapatırsan o son değişiklik kaybolur.</span></div>
+    <div class="hint">Panelin adresini <b>yer imlerine (favorilere) ekle</b>, her seferinde aramak zorunda kalma.</div>
+  ` : `
     <div class="flag bad"><span class="ic">1</span><span><b>Paneli hep aynı cihazdan ve aynı tarayıcıdan aç.</b><br>
-      İşaretlerin, konu durumların ve girdiğin denemeler <b>sadece açtığın tarayıcının içinde</b> saklanıyor.
-      Telefonda Chrome ile açtıysan hep Chrome ile aç. Bilgisayardan girersen orada <b>bomboş</b> görürsün —
-      veriler kaybolmuş değildir, sadece o cihaza geçmez. Bir cihaz seç ve ondan şaşma.</span></div>
+      Henüz bir hesabın yok (paket modu). İşaretlerin, konu durumların ve girdiğin denemeler
+      <b>sadece açtığın tarayıcının içinde</b> saklanıyor. Telefonda Chrome ile açtıysan hep
+      Chrome ile aç; bilgisayardan girersen orada <b>bomboş</b> görürsün.</span></div>
     <div class="flag bad"><span class="ic">2</span><span><b>Tarayıcı geçmişini / site verilerini SAKIN silme.</b><br>
-      "Geçmişi temizle", "Verileri sil", "Çerezleri temizle" gibi bir işlem yaparsan
-      <b>bu paneldeki her şey silinir</b>: bitirdiğin konular, işaretlediğin ödevler, girdiğin denemeler.
-      Geri getirilemez. Telefon temizleme uygulamaları da (hızlandırıcı, temizleyici vb.) aynı şeyi yapar — onları da bu tarayıcıda çalıştırma.</span></div>
-    <div class="flag warn"><span class="ic">3</span><span><b>Gizli sekmede (incognito) açma.</b> Gizli sekme, sekmeyi kapattığın anda her şeyi siler.</span></div>
-    <div class="flag ok"><span class="ic">✓</span><span><b>Güvence al:</b> Ayda bir <b>Ayarlar → Yedek indir</b> yap. Küçük bir dosya iner, telefonunda dursun.
-      Bir şey olursa <b>Yedek yükle</b> ile her şey geri gelir. Telefon değiştireceğinde de bunu kullanacaksın.</span></div>
-    <div class="hint">Panelin adresini <b>yer imlerine (favorilere) ekle</b> ki her seferinde aynı yerden açasın.</div>
+      "Geçmişi temizle", "Çerezleri temizle" ya da telefon temizleme uygulamaları
+      <b>bu paneldeki her şeyi siler</b> ve geri getirilemez.</span></div>
+    <div class="flag bad"><span class="ic">3</span><span><b>Gizli sekmede (incognito) açma.</b>
+      Sekmeyi kapattığın anda her şey silinir.</span></div>
+    <div class="flag ok"><span class="ic">✓</span><span><b>Ayda bir Ayarlar → Yedek indir yap.</b>
+      Telefon değiştireceğinde de bunu kullanacaksın.</span></div>
+    <div class="hint">Öğretmenin sana <b>davet kodu</b> verirse ya da kendi hesabını açarsan bilgilerin
+      sunucuda durur; yukarıdaki uyarıların hiçbiri seni ilgilendirmez.</div>
+  `}
   </div></div>
 
   <div class="card"><h2>Bu panel ne işe yarar</h2><div class="body">
-    <p style="margin:0 0 10px">Bu panel, öğretmeninle aranda kalan bir çalışma defteri. Üç işi var:</p>
-    <div class="topic"><span class="dot t2"></span><span class="tn">Öğretmeninin verdiği ödevleri görürsün</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn">Ne yaptığını, neyi yapamadığını işaretlersin</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn">Haftada bir tek tuşla ona rapor gönderirsin</span></div>
-    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>Bilgilerin <b>sadece bu telefonda/bilgisayarda</b> duruyor. Hiçbir siteye, hiçbir sunucuya gitmiyor. Öğretmenin bile sen göndermeden hiçbir şey göremez.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">${solo?'<b>Kendine ödev verirsin</b> — sistem hangi konuya önce çalışman gerektiğini sıraya koyar':'<b>Öğretmeninin verdiği ödevleri</b> görür, yaptıkça işaretlersin'}</span></div>
+    ${sunucu?`<div class="topic"><span class="dot t2"></span><span class="tn">Ödevlerin <b>haftalık bir takvime</b> dağıtılır — hangi gün ne çalışacağın bellidir</span></div>`:''}
+    <div class="topic"><span class="dot t2"></span><span class="tn">628 konuluk haritada <b>neyi bitirdiğini</b> tutarsın</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Denemelerini girersin; <b>zayıf konuların</b> kendiliğinden çıkar</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Kalan konuların sınava <b>yetişip yetişmediğini</b> görürsün</span></div>
   </div></div>
 
-  <div class="card"><h2>Haftalık düzen — ezberlemen gereken tek şey</h2><div class="body" style="padding:0 16px">
-    ${kAdim(1,'Pazartesi: paketi yükle','Öğretmenin sana bir link ya da uzun bir kod gönderir. Linke tıklarsın, panel açılır ve o haftanın ödevleri yüklenir. Kod gönderdiyse <b>Ayarlar → Yeni paket yükle</b> kısmına yapıştırırsın.')}
-    ${kAdim(2,'Hafta boyunca: işaretle','Bir ödevi bitirdiğinde <b>Ödevlerim</b> sekmesinden işaretle. Hafta sonuna bırakma; unutursun ve rapor eksik gider.')}
-    ${kAdim(3,'Deneme çözdüğünde: gir','<b>Denememi gir</b> sekmesinden doğru ve yanlış sayılarını yaz. Net otomatik hesaplanır.')}
-    ${(sbOturum()&&OGRID)
-      ? kAdim(4,'Rapor göndermene gerek yok','İşaretlediğin her ödev, girdiğin her deneme <b>anında öğretmenine ulaşıyor</b>. Söylemek istediğin bir şey varsa <b>Ayarlar</b> sekmesindeki not kutusunu kullan.')
-      : kAdim(4,'Pazar akşamı: raporu gönder','<b>Rapor gönder</b> sekmesine gel, öğretmenine bir not yaz ve butona bas. WhatsApp açılır, gönder tuşuna basarsın. Bu kadar.')}
+  <div class="card k-dikkat"><h2>⚠ Doldurmazsan çalışmayan yerler</h2><div class="body">
+    <div class="flag bad"><span class="ic">1</span><span>
+      <b>Haftalık çalışma süreni girmezsen "Yetişir mi" hiçbir şey göstermez.</b>
+      <b>Hedefe uzaklık</b> sekmesindeki <b>Hedefim</b> kartında
+      <b>"Haftalık çalışma sürem"</b> kutusu var; okul dışında haftada kaç saat
+      çalıştığını oraya yaz. Girmezsen o sekmedeki bütün "yetişir mi" kutuları
+      <b>"—"</b> kalır — sistem senin tempoyu bilmeden yetişir mi diyemez.</span></div>
+    <div class="flag bad"><span class="ic">2</span><span>
+      <b>Konularını işaretlemezsen kalan süre yanlış çıkar.</b>
+      <b>Konularım</b> sekmesinde bitirdiğin konuları işaretle. Sistem bitmemiş
+      sayılan her konuya süre ayırır; işaretlemezsen "yetişmiyor" der — oysa yetişiyordur.</span></div>
+    <div class="flag bad"><span class="ic">3</span><span>
+      <b>Hedef bölümünü seçmezsen ne kadar geride olduğunu göremezsin.</b>
+      <b>Hedefe uzaklık</b> sekmesinden hedefini seç; ders ders kaç net gerektiği
+      YÖK verisinden kendiliğinden dolar.</span></div>
+    ${solo?`<div class="flag bad"><span class="ic">4</span><span>
+      <b>Haftanın planını kabul etmezsen ödev oluşmaz.</b>
+      <b>Ödevlerim</b> sekmesinin en üstünde kabul edip etmediğin yazar.
+      Kabul etmediğin sürece ortada ödev olmaz ve <b>Programım</b> takvimi boş görünür.
+      Bu bir arıza değil — koçun olmadığı için ödev senin onayınla oluşur.</span></div>`:''}
+    <div class="flag warn"><span class="ic">i</span><span>
+      <b>Sınav tarihini sen girmiyorsun.</b> Tarih bütün öğrenciler için ortaktır ve
+      merkezden gelir; kutusunu kapalı görmen normaldir. Sınava kalan hafta oradan hesaplanır.</span></div>
   </div></div>
 
   <div class="card"><h2>Ödevlerim sekmesi</h2><div class="body">
-    <p style="margin:0 0 12px"><b>Geçen haftalardan devreden ödevler</b> en üstte durur — önce onlar biter; <b>Yaptım</b> işaretleyene kadar her hafta orada kalırlar. Altında <b>sabit rutin</b> vardır. Bu her hafta tekrar eden iştir (paragraf, problem gibi). Kaç tane çözdüysen kutuya yazarsın, çubuk dolar. Hafta sonu 100'ü birden çözmeye çalışma — <b>her gün azar azar</b> yapman gereken şey budur, faydası oradan gelir.</p>
-    <p style="margin:0 0 12px"><b>Konu ödevleri</b> altta listelenir. Her birinde üç seçenek var:</p>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yaptım</b> — ödevin tamamını bitirdim</span></div>
-    <div class="topic"><span class="dot t1"></span><span class="tn"><b>Yarım</b> — başladım ama bitiremedim</span></div>
+    ${solo?`<p style="margin:0 0 12px">En üstte <b>bu haftanın ödevini kabul edip etmediğin</b> yazar.
+      Kabul etmediysen aşağıdaki plan kartından kabul et; ödevler o anda oluşur ve takvime dağıtılır.</p>`:''}
+    <p style="margin:0 0 12px"><b>Devreden ödevler</b> en üstte durur — geçen haftalardan kalanlar.
+      İşaretlenene kadar her hafta orada kalırlar.</p>
+    <p style="margin:0 0 10px">Her ödevde üç seçenek var:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yaptım</b> — tamamını bitirdim</span></div>
+    <div class="topic"><span class="dot t1"></span><span class="tn"><b>Yarım</b> — başladım, bitiremedim</span></div>
     <div class="topic"><span class="dot t3"></span><span class="tn"><b>Yapamadım</b> — hiç başlayamadım</span></div>
-    <div class="flag warn" style="margin-top:12px"><span class="ic">!</span><span><b>"Yapamadım" demek suç değil.</b> Öğretmenin buna göre planı düzeltiyor. Yapmadığın şeye "yaptım" dersen bir sonraki hafta üstüne yeni konu gelir ve altında kalırsın. Sistemin işe yaraması dürüstlüğüne bağlı.</span></div>
+    <p style="margin:12px 0 0">Ödevde <b>soru hedefi</b> varsa kaç soru çözdüğünü de girersin.</p>
+    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
+      <b>Ödevi "Yaptım" işaretlemek, o konuyu da kendiliğinden "Bitirdim" yapar.</b>
+      İki yeri ayrı ayrı işaretlemene gerek yok.</span></div>
+    <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>
+      <b>"Yapamadım" demek suç değil.</b> ${solo?'Plan buna göre düzelir.':'Öğretmenin planı buna göre düzeltir.'}
+      Yapmadığın işe yaptım demek planı bozar ve eksik konu sınavda karşına çıkar.</span></div>
+    <div class="hint" style="margin-top:10px">Ödevin <b>adına tıklarsan</b> o konunun anlatım videolarını arayan bir kutu açılır.</div>
   </div></div>
 
+  ${sunucu?`
+  <div class="card"><h2>Programım sekmesi — haftalık takvim</h2><div class="body">
+    <p style="margin:0 0 12px">Ödevlerin haftanın günlerine <b>yarım saatlik bloklar</b> hâlinde dağıtılır.
+      Hangi gün ne çalışacağın bellidir; konu çalışması ve soru çözümü ayrı bloklar olarak görünür.</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Saatleri aç / kapat</b> — okulda, dershanede ya da meşgul olduğun saatleri kapat</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Kapattığın saatlere ödev konmaz${solo?'':'; öğretmenin bunu görür ve programı ona göre günceller'}</span></div>
+    ${solo?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Blokları sürükleyerek</b> istediğin güne ve saate taşıyabilirsin</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yeniden dağıt</b> — programı baştan kurar; elle taşıdığın bloklar yerinde kalır</span></div>`
+    :`<div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
+      <b>Blokları sen taşıyamazsın</b> — programı öğretmenin düzenler.
+      Senin işin müsait olmadığın saatleri kapatmak; o da ona göre günceller.</span></div>`}
+    <div class="flag ok" style="margin-top:10px"><span class="ic">i</span><span>
+      Aralıksız çalışma <b>90 dakikayı geçmez</b>; sistem araya mola bırakır. Dikkat süresi o kadar sürüyor.</span></div>
+    <div class="hint" style="margin-top:10px">Blok adına tıklarsan o konunun videoları açılır.
+      Takvim boşsa: ${solo?'planı kabul etmemişsindir.':'öğretmenin henüz dağıtmamıştır.'}</div>
+  </div></div>`:''}
+
   <div class="card"><h2>Konularım sekmesi</h2><div class="body">
-    <p style="margin:0 0 12px">Üstte tüm derslerin özeti var: kaç konu bitti, kaç kaldı, hepsini bitirmen için ne kadar süre gerekiyor. Bir derse dokununca o dersin konuları açılır.</p>
-    <p style="margin:0 0 10px">Her konunun dört durumu var, dokundukça sırayla değişir:</p>
+    <p style="margin:0 0 10px">Her konunun dört durumu var; üstüne dokundukça sırayla değişir:</p>
     <div class="topic"><span class="dot t0"></span><span class="tn"><b>Görmedim</b> — bu konuya hiç çalışmadım</span></div>
-    <div class="topic"><span class="dot t1"></span><span class="tn"><b>İşliyorum</b> — çalışmaya başladım, devam ediyor</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Bitirdim</b> — konuyu öğrendim ve soru çözdüm</span></div>
+    <div class="topic"><span class="dot t1"></span><span class="tn"><b>İşliyorum</b> — başladım, devam ediyor (yarım süreyle sayılır)</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Bitirdim</b> — öğrendim ve soru çözdüm</span></div>
     <div class="topic"><span class="dot t3"></span><span class="tn"><b>Eksiğim var</b> — çalıştım ama oturmadı, tekrar lazım</span></div>
-    <div class="flag warn" style="margin-top:12px"><span class="ic">!</span><span><b>"Bitirdim" işaretlediğin konudan ödev gelmez.</b> Bu yüzden emin olmadan bitirdim deme. Ölçüt şu: o konudan 10 soru çözsen 7'sini yapabiliyor musun? Yapamıyorsan "Eksiğim var" işaretle.</span></div>
-    <div class="hint" style="margin-top:10px">Süre tahminleri konu anlatımı ve soru çözümünü birlikte kapsar. "İşliyorum" dediğin konular yarım süreyle sayılır.</div>
+    <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
+      <b>Bir konuyu "Bitirdim" yaparken o konunun bekleyen ödevi varsa sistem sorar:</b>
+      "Bunları da Yaptım işaretleyeyim mi?" <b>Evet</b> dersen ödev kapanır.
+      <b>Hayır</b> dersen ödev bekliyor kalır ve gelecek hafta <b>devreden</b> olarak geri gelir.
+      İkisi de doğru cevap olabilir — soruyu okuyup karar ver.</span></div>
+    <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>
+      Konuları sonradan işaretlemen ${solo?'bu haftaki ödevini bozmaz':'öğretmeninin verdiği bu haftaki ödevi bozmaz'} —
+      yalnız <b>bundan sonraki</b> plan değişir. Bitirdiğin konudan yeni ödev gelmez.</span></div>
   </div></div>
 
   <div class="card"><h2>Denememi gir sekmesi</h2><div class="body">
-    <p style="margin:0 0 12px">Üç tür deneme girebilirsin:</p>
+    <p style="margin:0 0 12px"><b>En kolay yol: karneni yapıştır.</b> Deneme karnenin
+      <b>PDF</b>'ini bilgisayarda aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → kutuya yapıştır.
+      Netlerin kendiliğinden dolar.</p>
+    <div class="flag warn"><span class="ic">!</span><span><b>Karne, metni seçilebilen bir PDF olmalı.</b>
+      Ekran görüntüsü ya da fotoğraf okunamaz. Denemek için PDF'te bir kelimeye çift tıkla —
+      seçilebiliyorsa okunur.</span></div>
+    <p style="margin:12px 0 10px">Elle de girebilirsin. Üç tür deneme var:</p>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>TYT</b> — TYT oturumundaki bütün dersler</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>AYT</b> — kendi alanının AYT dersleri</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Branş</b> — tek dersten çözdüğün deneme</span></div>
-    <p style="margin:12px 0 0"><b>Doğru ve yanlış sayısını</b> yazarsın, net otomatik hesaplanır. Boşları yazmana gerek yok. Çözmediğin dersleri boş bırak.</p>
-    <div class="hint" style="margin-top:8px">Girdiğin denemeler "gönderilmeyi bekleyen" listesinde durur; raporu gönderdiğinde öğretmenine ulaşır.</div>
+    <p style="margin:12px 0 0"><b>Doğru</b> ve <b>yanlış</b> sayısını yazarsın, net kendiliğinden hesaplanır (D − Y/4).
+      Çözmediğin dersleri boş bırak.</p>
+    <div class="flag ok" style="margin-top:12px"><span class="ic">★</span><span>
+      <b>Tekrar eden zayıf konular kartı</b> — doğru oranı <b>%50'nin altında</b> kalan konuları listeler.
+      Konunun kaç denemede çıktığı değil, <b>çıkan soruların ne kadarını doğru yaptığın</b> ölçülür;
+      kartta her konudan kaç soru çıktığı da yazar.
+      Burada çıkan bir konuyu Konularım'da "Bitirdim" işaretlemişsen aslında bitmemiştir —
+      <b>Eksiğim var</b>'a çek.</span></div>
+    <div class="hint" style="margin-top:10px">Her denemenin yanındaki <b>"konu gir"</b> düğmesinden,
+      o denemede yanlış ya da boş bıraktığın konuları ekleyebilirsin. <b>Kaç soru çıktığını</b> da yazarsan
+      zayıf konu hesabı çok daha doğru olur.${sunucu?' Öğretmeninin girdiği satırları silemezsin, kendi eklediklerini silebilirsin.':''}</div>
   </div></div>
 
+  <div class="card"><h2>Gelişimim sekmesi</h2><div class="body">
+    <p style="margin:0">Net grafiğin, ders ders seyrin ve deneme geçmişin burada.
+      Deneme sayısı arttıkça grafik anlamlı hâle gelir; ilk birkaç denemede inişli çıkışlı görünmesi normaldir.
+      Bakılacak şey tek bir denemenin neti değil, <b>çizginin yönü</b>.</p>
+  </div></div>
+
+  <div class="card"><h2>Hedefe uzaklık sekmesi</h2><div class="body">
+    <p style="margin:0 0 12px">Hedef bölümünü seçersin; taban puan, başarı sırası ve
+      <b>ders ders hedef netler</b> YÖK verisinden dolar. Sonra üç şey görürsün:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Sınava kalan hafta</b> — ortak sınav tarihinden hesaplanır</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kalan süre</b> — iki ayrı sayı: yalnız konu çalışması, ve konu + soru çözümü</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yetişir mi</b> — üç tamponla: Öncelikli, Güvenlik payı (%15), Genişleme (%30)</span></div>
+    <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
+      <b>Haftalık çalışma süreni girmezsen bu sekmenin yarısı çalışmaz.</b>
+      "Yetişir mi" kutuları <b>"—"</b> kalır. Aynı sekmedeki <b>Hedefim</b> kartından süreni gir;
+      kutular anında dolar. Süreni abartma — gerçekte çalıştığın saati yaz, yoksa sistem sana yalan söyler.</span></div>
+    <div class="hint" style="margin-top:10px"><b>Güvenlik payı:</b> hastalık, aksama ve tekrar için ayrılan fazladan süre.
+      <b>Genişleme:</b> daha çok tekrar için yer. "Öncelikli yetişiyor ama güvenlik payı yetişmiyor" çıkıyorsa
+      planın çok gergin demektir — bir aksilikte açık verirsin.</div>
+  </div></div>
+
+  <div class="card"><h2>Puan hesapla sekmesi</h2><div class="body">
+    <p style="margin:0">Netlerini yazarsın, tahmini YKS puanın çıkar. Diploma notunu (OBP) girersen
+      hesap daha doğru olur. <b>Tahmindir</b> — gerçek sonuç o yılki katsayılara ve sıralamaya göre değişir.</p>
+  </div></div>
+
+  <div class="card"><h2>Yardım sekmesi</h2><div class="body">
+    ${sunucu?`<div class="flag ok"><span class="ic">✉</span><span><b>Yönetime mesaj yazabilirsin.</b>
+      Panelle ilgili bir sorun, öneri ya da soru varsa oradaki kutuya yaz.
+      Cevap geldiğinde <b>Yardım sekmesinin yanında kırmızı bir sayı</b> çıkar — sekmeyi açmadan fark edersin.</span></div>
+    <div class="hint" style="margin:10px 0">Ders ve konu sorularını <b>öğretmenine</b> sor; yönetim panelin kendisiyle ilgilenir.</div>`
+    :`<div class="hint" style="margin:0 0 10px">Başlangıç rehberi, kullanım videoları ve panelin görünümü bu sekmede.</div>`}
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Başlangıç rehberi</b> — ilk girişteki adım kutusu, istediğin zaman tekrar açılır</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kullanım videoları</b> — kısa anlatımlar, sayfadan ayrılmadan izlersin</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Görünüm</b> — açık, gece, kum, lacivert temalar (tercih bu cihazda saklanır)</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Bu kılavuz</b> — buradan tekrar açabilirsin</span></div>
+  </div></div>
+
+  ${sunucu?`
+  <div class="card"><h2>Özel Ders sekmesi</h2><div class="body">
+    <p style="margin:0 0 12px">Tek bir konuda takıldıysan <b>tek seferlik özel ders talebi</b> açabilirsin.
+      Talebin yalnızca seçtiğin branştaki öğretmenlere gösterilir.</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Branş, tarih, saat ve <b>hangi konuda takıldığını</b> yazarsın</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Adın ve telefonun <b>yalnızca dersi kabul eden öğretmene</b> iletilir</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Tavsiye edilen ücret <b>1.000 TL / 40 dk</b> — Biyoser komisyon almaz</span></div>
+    <div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
+      <b>Açtığın derse gitmezsen "gelmedi" işaretlenir; 2 gelmedide talep açman kilitlenir.</b>
+      Gelemeyeceksen önceden iptal et.</span></div>
+    <div class="flag warn" style="margin-top:8px"><span class="ic">i</span><span>
+      18 yaşından küçüksen talebi <b>velinin bilgisiyle</b> açarsın; ilk görüşmeye velin katılabilir.
+      Ders, içerik ve ödeme öğretmenle aranızdadır — Biyoser yalnızca sizi buluşturur.</span></div>
+  </div></div>`:''}
+
+  ${solo?`
+  <div class="card"><h2>Paketim sekmesi</h2><div class="body">
+    <p style="margin:0 0 12px">Öğretmene bağlı olmadığın için paketini buradan görürsün:
+      hangi pakette olduğun, bitiş tarihi ve kaç gün kaldığı.</p>
+    <div class="flag ok"><span class="ic">i</span><span>
+      <b>Süre bitince panel donar ama hiçbir şeyin silinmez.</b>
+      Konu işaretlerin, denemelerin ve ödev geçmişin durur; paketini yenilediğinde
+      kaldığın yerden devam edersin.</span></div>
+    <div class="hint" style="margin-top:10px">Son 7 günde ekranın üstünde uyarı çıkar.</div>
+  </div></div>`:''}
+
+  ${sunucu?'':`
   <div class="card"><h2>Rapor gönder sekmesi</h2><div class="body">
     <p style="margin:0 0 12px">Haftanın özetini görürsün: kaç ödev yaptın, kaçı yarım, kaçı olmadı.</p>
-    <div class="flag ok"><span class="ic">★</span><span><b>Öğretmenine not kısmı, bu paneldeki en değerli yer.</b> "Türevde zincir kuralını anlamadım" gibi tek bir cümle, bir sonraki haftanın planını değiştirir. Netler ne kadar çalıştığını söyler; bu not <b>neye takıldığını</b> söyler. İkincisi daha önemlidir.</span></div>
-    <p style="margin:12px 0 0">Butona bastığında WhatsApp açılır ve mesaj hazır gelir. Sen sadece <b>gönder</b>'e basarsın. Kod uzun görünür, normaldir — <b>ortasından kesme, tamamını gönder.</b></p>
+    <div class="flag ok"><span class="ic">★</span><span><b>Öğretmenine not kısmı, bu paneldeki en değerli yer.</b>
+      "Türevde zincir kuralını anlamadım" gibi tek bir cümle, bir sonraki haftanı değiştirir.</span></div>
+    <p style="margin:12px 0 0">Butona basınca WhatsApp açılır, mesaj hazır gelir. Sen sadece <b>gönder</b>'e basarsın.
+      Kod uzun görünür, normaldir — <b>ortasından kesme</b>.</p>
+    <div class="hint" style="margin-top:10px">Hesabın olsaydı buna gerek kalmazdı: sunucu modunda her şey kendiliğinden iletilir
+      ve bu sekme hiç görünmez.</div>
   </div></div>
 
+  <div class="card"><h2>Ayarlar sekmesi</h2><div class="body">
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yeni paket yükle</b> — öğretmenin yeni ödev gönderdiğinde kodu buraya yapıştır. Konu işaretlerin ve denemelerin korunur, yalnız ödev listesi yenilenir.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yedek indir / yükle</b> — güvence için; ayda bir yap</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Görünüm</b> — tema seçimi</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kullanım kılavuzu</b> — bu sayfa</span></div>
+  </div></div>`}
+
   <div class="card"><h2>Sık karşılaşılan durumlar</h2><div class="body">
-    ${kAdim('?','Panel boş açıldı, ödevlerim yok','Öğretmeninin gönderdiği yeni paketi yüklememişsindir. Ayarlar → Yeni paket yükle.')}
-    ${kAdim('?','Yanlış işaretledim','Aynı yere tekrar dokun, durum değişir. Rapor göndermeden önce düzeltmen yeter.')}
-    ${kAdim('?','Telefonumu değiştireceğim','Önce <b>Ayarlar → Yedek indir</b> yap, dosyayı yeni telefona taşı, orada <b>Yedek yükle</b> de. Yoksa işaretlerin kaybolur.')}
-    ${kAdim('?','Tarayıcı verilerini sildim','İşaretlerin gitmiştir. Yedeğin varsa geri yükle, yoksa öğretmeninden yeni paket iste ve konuları yeniden işaretle.')}
-    ${kAdim('?','Bilgisayardan da girebilir miyim','Girebilirsin ama <b>işaretler cihazlar arasında geçmez.</b> Tek bir cihaz seç, hep oradan kullan.')}
+    ${sunucu?kAdim('?','Programım boş görünüyor', solo
+      ? '<b>Bu haftanın planını kabul etmemişsindir.</b> Ödevlerim sekmesine git, plan kartından kabul et — takvim o anda dolar.'
+      : 'Öğretmenin bu hafta için henüz ödev vermemiş ya da programı dağıtmamıştır. Ödevlerim sekmesinde de ödev yoksa öğretmenine sor.'):''}
+    ${kAdim('?','"Yetişir mi" hep "—" gösteriyor','<b>Haftalık çalışma süreni girmemişsindir.</b> Hedefe uzaklık → Hedefim kartından gir. Hedef bölümünü de seçmediysen onu da seç.')}
+    ${kAdim('?','Yanlış işaretledim','Aynı yere tekrar dokun, durum sırayla değişir. İstediğin kadar düzeltebilirsin, hiçbir şey kilitlenmez.')}
+    ${kAdim('?','Konuyu bitirdim ama ödevi hâlâ duruyor','Konuyu bitirirken çıkan soruya "Hayır" demişsindir. Ödevi Ödevlerim sekmesinden elle <b>Yaptım</b> işaretle.')}
+    ${sunucu?kAdim('?','"Son işlem kayıt olmadı" penceresi çıktı','İnternetin kesilmiş ya da oturumun kapanmış olabilir. Önce <b>Tekrar dene</b>ye bas. Düzelmezse sayfayı yenile — ama şunu bil: <b>kaydedilemeyen son değişiklik gider</b>, yenileyince onu tekrar yapman gerekir.'):''}
+    ${kAdim('?','Deneme girdim ama zayıf konu çıkmadı','Zayıf konu listesi, <b>konu girdiğin</b> denemelerden çıkar. Denemenin yanındaki "konu gir" düğmesinden yanlış ve boş konularını, kaç soru çıktığıyla birlikte ekle.')}
+    ${sunucu
+      ? kAdim('?','Başka cihazdan girebilir miyim','<b>Girebilirsin.</b> Bilgilerin sunucuda; telefondan da bilgisayardan da aynısını görürsün.')
+      : kAdim('?','Başka cihazdan girebilir miyim','Açabilirsin ama <b>işaretler cihazlar arasında geçmez</b> (paket modu). Tek cihaz seç, hep oradan kullan.')}
+    ${solo?'':kAdim('?','Öğretmenim yok, tek başıma kullanabilir miyim','Kullanabilirsin. Kayıt ekranındaki <b>"Öğretmenim yok"</b> seçeneğiyle başlarsın; sistem hangi konuya önce çalışman gerektiğini sıralar, ödevini kendin verirsin.')}
   </div></div>
 
   <div class="card"><h2>Üç kural</h2><div class="body">
-    <div class="flag ok"><span class="ic">1</span><span><b>Dürüst işaretle.</b> Panel seni denetlemek için değil, planını düzeltmek için var.</span></div>
-    <div class="flag ok"><span class="ic">2</span><span><b>Pazar akşamını kaçırma.</b> Rapor gelmezse öğretmenin körlemesine plan yapar.</span></div>
-    <div class="flag ok"><span class="ic">3</span><span><b>Takıldığın yeri yaz.</b> Tek cümle bile yeter. En çok işine yarayacak şey budur.</span></div>
+    <div class="flag ok"><span class="ic">1</span><span><b>Dürüst işaretle.</b> Panel seni denetlemek için değil, planını düzeltmek için var. Yapmadığına yaptım dersen yalnız kendini kandırırsın.</span></div>
+    <div class="flag ok"><span class="ic">2</span><span><b>Boş bırakma.</b> Haftalık çalışma süren, hedefin ve konu işaretlerin girilmezse sistem hesap yapamaz — sana yanlış şeyler söyler.</span></div>
+    <div class="flag ok"><span class="ic">3</span><span><b>Takıldığın yeri yaz.</b> ${sunucu?'Öğretmenine ya da Yardım sekmesinden yönetime.':'Rapor gönderirken öğretmenine.'} Tek cümle bile yeter; en çok işine yarayacak şey budur.</span></div>
   </div></div>`;
 }
 
@@ -3919,6 +4154,10 @@ function gorunumKart(){
 }
 function vYardim(){
   const v=videoListesi();
+  /* Kısa kılavuz sekme listesine göre yazılıyor: paket modunda Programım /
+     Özel Ders / Paketim yok, sunucu modunda Rapor / Ayarlar yok. */
+  const ySun = !!((typeof sbOturum==='function') && sbOturum() && OGRID);
+  const yKoc = !(ySun && typeof soloMu==='function' && soloMu());
   return `
   ${/* Yönetime mesaj kutusu EN ÜSTTE: yardım arayan öğrencinin ilk
        göreceği şey soru sorabileceği yer olmalı. Örnek öğrencide
@@ -3934,14 +4173,30 @@ function vYardim(){
   ${v.length?videoBolumu():`<div class="card"><h2>Kullanım videoları</h2><div class="body">
     <div class="empty">Videolar henüz eklenmemiş.</div></div></div>`}
 
+  ${/* KISA KILAVUZ — moda duyarlı (5 Eyl 2026).
+       Eski hâli Programım, Yardım, Özel Ders ve Paketim sekmelerini hiç
+       anmıyordu; ayrıca koçsuz öğrenciye "öğretmeninin verdiği ödevler"
+       diyordu. Tam kılavuza giden düğme de yoktu: sunucu modunda Ayarlar
+       sekmesi gizli olduğu için kılavuz hiçbir yerden açılamıyordu. */''}
   <div class="card"><h2>Kısa kılavuz<small>Panelde ne nerede.</small></h2><div class="body">
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Ödevlerim</b> — Öğretmeninin verdiği ödevler. Yaptım / Yarım / Yapmadım işaretlersin, istersen doğru-yanlış-boş sayılarını girersin.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Konularım</b> — Tüm konular. Her biri için bitti, işleniyor ya da eksiğim var.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Denememi gir</b> — Girdiğin deneme sonuçları öğretmenine anında ulaşır.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Ödevlerim</b> — ${yKoc?'Öğretmeninin verdiği ödevler':'Sistemin senin için çıkardığı haftalık ödevler'}. Yaptım / Yarım / Yapamadım işaretlersin, soru hedefi varsa kaç soru çözdüğünü girersin.${yKoc?'':' <b>Kabul etmeden ödev oluşmaz.</b>'}</span></div>
+    ${ySun?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Programım</b> — Ödevlerinin haftalık takvimi. Meşgul olduğun saatleri kapatırsın${yKoc?'':', blokları sürükleyip taşırsın'}.</span></div>`:''}
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Konularım</b> — 628 konunun tamamı. Her biri için görmedim · işliyorum · bitirdim · eksiğim var.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Denememi gir</b> — Karneyi yapıştır, netler otomatik çıksın. <b>%50'nin altında</b> kaldığın konular ayrı kartta listelenir.</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Gelişimim</b> — Net grafiğin ve ders ders seyrin.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hedefe uzaklık</b> — Bölüm seçersin, o bölüme yerleşenlerin netleriyle karşılaştırılırsın.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Hedefe uzaklık</b> — Bölüm seçersin; kalan süre ve <b>yetişir mi</b> hesabı burada. <b>Haftalık çalışma süreni de buradan girersin.</b></span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Puan hesapla</b> — Diploma notunla birlikte anlık puanın.</span></div>
-    <div class="hint" style="margin-top:12px">Ödevlerini işaretlemen ve denemelerini girmen yeterli — her şey kendiliğinden öğretmenine ulaşıyor.</div>
+    ${ySun?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Özel Ders</b> — Tek konuda takıldıysan tek seferlik ders talebi açarsın.</span></div>`:''}
+    ${(ySun&&!yKoc)?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Paketim</b> — Paketin ve kalan süren.</span></div>`:''}
+    ${ySun?'':`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Rapor gönder</b> — Haftanın özetini öğretmenine WhatsApp'tan yollarsın.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Ayarlar</b> — Yeni paket yükle, yedek al, tema seç.</span></div>`}
+
+    <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
+      <b>Haftalık çalışma süreni girmezsen "Yetişir mi" bölümleri çalışmaz</b> — kutular "—" kalır.
+      Hedefe uzaklık → Hedefim kartından gir.</span></div>
+    ${ySun?`<div class="hint" style="margin-top:10px">Ödevlerini işaretlemen ve denemelerini girmen yeterli — her şey kendiliğinden ${yKoc?'öğretmenine ulaşıyor':'kaydediliyor'}.</div>`
+      :`<div class="hint" style="margin-top:10px">Paket modundasın: işaretlerin yalnız bu tarayıcıda durur. Ayda bir yedek al.</div>`}
+    <button class="btn ghost wide" style="margin-top:12px" onclick="TAB='kilavuz';render()">Tam kullanım kılavuzunu aç</button>
   </div></div>
 
   ${(D&&D.kocTel)?`<div class="card"><h2>Takıldın mı?</h2><div class="body">
@@ -4452,6 +4707,14 @@ function girisEkrani(){
     <div class="gdip">Önce <b>hesabını oluştur</b>, sonraki ekranda en üstteki <b>"Kendi başıma başla"</b>ya bas. Öğretmen kodu istemiyoruz.</div>
   </div></div>`:''}
   </div>
+  ${/* Kılavuz giriş ekranından da açılabilsin — kaydolmadan önce panelin
+       ne yaptığını okumak isteyen için. 'sunucu' modu sabitlenir: buraya
+       gelen kişi hesap açacak, paket modunun uyarıları onu ilgilendirmez. */''}
+  <div class="card" style="margin-top:14px"><h2>Panel ne yapıyor?<small>Kaydolmadan önce okuyabilirsin.</small></h2><div class="body">
+    <div class="hint" style="margin:0 0 10px">Sekme sekme ne işe yaradığı, hangi alanı doldurman gerektiği ve
+      sık karşılaşılan durumlar — hepsi kılavuzda.</div>
+    <button class="btn ghost wide" onclick="KILAVUZ_TEK=true;KILAVUZ_MOD='sunucu';render();window.scrollTo(0,0)">Kullanım kılavuzunu aç</button>
+  </div></div>
   ${videoBolumu()}`;
 }
 
