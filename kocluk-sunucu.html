@@ -229,6 +229,11 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 /* ---- tablo ---- */
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:650;padding:8px 10px;border-bottom:1px solid var(--line)}
+th.ysir{cursor:pointer;user-select:none;white-space:nowrap}
+th.ysir:hover{color:var(--accent)}
+th.ysir.etkin{color:var(--accent)}
+th.ysir .yok{margin-left:5px;font-size:9px;opacity:.4}
+th.ysir.etkin .yok{opacity:1}
 td{padding:8px 10px;border-bottom:1px solid var(--line-soft)}
 td.num,th.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
 tr:hover td{background:#F7FAFB}
@@ -6708,6 +6713,58 @@ function girisHucre(t, bugun){
     <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono);white-space:nowrap">${esc(tarihSaat(t))}</div>`;
 }
 
+/* ── Yönetim koç tablosu: sütun sıralaması ─────────────────────────
+   Başlığa tıklayınca sıralar; aynı başlığa tekrar tıklayınca yön döner.
+   Kendi satırım sıralama ne olursa olsun HER ZAMAN en üstte kalır. */
+var YKSIRA = { alan:'', yon:'asc' };      /* alan '' = sunucudan geldiği sıra */
+
+function yonSirala(alan){
+  if(YKSIRA.alan===alan) YKSIRA.yon = (YKSIRA.yon==='asc' ? 'desc' : 'asc');
+  /* İsim A→Z ile, tarihler yeniden eskiye başlasın; beklenen davranış bu. */
+  else YKSIRA = { alan:alan, yon:(alan==='ad' ? 'asc' : 'desc') };
+  render();
+}
+
+function ykGiris(k){ return KOCGIRIS[k.id] || k.son_giris || ''; }
+
+function koclarSirali(){
+  var l = (KOCLAR||[]).slice(), a = YKSIRA.alan;
+  if(a){
+    var yon = (YKSIRA.yon==='asc' ? 1 : -1);
+    l.sort(function(x,y){
+      if(a==='ad'){
+        /* Türkçe alfabe şart: düz karşılaştırma Ç, Ğ, İ, Ö, Ş, Ü ile
+           başlayan adları listenin sonuna atıyor. */
+        return String(x.ad||x.eposta||'').localeCompare(
+               String(y.ad||y.eposta||''), 'tr', {sensitivity:'base'}) * yon;
+      }
+      var vx = (a==='kayit' ? (x.kayit||'') : ykGiris(x));
+      var vy = (a==='kayit' ? (y.kayit||'') : ykGiris(y));
+      /* Boş değer (hiç giriş yapmamış) yön ne olursa olsun EN SONDA kalsın;
+         yoksa artan sıralamada boşlar başa çıkıp listeyi işe yaramaz yapıyor. */
+      if(!vx && !vy) return 0;
+      if(!vx) return 1;
+      if(!vy) return -1;
+      return (vx < vy ? -1 : vx > vy ? 1 : 0) * yon;
+    });
+  }
+  var ben = -1;
+  for(var i=0;i<l.length;i++){ if(l[i].id===SB.uid){ ben=i; break; } }
+  if(ben>0) l.unshift(l.splice(ben,1)[0]);
+  return l;
+}
+
+function ykBaslik(alan, metin){
+  var s = (YKSIRA.alan===alan);
+  var im = s ? (YKSIRA.yon==='asc' ? '▲' : '▼') : '⇅';
+  var ad = s ? (YKSIRA.yon==='asc' ? 'artan' : 'azalan') : 'sıralanmamış';
+  var t = String.fromCharCode(39);         /* tek tırnak — kaçış kullanmadan */
+  return '<th class="ysir'+(s?' etkin':'')+'" onclick="yonSirala('+t+alan+t+')"'
+       + ' title="Sıralamak için tıkla (' + ad + ')" aria-sort="'
+       + (s ? (YKSIRA.yon==='asc'?'ascending':'descending') : 'none') + '">'
+       + metin + '<span class="yok">' + im + '</span></th>';
+}
+
 /* Yöneticinin gördüğü koç son-giriş bilgisi: auth.users'tan gelen gerçek
    değer (YONETIM-son-giris.sql). Yoksa koc_listesi'nin cihazlar tabanlı
    değeri kullanılır. */
@@ -6832,8 +6889,8 @@ function vYonetici(){
 
   <div class="card"><h2>Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2>
   <div class="body" style="padding:0;overflow:auto">
-    <table><thead><tr><th>Koç</th><th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th><th>Kayıt</th><th>Son giriş</th><th>Durum</th><th></th></tr></thead><tbody>
-    ${KOCLAR.map(k=>{
+    <table><thead><tr>${ykBaslik('ad','Koç')}<th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th><th class="num">Cihaz</th>${ykBaslik('kayit','Kayıt')}${ykBaslik('giris','Son giriş')}<th>Durum</th><th></th></tr></thead><tbody>
+    ${koclarSirali().map(k=>{
       const dolu=k.ogrenci>=k.limit;
       const bit=k.lisans_bitis||k.deneme_bitis||'';
       const yakin=k.gecerli&&bit&&bit<=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
@@ -6880,7 +6937,7 @@ function vYonetici(){
   <div class="body" style="border-top:1px solid var(--line-soft)">
     <button class="btn ghost" onclick="koclariOku()">Listeyi yenile</button>
     <button class="btn ghost" style="margin-left:8px" onclick="yonTeshis()">Sunucuyu test et</button>
-    <div class="hint" style="margin-top:8px">Yeni kayıt olan koçlar 7 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
+    <div class="hint" style="margin-top:8px">Koç, Kayıt ve Son giriş başlıklarına tıklayarak sıralayabilirsin. Senin satırın sıralama ne olursa olsun her zaman en üstte kalır. Yeni kayıt olan koçlar 7 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
   </div></div>
 
   <div class="card"><h2>Paketler ve fiyatlar</h2><div class="body" style="padding:0">
