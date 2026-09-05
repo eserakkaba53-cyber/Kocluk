@@ -257,6 +257,12 @@ h2{font-size:clamp(23px,3vw,30px);margin:0 0 10px;letter-spacing:-.01em}
   font-size:12px;font-weight:650;padding:4px 12px;border-radius:20px;margin-bottom:12px}
 .not{font-size:13.5px;color:var(--ink-3);margin-top:13px}
 .bolumBasi{text-align:center;max-width:40em;margin:0 auto 34px}
+.araclar{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.arac{display:block;background:#fff;border:1px solid var(--line);border-radius:14px;
+  padding:20px;text-decoration:none;color:inherit;transition:border-color .18s,transform .18s}
+.arac:hover{border-color:var(--accent);transform:translateY(-2px)}
+.arac h3{margin:0 0 6px;font-size:18px;color:var(--accent)}
+.arac p{margin:0;font-size:15px;color:var(--ink-2)}
 .bolumBasi .alt{margin-bottom:0}
 
 /* ═══════════ VİTRİN — tarayıcı çerçeveli ekran görüntüleri ═══════════ */
@@ -822,10 +828,34 @@ footer a:hover{color:var(--turuncu)}
   </div>
 </div></section>
 
+<section id="araclar"><div class="kap">
+  <div class="bolumBasi" data-gor>
+    <h2>Ücretsiz araçlar</h2>
+    <p class="alt">Üyelik gerektirmeyen, herkese açık üç sayfa. Öğrencilerinize doğrudan
+    gönderebilirsiniz.</p>
+  </div>
+  <div class="araclar" data-gor>
+    <a class="arac" href="yks-geri-sayim.html">
+      <h3>YKS'ye kaç gün kaldı?</h3>
+      <p>TYT, AYT ve YDT için canlı geri sayım. Kalan süre kaç hafta ve kaç çalışma saati
+      ediyor, onu da hesaplar.</p>
+    </a>
+    <a class="arac" href="yks-konu-listesi.html">
+      <h3>YKS konu listesi</h3>
+      <p>21 dersin 628 konusu tek sayfada. Biten konuyu işaretleyin, ne kadarının bittiğini
+      görün.</p>
+    </a>
+    <a class="arac" href="puan-hesaplama.html">
+      <h3>YKS puan hesaplama</h3>
+      <p>Netleri girin, TYT ve yerleştirme puanı anında çıksın. Diploma notu (OBP) dahil.</p>
+    </a>
+  </div>
+</div></section>
+
 <footer><div class="kap">
   <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center">
     <div><b style="color:#fff">Biyoser Koçluk Sistemi</b><br>Eser Akkaba · YKS Biyoloji</div>
-    <div><a href="puan-hesaplama.html">YKS puan hesaplama</a> · <a href="kocluk-sunucu.html">Koç girişi</a> · <a href="ogrenci-sunucu.html">Öğrenci girişi</a></div>
+    <div><a href="yks-geri-sayim.html">Geri sayım</a> · <a href="yks-konu-listesi.html">Konu listesi</a> · <a href="puan-hesaplama.html">Puan hesaplama</a> · <a href="kocluk-sunucu.html">Koç girişi</a> · <a href="ogrenci-sunucu.html">Öğrenci girişi</a></div>
   </div>
 </div></footer>
 

@@ -9,6 +9,19 @@ window.SUNUCU_AYAR = {
   // Değiştir → herkeste (mevcut ve sonradan kayıt olan) otomatik güncellenir. Biçim: YYYY-MM-DD
   sinavTarihi: "2027-06-20",
 
+  /* ── GERİ SAYIM SAYFASI (yks-geri-sayim.html) ──────────────────────
+     ÖSYM 2027 sınav takvimini HENÜZ AÇIKLAMADI (son yayımlanan takvim 2026).
+     Aşağıdaki tarihler geçmiş yılların düzenine göre BEKLENEN tarihlerdir;
+     sayfa bunu ziyaretçiye açıkça yazar.
+     ÖSYM resmi takvimi açıkladığında:
+       1) sinavTarihi + üç oturum tarihini gerçek tarihlerle değiştir,
+       2) sinavResmi'yi true yap  → "beklenen tarih" uyarısı kalkar.
+     Biçim: YYYY-MM-DDTSS:DD  (Türkiye saati)                              */
+  sinavResmi: false,
+  tytTarihi: "2027-06-19T10:15",
+  aytTarihi: "2027-06-20T10:15",
+  ydtTarihi: "2027-06-20T15:45",
+
   // ZİYARET SAYACI (GoatCounter) — kaç kişi girmiş görmek için.
   // BOŞ bırakırsan sayaç çalışmaz. GoatCounter hesabını açıp kodunu buraya yapıştır, örnek:
   //   gc: "https://biyoser.goatcounter.com/count"

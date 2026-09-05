@@ -4,6 +4,8 @@
 User-agent: *
 Allow: /$
 Allow: /index.html
+Allow: /yks-geri-sayim.html
+Allow: /yks-konu-listesi.html
 Allow: /puan-hesaplama.html
 Allow: /ogrenme-dunyasi.html
 Disallow: /kocluk-sunucu.html
