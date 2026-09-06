@@ -229,6 +229,11 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 /* ---- tablo ---- */
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:650;padding:8px 10px;border-bottom:1px solid var(--line)}
+details.katlanir > summary{cursor:pointer;list-style:none;padding:0}
+details.katlanir > summary::-webkit-details-marker{display:none}
+details.katlanir > summary::before{content:"▾";float:right;color:var(--ink-3);font-size:13px;padding:14px 16px 0 0}
+details.katlanir:not([open]) > summary::before{content:"▸"}
+details.katlanir > summary:hover h2{color:var(--accent)}
 th.ysir{cursor:pointer;user-select:none;white-space:nowrap}
 th.ysir:hover{color:var(--accent)}
 th.ysir.etkin{color:var(--accent)}
@@ -1324,8 +1329,77 @@ function parseKarne(text, st){
 }
 
 let PENDING_AN=[];
+/* Yöneticinin onayladığı karne-konu eşlemeleri. Açılışta bir kez yüklenir;
+   bir kullanıcının önerip yöneticinin onayladığı eşleme HERKESTE geçerli. */
+var KE_ONAYLI = {};
+async function konuEslesmeYukle(){
+  try{
+    const r = await sbCagri('/rest/v1/rpc/konu_eslesme_onayli',{method:'POST',body:{}});
+    KE_ONAYLI = {};
+    (Array.isArray(r)?r:[]).forEach(function(x){ KE_ONAYLI[x.karne_ad]={sub:x.sub,konu:x.konu}; });
+  }catch(e){ KE_ONAYLI = {}; }   /* sunucu eski sürümse eşleştirme eskisi gibi çalışır */
+}
+/* Matematik ile geometri BİRLİKTE listelenir; konunun hangi derse ait
+   olduğunu uniteOf zaten biliyor, ayrımı sistem kendisi yapar. */
+function eslesmeAdaylari(sk){
+  var g = (sk==='tyt_mat'||sk==='tyt_geo') ? ['tyt_mat','tyt_geo']
+        : (sk==='ayt_mat'||sk==='ayt_geo') ? ['ayt_mat','ayt_geo'] : [sk];
+  var o=[];
+  g.forEach(function(s){ (KONU[s]||[]).forEach(function(u){
+    u[1].forEach(function(t){ o.push({sub:s,konu:t,unite:u[0]}); }); }); });
+  return o;
+}
+/* Eşleşmeyen konular için öneri kutusu (anOnizle içinde çizilir). */
+function eslesmeKutusu(rows){
+  var e = rows.map(function(r,i){ return {r:r,i:i}; })
+              .filter(function(x){ return String(x.r.unite).indexOf('Karne konusu')===0; });
+  if(!e.length) return '';
+  var satir = e.map(function(x){
+    var ad = x.r.hamAd || x.r.konu;
+    var ops = eslesmeAdaylari(x.r.sub).map(function(c){
+      return '<option value="'+esc(c.sub)+'|'+esc(c.konu)+'">'+esc(c.unite)+' — '+esc(c.konu)+'</option>';
+    }).join('');
+    return '<div class="fr" style="align-items:flex-end;gap:8px;margin-bottom:8px">'+
+      '<div style="flex:1"><label class="f">'+esc(ad)+'</label>'+
+      '<select id="ke_'+x.i+'" style="width:100%"><option value="">— konu seç —</option>'+ops+'</select></div>'+
+      '<button class="btn mini" onclick="konuEslesmeOner('+x.i+')">Öner</button></div>';
+  }).join('');
+  return '<div class="body" style="border-top:1px solid var(--line-soft)">'+
+    '<div class="flag warn" style="background:#FFF3E0;border:1.5px solid var(--turuncu);'+
+      'border-radius:10px;padding:12px 14px;margin-bottom:10px">'+
+      '<span class="ic">!</span><span><b style="color:#8A4B12">'+e.length+
+      ' konu sistemdeki konu listesiyle eşleşmedi.</b> Durum <b>yönetime iletildi</b>, '+
+      'en kısa sürede düzeltilecek. Beklemek istemiyorsan aşağıdan doğru konuyu '+
+      'kendin seçip önerebilirsin.</span></div>'+
+    '<details class="katlanir"><summary><h3 style="margin:0;color:var(--warn)">'+
+      e.length+' konu listemizle eşleşmedi — eşle</h3></summary>'+
+    '<div class="hint" style="margin:8px 0">Karnedeki ad bizim konu listemizde yok, bu yüzden '+
+      'o konu hiçbir yere işlenmiyor. Doğru konuyu seçip öner; yönetici onaylayınca '+
+      '<b>tüm kullanıcılarda</b> geçerli olur. Matematik ve geometri konuları birlikte '+
+      'listelenir, ayrımı sistem yapar.</div>'+
+    satir + '<div id="keDurum" class="hint"></div></details></div>';
+}
+async function konuEslesmeOner(i){
+  var r = PENDING_AN[i]; if(!r) return;
+  var s = document.getElementById('ke_'+i), v = s && s.value;
+  if(!v){ alert('Önce bir konu seç.'); return; }
+  var p = v.split('|'), ad = r.hamAd || r.konu, d = document.getElementById('keDurum');
+  try{
+    var o = await sbGuvenli(function(){ return sbCagri('/rest/v1/rpc/konu_eslesme_oner',
+      {method:'POST',body:{p_karne_ad:norm(ad), p_ham_ad:ad, p_sub:p[0], p_konu:p[1]}}); });
+    var j = (typeof o==='string') ? JSON.parse(o) : o;
+    if(d) d.innerHTML = (j && j.ok)
+      ? '<span style="color:var(--ok)">✓ '+esc(j.bilgi||'Önerin iletildi.')+'</span>'
+      : '<span style="color:var(--bad)">'+esc((j&&j.hata)||'Gönderilemedi')+'</span>';
+  }catch(e){
+    if(d) d.innerHTML = '<span style="color:var(--bad)">'+esc(e.message||String(e))+'</span>';
+  }
+}
 /* karne konu adını panelin konu ağacıyla eşleştir */
 function konuEsle(sk,ad){
+  const O=KE_ONAYLI[norm(ad)];
+  if(O && uniteOf[O.sub] && uniteOf[O.sub][O.konu])
+    return [O.konu, uniteOf[O.sub][O.konu], O.sub];
   const L=norm(ad); let best=null,bl=0;
   (KONU[sk]||[]).forEach(([u,ks])=>{
     const nu=norm(u);
@@ -1352,10 +1426,14 @@ function applyKarne(){
     out[sk]={d:B.d,y:B.y};
     log.push(`${subName(sk)}: ${B.d} doğru / ${B.y} yanlış → ${n1(B.d-B.y/4)} net`);
     B.konu.forEach(k=>{
-      const [konu,unite]=konuEsle(sk,k.ad);
+      const [konu,unite,esub]=konuEsle(sk,k.ad);
       /* ss/d de aktarılır — "bu konudan kaç soru çıktı" ve "doğru oranı"
-         ancak bu ikisiyle hesaplanabiliyor. */
-      PENDING_AN.push({sub:sk,konu,unite,ss:k.ss||0,d:k.d||0,y:k.y,b:k.b});
+         ancak bu ikisiyle hesaplanabiliyor.
+         esub: onaylı eşleme dersi de değiştirebilir (karne "Matematik" der
+         ama konu geometriye aitse), o zaman sk değil esub geçerlidir.
+         hamAd: eşleşmeyenler için öneri kutusunda gösterilecek özgün ad. */
+      PENDING_AN.push({sub:esub||sk,konu,unite,hamAd:k.ad,
+                       ss:k.ss||0,d:k.d||0,y:k.y,b:k.b});
     });
   }
 
@@ -1393,7 +1471,21 @@ function applyKarne(){
     ${uyari.map(u=>`<div class="flag warn"><span class="ic">!</span><span>${esc(u)}</span></div>`).join('')}
     <div class="flag warn"><span class="ic">!</span><span>Kaydetmeden önce sayıları karneyle karşılaştır. Kontrol adımı senin.</span></div>
     ${anOnizle(PENDING_AN)}`;
+  konuEslesmeBildir();          /* uyumsuz konuları yöneticiye düşür */
   window.scrollTo({top:0,behavior:'smooth'});
+}
+/* Kullanıcı bir öneri yapmasa bile uyumsuz konular yönetime iletilsin.
+   Sessiz çalışır: sunucu eski sürümse ya da ağ koparsa panel etkilenmez. */
+async function konuEslesmeBildir(){
+  var e = PENDING_AN.filter(function(r){ return String(r.unite).indexOf('Karne konusu')===0; });
+  if(!e.length) return;
+  for(var i=0;i<e.length;i++){
+    var ad = e[i].hamAd || e[i].konu;
+    try{
+      await sbCagri('/rest/v1/rpc/konu_eslesme_bildir',
+        {method:'POST',body:{p_karne_ad:norm(ad), p_ham_ad:ad, p_sub:e[i].sub||'?'}});
+    }catch(x){ break; }   /* ilk hatada vazgeç, kullanıcıyı meşgul etme */
+  }
 }
 
 /* ================= KONU TABLOSU AYRIŞTIRICI =================
@@ -1620,7 +1712,7 @@ function anOnizle(rows){
         <td class="num" style="color:${r.b?'var(--warn)':'var(--ink-3)'};font-weight:${r.b?'650':'400'}">${r.b||'·'}</td></tr>`).join('')).join('')}
       </tbody></table></div>`;
   }).join('')}
-  </div><div class="body" style="border-top:1px solid var(--line-soft)">
+  </div>${eslesmeKutusu(rows)}<div class="body" style="border-top:1px solid var(--line-soft)">
     <div class="hint">Bu liste, aşağıdaki <b>Denemeyi kaydet</b> butonuna bastığında denemeye iliştirilir. Yanlışsa <b>Konuları at</b> ile temizle, elle girersin.</div>
     <button class="btn ghost mini" style="margin-top:8px" onclick="PENDING_AN=[];render()">Konuları at</button>
   </div></div>`;
@@ -6624,6 +6716,58 @@ function yilEkle(id){
    liste sonsuza kadar "Yükleniyor..." kalıyordu.
    Sunucu tarafı hazır: koc_listesi() ve koc_guncelle(). */
 
+/* Uyumsuz konular ve kullanıcı önerileri (yalnız yönetici görür). */
+var KE_BEKLEYEN=[], KE_MESAJ='';
+async function keBekleyenOku(){
+  try{
+    const r = await sbCagri('/rest/v1/rpc/konu_eslesme_bekleyen',{method:'POST',body:{}});
+    KE_BEKLEYEN = Array.isArray(r) ? r : [];
+  }catch(e){ KE_BEKLEYEN=[]; }   /* SQL henüz çalıştırılmadıysa kart boş görünür */
+}
+async function keKarar(id, durum){
+  const s = document.getElementById('kek_'+id);
+  const v = (s && s.value) ? s.value.split('|') : null;
+  if(durum==='onayli' && !v){ alert('Onaylamadan önce bir konu seç.'); return; }
+  KE_MESAJ='Kaydediliyor...'; render();
+  try{
+    const o = await sbGuvenli(function(){ return sbCagri('/rest/v1/rpc/konu_eslesme_karar',
+      {method:'POST',body:{p_id:id, p_sub:(v?v[0]:''), p_konu:(v?v[1]:''), p_durum:durum}}); });
+    const j = (typeof o==='string') ? JSON.parse(o) : o;
+    if(j && j.ok===false) throw new Error(j.hata||'Kaydedilemedi');
+    KE_MESAJ = durum==='onayli' ? 'OK|Onaylandı — tüm kullanıcılarda geçerli.' : 'OK|Reddedildi.';
+    await keBekleyenOku(); await konuEslesmeYukle();
+  }catch(e){ KE_MESAJ='HATA|'+(e.message||e); }
+  render();
+}
+function keKart(){
+  const n = KE_BEKLEYEN.length;
+  const satir = KE_BEKLEYEN.map(function(r){
+    const ops = eslesmeAdaylari(r.sub).map(function(c){
+      return '<option value="'+esc(c.sub)+'|'+esc(c.konu)+'"'+(c.konu===r.konu?' selected':'')+'>'+
+             esc(c.unite)+' — '+esc(c.konu)+'</option>'; }).join('');
+    const rozet = r.durum==='bekliyor'
+      ? '<span class="pill s2" style="font-size:10px">kullanıcı önerdi</span>'
+      : '<span class="pill s3" style="font-size:10px">eşleşmedi</span>';
+    return '<tr><td><b>'+esc(r.ham_ad)+'</b> '+rozet+
+      '<div style="font-size:11px;color:var(--ink-3)">'+esc(r.oneren_eposta||'—')+
+      ' · '+esc(String(r.olusma||'').slice(0,10))+'</div></td>'+
+      '<td style="font-size:12px;color:var(--ink-3)">'+esc(subName(r.sub)||r.sub)+'</td>'+
+      '<td><select id="kek_'+r.id+'" style="min-width:260px">'+
+        '<option value="">— konu seç —</option>'+ops+'</select></td>'+
+      '<td style="white-space:nowrap"><button class="btn mini" onclick="keKarar(\''+r.id+'\',\'onayli\')">Onayla</button> '+
+      '<button class="btn ghost mini" onclick="keKarar(\''+r.id+'\',\'red\')">Reddet</button></td></tr>';
+  }).join('');
+  return '<details class="card katlanir"'+(n?' open':'')+'><summary><h2 style="margin:0">'+
+    'Uyumsuz konular'+(n?' <span class="pill s3" style="font-size:11px">'+n+'</span>':'')+
+    '<small>Karnede geçip konu listemizle eşleşmeyen adlar. Onayladığın eşleme tüm kullanıcılarda geçerli olur.</small></h2></summary>'+
+    (KE_MESAJ?'<div class="body"><div class="flag '+(KE_MESAJ.indexOf('HATA|')===0?'bad':'ok')+
+      '"><span class="ic">·</span><span>'+esc(KE_MESAJ.replace(/^(OK|HATA)\|/,''))+'</span></div></div>':'')+
+    (n ? '<div class="body" style="padding:0;overflow:auto"><table><thead><tr>'+
+         '<th>Karnedeki ad</th><th>Ders</th><th>Eşlenecek konu</th><th></th>'+
+         '</tr></thead><tbody>'+satir+'</tbody></table></div>'
+       : '<div class="body"><div class="empty">Bekleyen uyumsuz konu yok.</div></div>')+
+    '</details>';
+}
 async function koclariOku(){
   YONDURUM='Yükleniyor...'; render();
   try{
@@ -6636,6 +6780,7 @@ async function koclariOku(){
       bugun_aktif: false
     }));
     YONDURUM = KOCLAR.length ? '' : 'HATA|Liste boş döndü. Hesabında yönetici yetkisi var mı?';
+    await keBekleyenOku();      /* uyumsuz konular + kullanıcı önerileri */
     /* Gerçek son giriş (auth.users). Kurulu değilse sessizce atlanır ve
        koc_listesi'nin cihazlar tabanlı değeri kullanılmaya devam eder. */
     await kocGirisleriOku();
@@ -6887,7 +7032,7 @@ function vYonetici(){
 
   ${YONDURUM?`<div class="flag ${YONDURUM.startsWith('OK|')?'ok':YONDURUM.startsWith('HATA|')?'bad':'warn'}" style="white-space:pre-wrap;font-family:${YONDURUM.indexOf('TEŞHİS')>=0?'var(--mono);font-size:11.5px':'inherit'}"><span class="ic">·</span><span>${esc(YONDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
 
-  <div class="card"><h2>Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2>
+  <details class="card katlanir" open><summary><h2 style="margin:0">Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2></summary>
   <div class="body" style="padding:0;overflow:auto">
     <table><thead><tr>${ykBaslik('ad','Koç')}<th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th>${ykBaslik('kayit','Kayıt')}${ykBaslik('giris','Son giriş')}<th>Durum</th><th></th></tr></thead><tbody>
     ${koclarSirali().map(k=>{
@@ -6941,7 +7086,9 @@ function vYonetici(){
     <button class="btn ghost" onclick="koclariOku()">Listeyi yenile</button>
     <button class="btn ghost" style="margin-left:8px" onclick="yonTeshis()">Sunucuyu test et</button>
     <div class="hint" style="margin-top:8px">Koç, Kayıt ve Son giriş başlıklarına tıklayarak sıralayabilirsin. Senin satırın sıralama ne olursa olsun her zaman en üstte kalır. Yeni kayıt olan koçlar 7 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
-  </div></div>
+  </div></details>
+
+  ${keKart()}
 
   <div class="card"><h2>Paketler ve fiyatlar</h2><div class="body" style="padding:0">
     <table><thead><tr><th>Paket</th><th class="num">Öğrenci</th><th class="num">Yıllık</th><th class="num">Öğrenci başı</th></tr></thead><tbody>
@@ -7541,6 +7688,7 @@ async function sunucudanYukle(){
   }
   await bekleyenReferans();
   await lisansOku();
+  await konuEslesmeYukle();   /* onaylı karne-konu eşlemeleri */
   await denemeOku();
   referansOku();
   const izin=await cihazKaydet();
