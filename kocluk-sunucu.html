@@ -6747,6 +6747,22 @@ async function keKarar(id, durum){
   }catch(e){ KE_MESAJ='HATA|'+(e.message||e); }
   render();
 }
+/* Yönetim sekmesi rozeti: bekleyen uyumsuz konu + açık özel ders şikayeti.
+   Mesaj rozetiyle aynı biçimi kullanır (mesaj.js enjekte ediyor), rengi
+   farklıdır ki hangisi olduğu ayırt edilsin. */
+function yonRozet(){
+  if(!(LISANS && LISANS.yonetici)) return '';
+  var ke = (KE_BEKLEYEN||[]).length;
+  var sk = ((typeof OD_Y!=='undefined' && OD_Y.liste) || [])
+             .filter(function(x){ return x.durum==='acik'; }).length;
+  var n = ke + sk;
+  if(!n) return '';
+  var t = [];
+  if(ke) t.push(ke + ' uyumsuz konu');
+  if(sk) t.push(sk + ' açık şikayet');
+  return '<span class="msj-rozet" style="background:var(--bad)" title="' +
+         t.join(' · ') + '">' + (n>99?'99+':n) + '</span>';
+}
 function keKart(){
   const n = KE_BEKLEYEN.length;
   const satir = KE_BEKLEYEN.map(function(r){
@@ -7697,6 +7713,9 @@ async function sunucudanYukle(){
   await bekleyenReferans();
   await lisansOku();
   await konuEslesmeYukle();   /* onaylı karne-konu eşlemeleri */
+  /* Yönetici rozeti girişte dolsun; yoksa sayı ancak Yönetim sekmesine
+     girildikten sonra görünür ve rozetin anlamı kalmaz. */
+  if(LISANS && LISANS.yonetici){ try{ await keBekleyenOku(); await odYonetimYukle(); }catch(x){} }
   await denemeOku();
   referansOku();
   const izin=await cihazKaydet();
@@ -8162,9 +8181,12 @@ function railAgaci(liste){
        yöneticide Yönetim'de, normal koçta Hesap'ta. */
     ? '<div class="raybas">Hesap</div>'+genSek.map(t=>{
         const _yon=!!(LISANS&&LISANS.yonetici);
-        const _rz=(typeof MESAJ!=='undefined' &&
+        const _rz=((typeof MESAJ!=='undefined' &&
                    ((_yon && t[0]==='yonetim') || (!_yon && t[0]==='hesap')))
-                  ? MESAJ.rozet() : '';
+                  ? MESAJ.rozet() : '')
+                  /* Yöneticide Yönetim sekmesi ayrıca uyumsuz konuyu ve açık
+                     özel ders şikayetini de sayar — sekmeye girmeden görülsün. */
+                  + ((_yon && t[0]==='yonetim') ? yonRozet() : '');
         return '<button class="rtab genel '+(genelAktif&&TAB===t[0]?'on':'')+'" onclick="kocGenel(\''+t[0]+'\')">'+t[1]+_rz+'</button>';
       }).join('')
     : '';
