@@ -816,7 +816,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <script src="program.js?v=20260905c"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
-<script src="deneme.js?v=20260904a"></script>
+<script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260905b"></script>
 <script>
@@ -4672,6 +4672,14 @@ function vOdev(st){
 
   return `
   ${ornekUyari(st)}
+
+  ${/* İşlenmiş ama denemede tutmamış konular — en üstte, yanıp sönen ışıkla.
+       hizliAta soru sayısını hedefSoru ile kendisi buluyor. */
+    (typeof SINAVANALIZ==='undefined') ? '' : SINAVANALIZ.riskKart(st.exams||[], {
+      dersAdi: subName,
+      durumOf: (sub,konu)=>((st.topics||{})[sub]||{})[konu]||0,
+      ekle: 'hizliAta'
+    })}
 
   ${tavsiyeHaftalikKart(st)}
 
