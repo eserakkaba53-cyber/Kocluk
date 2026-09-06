@@ -18,6 +18,9 @@ window.SINAVANALIZ = (function(){
      kez çıktığı değil, ne kadarının DOĞRU yapıldığı. */
   var ZAYIF_ESIK = 0.5;
 
+  /* Hem zayifKart hem riskKart kullaniyor; iki kez tanimlamayalim. */
+  function yuzde(o){ return Math.round(o*100) + '%'; }
+
   function esc(s){
     return String(s==null?'':s).replace(/[&<>"]/g,function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
@@ -99,7 +102,6 @@ window.SINAVANALIZ = (function(){
     var ad  = opts.dersAdi  || function(s){ return s; };
     var dur = opts.durumOf  || function(){ return 0; };
     var ETIKET = ['Görülmedi','İşleniyor','Bitti','Eksik'];
-    var yuzde = function(o){ return Math.round(o*100) + '%'; };
 
     var satir = function(r){
       var d = dur(r.sub, r.konu) || 0;
@@ -151,6 +153,68 @@ window.SINAVANALIZ = (function(){
     return h;
   }
 
+  /* ── RİSKLİ KONULAR ──────────────────────────────────────────────
+     "İşleniyor" ya da "Bitti" işaretli AMA doğru oranı eşiğin altında
+     kalan konular. Görülmemiş konu buraya girmez: onun düşük çıkması
+     zaten beklenir, uyarılacak bir çelişki yoktur. Eksik işaretli de
+     girmez — öğrenci eksikliğini zaten biliyor.                       */
+  function riskliler(satirlar, durumOf){
+    var d = durumOf || function(){ return 0; };
+    return zayiflar(satirlar).filter(function(r){
+      var s = d(r.sub, r.konu);
+      return s === 1 || s === 2;          // 1 İşleniyor · 2 Bitti
+    });
+  }
+
+  /* Yanıp sönen uyarı ışığının biçimi sayfaya BİR KEZ eklenir; iki
+     panele ayrı ayrı CSS yazmak gerekmesin diye burada duruyor. */
+  function bicimEkle(){
+    if(document.getElementById('sa-risk-bicim')) return;
+    var st = document.createElement('style');
+    st.id = 'sa-risk-bicim';
+    st.textContent =
+      '@keyframes saYanSon{0%,100%{opacity:1}50%{opacity:.15}}' +
+      '.sa-isik{display:inline-block;width:10px;height:10px;border-radius:50%;' +
+        'background:#D7263D;box-shadow:0 0 0 3px rgba(215,38,61,.20);' +
+        'animation:saYanSon 1s ease-in-out infinite;margin-right:8px;vertical-align:middle}' +
+      '@media (prefers-reduced-motion:reduce){.sa-isik{animation:none}}';
+    document.head.appendChild(st);
+  }
+
+  /* opts: { dersAdi(sub), durumOf(sub,konu), ekle:'globalIslevAdi', baslik }
+     ekle: (sub, konu) alan global işlev adı — koçta hizliAta, koçsuz
+     öğrencide soloOdevVer. İkisi de soru sayısını kendisi buluyor. */
+  function riskKart(exams, opts){
+    opts = opts || {};
+    var r = riskliler(tekrarEden(exams || []), opts.durumOf);
+    if(!r.length) return '';
+    bicimEkle();
+    var ad = opts.dersAdi || function(s){ return s; };
+    var tirnak = function(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); };
+
+    var satir = r.map(function(x){
+      var dugme = opts.ekle
+        ? '<button class="btn mini" onclick="' + opts.ekle + '(\'' + tirnak(x.sub) +
+          '\',\'' + tirnak(x.konu) + '\')">Ödeve ekle</button>'
+        : '';
+      return '<tr>' +
+        '<td style="font-size:12px;color:var(--ink-3)">' + esc(ad(x.sub)) + '</td>' +
+        '<td><b>' + esc(x.konu) + '</b></td>' +
+        '<td class="num" style="font-weight:700;color:var(--bad)">' + yuzde(x.oran) + '</td>' +
+        '<td class="num" style="color:var(--ink-3)">' + x.soru + ' soru</td>' +
+        '<td style="text-align:right">' + dugme + '</td></tr>';
+    }).join('');
+
+    return '<div class="card" style="border:1.5px solid #D7263D">' +
+      '<h2><span class="sa-isik"></span>' +
+      esc(opts.baslik || 'Bitirdin ama tutmamış — ' + r.length + ' konu') +
+      '<small>Bu konuları işleniyor ya da bitti işaretledin, ama denemelerde doğru oranın ' +
+      '%' + Math.round(ZAYIF_ESIK*100) + '’nin altında. Haftalık ödeve ekleyip tekrar et.</small></h2>' +
+      '<div class="body" style="padding:0;max-height:300px;overflow:auto"><table><tbody>' +
+      satir + '</tbody></table></div></div>';
+  }
+
   return { tekrarEden:tekrarEden, zayiflar:zayiflar, oransizlar:oransizlar,
-           zayifKart:zayifKart, ESIK:ZAYIF_ESIK };
+           zayifKart:zayifKart, riskliler:riskliler, riskKart:riskKart,
+           ESIK:ZAYIF_ESIK };
 })();

@@ -815,7 +815,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="program.js?v=20260905c"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
-<script src="deneme.js?v=20260904a"></script>
+<script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260905b"></script>
 <script>
@@ -2603,6 +2603,15 @@ function vOdev(){
     <div class="flag warn" style="margin-bottom:6px"><span class="ic">!</span><span><b>Yaptım</b> işaretleyene kadar her hafta burada kalacaklar. Panik yok — sırayla bitir.</span></div>
     ${devreden.map(t=>odevSatiri(t,true)).join('')}
   </div></div>`:''}
+
+  ${/* İşlenmiş ama denemede tutmamış konular. Koçsuz öğrencide 'Ödeve ekle'
+       soloOdevVer ile kendi ödev listesine yazar; koçu olan öğrencide ödevi
+       koç verdiği için düğme gösterilmez. */
+    (typeof SINAVANALIZ==='undefined' || !D) ? '' : SINAVANALIZ.riskKart(D.exams||[], {
+      dersAdi: subName,
+      durumOf: (sub,konu)=>((D.topics||{})[sub]||{})[konu]||0,
+      ekle: (typeof soloMu==='function' && soloMu()) ? 'soloOdevVer' : ''
+    })}
 
   <div class="card"><h2>Bu haftanın konu ödevleri</h2><div class="body">
     ${kon.length?kon.map(t=>odevSatiri(t,false)).join(''):'<div class="empty">Bu hafta bekleyen konu ödevin yok.</div>'}
