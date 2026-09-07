@@ -6563,7 +6563,7 @@ function vKocKilavuz(){
   <div class="card"><h2>Yönetim sekmesi<small>Yalnız yöneticide görünür</small></h2><div class="body">
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Gelen mesajlar</b> en üstte — koç ve öğrencilerden. Okunmamış varsa raydaki Yönetim sekmesinde kırmızı sayı çıkar.</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn">Bir sohbeti sildiğinde <b>iki taraftan da kalkar</b>.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn">Koç listesi: paket, öğrenci sayısı, son giriş ve <b>kayıt tarihi</b></span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn">Koç listesi: paket, öğrenci sayısı, <b>son işlem</b> ve kayıt tarihi</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn">Özel ders şikâyetleri ve men işlemleri</span></div>
     <div class="flag warn" style="margin-top:10px"><span class="ic">i</span><span>
       <b>Cihaz sütununda "—" görmen, koçun bugün kaydolup henüz panele girmemiş olması demektir.</b>
@@ -6808,6 +6808,7 @@ async function koclariOku(){
     /* Gerçek son giriş (auth.users). Kurulu değilse sessizce atlanır ve
        koc_listesi'nin cihazlar tabanlı değeri kullanılmaya devam eder. */
     await kocGirisleriOku();
+    await sonIslemleriOku();    /* tablodaki "Son işlem" sütununun kaynağı */
   }catch(e){
     KOCLAR=[];
     YONDURUM = 'HATA|Liste alınamadı: ' + (e.message||e) +
@@ -6872,14 +6873,25 @@ function tarihSaat(t){
   return d.toLocaleString('tr-TR',{day:'2-digit',month:'short',year:'numeric',
                                    hour:'2-digit',minute:'2-digit'});
 }
-/* "3 gün önce" + altında tam tarih-saat — iki satırlık hücre. */
-function girisHucre(t, bugun){
+/* "3 gün önce" + altında tam tarih-saat — iki satırlık hücre.
+   ne verilirse (ödev/deneme/konu/mesaj) üçüncü satır olarak eklenir. */
+function girisHucre(t, bugun, ne){
   if(!t) return '<span style="color:var(--ink-3)">—</span>';
   const f=Math.floor((Date.now()-new Date(t))/864e5);
   const bagil = f===0?'bugün' : f===1?'dün' : f+' gün önce';
   const taze  = String(t).slice(0,10)===bugun;
   return `<div style="font-size:12px;color:${taze?'var(--ok)':f<=7?'var(--ink-2)':'var(--ink-3)'};font-weight:${taze?'650':'400'}">${bagil}</div>
-    <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono);white-space:nowrap">${esc(tarihSaat(t))}</div>`;
+    <div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono);white-space:nowrap">${esc(tarihSaat(t))}</div>
+    ${ne?`<div style="font-size:10.5px;color:var(--ink-3)">${esc(ne)}</div>`:''}`;
+}
+
+/* Son işlem hücresi: SONISLEM yoksa "işlem yok" der — giriş zamanına
+   düşmez. Yanlış sütunda doğru veri, doğru sütunda yanlış veriden iyidir. */
+function islemHucre(uid, bugun){
+  if(SONISLEM_YOK) return '<span style="font-size:11.5px;color:var(--warn)">SQL yok</span>';
+  const o=sonIslem(uid);
+  return o && o.zaman ? girisHucre(o.zaman, bugun, o.ne)
+                      : '<span style="font-size:11.5px;color:var(--bad)">işlem yok</span>';
 }
 
 /* ── Yönetim koç tablosu: sütun sıralaması ─────────────────────────
@@ -6894,7 +6906,9 @@ function yonSirala(alan){
   render();
 }
 
-function ykGiris(k){ return KOCGIRIS[k.id] || k.son_giris || ''; }
+/* Sıralama da sütunla aynı değeri kullanmalı — başlık "Son işlem"
+   diyorken girişe göre sıralamak sessiz bir yalan olurdu. */
+function ykGiris(k){ const o=sonIslem(k.id); return (o&&o.zaman)||''; }
 
 function koclarSirali(){
   var l = (KOCLAR||[]).slice(), a = YKSIRA.alan;
@@ -6948,6 +6962,23 @@ async function kocGirisleriOku(){
   }catch(e){ KOCGIRIS={}; }   /* SQL henüz çalıştırılmadıysa sessizce eski değere düş */
 }
 
+/* SON İŞLEM — auth kimliğine göre { zaman, ne }. Giriş değil, KAYIT:
+   son ödev / deneme / konu / mesaj ne zaman işlendi. Kaynak:
+   YONETIM-son-islem.sql. Kurulu değilse SONISLEM_YOK=true olur ve panel
+   sütunun yerine bunu söyleyen bir uyarı gösterir — giriş zamanını
+   "işlem" diye göstermek yanlış bilgi olurdu. */
+var SONISLEM={}, SONISLEM_YOK=false;
+async function sonIslemleriOku(){
+  try{
+    let r=await sbCagri('/rest/v1/rpc/yonetici_son_islem',{method:'POST',body:{}});
+    if(typeof r==='string'){ try{ r=JSON.parse(r); }catch(e){} }
+    const h={}; (Array.isArray(r)?r:[]).forEach(x=>{
+      if(x&&x.kim) h[x.kim]={ zaman:x.ne_zaman||'', ne:x.ne||'' }; });
+    SONISLEM=h; SONISLEM_YOK=false;
+  }catch(e){ SONISLEM={}; SONISLEM_YOK=true; }
+}
+function sonIslem(uid){ return (uid && SONISLEM[uid]) || null; }
+
 async function kocOgrencileri(id, ad){
   /* RLS, koçların birbirinin öğrencisini okumasını engeller; yönetici bu
      yüzden doğrudan tablodan DEĞİL, sunucudaki yonetici_ogrenciler()
@@ -6983,8 +7014,8 @@ function vKocOgrencileri(){
     ${YOGRHATA?`<div class="flag ${/Yükleniyor/.test(YOGRHATA)?'warn':'bad'}" style="margin-top:12px">
       <span class="ic">${/Yükleniyor/.test(YOGRHATA)?'·':'!'}</span><span>${esc(YOGRHATA)}</span></div>`:''}
     ${YOGRSURUM==='eski'?`<div class="flag warn" style="margin-top:12px"><span class="ic">!</span><span>
-      <b>Son giriş sütunu boş görünüyor.</b> Sunucuda <b>YONETIM-son-giris.sql</b> henüz çalıştırılmamış —
-      liste eski fonksiyondan geliyor. Dosyayı Supabase → SQL Editor'de bir kez çalıştır.</span></div>`:''}
+      <b>Giriş sayaçları ve Son işlem sütunu boş.</b> Sunucuda <b>YONETIM-son-giris.sql</b> henüz çalıştırılmamış —
+      liste eski fonksiyondan geliyor, öğrencinin auth kimliği gelmiyor. Dosyayı Supabase → SQL Editor'de bir kez çalıştır.</span></div>`:''}
     ${YOGRLISTE.length?(()=>{
       const bugunT=new Date().toISOString().slice(0,10);
       /* Hiç girmemiş ve 14 günden uzun süredir uğramamış öğrenciler,
@@ -6999,17 +7030,18 @@ function vKocOgrencileri(){
         <div class="stat"><div class="k">Hiç girmemiş</div><div class="v" style="color:${hicGirmemis?'var(--bad)':'inherit'}">${hicGirmemis}</div><div class="n">hesabı var, kullanmamış</div></div>
       </div>`:''}
       <div style="margin-top:12px;overflow:auto"><table>
-      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>E-posta</th><th>Hesap</th><th>Son giriş</th><th>Onay</th><th class="num">Deneme</th><th class="num">Ödev</th><th class="num">Kayıt</th></tr></thead>
+      <thead><tr><th>Ad</th><th>Sınıf</th><th>Alan</th><th>E-posta</th><th>Hesap</th><th>Son işlem</th><th>Onay</th><th class="num">Deneme</th><th class="num">Ödev</th><th class="num">Kayıt</th></tr></thead>
       <tbody>${YOGRLISTE.map(o=>`<tr>
         <td><b>${esc(o.ad||'—')}</b></td><td>${esc(o.sinif||'—')}</td>
         <td>${esc(o.alan||'—')}</td>
         <td style="font-size:12px">${esc(o.eposta||'—')}</td>
         <td>${o.bagli?'<span class="pill s1" style="font-size:10.5px">bağlı</span>':'<span class="pill s0" style="font-size:10.5px">girmedi</span>'}</td>
         <td style="min-width:118px">${
-          o.son_giris ? girisHucre(o.son_giris, bugunT)
-          : (!o.bagli ? '<span style="font-size:11.5px;color:var(--ink-3)">hesap yok</span>'
-             : YOGRSURUM==='v2' ? '<span style="font-size:11.5px;color:var(--bad)">hiç girmemiş</span>'
-             : '<span style="color:var(--ink-3)">—</span>')}</td>
+          !o.bagli ? '<span style="font-size:11.5px;color:var(--ink-3)">hesap yok</span>'
+          /* eski fonksiyon auth_id göndermiyor; kimlik yoksa "işlem yok"
+             demek yalan olur, boş bırakılır. */
+          : !o.auth_id ? '<span style="color:var(--ink-3)">—</span>'
+          : islemHucre(o.auth_id, bugunT)}</td>
         <td>${o.onay?'<span class="pill s1" style="font-size:10.5px">✓</span>':'<span class="pill s3" style="font-size:10.5px">eksik</span>'}</td>
         <td class="num">${o.deneme??'—'}</td><td class="num">${o.odev??'—'}</td>
         <td class="num">${esc(String(o.kayit||o.olusturuldu||'').slice(0,10)||'—')}</td></tr>`).join('')}</tbody>
@@ -7058,7 +7090,7 @@ function vYonetici(){
 
   <details class="card katlanir" open><summary><h2 style="margin:0">Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2></summary>
   <div class="body" style="padding:0;overflow:auto">
-    <table><thead><tr>${ykBaslik('ad','Koç')}<th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th>${ykBaslik('kayit','Kayıt')}${ykBaslik('giris','Son giriş')}<th>Durum</th><th></th></tr></thead><tbody>
+    <table><thead><tr>${ykBaslik('ad','Koç')}<th>Tür</th><th>Paket</th><th class="num">Öğrenci</th><th>Bitiş</th>${ykBaslik('kayit','Kayıt')}${ykBaslik('giris','Son işlem')}<th>Durum</th><th></th></tr></thead><tbody>
     ${koclarSirali().map(k=>{
       const dolu=k.ogrenci>=k.limit;
       const bit=k.lisans_bitis||k.deneme_bitis||'';
@@ -7094,10 +7126,10 @@ function vYonetici(){
              değil, SON GİRİŞ (cihazlar tablosundan). -->
         <td style="font-size:12px;color:${(k.kayit||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'}">${gun(k.kayit)}
           ${k.kayit?`<div style="font-size:10.5px;color:var(--ink-3);font-family:var(--mono);white-space:nowrap">${esc(String(k.kayit).slice(0,10))}</div>`:''}</td>
-        <!-- Son giriş: KOCGIRIS varsa auth.users'tan gelen gerçek değer,
-             yoksa koc_listesi'nin cihazlar tabanlı değeri. Artık yalnız
-             "3 gün önce" değil, altında tam tarih ve saat de var. -->
-        <td style="min-width:118px">${girisHucre(KOCGIRIS[k.id]||k.son_giris, bugun)}</td>
+        <!-- SON İŞLEM (giriş değil): hesaba ait kayıtlarda en son ne zaman
+             değişiklik oldu — ödev, deneme, konu durumu, mesaj. Kaynak
+             yonetici_son_islem(). Giriş zamanı üstteki sayaçlarda duruyor. -->
+        <td style="min-width:118px">${islemHucre(k.id, bugun)}</td>
         <td><label style="display:flex;gap:6px;align-items:center;font-size:12.5px">
           <input type="checkbox" id="ya_${k.id}" ${k.aktif?'checked':''} style="width:auto">aktif</label>
           <div style="font-size:11px;color:${k.gecerli?'var(--ok)':'var(--bad)'};margin-top:3px">${k.gecerli?'çalışıyor':'durdu'}</div></td>
@@ -7109,7 +7141,10 @@ function vYonetici(){
   <div class="body" style="border-top:1px solid var(--line-soft)">
     <button class="btn ghost" onclick="koclariOku()">Listeyi yenile</button>
     <button class="btn ghost" style="margin-left:8px" onclick="yonTeshis()">Sunucuyu test et</button>
-    <div class="hint" style="margin-top:8px">Koç, Kayıt ve Son giriş başlıklarına tıklayarak sıralayabilirsin. Senin satırın sıralama ne olursa olsun her zaman en üstte kalır. Yeni kayıt olan koçlar 7 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
+    ${SONISLEM_YOK?`<div class="flag warn" style="margin-bottom:8px"><span class="ic">!</span><span>
+      <b>Son işlem sütunu boş.</b> Sunucuda <b>YONETIM-son-islem.sql</b> henüz çalıştırılmamış.
+      Dosyayı Supabase → SQL Editor'de bir kez çalıştır.</span></div>`:''}
+    <div class="hint" style="margin-top:8px"><b>Son işlem</b> = giriş değil, kayıt: o hesaba ait son ödev, deneme, konu durumu ya da mesaj ne zaman işlendi. Koç satırında öğrencilerinin kayıtları da sayılır — satırı kimin yazdığı veritabanında tutulmuyor. Giriş zamanı yukarıdaki sayaçlarda duruyor.<br>Koç, Kayıt ve Son işlem başlıklarına tıklayarak sıralayabilirsin. Senin satırın sıralama ne olursa olsun her zaman en üstte kalır. Yeni kayıt olan koçlar 7 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
   </div></details>
 
   ${keKart()}
