@@ -160,6 +160,20 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .rail-bot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:7px}
 .rail-bot button{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);color:#DCE6EA;padding:7px 10px;border-radius:5px;font-size:12.5px}
 .rail-bot button:hover{background:rgba(255,255,255,.17)}
+/* Abonelik düğmesi gri kardeşlerinden ayrılsın diye dolu renk.
+   Sabit renk, var(--accent) DEĞİL: ray dört temada da koyu
+   (#122430 · #0A141A · #2A231E · #0B2033) ama --accent açık temada
+   #186C68'e iniyor, koyu rayın üstünde sönük kalıyor — zaten şikâyet buydu.
+   İki durum ayrı: teal = aboneliği var, amber = deneme ya da süresi dolmuş. */
+/* width:100% şart: kardeş düğmeler .rail-bot'un doğrudan flex çocuğu olduğu
+   için kendiliğinden geriliyor, bu düğme #railAbone kabının içinde kaldığından
+   içeriği kadar daralıyordu — rayda tek başına dar duruyordu. */
+.rail-bot .abone{width:100%;background:#4FB3A9;border-color:#67C6BC;color:#052723;font-weight:650}
+.rail-bot .abone:hover{background:#5FC0B6}
+.rail-bot .abone.acil{background:#E8A03A;border-color:#F2B45A;color:#2A1A02}
+.rail-bot .abone.acil:hover{background:#F2AE4B}
+/* Boş kap flex boşluğu (gap:7px) üretmesin. */
+#railAbone:empty{display:none}
 
 /* ---- ana ---- */
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -788,6 +802,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
     </div>
     <div class="rail-list" id="railList"></div>
     <div class="rail-bot">
+      <div id="railAbone"></div>
       <button onclick="addStudent()">+ Öğrenci ekle</button>
       <div id="sbDurum" style="font-size:11px;text-align:center;padding:4px 0 2px;font-family:var(--mono)"></div>
       <div id="lisansRozet" style="font-size:10.5px;text-align:center;padding:0 0 4px;font-family:var(--mono)"></div>
@@ -3109,6 +3124,7 @@ function render(){
     // Giriş ekranında sol raydaki oturuma özel alt butonları/kalıntıları temizle
     // (aksi halde çıkış/oturum kaybı sonrası "Abonelik / paketler" gibi ölü butonlar kalır).
     { const _re=document.getElementById('railEk'); if(_re) _re.innerHTML='';
+      const _ra=document.getElementById('railAbone'); if(_ra) _ra.innerHTML='';
       const _lr=document.getElementById('lisansRozet'); if(_lr) _lr.innerHTML='';
       const _sg=document.getElementById('stGoal'); if(_sg) _sg.innerHTML='';
       const _lk=document.getElementById('linkKutu'); if(_lk) _lk.innerHTML=''; }
@@ -3123,14 +3139,22 @@ function render(){
   const _liste=ogrListesi();
   document.getElementById('railList').innerHTML = (typeof railAgaci==='function') ? railAgaci(_liste) : '';
 
+  /* Abonelik düğmesi rayın EN ÜSTÜNDE, "Öğrenci ekle"nin üzerinde:
+     aşağıda "Verilerimi indir" ve "Çıkış yap" arasında gri bir satır
+     olarak kayboluyordu. Acil hâl (deneme ya da süresi dolmuş) amber,
+     normal hâl teal — ikisi de renkli, sıra bozulmuyor. */
+  const ra=document.getElementById('railAbone');
+  if(ra) ra.innerHTML = (!DEMO && sbOturum())
+    ? ((LISANS && (!LISANS.gecerli || (DENEME&&DENEME.deneme_mi)))
+        ? `<button class="abone acil" onclick="ABONE=true;render()">★ Abonelik al</button>`
+        : `<button class="abone" onclick="ABONE=true;render()">Abonelik ve paketler</button>`)
+    : '';
+
   const re=document.getElementById('railEk');
   if(re) re.innerHTML = DEMO
     ? `<button onclick="demoBitir()" style="background:var(--accent);color:#fff;font-weight:650">Hesap aç ve başla</button>`
     : sbOturum()
-    ? `${(LISANS && (!LISANS.gecerli || (DENEME&&DENEME.deneme_mi)))
-        ? `<button onclick="ABONE=true;render()" style="background:var(--accent);color:#fff;font-weight:650">★ Abonelik al</button>`
-        : `<button onclick="ABONE=true;render()">Abonelik / paketler</button>`}
-       <button onclick="yedekDosya()">Verilerimi indir (.json)</button>
+    ? `<button onclick="yedekDosya()">Verilerimi indir (.json)</button>
        <button onclick="sbCikisYap()">Çıkış yap</button>`
     : `<button onclick="yereldenAktar()">Yerel veriyi sunucuya aktar</button>`;
   const lr=document.getElementById('lisansRozet');
