@@ -50,10 +50,16 @@ var SEBEPLER=[['OKUL','Okul'],['UYKU','Uyku'],['YEMEK','Yemek'],
 /* ═══ DURUM ═══ */
 var C={};
 var kapali=new Set(), sebep={}, bloklar=[], bekleyenler=[];
-/* katlaAcik VARSAYILAN OLARAK KAPALI: seçenek açılmadıkça 24 saatin
-   tamamı görünür. Eskiden açıktı ve tablo, kimse istemeden 00:00–14:00'ü
-   tek bir banda katlıyordu. */
-var katlaAcik=false, acikKatlar=new Set(), boyaAcik=false, boyaSebep='OZEL';
+/* Katlama VARSAYILAN OLARAK AÇIK: tablo ilk açılışta katlı gelsin, 48 satırlık
+   duvarla karşılaşılmasın. Ama tercih HATIRLANIYOR — kullanıcı "24 saati göster"
+   deyip sayfayı yenilediğinde yeniden katlanmış bulmasın. Kayıt tarayıcıda
+   durur (hesapta değil): bu bir görünüm tercihi, cihaza özel olması doğru. */
+var KATLA_ANAHTAR='biyoser_pg_katla';
+var katlaAcik=(function(){
+  try{ var v=localStorage.getItem(KATLA_ANAHTAR); return v===null ? true : v==='1'; }
+  catch(e){ return true; }          // depo kapalıysa (gizli sekme) varsayılana düş
+})();
+var acikKatlar=new Set(), boyaAcik=false, boyaSebep='OZEL';
 var suAnahtar=null;
 var kayitSaat=null, kayitKuyruk={};
 /* Program, ödev listesinin GERİSİNDE mi kaldı? Koç Ödevler sekmesinde yeni
@@ -1172,7 +1178,13 @@ function arac(btn){
   if(ac==='dagit'){ dagitCekirdek(); isaretle('bloklar'); ciz(); }
   else if(ac==='temizle'){ bloklar=[]; bekleyenler=[]; isaretle('bloklar'); ciz(); }
   else if(ac==='boya'){ boyaAcik=!boyaAcik; ciz(); }
-  else if(ac==='katla'){ katlaAcik=!katlaAcik; acikKatlar=new Set(); ciz(); }
+  else if(ac==='katla'){
+    katlaAcik=!katlaAcik; acikKatlar=new Set();
+    /* Tercihi sakla: bir daha sorma. Depo kapalıysa sessizce geç — özellik
+       yine çalışır, yalnız sayfa yenilenince varsayılana döner. */
+    try{ localStorage.setItem(KATLA_ANAHTAR, katlaAcik ? '1' : '0'); }catch(e){}
+    ciz();
+  }
   else if(ac==='hepsiac'){ kapali=new Set(); sebep={}; isaretle('kapali'); ciz(); }
 }
 
