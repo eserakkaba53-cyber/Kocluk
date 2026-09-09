@@ -7777,7 +7777,17 @@ async function yeniSifreKaydet(){
     await sbCagri('/auth/v1/user',{method:'PUT',body:{password:a}});
     GIRISMOD='giris'; GIRISHATA='OK|Şifren değiştirildi. Şimdi yeni şifrenle giriş yapabilirsin.';
     sbCikis();
-  }catch(e){ GIRISHATA='Değiştirilemedi: '+(e.message||e); }
+  }catch(e){
+    /* Sunucunun ham metni ("invalid JWT: ... token is malformed") kullanıcıya
+       hiçbir şey anlatmıyordu. Bu ekranın en sık hatası süre dolması: bağlantı
+       1 saat geçerli, ekran açık unutulursa jeton ölüyor. Ölü jetonla ekranda
+       kalmanın anlamı yok — giriş ekranına dönüp yeni bağlantı istenebilsin. */
+    const m=String(e.message||e);
+    if(/jwt|token|expired|session|invalid|401|403/i.test(m)){
+      sbCikis(); GIRISMOD='giris';
+      GIRISHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
+    } else GIRISHATA='Şifre değiştirilemedi: '+m;
+  }
   GIRISBEKLE=false; render();
 }
 async function girisYap(){

@@ -4603,7 +4603,15 @@ async function gYeniSifre(){
   try{
     await sbCagri('/auth/v1/user',{method:'PUT',body:{password:a}});
     GMOD='giris'; GHATA='OK|Şifren değiştirildi. Yeni şifrenle giriş yap.'; sbCikis();
-  }catch(e){ GHATA='Değiştirilemedi: '+(e.message||e); }
+  }catch(e){
+    /* Koç panelindeki ile aynı düzeltme: ham JWT metni yerine ne yapılacağını
+       söyleyen Türkçe uyarı, ve ölü jetonla ekranda bekletmeden giriş ekranı. */
+    const m=String(e.message||e);
+    if(/jwt|token|expired|session|invalid|401|403/i.test(m)){
+      sbCikis(); GMOD='giris';
+      GHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
+    } else GHATA='Şifre değiştirilemedi: '+m;
+  }
   GBEKLE=false; render();
 }
 async function gGiris(){
