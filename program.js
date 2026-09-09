@@ -1226,10 +1226,18 @@ function stil(){
 'table.pg-iz td.sa{position:sticky;left:0;z-index:4;background:var(--panel);font-family:var(--mono);font-size:12.5px;color:var(--ink-3);text-align:right;padding:0 8px 0 0;line-height:1;border-right:1px solid var(--line);white-space:nowrap;letter-spacing:-.02em;overflow:hidden}',
 'table.pg-iz td.sa.tam{color:var(--ink);font-weight:700;font-size:13.5px}',
 'td.pg-h{height:30px;border-bottom:1px solid var(--pg-cizgi);border-right:1px solid var(--pg-cizgi);position:relative;background:var(--panel);padding:0}',
-'td.pg-h.kapali{background:repeating-linear-gradient(45deg,var(--paper),var(--paper) 5px,var(--panel) 5px,var(--panel) 10px)}',
+/* Kapalı saat: DOLU GRİ. Eskiden --paper/--panel arası 45° çizgiydi;
+   o iki renk varsayılan temada #E9EDEF ve #FFFFFF, yani 1.18:1 — parlaklığı
+   yüksek ya da ucuz ekranda kapalı saat hiç seçilmiyordu.
+   Sabit gri, tema değişkeni DEĞİL: bu tek renk dört temanın panelinden de
+   en az 3:1 ayrışıyor (3.25 · 4.74 · 3.04 · 3.07); tek bir değişkenle
+   dördünde birden bunu tutturmak mümkün değil. */
+'td.pg-h.kapali{background:#889095}',
 'td.pg-h.hedef{background:var(--accent-soft)!important;box-shadow:inset 0 0 0 2px var(--accent)}',
 'td.pg-h.gecersiz{background:var(--bad-bg)!important}',
-'td.pg-h.kapali::after{content:attr(data-sebep);position:absolute;left:5px;top:2px;font-size:8px;font-weight:800;letter-spacing:.06em;color:var(--ink-3);opacity:.7;text-transform:uppercase;pointer-events:none}',
+/* Sebep etiketi (OKUL/UYKU/KURS) artık gri zeminin üstünde: --ink-3 ve
+   .7 saydamlıkla 1.2:1'e düşüyordu, okunmuyordu. Sabit koyu, 5.5:1. */
+'td.pg-h.kapali::after{content:attr(data-sebep);position:absolute;left:5px;top:2px;font-size:8px;font-weight:800;letter-spacing:.06em;color:#10181C;opacity:.9;text-transform:uppercase;pointer-events:none}',
 '.pg-boya td.pg-h{cursor:crosshair;touch-action:none}',
 'tr.pg-katli td{height:26px;background:var(--paper);text-align:center;font-size:11px;color:var(--ink-3);cursor:pointer;border-bottom:1px solid var(--line);font-weight:600}',
 
