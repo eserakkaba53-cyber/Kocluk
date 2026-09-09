@@ -2866,7 +2866,7 @@ function durumBul(L){
 let RAPOR_ON=null, GERIKORU=true;
 const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler'],['odev','Ödevler'],
                   ['konu','Konular'],['hedef','Hedef'],['puan','Puan hesaplayıcı'],['veli','Veli raporu'],['ogrenci','Öğrenci bilgileri'],
-                  ['davet','Davet ve kullanım'],['ozel','Özel Ders'],['hesap','Hesap'],
+                  ['davet','Davet et süre kazan'],['ozel','Özel Ders'],['hesap','Hesap'],
                   /* Kılavuz öğrenciden bağımsızdır — rayın altındaki "Hesap"
                      bölümünde durur (bkz. KOC_GENEL_SEKME). */
                   ['kilavuz','Kullanım kılavuzu']];
@@ -6359,7 +6359,7 @@ function vDavet(){
         <span>${esc(REFDURUM.replace(/^(OK|HATA)\|/,''))}</span></div></div></div>` : '';
   if(!R){
     if(REFYUKLENIYOR) return `<div class="card"><div class="empty">Referans bilgin yükleniyor...</div></div>`;
-    if(REFHATA==='kurulmamis') return videoBolumu(true)+`<div class="card"><h2>Davet sistemi henüz kurulmamış</h2><div class="body">
+    if(REFHATA==='kurulmamis') return `<div class="card"><h2>Davet sistemi henüz kurulmamış</h2><div class="body">
       <div class="flag warn"><span class="ic">!</span><span>
         Bu özellik için veritabanı güncellemesi gerekiyor. Sistemi sana veren kişiye
         <b>supabase-14-referans.sql</b> dosyasının çalıştırılması gerektiğini iletebilirsin.</span></div>
@@ -6370,46 +6370,69 @@ function vDavet(){
       <button class="btn ghost wide" style="margin-top:12px" onclick="REFHATA='';referansOku().then(render)">Tekrar dene</button>
       </div></div>`;
   }
-  if(!R.kod) return videoBolumu(true)+`<div class="card"><h2>Referans kodun oluşturulmamış</h2><div class="body">
+  if(!R.kod) return `<div class="card"><h2>Referans kodun oluşturulmamış</h2><div class="body">
       <div class="flag warn"><span class="ic">!</span><span>Hesabında referans kodu bulunamadı.
         Sistemi sana veren kişiye bildirebilirsin.</span></div>
     </div></div>`;
-  const uc=R.ucretli||0, kalan=(2-(uc%2))%2 || (uc===0?2:2);
-  const sonrakiIcin = uc%2===0 ? 2 : 1;
+  const uc  = R.ucretli||0;
+  const yil = R.kazanilan_yil||0;
+  const adim  = uc % 2;            /* 0 ya da 1 — sonraki yıla kaç davet girdi */
+  const kalan = 2 - adim;          /* 1 ya da 2 — kaç davet kaldı */
   return `
-  ${videoBolumu(true)}
   ${durumSerit}
+
+  <!-- VİTRİN: teklif tek cümlede, ilerleme ve kod hemen altında. Eskiden
+       sayfa dört sayaçla açılıyordu; kazancın NE olduğu üçüncü kartta
+       yazıyordu, "nasıl işliyor" ise en altta kalıyordu. -->
+  <div class="card" style="border:2px solid var(--accent);padding:0;overflow:hidden">
+    <div style="background:var(--accent);color:var(--uz-accent);padding:18px 20px">
+      <div style="font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;font-weight:700">Davet et · süre kazan</div>
+      <div style="font-size:23px;font-weight:750;line-height:1.25;margin-top:5px">
+        Her <b>2 ücretli davet</b> için lisansına <b>1 yıl</b> eklenir</div>
+      <div style="font-size:13px;opacity:.9;margin-top:5px">Kendiliğinden eklenir — bir şey talep etmene gerek yok.</div>
+    </div>
+    <div class="body">
+      ${yil?`<div class="flag ok" style="margin:0 0 14px"><span class="ic">★</span><span>
+        Bugüne kadar <b>${yil} yıl</b> kazandın ve lisansına eklendi.</span></div>`:''}
+
+      <div style="font-size:13.5px;color:var(--ink-2);margin-bottom:7px">
+        Sonraki yıl için <b style="color:var(--ink)">${kalan} ücretli davet</b> daha
+        <span style="color:var(--ink-3)">(${adim}/2)</span></div>
+      <div style="height:9px;border-radius:99px;background:var(--line-soft);overflow:hidden" role="progressbar"
+           aria-valuenow="${adim}" aria-valuemin="0" aria-valuemax="2">
+        <div style="height:100%;width:${adim*50}%;background:var(--ok);border-radius:99px"></div></div>
+
+      <div style="background:var(--line-soft);border-radius:9px;padding:15px;text-align:center;margin-top:16px">
+        <div style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650">Referans kodun</div>
+        <div style="font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:5px;color:var(--accent);margin:4px 0 8px">${esc(R.kod||'—')}</div>
+        <div style="font-size:11.5px;color:var(--ink-3);word-break:break-all;font-family:var(--mono)">${esc(refLinki())}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn" onclick="refWa()">WhatsApp'tan davet gönder</button>
+        <button class="btn ghost" onclick="refKopyala()">Bağlantıyı kopyala</button>
+      </div>
+      <div class="hint" style="margin-top:10px">Bağlantıya tıklayan kişide kod kendiliğinden dolar.
+        Elle kayıt olursa kayıt ekranında kodu yazması yeterli.</div>
+    </div>
+  </div>
+
+  <!-- NASIL İŞLİYOR — en altta değil, kodun hemen ardında. Numaralı adımlar
+       kılavuzdaki kKilavuzAdim ile aynı görünümü kullanıyor. -->
+  <div class="card"><h2>Nasıl işliyor<small>Dört adım, tamamı kendiliğinden.</small></h2><div class="body" style="padding-top:4px">
+    ${kKilavuzAdim('1','Bağlantını gönder','Yukarıdaki düğmeyle WhatsApp üzerinden yolla ya da kodu kopyala.')}
+    ${kKilavuzAdim('2','Arkadaşın 7 gün ücretsiz dener','Kayıt olduğunda "Davet ettiklerin" listesinde <b>deneme</b> olarak görünür.')}
+    ${kKilavuzAdim('3','Paket alırsa sayacın 1 artar','Sayaç yalnız <b>paket alındığında</b> ilerler; denemede kalanlar henüz sayılmaz.')}
+    ${kKilavuzAdim('4','Her 2 ücretli davette 1 yıl','Lisansına kendiliğinden eklenir, bildirim beklemene gerek yok.')}
+    <div class="flag ok" style="margin-top:14px"><span class="ic">★</span><span>
+      <b>Kendin deneme süresindeyken de kazanabilirsin.</b> 2 ücretli davet toplarsan denemen biter,
+      hesabın doğrudan <b>1 yıllık Öğretmen Paketi</b>'ne geçer. Sonraki her 2 davet 1 yıl daha ekler.</span></div>
+  </div></div>
+
   <div class="card"><div class="stats">
     <div class="stat"><div class="k">Davet ettiğin</div><div class="v">${R.toplam||0}</div><div class="n">koç kayıt oldu</div></div>
     <div class="stat"><div class="k">Pakete geçen</div><div class="v" style="color:var(--ok)">${uc}</div><div class="n">ücretli abone</div></div>
-    <div class="stat"><div class="k">Kazandığın</div><div class="v" style="color:var(--accent)">${R.kazanilan_yil||0}</div><div class="n">yıl · lisansına eklendi</div></div>
-    <div class="stat"><div class="k">Sonraki yıl için</div><div class="v">${sonrakiIcin}</div><div class="n">ücretli davet daha</div></div>
-  </div></div>
-
-  <div class="card"><h2>Davet bağlantın<small>Bu bağlantıyla kayıt olup pakete geçen her 2 koç için lisansına 1 yıl eklenir.</small></h2><div class="body">
-    <div style="background:var(--line-soft);border:1px solid var(--line-soft);border-radius:9px;padding:16px;text-align:center">
-      <div style="font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:650">Referans kodun</div>
-      <div style="font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:5px;color:var(--accent);margin:4px 0 8px">${esc(R.kod||'—')}</div>
-      <div style="font-size:11.5px;color:var(--ink-3);word-break:break-all;font-family:var(--mono)">${esc(refLinki())}</div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-      <button class="btn" onclick="refWa()">WhatsApp'tan davet gönder</button>
-      <button class="btn ghost" onclick="refKopyala()">Bağlantıyı kopyala</button>
-    </div>
-    <div class="hint" style="margin-top:10px">Davet ettiğin kişi bağlantıya tıklarsa kod kendiliğinden dolar.
-      Elle kayıt olursa kayıt ekranında kodu yazması yeterli.</div>
-  </div></div>
-
-  <div class="card"><h2>Nasıl işliyor</h2><div class="body">
-    <div class="topic"><span class="dot t2"></span><span class="tn">Bağlantını gönderirsin, arkadaşın kayıt olur ve <b>7 gün ücretsiz</b> dener.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn">Beğenip <b>bir paket alırsa</b> senin sayacın 1 artar.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Her 2 ücretli davet</b> için lisansına <b>1 yıl</b> eklenir.</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn">Yıl eklemesi kendiliğinden yapılır; bir şey talep etmene gerek yok.</span></div>
-    <div class="flag ok" style="margin-top:12px"><span class="ic">★</span><span>
-      <b>Kendin deneme süresindeyken de kazanabilirsin.</b> 2 ücretli davet toplarsan denemen biter,
-      hesabın doğrudan <b>1 yıllık Öğretmen Paketi</b>'ne geçer. Sonraki her 2 davet 1 yıl daha ekler.</span></div>
-    <div class="hint" style="margin-top:10px">Sayaç, <b>davet ettiğin kişi paket aldığında</b> ilerler.
-      Hâlâ denemede olan davetliler henüz sayılmaz — paket aldıkları gün sayaca eklenirler.</div>
+    <div class="stat"><div class="k">Kazandığın</div><div class="v" style="color:var(--accent)">${yil}</div><div class="n">yıl · lisansına eklendi</div></div>
+    <div class="stat"><div class="k">Sonraki yıl için</div><div class="v">${kalan}</div><div class="n">ücretli davet daha</div></div>
   </div></div>
 
   ${(R.liste&&R.liste.length)?`<div class="card"><h2>Davet ettiklerin</h2><div class="body" style="padding:0;overflow:auto">
@@ -6478,10 +6501,15 @@ function kKilavuzAdim(n,bas,icerik){
 function vKocKilavuz(){
   const yon = !!(LISANS && LISANS.yonetici);
 
+  /* Videolar EN ÜSTTE. Önceden davet sekmesindeydi: süre kazanmaya giren
+     koç videoları görüyor, kılavuzu okumaya gelen göremiyordu. Yeri burası —
+     izlemek okumaktan hızlı, o yüzden metnin de önünde duruyor. */
   return `
+  ${videoBolumu(true)}
+
   <div class="card"><h2>Kullanım kılavuzu<small>Panelin tamamı — sekme sekme, uyarılarıyla birlikte.</small></h2><div class="body">
     <div class="hint" style="margin:0">Sol raydan bir öğrenci seçtiğinde onun altında <b>o öğrenciye ait sekmeler</b> açılır.
-      <b>Kokpit</b> en üstte, öğrenciden bağımsızdır; <b>Davet · Özel Ders · Hesap${yon?' · Yönetim':''}</b> ise rayın altında,
+      <b>Kokpit</b> en üstte, öğrenciden bağımsızdır; <b>Davet et süre kazan · Özel Ders · Hesap${yon?' · Yönetim':''}</b> ise rayın altında,
       "Hesap" başlığı altında durur.</div>
   </div></div>
 
@@ -6628,9 +6656,10 @@ function vKocKilavuz(){
       <b>Telefon numarası girilmeden</b> davet ve haftalık raporlar gönderilemez.</span></div>
   </div></div>
 
-  <div class="card"><h2>Davet ve kullanım sekmesi</h2><div class="body">
+  <div class="card"><h2>"Davet et süre kazan" sekmesi</h2><div class="body">
     <p style="margin:0">Kendi davet bağlantın, kaç kişinin kaydolduğu ve kazandığın süre burada.
-      Öğretmen arkadaşlarını davet ettikçe kendi kullanım sürene ekleme yapılır.</p>
+      Öğretmen arkadaşlarını davet ettikçe kendi kullanım sürene ekleme yapılır:
+      <b>her 2 ücretli davet için 1 yıl</b>, kendiliğinden.</p>
   </div></div>
 
   <div class="card"><h2>Özel Ders sekmesi</h2><div class="body">
@@ -7823,8 +7852,8 @@ async function bekleyenReferans(){
   try{
     const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_uygula',{method:'POST',body:{kod:k}}));
     if(r&&r.ok) REFDURUM='OK|Seni davet eden: '+(r.davet_eden_ad||'—')+'. Pakete geçtiğinde onun sayacı ilerler.';
-    else if(r&&r.hata) REFDURUM='HATA|Referans kodu uygulanamadı: '+r.hata+' (Davet et sekmesinden tekrar deneyebilirsin.)';
-  }catch(e){ REFDURUM='HATA|Referans kodu şimdilik uygulanamadı. Davet et sekmesinden tekrar deneyebilirsin.'; }
+    else if(r&&r.hata) REFDURUM='HATA|Referans kodu uygulanamadı: '+r.hata+' ("Davet et süre kazan" sekmesinden tekrar deneyebilirsin.)';
+  }catch(e){ REFDURUM='HATA|Referans kodu şimdilik uygulanamadı. "Davet et süre kazan" sekmesinden tekrar deneyebilirsin.'; }
   try{ localStorage.removeItem('bekleyen_referans'); }catch(e){}
 }
 function kullaniciRolu(){
