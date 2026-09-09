@@ -1664,6 +1664,12 @@ function TABLIST(){
   if(sunucuda) l.push(['ozel','Özel Ders']);   // özel ders sunucu hesabı gerektirir
   // Koçu olmayan öğrenci kendi paketini görür ve yönetir
   if(sunucuda && typeof soloMu==='function' && soloMu()) l.push(['paket','Paketim']);
+  /* Kullanım kılavuzu: vKilavuz() zaten vardı ve TAB dağıtıcısında da
+     duruyordu, ama sekme listesinde OLMADIĞI için hiçbir düğmesi yoktu —
+     yalnız Yardım sekmesinin içinden ya da giriş ekranından açılabiliyordu.
+     Öğrenci "kılavuz nerede" diye arıyordu; artık kendi sekmesi var.
+     En sonda: günlük kullanılan bir sekme değil, başvuru kaynağı. */
+  l.push(['kilavuz','Kullanım kılavuzu']);
   return l;
 }
 
@@ -3994,11 +4000,9 @@ function vKilavuz(){
   return `
   ${KILAVUZ_TEK
     ? `<div style="padding-top:14px"><button class="btn ghost mini" onclick="KILAVUZ_TEK=false;KILAVUZ_MOD='';render()">← Geri dön</button></div>`
-    : (TAB==='kilavuz'
-        /* Sunucu modunda Ayarlar sekmesi gizli; kılavuza Yardım'dan
-           giriliyor. Dönüş yolu olmadan kullanıcı sekmesiz kalıyordu. */
-        ? `<div style="padding-top:14px"><button class="btn ghost mini" onclick="TAB='yardim';render()">← Yardıma dön</button></div>`
-        : '')}
+    /* "← Yardıma dön" düğmesi kalktı: kılavuzun kendi sekmesi olduğu için
+       artık Yardım'dan girilmiyor, sekme çubuğu zaten çıkış yolu. */
+    : ''}
 
   <div class="card ${sunucu?'k-ok':'k-acil'}"><h2>${sunucu?'Bilgilerin nerede duruyor':'⚠ Çok önemli — önce bunu oku'}</h2><div class="body">
   ${sunucu ? `
