@@ -8027,14 +8027,19 @@ function ogrenciGirisKarti(){
   const bstil='display:block;text-align:center;text-decoration:none;padding:12px 16px';
   return `<div style="min-width:0">
     <div class="gkart gb"><div class="gbas"><div class="gikon">🎓</div>
-      <div><b>Öğrenci misin?</b><div class="galt">Koçun yoksa kendi hesabınla buradan başla.</div></div></div>
+      <div><b>Öğrenci misin?</b><div class="galt">Hesabın varsa buradan gir; yoksa kendi hesabınla başla.</div></div></div>
     <div class="gov">
       <div class="gmadde">Ödevlerin, denemelerin ve hedefin ayrı panelde — koçlu ve koçsuz öğrenci paneli ayrıdır</div>
       <div class="gmadde">Karneni yapıştır — netlerin ve eksik konuların kendiliğinden çıksın</div>
       <div class="gmadde">Koçun seni davet ettiyse gönderdiği bağlantıdan gir; kodun kendiliğinden dolar</div>
       <div class="gfiyat"><b>99 TL</b><span>/ yıl · Koçsuz Öğrenci Paketi</span></div>
-      <a class="btn wide" style="${bstil}" href="${esc(oadr)}#kayit">Öğrenci kaydı oluştur</a>
-      <a class="btn ghost wide" style="${bstil};margin-top:8px" href="${esc(oadr)}">Zaten hesabım var — öğrenci girişi</a>
+      <!-- TEK düğme. Eskiden ikiydi: "kaydı oluştur" (#kayit) ve "zaten
+           hesabım var". İkincisi kalktı; bu düğme artık #kayit'e DEĞİL
+           öğrenci panelinin giriş ekranına gidiyor — hesabı olan doğrudan
+           giriyor, olmayan aynı ekrandaki "Hesabım yok — oluştur" ile
+           kayda geçiyor. #kayit'te kalsaydı, tek düğme kalınca mevcut
+           öğrenci kayıt formuna düşerdi. -->
+      <a class="btn wide" style="${bstil}" href="${esc(oadr)}">Öğrenci girişi / kayıt</a>
       <div class="gdip"><a href="#" onclick="demoBaslat();return false">▶ Önce sistemi gezmek istiyorum</a><br>örnek bir öğrenci üzerinden, kayıt olmadan</div>
     </div></div>
   </div>`;
