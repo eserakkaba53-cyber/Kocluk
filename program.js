@@ -1224,7 +1224,12 @@ function stil(){
    üç satıra çıkarıyordu (ölçüldü). */
 '.pg .pg-sec{font:inherit;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);min-height:38px;width:auto;max-width:170px;display:inline-block}',
 
-'.pg-izsar{overflow:auto;max-height:70vh;border-bottom:1px solid var(--pg-cizgi);-webkit-overflow-scrolling:touch}',
+/* İÇ KAYDIRMA YOK. Eskiden max-height:70vh + overflow:auto vardı; 24 saat
+   açıldığında tablo kendi içinde kayıyordu ve gün bir bakışta görülmüyordu.
+   Dikey sınır kalktı: tablo tam boyuyla duruyor, gerekirse SAYFA kayıyor.
+   Yatay kaydırma KALDI — tablonun min-width'i 660px, dar telefonda bu
+   olmazsa sayfanın tamamı yana kayardı. */
+'.pg-izsar{overflow-x:auto;overflow-y:hidden;max-height:none;border-bottom:1px solid var(--pg-cizgi);-webkit-overflow-scrolling:touch}',
 'table.pg-iz{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed;min-width:660px}',
 'table.pg-iz th{position:sticky;top:0;z-index:5;background:var(--lacivert,#03182B);color:#fff;font-size:11px;font-weight:700;letter-spacing:.04em;padding:7px 3px;text-align:center}',
 'table.pg-iz th i{display:block;font-size:8.5px;opacity:.6;font-weight:400;font-style:normal}',
