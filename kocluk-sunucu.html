@@ -843,7 +843,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
-<script src="mesaj.js?v=20260905b"></script>
+<script src="mesaj.js?v=20260909a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -7163,7 +7163,9 @@ function vKocOgrencileri(){
         <td><b>${esc(o.ad||'—')}</b></td><td>${esc(o.sinif||'—')}</td>
         <td>${esc(o.alan||'—')}</td>
         <td style="font-size:12px">${esc(o.eposta||'—')}</td>
-        <td>${o.bagli?'<span class="pill s1" style="font-size:10.5px">bağlı</span>':'<span class="pill s0" style="font-size:10.5px">girmedi</span>'}</td>
+        <td>${o.bagli?'<span class="pill s1" style="font-size:10.5px">bağlı</span>':'<span class="pill s0" style="font-size:10.5px">girmedi</span>'}
+          ${o.bagli&&o.auth_id?`<button class="btn ghost mini" style="margin-top:4px;display:block" title="Bu öğrenciye mesaj yaz"
+            onclick="MESAJ.ac('${o.auth_id}')">✉ mesaj</button>`:''}</td>
         <td style="min-width:118px">${
           !o.bagli ? '<span style="font-size:11.5px;color:var(--ink-3)">hesap yok</span>'
           /* eski fonksiyon auth_id göndermiyor; kimlik yoksa "işlem yok"
@@ -7262,7 +7264,11 @@ function vYonetici(){
           <input type="checkbox" id="ya_${k.id}" ${k.aktif?'checked':''} style="width:auto">aktif</label>
           <div style="font-size:11px;color:${k.gecerli?'var(--ok)':'var(--bad)'};margin-top:3px">${k.gecerli?'çalışıyor':'durdu'}</div></td>
         <td style="width:96px"><input type="text" id="yn_${k.id}" value="${esc(k.notlar||'')}" placeholder="not" style="width:88px;font-size:12px">
-          <button class="btn mini" style="margin-top:4px" onclick="kocKaydet('${k.id}')">kaydet</button></td>
+          <button class="btn mini" style="margin-top:4px" onclick="kocKaydet('${k.id}')">kaydet</button>
+          <!-- Konuşmayı yönetici de başlatabilsin: MESAJ.ac() hiç mesajlaşılmamış
+               kullanıcıda da açılıyor, altındaki kutudan ilk mesaj yazılıyor. -->
+          <button class="btn ghost mini" style="margin-top:4px" title="Bu koça mesaj yaz"
+            onclick="MESAJ.ac('${k.id}')">✉ mesaj</button></td>
       </tr>`;}).join('')}
     </tbody></table>
   </div>

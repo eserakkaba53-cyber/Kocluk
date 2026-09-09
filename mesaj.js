@@ -141,8 +141,15 @@ window.MESAJ = (function(){
     catch(e){ D.hata = e.message||String(e); D.konusmalar = []; }
     D.yukleniyor = false; ciz();
   }
+  /* uid'i olan HERKESE açılır — daha önce hiç yazmamış olsa bile.
+     mesaj_konusma() o zaman boş liste döndürür ve alttaki kutudan İLK
+     mesaj yazılır; yönetici konuşmayı böylece kendisi başlatabiliyor.
+     Ayrı bir "yeni mesaj" RPC'si gerekmedi: mesaj_yanitla zaten her uuid
+     için çalışıyordu, eksik olan yalnızca ona giden bir düğmeydi. */
   async function ac(uid){
     D.acik = uid; D.acikVeri = null; ciz();
+    /* Kart sayfanın en üstünde; koç/öğrenci tablosundan tıklanınca oraya götür. */
+    try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e){ try{ window.scrollTo(0,0); }catch(x){} }
     try{
       var r = await cagir('mesaj_konusma', {p_kullanici: uid});
       if(!r || !r.ok) throw new Error((r && r.hata) || 'Açılamadı.');
@@ -193,7 +200,12 @@ window.MESAJ = (function(){
     if(D.acik){
       var v = D.acikVeri;
       var kisi = (v && v.kisi) || {};
+      /* Hiç mesaj yoksa bu bir CEVAP değil, ilk mesaj — başlık, boş
+         durum metni ve düğme buna göre değişiyor. Yoksa yönetici boş bir
+         akış ve "Cevap gönder" düğmesi görüp ne olduğunu anlamıyordu. */
+      var bos = !!(v && (!v.mesajlar || !v.mesajlar.length));
       var govde = !v ? '<div class="empty">Yükleniyor…</div>'
+        : bos ? '<div class="empty">Bu kişiyle henüz mesajlaşmadınız. Aşağıya yazıp ilk mesajı gönderebilirsin.</div>'
         : '<div class="msj-akis">' + (v.mesajlar||[]).map(function(m){
             var ben = (m.kimden === 'yonetici');
             return '<div class="msj '+(ben?'ben':'kars')+'">'+
@@ -202,11 +214,11 @@ window.MESAJ = (function(){
                    '</div>';
           }).join('') + '</div>';
       return '<div class="card"><h2>'+esc(kisi.ad||'Konuşma')+
-        '<small>'+esc(kisi.rol||'')+' · mesajlar okundu işaretlendi</small></h2><div class="body">'+
+        '<small>'+esc(kisi.rol||'')+(bos?' · yeni konuşma':' · mesajlar okundu işaretlendi')+'</small></h2><div class="body">'+
         hata + govde +
-        '<textarea id="msjYanit" rows="3" maxlength="2000" placeholder="Cevabını yaz…" style="margin-top:12px;resize:vertical"></textarea>'+
+        '<textarea id="msjYanit" rows="3" maxlength="2000" placeholder="'+(bos?'Mesajını yaz…':'Cevabını yaz…')+'" style="margin-top:12px;resize:vertical"></textarea>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
-          '<button class="btn" onclick="MESAJ.yanitla()">Cevap gönder</button>'+
+          '<button class="btn" onclick="MESAJ.yanitla()">'+(bos?'Mesajı gönder':'Cevap gönder')+'</button>'+
           '<button class="btn ghost" onclick="MESAJ.kapat()">Listeye dön</button>'+
           '<button class="btn danger" style="margin-left:auto" onclick="MESAJ.sil(\''+esc(D.acik)+'\',\''+esc((kisi.ad||'').replace(/'/g,''))+'\')">Konuşmayı sil</button>'+
         '</div>'+
@@ -218,7 +230,7 @@ window.MESAJ = (function(){
     var L = D.konusmalar;
     var ic;
     if(L === null)      ic = '<div class="empty">Yükleniyor…</div>';
-    else if(!L.length)  ic = '<div class="empty">Henüz mesaj yok.</div>';
+    else if(!L.length)  ic = '<div class="empty">Henüz mesaj yok. Aşağıdaki <b>Koçlar</b> tablosundan bir satırın <b>✉</b> düğmesine basarak sen başlatabilirsin.</div>';
     else ic = '<table><thead><tr><th>Kim</th><th>Rol</th><th>Son mesaj</th><th class="num">Zaman</th><th class="num">Okunmamış</th><th></th></tr></thead><tbody>'+
       L.map(function(k){
         var okunmamis = +k.okunmamis||0;
@@ -233,8 +245,9 @@ window.MESAJ = (function(){
         '</tr>';
       }).join('') + '</tbody></table>';
 
-    return '<div class="card"><h2>Gelen mesajlar'+rozet()+
-      '<small>Koç ve öğrencilerden gelen mesajlar. Okunmamış olanlar işaretlidir.</small></h2>'+
+    return '<div class="card"><h2>Mesajlar'+rozet()+
+      '<small>Gelen mesajlar burada; okunmamış olanlar işaretli. '+
+      'Sen de yazabilirsin: Koçlar tablosundaki ✉ düğmesi (öğrenciye yazmak için önce koçun öğrenci listesini aç).</small></h2>'+
       '<div class="body" style="padding:0;overflow:auto">'+ (hata?('<div style="padding:14px 16px 0">'+hata+'</div>'):'') + ic + '</div>'+
       '<div class="body" style="border-top:1px solid var(--line-soft)">'+
         '<button class="btn ghost mini" onclick="MESAJ.tazele()">Yenile</button>'+
