@@ -50,7 +50,10 @@ var SEBEPLER=[['OKUL','Okul'],['UYKU','Uyku'],['YEMEK','Yemek'],
 /* ═══ DURUM ═══ */
 var C={};
 var kapali=new Set(), sebep={}, bloklar=[], bekleyenler=[];
-var katlaAcik=true, acikKatlar=new Set(), boyaAcik=false, boyaSebep='OZEL';
+/* katlaAcik VARSAYILAN OLARAK KAPALI: seçenek açılmadıkça 24 saatin
+   tamamı görünür. Eskiden açıktı ve tablo, kimse istemeden 00:00–14:00'ü
+   tek bir banda katlıyordu. */
+var katlaAcik=false, acikKatlar=new Set(), boyaAcik=false, boyaSebep='OZEL';
 var suAnahtar=null;
 var kayitSaat=null, kayitKuyruk={};
 /* Program, ödev listesinin GERİSİNDE mi kaldı? Koç Ödevler sekmesinde yeni
@@ -866,8 +869,13 @@ function cizArac(){
     });
     h+='</select>';
   }
+  /* Etiket, yanındaki "Saat aç/kapat" düğmesiyle AYNI kalıpta olmalı:
+     açıkken ✓ + durum, kapalıyken yapılacak iş. Eskiden tersti — katlama
+     açıkken düğme "Boş saatleri katla" diyordu, yani daha yapılmamış bir iş
+     gibi okunuyordu; kullanıcı seçeneği kapalı sanıp saatlerin neden
+     gizlendiğini anlamıyordu. */
   h+='<button class="pg-btn gh'+(katlaAcik?' on':'')+'" data-ac="katla">'+
-     (katlaAcik?'Boş saatleri katla':'24 saati göster')+'</button>';
+     (katlaAcik?'✓ Boş saatler katlı':'Boş saatleri katla')+'</button>';
   h+='<span class="pg-bilgi">'+(boyaAcik
        ? '🖌 Hücrelere sürükleyerek saat aç/kapat'
        : (kocMu()?'Blokları sürükleyerek taşıyabilirsin'

@@ -466,7 +466,10 @@ body{font-size:clamp(13px,3.4vw,14px)}
 .konuvid .kv-ic{font-size:.76em;margin-left:5px;color:var(--accent);vertical-align:1px;text-decoration:none;display:inline-block}
 .vd-head{background:var(--accent);color:var(--uz-accent);padding:16px 18px;position:relative}
 .vd-body{padding:18px;overflow:auto;flex:1}
-.vd-x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);border:0;color:#fff;width:30px;height:30px;border-radius:6px;font-size:16px;cursor:pointer}
+/* z-index: ✕'ten SONRA gelen "▶ Konu anlatımı" satırının inline opacity'si
+   yığın bağlamı yaratıp tuşun üstüne biniyordu — ölçüldü, %58 ölü nokta.
+   Kılavuzun ✕'iyle aynı hata, aynı çözüm. 30→34 px dokunma hedefi. */
+.vd-x{position:absolute;top:10px;right:12px;background:rgba(255,255,255,.18);border:0;color:#fff;width:34px;height:34px;border-radius:6px;font-size:16px;cursor:pointer;z-index:2}
 .qbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px 14px;margin-top:10px;cursor:pointer;color:var(--ink);text-decoration:none}
 .qbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
 .qbtn .ico{width:32px;height:32px;border-radius:7px;background:#FF0000;color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-size:13px}
@@ -816,7 +819,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260909a"></script>
+<script src="program.js?v=20260909b"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
