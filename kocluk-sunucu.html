@@ -952,6 +952,76 @@ function rayDurum(){
 var KU_TEKRAR=null, KU_SUS=0;
 function kuEsc(x){ return String(x).replace(/[&<>"']/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+/* ── RLS hatasını insan diline çevir  (12 Eyl 2026) ────────────────
+   Koç ham Postgres metnini görüyordu:
+     new row violates row-level security policy for table "ogrenciler"
+   Sunucu doğru davranıyor — veli onayı olmayan 18 yaş altı öğrencinin
+   verisi işlenemez, süresi dolmuş lisansla da yazılamaz. Eksik olan
+   açıklamaydı. Üstelik "Tekrar dene" birincil düğmeydi; oysa bu hatada
+   tekrar denemek ASLA işe yaramaz — koç dakikalarca ona basıyordu.
+
+   Not: panel bir ödev/deneme/not kaydederken önce öğrenci satırını
+   upsert eder (ogrenciYaz), o yüzden koç "ödev veremiyorum" der ama
+   hatada "ogrenciler" tablosu yazar. */
+function kuRlsDugme(metin, cagri, ana){
+  return '<button type="button" onclick="'+cagri+'" style="flex:1;min-width:132px;'+
+    'padding:11px 14px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:'+(ana?'700':'400')+';'+
+    (ana?'border:0;background:var(--accent,#2b6cb0);color:#fff'
+        :'border:1px solid var(--line,#ddd);background:transparent;color:var(--ink-2,#444)')+
+    '">'+metin+'</button>';
+}
+function kuRlsSebep(sebep){
+  var s=String(sebep==null?'':sebep);
+  if(!/row-level security/i.test(s)) return null;
+  /* Veli onayı yalnız öğrenciye bağlı tablolarda anlamlı — mesajlar gibi
+     bir tabloda takılırsak "veli onayı eksik" demek yanlış yönlendirir. */
+  var ogrTablosu=/ogrenciler|odevler|denemeler|notlar|konular/.test(s);
+  var L=(typeof LISANS!=='undefined') ? LISANS : null;
+  if(L && !L.gecerli) return {
+    bas:'Lisans süren doldu',
+    metin:'Süre dolduğu için sunucu hiçbir değişikliği kabul etmiyor. '+
+          'Var olan verilerin duruyor, silinmedi.',
+    dugme:kuRlsDugme('Paketlere bak','kuRlsPaket()',true) };
+  var eksik=[];
+  if(ogrTablosu){ try{ eksik=(DB.students||[]).filter(function(x){ return !onayTam(x); }); }catch(e){} }
+  if(eksik.length){
+    var se=null; try{ se=cur(); }catch(e){}
+    var h=(se && !onayTam(se)) ? se : eksik[0];
+    return {
+      bas:'Veli onayı eksik',
+      metin:'<b>'+kuEsc(h.name||'Bu öğrenci')+'</b> için veli onayı kaydı yok. '+
+            '18 yaş altı öğrencinin verisini işlemek velinin açık rızasına bağlı — '+
+            'bu yüzden sunucu bu öğrencide <b>hiçbir değişikliği</b> kabul etmiyor, '+
+            'ödev de veremezsin.'+
+            (eksik.length>1?' (Toplam '+eksik.length+' öğrencide eksik.)':'')+
+            '<br><br><b>Çözüm:</b> <b>Öğrenci bilgileri</b> sekmesindeki “Veli onayı” '+
+            'kartını doldur, sonra işlemi tekrar yap.',
+      dugme:kuRlsDugme('Onayı doldur',"kuRlsOnay('"+kuEsc(h.id)+"')",true) };
+  }
+  if(L && L.kota_var===false) return {
+    bas:'Paket sınırındasın',
+    metin:'Paketinin öğrenci sınırına ulaştın ('+kuEsc(L.ogrenci_sayisi)+'/'+
+          kuEsc(L.ogrenci_limiti)+'). Sunucu bu kaydı kabul etmiyor. '+
+          'Bir öğrenciyi arşivle ya da paketini yükselt.',
+    dugme:kuRlsDugme('Paketlere bak','kuRlsPaket()',true) };
+  return {
+    bas:'Bu kayda sunucu izin vermedi',
+    metin:'Öğrenci kaydı sunucunun güvenlik kuralına takıldı. Çoğunlukla sebebi '+
+          'eksik veli onayı ya da dolmuş lisanstır. <b>Hesap</b> sekmesinden '+
+          'durumunu kontrol et.',
+    dugme:kuRlsDugme('Hesaba git','kuRlsHesap()',true) };
+}
+function kuRlsPaket(){ kayitUyariKapat(true); ABONE=true; render(); }
+function kuRlsHesap(){ kayitUyariKapat(true); ABONE=false; KOKPIT=false; YENIOGR=null; TAB='hesap'; render(); }
+function kuRlsOnay(id){
+  /* 45 sn sus: gidiş yolundaki save() aynı hataya düşüp pencereyi
+     hemen geri açardı, koç formu göremezdi. */
+  kayitUyariKapat(true);
+  ABONE=false; KOKPIT=false; YENIOGR=null;
+  DB.sel=id; TAB='ogrenci'; render();
+}
+
 function kayitUyariGoster(sebep, tekrarDene){
   if(tekrarDene) KU_TEKRAR=tekrarDene;
   /* "Şimdilik kapat" denmişse 45 sn boyunca tekrar açılmaz — çevrimdışıyken
@@ -971,27 +1041,32 @@ function kayitUyariGoster(sebep, tekrarDene){
     gorunureSabitle(k);
   }
   var s=(sebep==null?'':String(sebep)).slice(0,300);
+  var R=null; try{ R=kuRlsSebep(sebep); }catch(e){}
   k.innerHTML=
     '<div style="max-width:440px;width:100%;background:var(--panel,#fff);color:var(--ink,#1a1a1a);'+
       'border:1px solid var(--line,#ddd);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.4);'+
       'font-family:var(--sans,system-ui,sans-serif);overflow:hidden">'+
       '<div style="padding:15px 18px;background:var(--bad-bg,#fdecea);color:var(--bad-ink,#8a1c11);'+
         'font-weight:700;font-size:15.5px;border-bottom:1px solid var(--line,#ddd)">'+
-        '⚠ Son işlemin kaydedilmedi</div>'+
+        '⚠ '+(R?kuEsc(R.bas):'Son işlemin kaydedilmedi')+'</div>'+
       '<div style="padding:16px 18px;font-size:14px;line-height:1.55;color:var(--ink-2,#444)">'+
-        'Yaptığın son değişiklik sunucuya yazılamadı. Ekranda görünüyor ama '+
-        '<b style="color:var(--ink,#1a1a1a)">kayıtlı değil</b> — sayfayı şimdi kapatırsan kaybolur.'+
+        (R ? R.metin
+           : 'Yaptığın son değişiklik sunucuya yazılamadı. Ekranda görünüyor ama '+
+             '<b style="color:var(--ink,#1a1a1a)">kayıtlı değil</b> — sayfayı şimdi kapatırsan kaybolur.')+
         (s?'<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--paper,#f6f6f6);'+
            'border:1px solid var(--line,#ddd);font-family:var(--mono,monospace);font-size:12px;'+
            'color:var(--ink-3,#666);word-break:break-word">'+kuEsc(s)+'</div>':'')+
       '</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 14px">'+
-        '<button type="button" onclick="kayitUyariTekrar()" style="flex:1;min-width:132px;padding:11px 14px;'+
-          'border:0;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;'+
-          'background:var(--accent,#2b6cb0);color:#fff">Tekrar dene</button>'+
-        '<button type="button" onclick="kayitUyariYenile()" style="flex:1;min-width:132px;padding:11px 14px;'+
-          'border:1px solid var(--line,#ddd);border-radius:10px;cursor:pointer;font-size:14px;'+
-          'background:transparent;color:var(--ink-2,#444)">Sayfayı yenile</button>'+
+        /* RLS hatasında "Tekrar dene" gösterilmez: aynı kural aynı sonucu
+           verir, koç boşuna basar. Yerine çözüme götüren düğme konur. */
+        (R ? R.dugme
+           : '<button type="button" onclick="kayitUyariTekrar()" style="flex:1;min-width:132px;padding:11px 14px;'+
+               'border:0;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;'+
+               'background:var(--accent,#2b6cb0);color:#fff">Tekrar dene</button>'+
+             '<button type="button" onclick="kayitUyariYenile()" style="flex:1;min-width:132px;padding:11px 14px;'+
+               'border:1px solid var(--line,#ddd);border-radius:10px;cursor:pointer;font-size:14px;'+
+               'background:transparent;color:var(--ink-2,#444)">Sayfayı yenile</button>')+
         '<button type="button" onclick="kayitUyariKapat(true)" style="width:100%;padding:9px;border:0;'+
           'background:transparent;color:var(--ink-3,#666);cursor:pointer;font-size:13px;'+
           'text-decoration:underline">Şimdilik kapat, çalışmaya devam et</button>'+
@@ -3244,7 +3319,10 @@ function render(){
     karsilamaKontrol(); return;
   }
   if(!st && TAB!=='yonetim' && TAB!=='davet' && TAB!=='ozel'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Soldan bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';karsilamaKontrol();return;}
-  const uy=kaynakUyarisi();
+  /* Veli onayı eksik olan öğrencide sunucu HİÇBİR kaydı kabul etmiyor.
+     Uyarı yalnız "Öğrenci bilgileri" sekmesindeydi; koç ödev/haftalık
+     sekmesinde çalışıp durmadan "kaydedilmedi" alıyor, sebebini görmüyordu. */
+  const uy=kaynakUyarisi()+((st && !st.ornek && TAB!=='ogrenci' && !onayTam(st)) ? onaySerit(st) : '');
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
@@ -7479,9 +7557,20 @@ function onaysizUyari(){
   return `<div class="card" style="border:2px solid var(--bad);background:var(--bad-bg)"><div class="body">
     <div class="flag bad"><span class="ic">!</span><span>
       <b>${eksik.length} öğrencinin onay kaydı eksik:</b> ${eksik.map(s=>esc(s.name)).join(', ')}<br>
-      Bu öğrencilerde değişiklik yapamazsın. Her birini seçip <b>Hedef</b> sekmesindeki
-      "Veli onayı" kartını doldur.<br><br>
+      Bu öğrencilerde <b>hiçbir değişiklik kaydedilmiyor</b> — ödev de veremezsin.
+      Her birini seçip aşağıdaki "Veli onayı" kartını doldur.<br><br>
       <b>Neden:</b> 18 yaş altı öğrenci verisi işlemek için velinin açık rızası yasal zorunluluktur.</span></div>
+  </div></div>`;
+}
+/* Seçili öğrencinin onayı eksikse her sekmenin tepesinde duran şerit.
+   Sekme adı eskiden yanlıştı ("Hedef" yazıyordu, kart "Öğrenci bilgileri"nde);
+   koç doğru yere hiç bakmıyordu. Artık düğme doğrudan oraya götürüyor. */
+function onaySerit(st){
+  return `<div class="card" style="border:2px solid var(--bad);background:var(--bad-bg)"><div class="body">
+    <div class="flag bad"><span class="ic">!</span><span>
+      <b>${esc(st.name)} için veli onayı eksik.</b> Bu öğrencide yaptığın hiçbir işlem
+      (ödev, deneme, not, program) sunucuya kaydedilmiyor.</span></div>
+    <button class="btn wide" style="margin-top:10px" onclick="kocSek('${esc(st.id)}','ogrenci')">Veli onayı kartını aç</button>
   </div></div>`;
 }
 function hesapKarti(){
