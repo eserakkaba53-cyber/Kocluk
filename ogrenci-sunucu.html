@@ -819,7 +819,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260913a"></script>
+<script src="program.js?v=20260913b"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
@@ -1975,6 +1975,10 @@ function progMont(){
     odevler: progOdevleri(wk),
     program: (D&&D.program)||{},
     dersAdi: (typeof subName==='function')?subName:null,
+    /* Yazdırılan çizelgenin başlığı. Logo yok; kâğıtta yalnız kimin hangi
+       haftası olduğu yazar, yoksa çıktı isimsiz bir ızgaraya dönüşür. */
+    baslik: (D&&D.ad)||'Haftalık çalışma programı',
+    hafta: wk,
     /* Örnekte tanıtım için, soloda gerçekten gerekli olduğu için dağıtılır. */
     otoDagit: ornek || solo,
     /* Örnek öğrencide hiçbir şey kaydedilmez.
