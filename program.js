@@ -1311,6 +1311,42 @@ function yazdir(){
      uzunluğuyla genişletilir — yoksa uzun blok yarıda kesilirdi. */
   var kirpildi=false;
   var satirlar=Array.prototype.slice.call(kopya.querySelectorAll('tbody tr'));
+
+  /* ORTADAKİ UZUN KAPALI BANTLARI KATLA.
+     Okul saatleri gibi 4+ satırlık kapalı bir bant ızgarayı boşuna
+     uzatıyor, ölçek düşüyor ve bütün yazı küçülüyor. Satırın hangi saate
+     denk geldiğini indeksten hesaplıyoruz (satır = yarım saatlik dilim);
+     kırpmadan ÖNCE yapılmalı, sonra indeksler kayar. */
+  function saatYaz2(i){ var s=Math.floor(i/2); return (s<10?'0':'')+s+(i%2?':30':':00'); }
+  (function katlaOrta(){
+    var i=0;
+    while(i<satirlar.length){
+      var j=i;
+      while(j<satirlar.length){
+        var tr=satirlar[j], hc=tr.querySelectorAll('td.pg-h');
+        if(!hc.length) break;                       // panelin kendi katlı satırı
+        if(tr.querySelector('.pg-blok')) break;
+        var hepsiKapali=true;
+        Array.prototype.forEach.call(hc, function(td){
+          if(!td.classList.contains('kapali')) hepsiKapali=false;
+        });
+        if(!hepsiKapali) break;
+        j++;
+      }
+      if(j-i>=4){
+        var ozet=document.createElement('tr');
+        ozet.className='pg-katli';
+        ozet.innerHTML='<td colspan="'+(GUN+1)+'">'+
+          esc(saatYaz2(i)+' – '+saatYaz2(j)+' kapalı ('+Math.round((j-i)/2)+' saat)')+'</td>';
+        satirlar[i].parentNode.insertBefore(ozet, satirlar[i]);
+        for(var q=i;q<j;q++) satirlar[q].parentNode.removeChild(satirlar[q]);
+        satirlar.splice(i, j-i, ozet);
+        kirpildi=true;
+        i++;
+      }else i=Math.max(j, i+1);
+    }
+  })();
+
   var ilk=-1, son=-1;
   satirlar.forEach(function(tr,i){
     var bl=tr.querySelectorAll('.pg-blok');
@@ -1356,13 +1392,19 @@ function yazdir(){
   /* Ölçmek için yerleşmesi gerek: görünmez ama düzende. */
   document.documentElement.classList.add('pg-yazarken');
   var mm=mmPx();
-  /* Kâğıt ölçüleri mm. Tarayıcı hangi kâğıdın takılı olduğunu söylemiyor;
-     A4 ile Letter'ın her eksende KÜÇÜK olanını alıyoruz ki ikisinde de
-     taşma olmasın. 8 mm kenar boşluğu @page ile eşleşir.
-       A4     297×210 / 210×297
-       Letter 279×216 / 216×279   */
-  var YATAY ={w:(279-16)*mm.x, h:(210-16)*mm.y};
-  var DIKEY ={w:(210-16)*mm.x, h:(279-16)*mm.y};
+  /* Kâğıt ölçüleri mm. İki bilinmeyen var, ikisini de temkinli alıyoruz:
+     1) HANGİ KÂĞIT: tarayıcı söylemiyor. A4 ile Letter'ın her eksende
+        KÜÇÜK olanı — A4 297×210, Letter 279×216.
+     2) KENAR BOŞLUĞU: @page{margin:8mm} yazıyoruz ama kullanıcının
+        yazdırma penceresindeki seçimi onu EZİYOR. İlk sürümde 8 mm'ye
+        göre hesaplayınca tarayıcının daha geniş varsayılan boşluğuyla
+        arada fark kalıyor ve son gün sütunu kâğıdın dışında kalıyordu.
+        Artık her kenar için 13 mm ayrılıyor (Chrome ~10, Firefox ~12.7).
+        Boşluk gerçekte dar çıkarsa kenarda biraz beyaz kalır — kesilen
+        bir sütundan iyidir. */
+  var KENAR=26;
+  var YATAY ={w:(279-KENAR)*mm.x, h:(210-KENAR)*mm.y};
+  var DIKEY ={w:(210-KENAR)*mm.x, h:(279-KENAR)*mm.y};
   var basY=bas.offsetHeight+8;
   /* Genişliği ÖNCE ver. Kapsayıcıyı ekran dışına atarak (left:-30000px)
      ölçmek ölçümü bozuyordu: mutlak konumlu öğenin kullanılabilir genişliği
