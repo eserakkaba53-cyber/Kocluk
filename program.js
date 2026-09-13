@@ -841,6 +841,7 @@ function ciz(){
         var tur=(b.tur==='soru'?'Soru':b.tur==='konu'?'Konu':'')+(b.parca?' '+b.parca:'');
         var meta=adOf(b.sub)+(tur?' · '+tur:'');
         h+='<div class="pg-blok '+(b.tur==='soru'?'soru':'konu')+(kisa?' kisa':'')+
+           (b.uzunluk<=1?' mini':'')+
            (b.dev?' devreden':'')+
            (b.kilit?' kilitli':'')+(cak[b.id]?' cakisik':'')+
            (kocMu()?'':' salt')+'" data-b="'+esc(b.id)+'" data-u="'+b.uzunluk+
@@ -1511,6 +1512,29 @@ function stil(){
 '.pg-blok.kisa .bk{-webkit-line-clamp:1;font-size:10.5px;line-height:1.1;margin-top:11px}',
 '.pg-blok.kisa .bm{font-size:8.5px}',
 '.pg-blok.kisa .pg-cip{top:3px;left:7px}',
+/* YARIM SAATLİK BLOK (27 px) KENDİ DÜZENİNİ İSTER.
+   Dikey diziliş orada çalışmıyor: etiket üstte 13 px yer kaplayınca
+   konu adına yer kalmıyor ve esnek kutu onu sıfıra eziyordu — ölçüldü,
+   başlık yüksekliği 0 px. Yani kartta en önemli bilgi kayboluyordu.
+   Çözüm dikeyi zorlamak değil, satıra geçmek:
+     [⚠] [ETİKET] Konu adı ............ süre
+   Ders adı yazısı düşer (etiket zaten söylüyor), konu/soru ayrımını da
+   zemin tonu taşıyor. Bu kurallar .kisa'dan SONRA gelmeli — aynı
+   özgüllükte, sonra yazılan kazanır. */
+'.pg-blok.mini{flex-direction:row;align-items:center;gap:5px;padding:2px 7px;justify-content:flex-start}',
+'.pg-blok.mini .pg-cip{position:static;flex:none;font-size:7px;padding:1px 4px;line-height:1.4}',
+'.pg-blok.mini .bk{margin-top:0;flex:1 1 auto;min-width:0;-webkit-line-clamp:1;font-size:10px;line-height:1.2}',
+'.pg-blok.mini .bm{flex:none;margin-left:auto;font-size:8.5px}',
+'.pg-blok.mini .bm .ds{display:none}',
+'.pg-blok.mini .bm .sr{margin-left:0;padding-left:0}',
+'.pg-blok.mini.devreden .pg-dev{position:static;flex:none;box-shadow:none}',
+'.pg-blok.mini .pg-kil{position:static;flex:none;right:auto;top:auto}',
+/* Telefonda sütun ~99 px'e iniyor ve etiket + süre bütün genişliği yiyip
+   konu adını 9 px'e düşürüyor (ölçüldü; dizüstünde 148 px, masaüstünde
+   211 px sütunda böyle bir sorun yok). Dar ekranda süre düşer: tek satırlık
+   blok zaten yarım saatlik, süre ipucunda da duruyor — konu adı ise
+   kartın varlık sebebi. "screen" şart, yoksa dikey kâğıtta da tetiklenir. */
+'@media screen and (max-width:760px){.pg-blok.mini .bm{display:none}}',
 '.pg-blok.kilitli{box-shadow:inset 0 0 0 2px rgba(0,0,0,.22)}',
 '.pg-blok.cakisik{box-shadow:inset 0 0 0 2px var(--bad)}',
 /* Kilit/çakışma işareti kehribar noktanın soluna kayar, üstüne binmesin. */
