@@ -945,6 +945,7 @@ function cizArac(){
      gizlendiğini anlamıyordu. */
   h+='<button class="pg-btn gh'+(katlaAcik?' on':'')+'" data-ac="katla">'+
      (katlaAcik?'✓ Boş saatler katlı':'Boş saatleri katla')+'</button>';
+  h+='<button class="pg-btn gh" data-ac="yazdir" title="Haftayı tek sayfaya sığdırıp yazdırır">🖨 Yazdır</button>';
   h+='<span class="pg-bilgi">'+(boyaAcik
        ? '🖌 Hücrelere sürükleyerek saat aç/kapat'
        : (kocMu()?'Blokları sürükleyerek taşıyabilirsin'
@@ -1250,6 +1251,155 @@ function arac(btn){
     ciz();
   }
   else if(ac==='hepsiac'){ kapali=new Set(); sebep={}; isaretle('kapali'); ciz(); }
+  else if(ac==='yazdir'){ yazdir(); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   YAZDIRMA                                        13 Eyl 2026
+   Koç ve öğrenci haftayı kâğıda alabilsin (duvara asılan çizelge).
+
+   ÜÇ KURAL
+   1) Logo yok. Çıktı bir çalışma çizelgesi, reklam değil; yalnız
+      öğrencinin adı ve hafta tarihi yazar.
+   2) Tek sayfaya sığar. Sabit bir küçültme oranı yazmak yanlış olurdu:
+      katlama açık/kapalı olması, açık saat aralığı ve blok yoğunluğu
+      ızgaranın boyunu her öğrencide değiştiriyor. Onun yerine ekrandaki
+      ızgara ÖLÇÜLÜR ve kâğıdın kullanılabilir alanına göre oranlanır.
+   3) Araç çubuğu çıkmaz — kâğıtta basılamayan düğme gürültüdür.
+
+   Kopyadaki id'ler sökülür: aynı id'den iki tane olunca
+   getElementById ilkini bulur ve ciz() yanlış tabloya çizer.
+   ═══════════════════════════════════════════════════════════ */
+var YAZ_KAP='pg-yazdir-kap';
+var AYLAR=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
+           'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+function haftaEtiket(iso){
+  var d=new Date(iso+'T00:00'); if(isNaN(d.getTime())) return '';
+  var b=new Date(d.getTime()+6*86400000);
+  var ayA=AYLAR[d.getMonth()], ayB=AYLAR[b.getMonth()];
+  return d.getDate()+(ayA===ayB?'':' '+ayA)+'–'+b.getDate()+' '+ayB+' '+
+         b.getFullYear()+' haftası';
+}
+/* Kâğıt ölçüsünü px'e çevirirken 96dpi VARSAYMIYORUZ, tarayıcıya ölçtürüyoruz. */
+function mmPx(){
+  var o=document.createElement('div');
+  o.style.cssText='position:absolute;visibility:hidden;left:-9999px;width:100mm;height:100mm';
+  document.body.appendChild(o);
+  var r=o.getBoundingClientRect();
+  o.parentNode.removeChild(o);
+  return {x:(r.width||378)/100, y:(r.height||378)/100};
+}
+function yazdir(){
+  var kok=kokEl(); if(!kok) return;
+  var kap=document.getElementById(YAZ_KAP);
+  if(!kap){ kap=document.createElement('div'); kap.id=YAZ_KAP; document.body.appendChild(kap); }
+
+  var kopya=kok.cloneNode(true);
+  var ar=kopya.querySelector('.pg-arac'); if(ar) ar.parentNode.removeChild(ar);
+  kopya.removeAttribute('id');
+  Array.prototype.forEach.call(kopya.querySelectorAll('[id]'),
+    function(e){ e.removeAttribute('id'); });
+  /* Yatay kaydırma kutusu kâğıtta anlamsız — tablonun tamamı görünmeli. */
+  var sar=kopya.querySelector('.pg-izsar');
+  if(sar){ sar.style.overflow='visible'; sar.style.maxHeight='none'; }
+
+  /* BOŞ SAATLERİ KIRP. 24 saatin tamamını tek sayfaya sıkıştırmak ölçeği
+     0.39'a indiriyor, yazı 4 px'e düşüyor ve çıktı okunmaz oluyor (ölçüldü).
+     Dolu aralığın bir saat öncesi ve sonrası yeter; kalan satırlar atılır.
+     Blok birden çok satır kaplayabildiği için bitiş, son bloğun data-u
+     uzunluğuyla genişletilir — yoksa uzun blok yarıda kesilirdi. */
+  var kirpildi=false;
+  var satirlar=Array.prototype.slice.call(kopya.querySelectorAll('tbody tr'));
+  var ilk=-1, son=-1;
+  satirlar.forEach(function(tr,i){
+    var bl=tr.querySelectorAll('.pg-blok');
+    if(!bl.length) return;
+    if(ilk<0) ilk=i;
+    var uz=1;
+    Array.prototype.forEach.call(bl, function(b){
+      uz=Math.max(uz, parseInt(b.getAttribute('data-u'),10)||1);
+    });
+    son=Math.max(son, i+uz-1);
+  });
+  if(ilk<0){
+    /* Blok yoksa çizelge yine de basılabilir olmalı — koç boş tabloyu
+       öğrenciye elle doldursun diye çıkarabilir. O durumda AÇIK saatlere
+       kırpılır; tamamen kapalı satırı kâğıda taşımanın anlamı yok. */
+    satirlar.forEach(function(tr,i){
+      var h=tr.querySelectorAll('td.pg-h');
+      if(!h.length) return;                       // katlanmış özet satırı
+      var acik=false;
+      Array.prototype.forEach.call(h, function(td){
+        if(!td.classList.contains('kapali')) acik=true;
+      });
+      if(acik){ if(ilk<0) ilk=i; son=i; }
+    });
+  }
+  if(ilk>=0){
+    var bsl=Math.max(0, ilk-2), bts=Math.min(satirlar.length-1, son+2);
+    satirlar.forEach(function(tr,i){
+      if(i<bsl || i>bts){ kirpildi=true; tr.parentNode.removeChild(tr); }
+    });
+  }
+
+  var bas=document.createElement('div');
+  bas.className='pg-yb';
+  bas.innerHTML='<b>'+esc(C.baslik||'Haftalık çalışma programı')+'</b>'+
+                (C.hafta?'<span>'+esc(haftaEtiket(C.hafta))+'</span>':'')+
+                (kirpildi?'<span class="pg-ynot">yalnız dolu saatler</span>':'');
+
+  var ic=document.createElement('div'); ic.className='pg-yic';
+  ic.appendChild(kopya);
+  kap.innerHTML=''; kap.appendChild(bas); kap.appendChild(ic);
+
+  /* Ölçmek için yerleşmesi gerek: görünmez ama düzende. */
+  document.documentElement.classList.add('pg-yazarken');
+  var mm=mmPx();
+  /* Kâğıt ölçüleri mm. Tarayıcı hangi kâğıdın takılı olduğunu söylemiyor;
+     A4 ile Letter'ın her eksende KÜÇÜK olanını alıyoruz ki ikisinde de
+     taşma olmasın. 8 mm kenar boşluğu @page ile eşleşir.
+       A4     297×210 / 210×297
+       Letter 279×216 / 216×279   */
+  var YATAY ={w:(279-16)*mm.x, h:(210-16)*mm.y};
+  var DIKEY ={w:(210-16)*mm.x, h:(279-16)*mm.y};
+  var basY=bas.offsetHeight+8;
+  /* Genişliği ÖNCE ver. Kapsayıcıyı ekran dışına atarak (left:-30000px)
+     ölçmek ölçümü bozuyordu: mutlak konumlu öğenin kullanılabilir genişliği
+     30800 px'e çıkıyor, içindeki %100 genişlikli tablo onu dolduruyor ve
+     ölçek 0.03'e iniyordu. Tablo doğrudan kâğıt genişliğinde yerleşsin. */
+  kap.style.width=Math.floor(YATAY.w)+'px';
+  var dW=kopya.scrollWidth;
+  /* Yerleşim genişliğini ÇİVİLE. Aksi hâlde birazdan .pg-yic'e verilecek
+     küçültülmüş genişlik kopyayı yeniden akıtıyor: yazılar daha çok sarıyor,
+     boy uzuyor ve kutudan taşıyor (ölçüldü: dikey taşma). transform
+     yerleşimi değiştirmediği için sabit genişlik şart. */
+  kopya.style.width=dW+'px';
+  var dH=kopya.scrollHeight;
+  /* YÖNÜ İÇERİK SEÇER. Haftalık ızgara geniştir, çoğu zaman yatay kâğıt
+     kazanır. Ama boş saatler kırpıldıktan sonra bile uzun kalan bir
+     çizelgede (ör. 07:00–24:00 arası hep dolu) yatayda ölçek 0.39'a
+     düşüp yazıyı okunmaz yapıyor, dikeyde 0.54'te kalıyor. İkisini de
+     hesaplayıp büyük olanı seçiyoruz. */
+  function olcek(k){ return Math.min(1, k.w/(dW||1), (k.h-basY)/(dH||1)); }
+  var sY=olcek(YATAY), sD=olcek(DIKEY);
+  var dikeyMi = sD > sY;
+  var s = dikeyMi ? sD : sY;
+  var sy=document.getElementById('pg-sayfa');
+  if(!sy){ sy=document.createElement('style'); sy.id='pg-sayfa'; document.head.appendChild(sy); }
+  sy.textContent='@page{size:'+(dikeyMi?'portrait':'landscape')+';margin:8mm}';
+  kopya.style.transformOrigin='top left';
+  kopya.style.transform='scale('+s+')';
+  ic.style.width=Math.ceil(dW*s)+'px';
+  ic.style.height=Math.ceil(dH*s)+'px';
+
+  function bitir(){
+    document.documentElement.classList.remove('pg-yazarken');
+    window.removeEventListener('afterprint',bitir);
+  }
+  window.addEventListener('afterprint',bitir);
+  /* Safari afterprint'i geç/hiç vermiyor; emniyet için zamanlayıcı da var. */
+  setTimeout(bitir, 60000);
+  window.print();
 }
 
 /* Öğrencinin hızlı kurulumu. Aynı şablona ikinci kez basmak geri alır —
@@ -1395,7 +1545,36 @@ function stil(){
    olmayan bir deseni tarif ediyordu. */
 '.pg-lejant .kap{background:#889095}',
 
-'@media (prefers-reduced-motion: reduce){.pg-yuk .cb i{transition:none}}'
+'@media (prefers-reduced-motion: reduce){.pg-yuk .cb i{transition:none}}',
+
+/* ═══ YAZDIRMA ═══ */
+'#'+YAZ_KAP+'{display:none}',
+/* Ölçüm için düzende ama görünmez. Ekran dışına ATMIYORUZ: negatif left
+   mutlak konumlu öğenin kullanılabilir genişliğini şişiriyor ve ölçüm
+   yanlış çıkıyor. visibility ile gizlemek yerleşimi bozmaz. */
+'html.pg-yazarken #'+YAZ_KAP+'{display:block;position:absolute;left:0;top:0;'+
+  'visibility:hidden;z-index:-1;background:#fff;pointer-events:none}',
+'#'+YAZ_KAP+' .pg-yic{overflow:hidden;margin:0 auto}',
+'#'+YAZ_KAP+' .pg-yb{display:flex;align-items:baseline;gap:10px;padding:0 0 7px;'+
+  'border-bottom:1px solid #C9D3D8;margin-bottom:8px;color:#0F1B24;'+
+  'font-family:var(--sans);line-height:1.3}',
+'#'+YAZ_KAP+' .pg-yb b{font-size:14px;letter-spacing:-.01em}',
+'#'+YAZ_KAP+' .pg-yb span{font-size:11.5px;color:#5C6E78}',
+'#'+YAZ_KAP+' .pg-yb .pg-ynot{margin-left:auto;font-size:10.5px;color:#7A8C96}',
+'@media print{',
+/* @page yönü yazdir() içinde içeriğe göre belirlenip #pg-sayfa ile
+   yazılıyor; burada yalnız kenar boşluğu duruyor ki tuşa basmadan
+   Ctrl+P yapan da makul bir çıktı alsın. */
+'  @page{margin:8mm}',
+/* Renkler basılsın: tarayıcılar zemin rengini varsayılan olarak atıyor,
+   atarsa konu/soru ayrımı ve kapalı saatler kâğıtta yok oluyor. */
+'  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}',
+'  html.pg-yazarken body>*:not(#'+YAZ_KAP+'){display:none!important}',
+'  html.pg-yazarken #'+YAZ_KAP+'{position:static;display:block;visibility:visible;z-index:auto}',
+/* Ölçek zaten tek sayfaya sığdırıyor; yine de bir blok sayfa sınırına
+   denk gelirse ikiye bölünmesin. */
+'  .pg-blok,tr{break-inside:avoid;page-break-inside:avoid}',
+'}'
   ].join('\n');
   document.head.appendChild(s);
 }
