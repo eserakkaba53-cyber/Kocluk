@@ -28,15 +28,67 @@ var GUNLER=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Paz
 var GUN_KISA=['PZT','SAL','ÇAR','PER','CUM','CMT','PAZ'];
 var SATIR_PX=30;   /* bir yarım saatlik satırın yüksekliği (ciz sonrası ölçülür) */
 
-/* Ders renkleri — panelin ders kodlarıyla birebir. */
+/* ═══ DERS RENKLERİ (13 Eyl 2026'da yenilendi) ═══════════════════════
+   Her satır: [etiket, konu tenti, soru tenti, başlık yazısı,
+               ikincil satır (konu üstü), ikincil satır (soru üstü)]
+
+   ESKİ PALETTE İKİ ÇİFT DERS BİREBİR AYNI RENKTEYDİ:
+     TYT Felsefe = AYT Geometri (#6D28D9)   → Sayısal/EA öğrencisinde karışıyordu
+     TYT Tarih   = AYT Tarih-2  (#A16207)   → Sözel öğrencisinde karışıyordu
+   Birkaç çift de ayırt edilemeyecek kadar yakındı. Ölçüm (OKLab ΔE,
+   0.05 = iki lekenin güvenle ayrıldığı sınır): 401 çiftin 36'sı eşiğin
+   altındaydı, en kötüsü 0.000. Yeni palette 1 çift kaldı (0.045) ve o da
+   TYT Tarih / AYT Tarih-2, yani zaten aynı aile — etiketleri TAR/TAR2.
+
+   NASIL: bir öğrenci aynı anda TYT'nin 10 dersini + kendi alanını görür
+   (en kalabalık hâli Sözel = 17 ders). Bütün paleti değil, aynı anda
+   GÖRÜNENLERİ ayırmak gerekiyor; Sayısal ile Sözel aynı panelde
+   bulunmadığı için tonu paylaşabiliyorlar (bu yüzden ayt_biy ile
+   ayt_cog2 aynı renk — asla yan yana gelmezler).
+   Tonlar çembere DERECEYE göre değil ALGISAL MESAFEYE göre dağıtıldı:
+   sRGB'nin teal-yeşil bölgesinde kroma payı dar, morda bol; eşit derece
+   bölmek orada ΔE'yi 0.028'e düşürüyordu.
+   Alışılmış çağrışımlar korundu: Fizik kırmızı, Kimya turuncu,
+   Biyoloji yeşil, Coğrafya deniz mavisi, Matematik mavi, Geometri mor.
+
+   Kontrast: etiket 4.90:1, başlık 8.00:1, ikincil satır 5.56:1,
+   konu tenti ↔ soru tenti 2.20:1. Üretici: scratchpad/palet-kur.js
+   ═══════════════════════════════════════════════════════════════════ */
 var RENK={
-  tyt_tur:'#0891B2', tyt_mat:'#2563EB', tyt_geo:'#7C3AED', tyt_fiz:'#DC2626',
-  tyt_kim:'#EA580C', tyt_biy:'#16A34A', tyt_tar:'#A16207', tyt_cog:'#0D9488',
-  tyt_fel:'#6D28D9', tyt_din:'#7E22CE',
-  ayt_mat:'#1D4ED8', ayt_geo:'#6D28D9', ayt_fiz:'#B91C1C', ayt_kim:'#C2410C',
-  ayt_biy:'#15803D', ayt_edb:'#0E7490', ayt_tar1:'#92400E', ayt_tar2:'#A16207',
-  ayt_cog1:'#0F766E', ayt_cog2:'#14837B', ayt_fel:'#5B21B6', ayt_din:'#6B21A8',
-  ydt:'#BE185D'
+  tyt_tur:   ['#0676AC','#82AAC7','#EBF5FC','#00052C','#1D294E','#343A5A'],
+  tyt_mat:   ['#1E63FE','#7EA5F2','#E9F4FF','#06003A','#202462','#383665'],
+  tyt_geo:   ['#8B3FFE','#AE97F1','#F4F0FF','#0D0030','#30215A','#40355E'],
+  tyt_fiz:   ['#E00612','#E6897D','#FFEDE9','#140000','#421E1B','#483433'],
+  tyt_kim:   ['#AB5C03','#C79D7E','#FCF1E9','#220000','#46231C','#523533'],
+  tyt_biy:   ['#1D8104','#85B07E','#ECF7EA','#000E00','#1D321C','#344133'],
+  tyt_tar:   ['#797301','#A9A77D','#F4F4EA','#110900','#322C1B','#433D33'],
+  tyt_cog:   ['#0B7F6E','#83ADA3','#ECF6F3','#000C05','#1D2F28','#343F39'],
+  tyt_fel:   ['#C004D8','#D28BDD','#FFEDFF','#130027','#3D1F4F','#473457'],
+  tyt_din:   ['#D6008B','#E188B2','#FFECF6','#1A0004','#461E2A','#4C3439'],
+  ayt_mat:   ['#6852FF','#999DF1','#EFF2FF','#0A0030','#29235A','#3C355E'],
+  ayt_geo:   ['#AA0CFF','#C18DF0','#FAEEFF','#0A0025','#321F52','#3F3455'],
+  ayt_fiz:   ['#DD085E','#E5899A','#FFECF0','#1A0000','#471E22','#4C3435'],
+  ayt_kim:   ['#C84202','#D8937C','#FFEFE9','#1A0000','#44201B','#4C3533'],
+  ayt_biy:   ['#0D8048','#83AF91','#ECF7EF','#000E00','#1D3120','#344135'],
+  ayt_edb:   ['#0970CF','#7FA8D9','#EAF5FF','#020039','#1D255C','#353665'],
+  ayt_tar1:  ['#946908','#B9A37F','#F8F3EA','#200200','#42251C','#503733'],
+  ayt_tar2:  ['#5C7A07','#9BAC7F','#F1F6EA','#030F00','#24321C','#374233'],
+  ayt_cog1:  ['#0F7A8F','#84ACB7','#ECF5F8','#000C1B','#1D2F3D','#343F4C'],
+  ayt_cog2:  ['#0D8048','#83AF91','#ECF7EF','#000E00','#1D3120','#344135'],
+  ayt_fel:   ['#CD02B2','#DA88C7','#FFECFB','#140012','#401E3A','#483445'],
+  ayt_din:   ['#DD085E','#E5899A','#FFECF0','#1A0000','#471E22','#4C3435'],
+  ydt:       ['#CD02B2','#DA88C7','#FFECFB','#140012','#401E3A','#483445']
+};
+var RENK_YOK=['#5B6B78','#B9C2C8','#F1F3F5','#0F181E','#2B353C','#3E474D'];
+/* Etiket kısaltmaları. TYT ve AYT eşleri aynı kısaltmayı alır (MAT/MAT):
+   ikisini ayıran şey renk, ve kartın ikincil satırındaki tam ad. Tarih ve
+   Coğrafya'nın numaralı hâlleri zaten ayrı yazılır. */
+var KOD={
+  tyt_tur:'TÜR', tyt_mat:'MAT', tyt_geo:'GEO', tyt_fiz:'FİZ', tyt_kim:'KİM',
+  tyt_biy:'BİY', tyt_tar:'TAR', tyt_cog:'COĞ', tyt_fel:'FEL', tyt_din:'DİN',
+  ayt_mat:'MAT', ayt_geo:'GEO', ayt_fiz:'FİZ', ayt_kim:'KİM', ayt_biy:'BİY',
+  ayt_edb:'EDB', ayt_tar1:'TAR1', ayt_tar2:'TAR2', ayt_cog1:'COĞ1',
+  ayt_cog2:'COĞ2', ayt_fel:'FEL', ayt_din:'DİN', ydt:'YDT'
 };
 /* Soru başına dakika — sayısal derste bir soru daha uzun sürer. */
 var KAT={
@@ -93,7 +145,11 @@ function esc(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function renkOf(sub){ return RENK[sub] || '#5B6B78'; }
+function renkTakim(sub){ return RENK[sub] || RENK_YOK; }
+/* Tek renk isteyen eski çağıranlar (lejant, sürükleme hayaleti, sığmayan
+   blok listesi) etiket rengini alır — ders kimliğini taşıyan renk odur. */
+function renkOf(sub){ return renkTakim(sub)[0]; }
+function kodOf(sub){ return KOD[sub] || String(sub||'').slice(0,3).toUpperCase(); }
 function adOf(sub){
   if(typeof C.dersAdi==='function'){ try{ return C.dersAdi(sub)||sub; }catch(e){} }
   return sub;
@@ -773,27 +829,34 @@ function ciz(){
       h+='<td class="pg-h'+kap+(tam?' tamsaat':'')+'" data-g="'+g+'" data-d="'+d+
          '" data-sebep="'+esc(sb)+'">';
       if(b){
-        var renk=renkOf(b.sub), yuk=b.uzunluk*SATIR_PX-3, kisa=b.uzunluk<=2;
-        /* SÜRE HER BLOKTA AYNI YERDE: en alt satırda. Kısa blokta üste
-           taşımak "kimi blokta üstte kimi blokta altta" görüntüsü
-           yaratıyordu; göz her blokta aynı yere bakabilmeli. */
-        var etiket=(b.dev?'⚠ DEVREDEN · ':'')+
-                   kisaAd(b.sub)+(b.tur==='soru'?' · SORU':b.tur==='konu'?' · KONU':'')+
-                   (b.parca?' '+b.parca:'');
-        h+='<div class="pg-blok'+(b.tur==='soru'?' soru':'')+(kisa?' kisa':'')+
+        var c=renkTakim(b.sub), yuk=b.uzunluk*SATIR_PX-3, kisa=b.uzunluk<=2;
+        /* İKİ SATIR: konu adı, altında "ders · tür" (solda) ve süre (sağda).
+           Eskiden üç satırdı ve en üstteki satır "⚠ DEVREDEN · DERS · TÜR"
+           idi — gözün ilk okuduğu yer en az işe yarayan bilgiydi, üstelik
+           "DEVREDEN" kelimesi satırın yarısını yiyip DERS ADINI kırpıyordu.
+           Devreden uyarısı artık sağ üstteki kehribar nokta.
+           Süre ayrı kapsayıcıda ve sağa yaslı: tek dizge olunca dar
+           sütunda önce O kırpılıyordu, oysa kırpılmaya en az dayanacak
+           bilgi süredir. */
+        var tur=(b.tur==='soru'?'Soru':b.tur==='konu'?'Konu':'')+(b.parca?' '+b.parca:'');
+        var meta=adOf(b.sub)+(tur?' · '+tur:'');
+        h+='<div class="pg-blok '+(b.tur==='soru'?'soru':'konu')+(kisa?' kisa':'')+
            (b.dev?' devreden':'')+
            (b.kilit?' kilitli':'')+(cak[b.id]?' cakisik':'')+
            (kocMu()?'':' salt')+'" data-b="'+esc(b.id)+'" data-u="'+b.uzunluk+
-           '" style="height:'+yuk+'px;background:'+renk+'" title="'+
-           esc(adOf(b.sub)+' — '+b.konu+' ('+sa(b.dk)+')')+
+           '" style="height:'+yuk+'px;--v:'+c[0]+';--k:'+c[1]+';--s:'+c[2]+
+           ';--i:'+c[3]+';--mk:'+c[4]+';--ms:'+c[5]+'" title="'+
+           esc((b.dev?'⚠ Devreden · ':'')+meta+' — '+b.konu+' ('+sa(b.dk)+')')+
            (cak[b.id]?' · KAPALI SAATE DENK GELİYOR':'')+
            /* Tıklamanın video açtığını kullanıcı bilmeli — tek ipucu imleç
               olamaz, dokunmatikte imleç yok. İpucu title'a eklenir. */
            ' · ▶ Tıkla: konu anlatımı videoları'+'">'+
+           (b.dev?'<i class="pg-dev" aria-label="Devreden iş"></i>':'')+
            (cak[b.id]?'<span class="pg-kil">!</span>':b.kilit&&kocMu()?'<span class="pg-kil">🔒</span>':'')+
-           '<div class="bd">'+esc(etiket)+'</div>'+
+           '<i class="pg-cip">'+esc(kodOf(b.sub))+'</i>'+
            '<div class="bk">'+esc(b.konu)+'</div>'+
-           '<div class="bs">'+sa(b.dk)+'</div></div>';
+           '<div class="bm"><span class="ds">'+esc(meta)+'</span>'+
+           '<span class="sr">'+sa(b.dk)+'</span></div></div>';
       }
       h+='</td>';
     }
@@ -976,8 +1039,9 @@ function cizAlt(){
 
   h+='<div class="pg-lejant">'+
      '<span><i class="kap"></i>Kapalı saat</span>'+
-     '<span><i class="sor" style="background:'+renkOf('tyt_mat')+'"></i>Soru çözümü (çizgili)</span>'+
-     '<span><i style="background:'+renkOf('tyt_mat')+'"></i>Konu çalışması (düz)</span>'+
+     '<span><i style="background:'+renkTakim('tyt_mat')[1]+'"></i>Konu çalışması (koyu ton)</span>'+
+     '<span><i style="background:'+renkTakim('tyt_mat')[2]+';box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)"></i>Soru çözümü (açık ton)</span>'+
+     '<span><i style="background:var(--turuncu,#D97706);border-radius:50%"></i>Devreden iş</span>'+
      (kocMu()?'<span><i style="background:var(--ink-3)"></i>🔒 elle taşındı, dağıtımda korunur</span>':'')+
      '<span style="color:var(--ink-3)">☕ Aralıksız çalışma en fazla 90 dk — sonrasına mola bırakılır</span>'+
      '</div>';
@@ -1243,7 +1307,10 @@ function stil(){
    olmazsa sayfanın tamamı yana kayardı. */
 '.pg-izsar{overflow-x:auto;overflow-y:hidden;max-height:none;border-bottom:1px solid var(--pg-cizgi);-webkit-overflow-scrolling:touch}',
 'table.pg-iz{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed;min-width:660px}',
-'table.pg-iz th{position:sticky;top:0;z-index:5;background:var(--lacivert,#03182B);color:#fff;font-size:11px;font-weight:700;letter-spacing:.04em;padding:7px 3px;text-align:center}',
+/* Gün şeridi koyu laciverttti; yedi doygun blokla birlikte ızgarayı bir
+   hesap tablosuna benzetiyordu. Bloklar artık tent olduğu için şerit de
+   sakinleşti — ağırlık kartlarda olmalı, kroma değil. */
+'table.pg-iz th{position:sticky;top:0;z-index:5;background:var(--panel);color:var(--ink-3);font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;padding:9px 3px;text-align:center;border-bottom:1px solid var(--line)}',
 'table.pg-iz th i{display:block;font-size:8.5px;opacity:.6;font-weight:400;font-style:normal}',
 'table.pg-iz th.sa{width:64px;left:0;z-index:6}',
 /* Saat sütunu okunur olmalı — 10px punto ile hangi satırda olduğunu
@@ -1266,28 +1333,39 @@ function stil(){
 '.pg-boya td.pg-h{cursor:crosshair;touch-action:none}',
 'tr.pg-katli td{height:26px;background:var(--paper);text-align:center;font-size:11px;color:var(--ink-3);cursor:pointer;border-bottom:1px solid var(--line);font-weight:600}',
 
-'.pg-blok{position:absolute;left:2px;right:2px;top:1px;border-radius:6px;padding:3px 6px;overflow:hidden;cursor:grab;z-index:2;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.16);border-left:4px solid rgba(0,0,0,.28);touch-action:none}',
+/* Blok: konu = ders renginin KOYU tenti, soru = AÇIK tenti; ders kimliğini
+   sol üstteki tam doygun etiket taşır. Eskiden ikisi de aynı düz doygun
+   renkti ve tek fark 135°'lik çizgi desenindeydi — o boyutta görünmüyordu.
+   Kutu gölgesi kalktı: yedi gölgeli blok yan yana gelince ızgara kirli
+   duruyordu, ayrım zaten renkten geliyor. */
+'.pg-blok{position:absolute;left:2px;right:2px;top:1px;border-radius:9px;padding:4px 8px;overflow:hidden;cursor:grab;z-index:2;display:flex;flex-direction:column;justify-content:center;gap:2px;color:var(--i);touch-action:none}',
+'.pg-blok.konu{background:var(--k)}',
+'.pg-blok.soru{background:var(--s)}',
+'.pg-cip{position:absolute;left:8px;top:4px;font-size:7.5px;font-weight:800;letter-spacing:.07em;font-style:normal;color:#fff;background:var(--v);padding:1px 5px;border-radius:5px;line-height:1.45;box-shadow:0 0 0 1px rgba(0,0,0,.12);pointer-events:none}',
+/* Devreden: sağ üstte kehribar nokta. Beyaz halka şart — tam doygun bir
+   nokta koyu tent üzerinde 2.03:1'de kalıyor, halka kenarını kurtarıyor. */
+'.pg-blok.devreden .pg-dev{position:absolute;right:6px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--turuncu,#D97706);box-shadow:0 0 0 1.5px var(--panel,#fff);pointer-events:none}',
 /* Öğrencide blok sürüklenmez ama TIKLANIR (konu anlatımı videosu açar),
    o yüzden imleç "default" değil "pointer" olmalı. */
 '.pg-blok.salt{cursor:pointer}',
 '.pg-blok.suruk{opacity:.4}',
-'.pg-blok .bd{font-size:9px;font-weight:800;letter-spacing:.04em;opacity:.9;line-height:1.15;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-'.pg-blok .bk{font-size:10.5px;font-weight:650;line-height:1.2;margin-top:1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
-'.pg-blok .bs{font-size:9px;font-family:var(--mono);opacity:.85;margin-top:1px}',
-'.pg-blok.soru{background-image:repeating-linear-gradient(135deg,transparent,transparent 6px,rgba(255,255,255,.16) 6px,rgba(255,255,255,.16) 12px)}',
-/* Kısa blokta üç satır 27 px'e sığmalı: etiket + konu + süre.
-   Satır yükseklikleri sıkılaştırıldı, konu tek satıra kırpıldı. */
-'.pg-blok.kisa{padding:1px 5px}',
-'.pg-blok.kisa .bd{font-size:8px;line-height:1}',
-'.pg-blok.kisa .bk{-webkit-line-clamp:1;font-size:9.5px;line-height:1.05;margin-top:0}',
-'.pg-blok.kisa .bs{font-size:8px;line-height:1;margin-top:0}',
-'.pg-blok.kilitli{box-shadow:0 0 0 2px rgba(255,255,255,.55),0 1px 3px rgba(0,0,0,.2)}',
-/* Devreden iş: sol kenarda kalın turuncu şerit. Kırmızı değil — geciken
-   ödev bir hata değil, bir kuyruk; ama görünmesi şart. */
-'.pg-blok.devreden{border-left:5px solid var(--turuncu,#E8873A)}',
-'.pg-blok.devreden .bd{opacity:1}',
-'.pg-blok.cakisik{box-shadow:0 0 0 2px var(--bad),0 1px 3px rgba(0,0,0,.2)}',
-'.pg-blok .pg-kil{position:absolute;right:3px;top:2px;font-size:9px;opacity:.9;line-height:1;font-weight:800}',
+'.pg-blok .bk{font-size:11.5px;font-weight:650;line-height:1.22;letter-spacing:-.012em;margin-top:13px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+'.pg-blok .bm{font-size:9px;font-weight:550;line-height:1.25;display:flex;align-items:center;gap:4px;min-width:0}',
+'.pg-blok.konu .bm{color:var(--mk)}',
+'.pg-blok.soru .bm{color:var(--ms)}',
+'.pg-blok .bm .ds{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}',
+'.pg-blok .bm .sr{margin-left:auto;padding-left:5px;white-space:nowrap;flex:none;font-family:var(--mono);opacity:.9}',
+/* Kısa blokta (≤1 saat) her şey 27 px'e sığmalı: etiket + konu + alt satır.
+   Yazılar küçülür, konu tek satıra kırpılır. */
+'.pg-blok.kisa{padding:3px 7px;gap:1px}',
+'.pg-blok.kisa .bk{-webkit-line-clamp:1;font-size:10.5px;line-height:1.1;margin-top:11px}',
+'.pg-blok.kisa .bm{font-size:8.5px}',
+'.pg-blok.kisa .pg-cip{top:3px;left:7px}',
+'.pg-blok.kilitli{box-shadow:inset 0 0 0 2px rgba(0,0,0,.22)}',
+'.pg-blok.cakisik{box-shadow:inset 0 0 0 2px var(--bad)}',
+/* Kilit/çakışma işareti kehribar noktanın soluna kayar, üstüne binmesin. */
+'.pg-blok .pg-kil{position:absolute;right:4px;top:3px;font-size:9px;opacity:.85;line-height:1;font-weight:800;pointer-events:none}',
+'.pg-blok.devreden .pg-kil{right:17px}',
 
 '#pg-hayalet{position:fixed;pointer-events:none;z-index:9999;opacity:.92;border-radius:6px;padding:4px 8px;color:#fff;font-size:11px;font-weight:650;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none}',
 
@@ -1312,8 +1390,10 @@ function stil(){
 '.pg-flag .ic{font-weight:800;flex:none}',
 '.pg-lejant{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-3);align-items:center}',
 '.pg-lejant i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-3px;margin-right:5px}',
-'.pg-lejant .kap{background:repeating-linear-gradient(45deg,var(--paper),var(--paper) 4px,var(--panel) 4px,var(--panel) 8px);border:1px solid var(--line)}',
-'.pg-lejant .sor{background-image:repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(255,255,255,.4) 4px,rgba(255,255,255,.4) 8px)}',
+/* Lejant örneği hücrenin GERÇEK rengini göstermeli. Kapalı saat 45°
+   çizgiden düz griye çevrildiğinde burası güncellenmemiş, lejant
+   olmayan bir deseni tarif ediyordu. */
+'.pg-lejant .kap{background:#889095}',
 
 '@media (prefers-reduced-motion: reduce){.pg-yuk .cb i{transition:none}}'
   ].join('\n');
