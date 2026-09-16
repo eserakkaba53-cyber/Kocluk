@@ -2183,18 +2183,33 @@ function odevSatiri(t,devreden){
 }
 
 function ekstraDers(){ const l=subs(D); if(!EDERS||!l.find(x=>x[0]===EDERS)) EDERS=l[0][0]; return EDERS; }
+/* ★ 16 Eyl 2026 — SUNUCU MODUNDA KENDİ ÇALIŞMASI ÖDEV SATIRIDIR.
+   D.ekstra sunucuya hiç yazılmıyor, yenilemede siliniyordu (ogrSunucudanOku
+   ekstra:[] kurar). Koç paneli öğrencinin kendi çalışmasını zaten
+   odevler.ekstra=true satırından okuyor ("kendi çalışması" rozeti); öğrenci
+   paneli de sunucudayken aynı satırı üretir. D.ekstra yalnız çevrimdışı /
+   WhatsApp rapor akışında kalır. */
+function ekstraSunucuda(){ return !!(typeof sbOturum==='function' && sbOturum() && OGRID); }
+function ekstraListe(){ return ekstraSunucuda() ? (D.tasks||[]).filter(t=>t.ekstra) : (D.ekstra||[]); }
 function ekstraEkle(){
   const sk=ekstraDers();
   const konu=document.getElementById('ekK').value;
   if(!konu){alert('Konu seç.');return;}
-  D.ekstra=D.ekstra||[];
-  D.ekstra.push({id:uid(),date:today(),sub:sk,konu,
-    q:+document.getElementById('ekQ').value||0,
-    yap:+document.getElementById('ekQ').value||0,
-    s:+document.getElementById('ekS').value||1});
+  const q=+document.getElementById('ekQ').value||0, s=+document.getElementById('ekS').value||1;
+  if(ekstraSunucuda()){
+    D.tasks=D.tasks||[];
+    D.tasks.push({id:uid(),date:today(),sub:sk,konu,q,yap:q,s,ekstra:true,kendi:true,rutin:false,txt:'Öğrencinin kendi çalışması'});
+  } else {
+    D.ekstra=D.ekstra||[];
+    D.ekstra.push({id:uid(),date:today(),sub:sk,konu,q,yap:q,s});
+  }
   save(); render();
 }
-function ekstraSil(id){ D.ekstra=(D.ekstra||[]).filter(x=>x.id!==id); save(); render(); }
+function ekstraSil(id){
+  if(ekstraSunucuda()) D.tasks=(D.tasks||[]).filter(x=>x.id!==id);   // FARK sunucudan da siler
+  else D.ekstra=(D.ekstra||[]).filter(x=>x.id!==id);
+  save(); render();
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    ÖĞRENCİNİN KENDİ RUTİNİ                             (5 Eyl 2026)
@@ -2314,9 +2329,9 @@ function ekstraKart(){
   const un=KONU[sk]||[];
   if(EUNITE&&!un.find(u=>u[0]===EUNITE)) EUNITE='';
   const ks = EUNITE ? (un.find(u=>u[0]===EUNITE)||['',[]])[1] : un.flatMap(u=>u[1]);
-  const liste=D.ekstra||[];
+  const liste=ekstraListe();
   return `<div class="card"><h2>Kendi çalışmam</h2><div class="body">
-    <div class="hint" style="margin:0 0 10px">Öğretmenin vermediği ama senin çalıştığın konuları buraya ekle. Rapor gönderdiğinde ona da iletilir.</div>
+    <div class="hint" style="margin:0 0 10px">Öğretmenin vermediği ama senin çalıştığın konuları buraya ekle. ${ekstraSunucuda()?'Öğretmenin anında görür.':'Rapor gönderdiğinde ona da iletilir.'}</div>
     <div class="fr">
       <div><label class="f">Ders</label><select onchange="EDERS=this.value;EUNITE='';render()">
         ${subs(D).map(([k,nm])=>`<option value="${k}" ${k===sk?'selected':''}>${nm}</option>`).join('')}</select></div>
