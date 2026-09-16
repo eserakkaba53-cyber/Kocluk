@@ -838,12 +838,12 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <script src="sunucu.js?v=20260916b"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260916b"></script>
+<script src="program.js?v=20260917a"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
-<script src="mesaj.js?v=20260916b"></script>
+<script src="mesaj.js?v=20260917a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -1034,7 +1034,7 @@ function kuRlsSebep(sebep){
     bas:'Paket sınırındasın',
     metin:'Paketinin öğrenci sınırına ulaştın ('+kuEsc(L.ogrenci_sayisi)+'/'+
           kuEsc(L.ogrenci_limiti)+'). Sunucu bu kaydı kabul etmiyor. '+
-          'Bir öğrenciyi arşivle ya da paketini yükselt.',
+          'Bir öğrenciyi sil ya da paketini yükselt.',
     dugme:kuRlsDugme('Paketlere bak','kuRlsPaket()',true) };
   return {
     bas:'Bu kayda sunucu izin vermedi',
@@ -1465,7 +1465,7 @@ let PENDING_AN=[];
 var KE_ONAYLI = {};
 async function konuEslesmeYukle(){
   try{
-    const r = await sbCagri('/rest/v1/rpc/konu_eslesme_onayli',{method:'POST',body:{}});
+    const r = await sbGuvenli(()=>sbCagri('/rest/v1/rpc/konu_eslesme_onayli',{method:'POST',body:{}}));
     KE_ONAYLI = {};
     (Array.isArray(r)?r:[]).forEach(function(x){ KE_ONAYLI[x.karne_ad]={sub:x.sub,konu:x.konu}; });
   }catch(e){ KE_ONAYLI = {}; }   /* sunucu eski sürümse eşleştirme eskisi gibi çalışır */
@@ -2164,7 +2164,7 @@ function rutinKart(st, wk){
   const rv=rutinVar(st,wk), liste=rutinler();
   // Örnek (donmuş) öğrencide "eksik rutin ekle" nag'ı gösterme; sadece kalıcı ödevi göster.
   const eksik = st.ornek ? [] : liste.filter(r=>!rv.find(t=>t.konu===r.ad));
-  return `<div class="card"><h2>Sabit haftalık rutin — hafta ${wk}</h2><div class="body">
+  return `<div class="card"><h2>Sabit haftalık rutin — hafta ${haftaGoster(wk)}</h2><div class="body">
     ${rv.length?`<table><thead><tr><th>Rutin</th><th>Ders</th><th class="num">Hedef</th><th class="num">Yapılan</th><th class="num">Oran</th><th>Durum</th></tr></thead><tbody>
       ${rv.map(t=>{const o=t.q?Math.round((t.yap||0)/t.q*100):0;
         return `<tr><td><b>${esc(t.konu)}</b></td><td>${subName(t.sub)}</td><td class="num">${t.q}</td>
@@ -3028,6 +3028,11 @@ const net=(d,y)=>d-y/4;
    Pzt 01:30'da weekKey(today()) bir önceki haftayı veriyordu). */
 const today=()=>{ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
 function weekKey(ds){const d=new Date(ds+'T00:00');const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10);}
+/* ★ 17 Eyl 2026 — weekKey Türkiye'de PAZAR tarihi veriyor (yerel Pazartesi
+   gece yarısı UTC'ye çevrilince). Anahtar kayıt adı olduğu için değişmez;
+   ekrana ve veli metnine Pazartesi olarak basılır. */
+function yerelGun(ms){ const d=new Date(ms); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function haftaGoster(wk){ const d=new Date(wk+'T00:00'); if(d.getDay()===0) d.setDate(d.getDate()+1); return yerelGun(d.getTime()); }
 /* Görüntülenecek hafta: örnek öğrencinin verisi geçmişte donmuş olduğundan
    içinde ödev bulunan en son haftayı göster; kalıcı ödevler hafta geçse de kaybolmasın. */
 function sonDoluHafta(st){
@@ -3048,7 +3053,7 @@ let YENIOGR=null;
 function addStudent(){
   if(DEMO){ alert('Tanıtım modundasın. Öğrenci eklemek için önce hesap aç.'); demoBitir(); return; }
   if(LISANS && !LISANS.kota_var){
-    alert(`ÖĞRENCİ SINIRINA ULAŞTIN\n\nPaketin: ${LISANS.paket_adi} (${LISANS.ogrenci_limiti} öğrenci)\nMevcut: ${LISANS.ogrenci_sayisi}\n\nYeni öğrenci eklemek için:\n· Ayrılan bir öğrenciyi arşivle, ya da\n· Paketini yükselt\n\nKoç 10 · Sınıf 40 · Okul 200 öğrenci`);
+    alert(`ÖĞRENCİ SINIRINA ULAŞTIN\n\nPaketin: ${LISANS.paket_adi} (${LISANS.ogrenci_limiti} öğrenci)\nMevcut: ${LISANS.ogrenci_sayisi}\n\nYeni öğrenci eklemek için:\n· Ayrılan bir öğrenciyi sil (önce Verilerimi indir ile yedek al), ya da\n· Paketini yükselt\n\nKoç 10 · Sınıf 40 · Okul 200 öğrenci`);
     return;
   }
   YENIOGR={ad:'',track:'SAY',grade:'11',tel:'',eposta:'',resit:false,veliAd:'',veliTel:'',onay:false,not:''};
@@ -3102,7 +3107,9 @@ function yoKaydet(){
       .then(()=>{ YAZDURUM='ok'; rayDurum(); return lisansOku(); })
       .then(()=>render())
       .catch(e=>{ YAZDURUM='hata|'+(e.message||e); rayDurum();
-        alert('Öğrenci sunucuya kaydedilemedi: '+(e.message||e)+'\n\nSayfayı yenileyip tekrar dene.'); });
+        { const rs=kuRlsSebep(e.message||e);
+          alert(rs ? (rs.bas+'\n\n'+String(rs.metin).replace(/<[^>]*>/g,''))
+                   : ('Öğrenci sunucuya kaydedilemedi: '+(e.message||e)+'\n\nSayfayı yenileyip tekrar dene.')); } });
   } else save();
 }
 function yeniOgrenciEkrani(){
@@ -3172,7 +3179,10 @@ async function delStudent(){
   if(sbOturum()){
     YAZDURUM='yaziliyor'; rayDurum();
     try{
-      await sbGuvenli(()=>sbSil('ogrenciler','?id=eq.'+st.id));   // bağlı kayıtlar da silinir
+      /* 0 satır = sunucu silmedi (ör. lisans süresi dolmuş). Eskiden listeden
+         düşüyor ve "kaydedildi" deniyordu; yenileyince öğrenci geri geliyordu. */
+      const sr=await sbGuvenli(()=>sbCagri('/rest/v1/ogrenciler?id=eq.'+st.id,{method:'DELETE',basliklar:{Prefer:'return=representation'}}));   // bağlı kayıtlar da silinir
+      if(Array.isArray(sr) && !sr.length) throw new Error('Sunucu silmeyi kabul etmedi. Lisans süren dolmuş olabilir (Hesap sekmesi).');
     }catch(e){
       YAZDURUM='hata|'+(e.message||e); rayDurum();
       alert('Sunucudan silinemedi: '+(e.message||e)+'\n\nÖğrenci listede kaldı. İnternetini kontrol edip tekrar dene.');
@@ -4128,7 +4138,7 @@ function vHafta(st){
 
   ${devredenKart(st)}
 
-  <div class="card"><h2>Bu haftanın ödevleri — ${wk}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri buraya anında yansır.</small></h2><div class="body" style="padding:0">
+  <div class="card"><h2>Bu haftanın ödevleri — ${haftaGoster(wk)}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri buraya anında yansır.</small></h2><div class="body" style="padding:0">
     ${tasks.length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th><th></th></tr></thead><tbody>
       ${tasks.slice().sort((a,b)=>((b.rutin?1:0)-(a.rutin?1:0))||a.date.localeCompare(b.date)).map(t=>{
         const dg=+t.dg||0, yn=+t.yn||0, bs=+t.bs||0, dybVar=(dg+yn+bs)>0;
@@ -4166,7 +4176,7 @@ function vHafta(st){
    ═══════════════════════════════════════════════════════════════════ */
 function progKart(st,wk){
   if(typeof PROG==='undefined') return '';
-  return `<div class="card"><h2>Haftalık çalışma programı — ${wk} haftası
+  return `<div class="card"><h2>Haftalık çalışma programı — ${haftaGoster(wk)} haftası
     <small>Ödevler gün yükü dengelenerek otomatik yerleşir. Blokları sürükleyerek taşıyabilirsin;
     elle taşıdığın blok kilitlenir ve yeniden dağıtımda yerinde kalır.
     Öğrencinin kapattığı saatler gri görünür.</small></h2>${PROG.iskelet()}</div>`;
@@ -4422,7 +4432,7 @@ function haftaMetni(st){
   const a=avgNets(st,3), wk=weekKey(today());
   const tasks=st.tasks.filter(t=>weekKey(t.date)===wk).sort((x,y)=>x.date.localeCompare(y.date));
   const L=[];
-  L.push(`${st.name} — ${wk} haftası`);
+  L.push(`${st.name} — ${haftaGoster(wk)} haftası`);
   L.push(`Hazırlanma tarihi: ${today()}`);
   const hk=haftaKalan(st); if(hk!==null) L.push(`Sınava ${hk} hafta.`);
   const hy=haftaYuku(st,wk);
@@ -6253,10 +6263,10 @@ function yetisirBandi(gerekli, kat){
 function ornekOgrenciler(){
   if(_ORNEKLER && _ORNEKLER_HAZIR) return _ORNEKLER;   // AGIRLIK yüklendiyse artık sabit
   const liste=JSON.parse(ORNEKLER_HAM);
-  const anchorTs=new Date(weekKey(today())+'T00:00').getTime();   // bu haftanın başı
+  const anchorTs=new Date(haftaGoster(weekKey(today()))+'T00:00').getTime();   // bu haftanın başı (Pazartesi)
   liste.forEach((o,k)=>{
     o.id=ORNEK_ONEK+(k+1); o.ornek=true;
-    o.sinavTarihi=new Date(anchorTs+23*7*86400000).toISOString().slice(0,10); // görsel tutarlılık
+    o.sinavTarihi=yerelGun(anchorTs+23*7*86400000); // görsel tutarlılık
 
     // 0) GEOMETRİ EKLE — örnek denemelerde matematik, geometriyi de içeriyordu (mat 30'u aşıyor,
     // geometri boş kalıyordu). Hedef oranıyla ayır: toplam net AYNI kalır, geometri dolar, matematik ≤ hedef.
@@ -6339,7 +6349,7 @@ function ornekOgrenciler(){
       (ORNEK_RUTIN[k]||[]).forEach(r=>{
         const sk=gecerli.has(r.sub)?r.sub:yedekDers;      // alanda olmayan ders → güvenli karşılık
         o.tasks.push({
-          date:new Date(anchorTs+r.gun*86400000).toISOString().slice(0,10),
+          date:yerelGun(anchorTs+r.gun*86400000),
           type:'h', sub:sk, konu:r.ad, konuRef:'',
           q:r.adet, dks:r.dks, yap:Math.round(r.adet*r.oran),
           txt:'Sabit haftalık rutin', s:r.s, rutin:true
@@ -6989,8 +6999,11 @@ function vAbonelik(){
 }
 function yilEkle(id){
   const el=document.getElementById('yb_'+id);
-  const t=new Date(); t.setFullYear(t.getFullYear()+1);
-  el.value=t.toISOString().slice(0,10);
+  /* ★ 17 Eyl 2026 — Mevcut bitiş bugünden ileriyse ONA eklenir; erken yenileyen
+     koçun kalan günleri yanmasın. Yerel gün: gece 00-03 arası bir gün kısa çıkıyordu. */
+  const bugun=today(), mevcut=(el.value||'').slice(0,10);
+  const t=new Date(((mevcut && mevcut>bugun) ? mevcut : bugun)+'T00:00'); t.setFullYear(t.getFullYear()+1);
+  el.value=yerelGun(t.getTime());
 }
 
 /* ================= YÖNETİM PANELİ İŞLEVLERİ =================
@@ -7002,7 +7015,7 @@ function yilEkle(id){
 var KE_BEKLEYEN=[], KE_MESAJ='';
 async function keBekleyenOku(){
   try{
-    const r = await sbCagri('/rest/v1/rpc/konu_eslesme_bekleyen',{method:'POST',body:{}});
+    const r = await sbGuvenli(()=>sbCagri('/rest/v1/rpc/konu_eslesme_bekleyen',{method:'POST',body:{}}));
     KE_BEKLEYEN = Array.isArray(r) ? r : [];
   }catch(e){ KE_BEKLEYEN=[]; }   /* SQL henüz çalıştırılmadıysa kart boş görünür */
 }
@@ -7072,7 +7085,7 @@ function keKart(){
 var ATANABILIR=[], ATAMADURUM='';
 async function atanabilirOku(){
   try{
-    const r=await sbCagri('/rest/v1/rpc/yonetici_atanabilir_ogrenciler',{method:'POST',body:{}});
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_atanabilir_ogrenciler',{method:'POST',body:{}}));
     ATANABILIR = Array.isArray(r) ? r : (r ? JSON.parse(r) : []);
   }catch(e){ ATANABILIR=[]; }   /* RPC kurulmadıysa kart hiç çıkmaz */
 }
@@ -7085,8 +7098,8 @@ async function ogrenciKocaAta(authId){
   if(!confirm(`${o.ad||'Öğrenci'} → ${k.ad||'öğretmen'}\n\nÖğrenci bu öğretmenin listesine geçecek. Koçsuzsa kendi koç kaydı silinecek, verileri kalacak.\n\nOnaylıyor musun?`)) return;
   ATAMADURUM='Atanıyor...'; render();
   try{
-    const r=await sbCagri('/rest/v1/rpc/yonetici_ogrenci_koca_ata',
-      {method:'POST',body:{ogrenci_auth:authId, koc:koc}});
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_ogrenci_koca_ata',
+      {method:'POST',body:{ogrenci_auth:authId, koc:koc}}));
     const s=(typeof r==='string')?JSON.parse(r):r;
     if(s&&s.ok){
       ATAMADURUM='OK|'+(s.degisti===false ? (s.ad+' zaten bu öğretmende.')
@@ -7100,7 +7113,7 @@ async function ogrenciKocaAta(authId){
 async function koclariOku(){
   YONDURUM='Yükleniyor...'; render();
   try{
-    const r = await sbCagri('/rest/v1/rpc/koc_listesi',{method:'POST',body:{}});
+    const r = await sbGuvenli(()=>sbCagri('/rest/v1/rpc/koc_listesi',{method:'POST',body:{}}));
     const liste = Array.isArray(r) ? r : (r ? JSON.parse(r) : []);
     KOCLAR = liste.map(k=>Object.assign({}, k, {
       // sunucu göndermiyor, istemcide türetiyoruz
@@ -7134,7 +7147,7 @@ async function yonTeshis(){
     sat.push('yonetici     : ' + JSON.stringify(o && (o.yonetici!==undefined?o.yonetici:o)));
   }catch(e){ sat.push('lisans_durum HATA: '+(e.message||e)); }
   try{
-    const r=await sbCagri('/rest/v1/rpc/koc_listesi',{method:'POST',body:{}});
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/koc_listesi',{method:'POST',body:{}}));
     sat.push('koc_listesi tipi : ' + (Array.isArray(r)?'dizi':typeof r));
     sat.push('kayıt sayısı     : ' + (Array.isArray(r)?r.length:'-'));
     sat.push('ham cevap (ilk 400 karakter):');
@@ -7158,10 +7171,10 @@ async function kocKaydet(id){
   const aktif = aktifEl ? !!aktifEl.checked : null;
   YONDURUM='Kaydediliyor...'; render();
   try{
-    const r=await sbCagri('/rest/v1/rpc/koc_guncelle',{method:'POST',body:{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/koc_guncelle',{method:'POST',body:{
       hedef:id, y_paket:paket, y_bitis:(bitisHam||null),
       y_aktif:aktif, y_cihaz:(cihazHam?parseInt(cihazHam,10):null),
-      y_notlar:(notlar||null) }});
+      y_notlar:(notlar||null) }}));
     const o = typeof r==='string' ? JSON.parse(r) : r;
     if(o && o.ok===false) throw new Error(o.hata||'Kaydedilemedi');
     YONDURUM='OK|Kaydedildi.';
@@ -7261,7 +7274,7 @@ var KOCGIRIS={};
 var YOGRSURUM='';          /* 'v2' = son giriş sütunu dolu · 'eski' = SQL çalıştırılmamış */
 async function kocGirisleriOku(){
   try{
-    let r=await sbCagri('/rest/v1/rpc/yonetici_koc_girisleri',{method:'POST',body:{}});
+    let r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_koc_girisleri',{method:'POST',body:{}}));
     if(typeof r==='string'){ try{ r=JSON.parse(r); }catch(e){} }
     const h={}; (Array.isArray(r)?r:[]).forEach(x=>{ if(x&&x.id) h[x.id]=x.son_giris||''; });
     KOCGIRIS=h;
@@ -7276,7 +7289,7 @@ async function kocGirisleriOku(){
 var SONISLEM={}, SONISLEM_YOK=false;
 async function sonIslemleriOku(){
   try{
-    let r=await sbCagri('/rest/v1/rpc/yonetici_son_islem',{method:'POST',body:{}});
+    let r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_son_islem',{method:'POST',body:{}}));
     if(typeof r==='string'){ try{ r=JSON.parse(r); }catch(e){} }
     const h={}; (Array.isArray(r)?r:[]).forEach(x=>{
       if(x&&x.kim) h[x.kim]={ zaman:x.ne_zaman||'', ne:x.ne||'' }; });
@@ -7298,11 +7311,11 @@ async function kocOgrencileri(id, ad){
        SQL çalıştırılmadan önce de liste açılmaya devam eder. */
     let r=null;
     try{
-      r=await sbCagri('/rest/v1/rpc/yonetici_ogrenciler_v2',{method:'POST',body:{koc:id}});
+      r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_ogrenciler_v2',{method:'POST',body:{koc:id}}));
       YOGRSURUM='v2';
     }catch(e){
       if(e && (e.kod===404 || /yonetici_ogrenciler_v2/.test(e.message||''))){
-        r=await sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:id}});
+        r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_ogrenciler',{method:'POST',body:{koc:id}}));
         YOGRSURUM='eski';
       } else throw e;
     }
@@ -7323,7 +7336,7 @@ function vKocOgrencileri(){
       <b>Giriş sayaçları ve Son işlem sütunu boş.</b> Sunucuda <b>YONETIM-son-giris.sql</b> henüz çalıştırılmamış —
       liste eski fonksiyondan geliyor, öğrencinin auth kimliği gelmiyor. Dosyayı Supabase → SQL Editor'de bir kez çalıştır.</span></div>`:''}
     ${YOGRLISTE.length?(()=>{
-      const bugunT=new Date().toISOString().slice(0,10);
+      const bugunT=today();
       /* Hiç girmemiş ve 14 günden uzun süredir uğramamış öğrenciler,
          listeye bakınca ilk fark edilmesi gereken şey. */
       const hicGirmemis=YOGRLISTE.filter(o=>o.bagli&&!o.son_giris).length;
@@ -7358,8 +7371,8 @@ function vKocOgrencileri(){
 }
 
 function vYonetici(){
-  const bugun=new Date().toISOString().slice(0,10);
-  const otuzGun=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
+  const bugun=today();
+  const otuzGun=yerelGun(Date.now()+30*864e5);
   const toplam=KOCLAR.length;
   const ucretli=KOCLAR.filter(k=>k.ucretli||(k.lisans_bitis&&k.lisans_bitis>=bugun));
   const denemede=KOCLAR.filter(k=>!k.lisans_bitis&&k.deneme_bitis&&k.deneme_bitis>=bugun);
@@ -7426,7 +7439,7 @@ function vYonetici(){
     ${koclarSirali().map(k=>{
       const dolu=k.ogrenci>=k.limit;
       const bit=k.lisans_bitis||k.deneme_bitis||'';
-      const yakin=k.gecerli&&bit&&bit<=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
+      const yakin=k.gecerli&&bit&&bit<=yerelGun(Date.now()+30*864e5);
       return `<tr>
         <td><b>${esc(k.ad||'—')}</b>${k.id===SB.uid?' <span class="pill s1" style="font-size:10px">sen</span>':''}
           <div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(k.eposta||'')}</div>
@@ -7755,7 +7768,8 @@ async function davetUret(){
     // kayıt henüz sunucuda olmayabilir — önce onu garantiye al
     const v=await sbSorgu('ogrenciler','?id=eq.'+st.id+'&select=id');
     if(!v || !v.length) await ogrenciYaz(st);
-    await sbGuncelle('ogrenciler','?id=eq.'+st.id, { davet_kodu:kod, auth_id:null });
+    const dr=await sbGuncelle('ogrenciler','?id=eq.'+st.id, { davet_kodu:kod, auth_id:null });
+    if(Array.isArray(dr) && !dr.length) throw new Error('row-level security: sunucu davet kodunu kaydetmedi');
     st.davetKodu=kod; st.authId=null;
     DAVETDURUM=''; render();
   }catch(e){
@@ -7844,7 +7858,7 @@ async function sayaclariOku(){
   const el=window.SAYILAR;
   if(el && (el.ogretmen || el.ogrenci)){ SAYAC={ogretmen:el.ogretmen,ogrenci:el.ogrenci}; render(); return; }
   try{
-    const d=await sbCagri('/rest/v1/rpc/kullanim_sayilari',{method:'POST',body:{}});
+    const d=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/kullanim_sayilari',{method:'POST',body:{}}));
     if(d) SAYAC={
       ogretmen: d.ogretmen>=5  ? '+'+(Math.floor(d.ogretmen/5)*5)  : '',
       ogrenci:  d.ogrenci>=10  ? '+'+(Math.floor(d.ogrenci/10)*10) : '' };
