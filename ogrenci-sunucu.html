@@ -819,12 +819,12 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="sunucu.js?v=20260916b"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260916b"></script>
+<script src="program.js?v=20260917a"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
-<script src="mesaj.js?v=20260916b"></script>
+<script src="mesaj.js?v=20260917a"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -1010,7 +1010,13 @@ async function ogrSunucudanOku(){
   OGRID=k.id; KOCID=k.koc_id;
 
   var o = (await sbSorgu('ogrenciler','?id=eq.'+OGRID+'&select=*'))[0];
-  var koc = (await sbSorgu('koclar','?id=eq.'+KOCID+'&select=ad,telefon,site_url,ayarlar'))[0] || {};
+  /* ★ 17 Eyl 2026 — Koç bilgisi dar bir RPC'den: tablo politikası öğrenciye koçun
+     BÜTÜN satırını (yönetici notu, paket, lisans tarihleri) açıyordu. RPC henüz
+     kurulmadıysa eski okuma sürer. */
+  var koc = null;
+  try{ koc = await sbGuvenli(function(){ return sbCagri('/rest/v1/rpc/kocum_bilgi',{method:'POST',body:{}}); }); }catch(e){ koc = null; }
+  if(typeof koc==='string'){ try{ koc=JSON.parse(koc); }catch(e){ koc=null; } }
+  if(!koc || typeof koc!=='object') koc = (await sbSorgu('koclar','?id=eq.'+KOCID+'&select=ad,telefon,site_url,ayarlar'))[0] || {};
   var f='?ogrenci_id=eq.'+OGRID+'&select=*';
   var odev = await sbSorgu('odevler',f+'&order=tarih');
   var den  = await sbSorgu('denemeler',f+'&order=tarih');
@@ -1875,7 +1881,7 @@ function vProgram(){
   const alt = n
     ? 'Bu haftanın '+n+' ödevi takvime yerleştirildi. ' + (solo
         ? 'Blokları sürükleyerek taşıyabilir, "Yeniden dağıt" ile baştan düzenleyebilirsin.'
-        : 'Müsait olmadığın saatleri kapat — koçun bunu görür ve programı ona göre günceller. Blokları sen taşıyamazsın.')
+        : 'Müsait olmadığın saatleri kapat, blokları sürükleyerek kendine göre düzenle. Koçun değişiklikleri görür.')
     : (solo ? 'Takvim boş: henüz kabul edilmiş ödev yok.'
             : 'Koçun bu hafta için henüz ödev vermemiş.');
 
@@ -1889,7 +1895,7 @@ function vProgram(){
       'takvim o anda kendiliğinden dolar.</span></div>'
     : '';
 
-  return uyari + '<div class="card"><h2>Haftalık programım — '+wk+' haftası'+
+  return uyari + '<div class="card"><h2>Haftalık programım — '+haftaGoster(wk)+' haftası'+
     '<small>'+alt+'</small></h2>'+PROG.iskelet()+'</div>';
 }
 
@@ -1971,6 +1977,7 @@ function progMont(){
     /* Örnek mod ÖĞRENCİ deneyimini gösterir, rolü değişmez;
        yalnız solo öğrenci koç yetkisi alır. */
     rol: solo ? 'koc' : 'ogrenci',
+    kendiKocu: solo,   // koç yetkisi + öğrencinin saat şablonları ve sebep seçimi
     /* ★ 16 Eyl 2026 — koçlu öğrenci de kendi planını düzenler: blokları
        taşır, "Tabloyu boşalt" ve "Yeniden dağıt" ona da açık. Rolü 'koc'
        yapmak yerine ayrı bayrak, çünkü koç dalında öğrencinin kendi saat
@@ -2018,6 +2025,13 @@ function setTask(id,s){
   save(); render();
 }
 function weekKey(ds){const d=new Date(ds+'T00:00');const g=(d.getDay()+6)%7;d.setDate(d.getDate()-g);return d.toISOString().slice(0,10);}
+/* ★ 17 Eyl 2026 — weekKey yerel Pazartesi gece yarısını UTC'ye çevirdiği için
+   Türkiye'de anahtar PAZAR tarihi çıkıyor. Anahtar sunucudaki kayıtların adı
+   olduğu için değişmez; ekranda gösterirken Pazartesi'ye alınır. */
+function haftaGoster(wk){ const d=new Date(wk+'T00:00'); if(d.getDay()===0) d.setDate(d.getDate()+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+/* Bitiş tarihine kalan TAM gün; bitiş günü 0 (sunucu o günü dâhil sayar). */
+function gunFarki(bitis){ return Math.round((new Date(String(bitis).slice(0,10)+'T00:00') - new Date(today()+'T00:00'))/864e5); }
 function haftaFarki(ds){const a=new Date(weekKey(ds)+'T00:00'),b=new Date(weekKey(today())+'T00:00');return Math.round((b-a)/604800000);}
 function setSoru(id,v){const t=D.tasks.find(x=>x.id===id); if(t){t.yap=Math.max(0,+v||0);save();render();}}
 function setYap(id,v){const t=D.tasks.find(x=>x.id===id); if(!t)return;
@@ -2604,7 +2618,7 @@ function vOdev(){
   // solo öğrenci: kalan deneme günü uyarısı
   let _kalan=null;
   if(_solo && SONKIM && SONKIM.paket==='ogrenci' && SONKIM.bitis){
-    _kalan = Math.ceil((new Date(SONKIM.bitis) - new Date())/86400000);
+    _kalan = gunFarki(SONKIM.bitis);
   }
   return `
   ${yedekUyari()}
@@ -4429,19 +4443,21 @@ function vPaket(){
   const paket=(k.paket||'deneme');
   const denemede=(paket==='deneme'||paket==='ogrenci') && k.bitis;
   let kalan=null;
-  if(k.bitis) kalan=Math.ceil((new Date(k.bitis)-new Date())/86400000);
+  if(k.bitis) kalan=gunFarki(k.bitis);
   const bitisMetin = k.bitis ? new Date(k.bitis).toLocaleDateString('tr-TR') : 'süresiz';
-  const aktif = (paket==='ogrenci' && kalan!==null && kalan>7);
+  /* Özel ders öğrencileri süresiz: bitiş yok. Eskiden "Deneme · ücretsiz" yazıyordu. */
+  const suresiz = (paket==='ogrenci' && !k.bitis);
+  const aktif = suresiz || (paket==='ogrenci' && kalan!==null && kalan>7);
 
   return `
   <div class="card"><h2>Paketim<small>Kendi hesabınla çalışıyorsun — öğretmene bağlı değilsin.</small></h2><div class="body">
     <div class="stats">
       <div class="stat"><div class="k">Paket</div>
         <div class="v" style="font-size:19px">${aktif?'Öğrenci':'Deneme'}</div>
-        <div class="n">${aktif?'99 TL / yıl':'ücretsiz'}</div></div>
+        <div class="n">${suresiz?'süresiz':aktif?'99 TL / yıl':'ücretsiz'}</div></div>
       <div class="stat"><div class="k">Bitiş</div>
         <div class="v" style="font-size:19px">${esc(bitisMetin)}</div>
-        <div class="n">${kalan!==null?(kalan>0?kalan+' gün kaldı':'süre doldu'):'-'}</div></div>
+        <div class="n">${kalan!==null?(kalan>0?kalan+' gün kaldı':kalan===0?'bugün son gün':'süre doldu'):'-'}</div></div>
     </div>
     ${(kalan!==null&&kalan<=7)?`<div class="flag ${kalan<=2?'warn':'ok'}" style="margin-top:12px">
       <span class="ic">${kalan<=2?'!':'i'}</span><span>
@@ -4475,8 +4491,8 @@ function vPaket(){
     <div class="hint">Bir öğretmen sana koçluk yapıyorsa, onun vereceği <b>6 haneli kodla</b> hesabını
     ona bağlayabilirsin. O zaman ödevlerini öğretmenin verir ve paketi o öder.
     Geçmiş kayıtların korunur.</div>
-    <div class="hint" style="margin-top:8px">Bağlanmak için öğretmeninden kod iste, sonra
-    çıkış yapıp tekrar giriş yaptığında kod ekranı açılır.</div>
+    <div class="hint" style="margin-top:8px">Bağlanmak için öğretmeninden <b>davet bağlantısını</b> iste,
+    bağlantıyı aç ve kendi hesabınla giriş yap. Hesabın öğretmene bağlanır.</div>
   </div></div>`;
 }
 
@@ -4733,7 +4749,8 @@ function ogrPaketTalep(){
   const mesaj='Merhaba, Biyoser Koçsuz Öğrenci Paketi almak istiyorum.\n\n'+
     'Paket : Koçsuz Öğrenci Paketi — 99 TL / yıl\n'+
     (ad?('Adım  : '+ad+'\n'):'')+
-    'Deneme sürem doldu, hesabımın açılmasını rica ediyorum.';
+    ((SONKIM && SONKIM.lisans===false) ? 'Deneme sürem doldu, hesabımın açılmasını rica ediyorum.'
+                                       : 'Koçsuz öğrenci paketini almak istiyorum.');
   window.open((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),
               '_blank','noopener');
 }
@@ -4744,8 +4761,8 @@ async function soloKur(){
   const alan=(document.getElementById('gSoloAlan')?.value||'SAY');
   GBEKLE=true; GHATA=''; render();
   try{
-    await sbCagri('/rest/v1/rpc/solo_ogrenci_kur',{method:'POST',
-      body:{ p_ad:ad, p_alan:alan }});
+    await sbGuvenli(()=>sbCagri('/rest/v1/rpc/solo_ogrenci_kur',{method:'POST',
+      body:{ p_ad:ad, p_alan:alan }}));
     await sunucuAc();
   }catch(e){
     GHATA = /function .*does not exist/i.test(e.message||'')
@@ -4836,13 +4853,14 @@ function sunucuKaydet(){
    sessizce kayboluyordu; öğrenciler mobilde sekmeyi sürekli kapatır.
    Yerel kopya her hâlükârda yazılır (ucuz ve senkron); sunucu yazması
    keepalive ile gönderilir, yoksa tarayıcı belgeyi yıkarken isteği iptal eder. */
+var KAPANIS_HATA=false;   // kapanışta gönderilen yazma düştüyse, dönüşte yeniden denenir
 function ogrBekleyeniHemenYaz(){
   try{ window.KAPANIYOR=true; }catch(e){}   // sbCagri bunu görüp keepalive ekler
   if(typeof ORNEKMOD!=='undefined' && ORNEKMOD) return;
   try{ if(D) localStorage.setItem(KEY,JSON.stringify(D)); }catch(e){}
   if(!SKUYRUK) return;
   clearTimeout(SKUYRUK); SKUYRUK=null; SBEKLEYEN=0;
-  try{ ogrSunucuyaYaz(); }catch(e){}
+  try{ ogrSunucuyaYaz().catch(function(){ KAPANIS_HATA=true; }); }catch(e){ KAPANIS_HATA=true; }
 }
 window.addEventListener('pagehide', ogrBekleyeniHemenYaz);
 /* Bayrak İNMELİ — program.js'tekiyle aynı gerekçe: bir kere açılıp açık
@@ -4851,7 +4869,10 @@ window.addEventListener('pagehide', ogrBekleyeniHemenYaz);
 window.addEventListener('pageshow', function(){ try{ window.KAPANIYOR=false; }catch(e){} });
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState==='hidden') ogrBekleyeniHemenYaz();
-  else { try{ window.KAPANIYOR=false; }catch(e){} }   // geri döndük
+  else { try{ window.KAPANIYOR=false; }catch(e){}   // geri döndük
+    /* Arka plana geçerken gönderilen yazma düştüyse şimdi tekrar dene; fark
+       yazımı gönderilmeyen değişiklikleri kendisi bulur. */
+    if(KAPANIS_HATA && typeof sunucuKaydet==='function'){ KAPANIS_HATA=false; sunucuKaydet(); } }
 });
 function sYaz(){
   const el=document.getElementById('sbDurum'); if(!el) return;
@@ -4966,6 +4987,13 @@ function kayitUyariYenile(){
 
 async function sbCikisYap(){
   if(!confirm('Çıkış yapılacak. Verilerin öğretmeninin sisteminde durur, tekrar giriş yapınca gelir.\nDevam?')) return;
+  /* ★ 17 Eyl 2026 — Bekleyen (900 ms) kayıt çıkıştan ÖNCE gönderilir: çıkış
+     jetonu siliyor, sonra giden istek anonim olur ve son işaret kaybolurdu. */
+  if(SKUYRUK){
+    clearTimeout(SKUYRUK); SKUYRUK=null; SBEKLEYEN=0;
+    try{ await ogrSunucuyaYaz(); }
+    catch(e){ if(!confirm('Son değişikliğin kaydedilemedi ('+(e.message||e)+').\nYine de çıkılsın mı?')) return; }
+  }
   sbCikis(); OGRID=null; D=null; GMOD='giris'; GHATA=''; render();
 }
 function girisEkrani(){

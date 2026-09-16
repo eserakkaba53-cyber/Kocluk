@@ -166,7 +166,9 @@ window.MESAJ = (function(){
       D.acikVeri = r;
       await sayaciTazele();              // okundu işaretlendi, rozet düşsün
       D.konusmalar = await cagir('mesaj_konusmalar') || [];
-    }catch(e){ D.hata = e.message||String(e); }
+    }catch(e){ D.hata = e.message||String(e);
+      /* Açılamadıysa kart "Yükleniyor…"da takılı kalmasın. */
+      if(!D.acikVeri){ D.acik=null; } }
     ciz();
   }
   function kapat(){ D.acik=null; D.acikVeri=null; ciz(); }

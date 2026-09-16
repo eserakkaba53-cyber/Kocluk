@@ -102,6 +102,7 @@ var SEBEPLER=[['OKUL','Okul'],['UYKU','Uyku'],['YEMEK','Yemek'],
 /* ═══ DURUM ═══ */
 var C={};
 var kapali=new Set(), sebep={}, bloklar=[], bekleyenler=[];
+var bosaltildi=false;   // "Tabloyu boşalt" sonrası bekleyen listesi farklı anlatılır
 /* Katlama VARSAYILAN OLARAK AÇIK: tablo ilk açılışta katlı gelsin, 48 satırlık
    duvarla karşılaşılmasın. Ama tercih HATIRLANIYOR — kullanıcı "24 saati göster"
    deyip sayfayı yenilediğinde yeniden katlanmış bulmasın. Kayıt tarayıcıda
@@ -177,6 +178,10 @@ function kocMu(){ return C.rol==='koc'; }
    ⚠️ SAHİPLİK: artık iki taraf da program.bloklar dalını yazıyor. Aynı anda
    düzenlerlerse son yazan kalır. Kapalı saatler hâlâ yalnız öğrencinin. */
 function blokDuzenler(){ return kocMu() || !!C.blokDuzenle; }
+/* ★ 17 Eyl 2026 — KOÇSUZ ÖĞRENCİ KENDİ KOÇUDUR. rol:'koc' ile girdiği için
+   koç yetkilerini (otomatik dağıtım) alıyor ama öğrencinin saat şablonlarını
+   (Okul/Uyku/Kurs, Hepsini aç) ve kapalı saat sebebini kaybediyordu. */
+function ogrenciAraclari(){ return !kocMu() || !!C.kendiKocu; }
 
 /* ═══ VARSAYILAN KAPALI SAATLER ═══
    Öğrenci hiç dokunmamışsa makul bir başlangıç. Öneridir; öğrenci
@@ -368,13 +373,22 @@ function siraUygun(b,gun,dilim){
 
 function dagitCekirdek(){
   var liste=blokListesi();
+  bosaltildi=false;
   var dolu=new Set(), gunYuku=[], gunSonDers=[], gunSonYer=[], i;
   for(i=0;i<GUN;i++){ gunYuku.push(0); gunSonDers.push(null); gunSonYer.push(0); }
 
   /* KİLİTLİLER KORUNUR — koç elle taşıdıysa blok kilitlenir ve yeniden
      dağıtımda yerinde kalır. Aksi hâlde koç her "dağıt"ta kendi
      düzenlemesini kaybeder ve butona bir daha basmaz. */
-  var kilitli=bloklar.filter(function(b){ return b.kilit; });
+  /* ★ 17 Eyl 2026 — Ödevi silinmiş kilitli blok "hayalet" olarak kalıyordu;
+     kapalı saate düşen kilitli blok da yerinde kalıp çakışma uyarısını kalıcı
+     yapıyordu. İkisi de kilidini kaybeder ve normal dağıtıma girer. */
+  var odevVar={}; liste.forEach(function(x){ odevVar[x.odevId]=1; });
+  var kilitli=bloklar.filter(function(b){
+    if(!b.kilit || !odevVar[b.odevId]) return false;
+    for(var j=0;j<b.uzunluk;j++) if(kapali.has(ah(b.gun,b.dilim+j))) return false;
+    return true;
+  });
   var kilitliId={};
   kilitli.forEach(function(b){
     kilitliId[b.id]=true;
@@ -933,7 +947,7 @@ function cizArac(){
       h+='<option value="'+(t*60)+'"'+(tavan()===t*60?' selected':'')+'>'+t+' saat</option>';
     h+='</select><span class="pg-ayrac"></span>';
   }
-  if(!kocMu()){
+  if(ogrenciAraclari()){
     /* Öğrencinin kendi hayatını hızlı kurması için hazır şablonlar */
     h+='<span class="pg-et">Saatlerimi kur:</span>';
     h+='<button class="pg-btn gh mini" data-sb="OKUL">Okul saatleri</button>'+
@@ -944,7 +958,7 @@ function cizArac(){
   }
   h+='<button class="pg-btn gh'+(boyaAcik?' on':'')+'" data-ac="boya">'+
      (boyaAcik?'✓ Saat düzenleme açık':'Saat aç / kapat')+'</button>';
-  if(boyaAcik && !kocMu()){
+  if(boyaAcik && ogrenciAraclari()){
     h+='<select class="pg-sec" id="pg-sebep">';
     SEBEPLER.forEach(function(s){
       h+='<option value="'+s[0]+'"'+(boyaSebep===s[0]?' selected':'')+'>'+s[1]+'</option>';
@@ -1012,7 +1026,8 @@ function cizAlt(){
   if(cak.length){
     h+='<div class="pg-flag bad"><span class="ic">!</span><span>'+
       '<b>'+cak.length+' blok kapalı saate denk geliyor.</b> '+
-      (kocMu() ? 'Öğrenci bu saatleri kapatmış. "Yeniden dağıt" ile programı güncelle.'
+      ((kocMu() && !C.kendiKocu) ? 'Öğrenci bu saatleri kapatmış. "Yeniden dağıt" ile programı güncelle.'
+               : blokDuzenler() ? 'Kapattığın saatlere denk gelen çalışma var. "Yeniden dağıt" ile programı güncelle.'
                : 'Kapattığın saatlerde koçunun verdiği çalışma var. Koçun görecek ve programı güncelleyecek.')+
       '</span></div>';
   }
@@ -1024,7 +1039,7 @@ function cizAlt(){
       var kalanSaat=gunAcik(gi)-y[gi];
       if(kalanSaat>0 && y[gi]>=tv-30) bosVar+=kalanSaat;
     }
-    h+='<div class="pg-bek-bas">'+bekleyenler.length+' blok sığmadı · '+
+    h+='<div class="pg-bek-bas">'+bekleyenler.length+' blok '+(bosaltildi?'bekliyor':'sığmadı')+' · '+
        sa(bekleyenler.reduce(function(a,b){ return a+b.dk; },0))+'</div>';
     h+='<div class="pg-bek" id="pg-bek">'+bekleyenler.map(function(b){
       return '<div class="bl" data-bek="'+esc(b.id)+'" style="background:'+renkOf(b.sub)+'">'+
@@ -1035,7 +1050,8 @@ function cizAlt(){
         esc(b.konu)+' — '+sa(b.dk)+'</div>';
     }).join('')+'</div>';
     h+='<div class="pg-flag warn"><span class="ic">!</span><span>'+
-      (kocMu()
+      (bosaltildi ? 'Tablo boşaltıldı. Blokları buradan takvime sürükle ya da <b>Yeniden dağıt</b> ile baştan yerleştir.'
+      : kocMu()
         ? (bosVar>=60
             ? 'Takvimde ' + sa(bosVar) + ' boş yer VAR, ama o günler ' + Math.round(tv/60) +
               ' saatlik günlük tavana dayandı. Üç seçeneğin var: tavanı yükselt, ödevi azalt, ya da öğrenciden hafta içi daha fazla saat açmasını iste.'
@@ -1104,7 +1120,7 @@ function boyala(g,d){
   var a=ah(g,d);
   if(boyaDurum==='kapat'){
     kapali.add(a);
-    if(!kocMu()) sebep[a]=boyaSebep;
+    if(ogrenciAraclari()) sebep[a]=boyaSebep;
   }else{
     kapali.delete(a); delete sebep[a];
   }
@@ -1258,7 +1274,16 @@ function arac(btn){
   var ac=btn.getAttribute('data-ac'), sb=btn.getAttribute('data-sb');
   if(sb){ sablon(sb); return; }
   if(ac==='dagit'){ dagitCekirdek(); isaretle('bloklar'); ciz(); }
-  else if(ac==='temizle'){ bloklar=[]; bekleyenler=[]; isaretle('bloklar'); ciz(); }
+  else if(ac==='temizle'){
+    /* ★ 17 Eyl 2026 — BOŞALTILAN BLOKLAR BEKLEYENE GEÇER. Eskiden siliniyordu;
+       bir sonraki render()'da tazelikOlc() hepsini "programda olmayan ödev"
+       sayıyor ve koç rolünde (koçsuz öğrenci dâhil) sessizce geri dağıtıyordu:
+       boşaltma tutmuyordu. Bekleyende durdukça ödev "yeni" sayılmaz; kullanıcı
+       sürükleyip yerleştirir ya da Yeniden dağıt'a basar. */
+    bekleyenler=bloklar.concat(bekleyenler).map(function(b){
+      var y={}; for(var p in b) if(p!=='gun' && p!=='dilim' && p!=='kilit') y[p]=b[p]; return y; });
+    bloklar=[]; bosaltildi=true; isaretle('bloklar'); ciz();
+  }
   else if(ac==='boya'){ boyaAcik=!boyaAcik; ciz(); }
   else if(ac==='katla'){
     katlaAcik=!katlaAcik; acikKatlar=new Set();
@@ -1684,7 +1709,7 @@ function mont(cfg){
   var yeniAnahtar = cfg.anahtar||'';
   C = cfg;
   if(yeniAnahtar !== suAnahtar){
-    suAnahtar = yeniAnahtar;
+    suAnahtar = yeniAnahtar; bosaltildi=false;
     iceriAl(cfg.program);
     boyaAcik=false; acikKatlar=new Set();
     /* Koç ilk kez açıyorsa ve program boşsa otomatik doldur — koçun
