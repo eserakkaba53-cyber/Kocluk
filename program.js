@@ -170,6 +170,13 @@ function soruDk(o){
 function toplamDk(o){ return (o.calisma||0)+soruDk(o); }
 function odevler(){ return C.odevler||[]; }
 function kocMu(){ return C.rol==='koc'; }
+/* ★ 16 Eyl 2026 — KOÇLU ÖĞRENCİ DE BLOK DÜZENLER.
+   Rolü doğrudan 'koc' yapmak yanlış olurdu: koç dalında öğrencinin kendi
+   saat şablonları (Okul / Uyku / Kurs / Hepsini aç) yok, öğrenci onları
+   kaybederdi. Bu yüzden rol DEĞİL, ayrı bir yetki bayrağı.
+   ⚠️ SAHİPLİK: artık iki taraf da program.bloklar dalını yazıyor. Aynı anda
+   düzenlerlerse son yazan kalır. Kapalı saatler hâlâ yalnız öğrencinin. */
+function blokDuzenler(){ return kocMu() || !!C.blokDuzenle; }
 
 /* ═══ VARSAYILAN KAPALI SAATLER ═══
    Öğrenci hiç dokunmamışsa makul bir başlangıç. Öneridir; öğrenci
@@ -844,7 +851,7 @@ function ciz(){
            (b.uzunluk<=1?' mini':'')+
            (b.dev?' devreden':'')+
            (b.kilit?' kilitli':'')+(cak[b.id]?' cakisik':'')+
-           (kocMu()?'':' salt')+'" data-b="'+esc(b.id)+'" data-u="'+b.uzunluk+
+           (blokDuzenler()?'':' salt')+'" data-b="'+esc(b.id)+'" data-u="'+b.uzunluk+
            '" style="height:'+yuk+'px;--v:'+c[0]+';--k:'+c[1]+';--s:'+c[2]+
            ';--i:'+c[3]+';--mk:'+c[4]+';--ms:'+c[5]+'" title="'+
            esc((b.dev?'⚠ Devreden · ':'')+meta+' — '+b.konu+' ('+sa(b.dk)+')')+
@@ -853,7 +860,7 @@ function ciz(){
               olamaz, dokunmatikte imleç yok. İpucu title'a eklenir. */
            ' · ▶ Tıkla: konu anlatımı videoları'+'">'+
            (b.dev?'<i class="pg-dev" aria-label="Devreden iş"></i>':'')+
-           (cak[b.id]?'<span class="pg-kil">!</span>':b.kilit&&kocMu()?'<span class="pg-kil">🔒</span>':'')+
+           (cak[b.id]?'<span class="pg-kil">!</span>':b.kilit&&blokDuzenler()?'<span class="pg-kil">🔒</span>':'')+
            '<i class="pg-cip">'+esc(kodOf(b.sub))+'</i>'+
            '<div class="bk">'+esc(b.konu)+'</div>'+
            '<div class="bm"><span class="ds">'+esc(meta)+'</span>'+
@@ -913,7 +920,11 @@ function cizOzet(){
 function cizArac(){
   var el=document.getElementById('pg-arac'); if(!el) return;
   var h='';
-  if(kocMu()){
+  /* Dağıtım tuşları artık role değil YETKİYE bağlı: koçlu öğrenci de
+     planını boşaltıp yeniden dağıtabiliyor. Saat şablonları öğrencide
+     kalıyor. Eskiden iki küme tek if/else ile ayrılmıştı; öğrenciye
+     dağıtım vermek şablonlarını elinden alırdı. */
+  if(blokDuzenler()){
     h+='<button class="pg-btn" data-ac="dagit">Yeniden dağıt</button>'+
        '<button class="pg-btn gh" data-ac="temizle">Tabloyu boşalt</button>'+
        '<span class="pg-ayrac"></span>'+
@@ -921,7 +932,8 @@ function cizArac(){
     for(var t=4;t<=12;t++)
       h+='<option value="'+(t*60)+'"'+(tavan()===t*60?' selected':'')+'>'+t+' saat</option>';
     h+='</select><span class="pg-ayrac"></span>';
-  }else{
+  }
+  if(!kocMu()){
     /* Öğrencinin kendi hayatını hızlı kurması için hazır şablonlar */
     h+='<span class="pg-et">Saatlerimi kur:</span>';
     h+='<button class="pg-btn gh mini" data-sb="OKUL">Okul saatleri</button>'+
@@ -949,7 +961,7 @@ function cizArac(){
   h+='<button class="pg-btn gh" data-ac="yazdir" title="Haftayı tek sayfaya sığdırıp yazdırır">🖨 Yazdır</button>';
   h+='<span class="pg-bilgi">'+(boyaAcik
        ? '🖌 Hücrelere sürükleyerek saat aç/kapat'
-       : (kocMu()?'Blokları sürükleyerek taşıyabilirsin'
+       : (blokDuzenler()?'Blokları sürükleyerek taşıyabilirsin'
                 : 'Koçunun yerleştirdiği blokları taşıyamazsın — saatlerini düzenleyebilirsin'))+
      '</span>';
   el.innerHTML=h;
@@ -991,7 +1003,9 @@ function cizAlt(){
        (kocMu()
          ? 'Elle yerleştirdiğin bloklar olduğu için otomatik güncellemedim — kaybolmasınlar. '+
            '<b>Yeniden dağıt</b> düğmesine basarsan kilitliler yerinde kalır, gerisi yeniden düzenlenir.'
-         : 'Koçun programı henüz güncellemedi.')+
+         : (blokDuzenler()
+             ? 'Koçun programı henüz güncellemedi. <b>Yeniden dağıt</b> ile sen düzenleyebilirsin.'
+             : 'Koçun programı henüz güncellemedi.'))+
        '</span></div>';
   }
 
@@ -1027,15 +1041,17 @@ function cizAlt(){
               ' saatlik günlük tavana dayandı. Üç seçeneğin var: tavanı yükselt, ödevi azalt, ya da öğrenciden hafta içi daha fazla saat açmasını iste.'
             : 'Açık saatler bu haftanın ödevine yetmiyor. Ya öğrenci daha fazla saat açmalı, ya da bu haftanın ödevi azaltılmalı.') +
           ' Blokları buradan takvime sürükleyerek elle de yerleştirebilirsin.'
-        : 'Bu çalışmalar açık saatlerine sığmadı. Daha fazla saat açarsan yerleşir; açamıyorsan koçuna söyle.')+
+        : (blokDuzenler()
+            ? 'Bu çalışmalar açık saatlerine sığmadı. Daha fazla saat aç ya da blokları buradan takvime sürükle.'
+            : 'Bu çalışmalar açık saatlerine sığmadı. Daha fazla saat açarsan yerleşir; açamıyorsan koçuna söyle.'))+
       '</span></div>';
   }else if(!cak.length && !tazelik.yeni && !tazelik.giden && bloklar.length){
     h+='<div class="pg-flag ok"><span class="ic">✓</span><span>'+
-      (kocMu() ? 'Bütün ödevler haftaya sığdı. Blokları sürükleyerek ince ayar yapabilirsin.'
+      (blokDuzenler() ? 'Bütün ödevler haftaya sığdı. Blokları sürükleyerek ince ayar yapabilirsin.'
                : 'Bu haftanın bütün çalışmaları programına sığdı.')+'</span></div>';
   }else if(!bloklar.length){
     h+='<div class="pg-flag warn"><span class="ic">i</span><span>'+
-      (kocMu() ? 'Program boş. "Yeniden dağıt" ile bu haftanın ödevlerini takvime yerleştir.'
+      (blokDuzenler() ? 'Program boş. "Yeniden dağıt" ile bu haftanın ödevlerini takvime yerleştir.'
                : 'Koçun henüz bu haftanın programını hazırlamadı.')+'</span></div>';
   }
 
@@ -1044,7 +1060,7 @@ function cizAlt(){
      '<span><i style="background:'+renkTakim('tyt_mat')[1]+'"></i>Konu çalışması (koyu ton)</span>'+
      '<span><i style="background:'+renkTakim('tyt_mat')[2]+';box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)"></i>Soru çözümü (açık ton)</span>'+
      '<span><i style="background:var(--turuncu,#D97706);border-radius:50%"></i>Devreden iş</span>'+
-     (kocMu()?'<span><i style="background:var(--ink-3)"></i>🔒 elle taşındı, dağıtımda korunur</span>':'')+
+     (blokDuzenler()?'<span><i style="background:var(--ink-3)"></i>🔒 elle taşındı, dağıtımda korunur</span>':'')+
      '<span style="color:var(--ink-3)">☕ Aralıksız çalışma en fazla 90 dk — sonrasına mola bırakılır</span>'+
      '</div>';
   el.innerHTML=h;
@@ -1134,7 +1150,7 @@ function bagla(){
     if(bek){
       var bo=bekleyenler.filter(function(x){ return x.id===bek.getAttribute('data-bek'); })[0];
       if(bo) tikBas={x:e.clientX,y:e.clientY,sub:bo.sub,konu:bo.konu};
-      if(bo && kocMu()){
+      if(bo && blokDuzenler()){
         surukBek=bo;
         hayaletGoster(e,renkOf(bo.sub),bo.konu+' · '+sa(bo.dk));
         e.preventDefault();
@@ -1153,7 +1169,7 @@ function bagla(){
       if(bt) tikBas={x:e.clientX,y:e.clientY,sub:bt.sub,konu:bt.konu};
     }
 
-    if(blokEl && kocMu() && !boyaAcik){
+    if(blokEl && blokDuzenler() && !boyaAcik){
       var b=bloklar.filter(function(x){ return x.id===blokEl.getAttribute('data-b'); })[0];
       if(!b) return;
       surukBlok=b; blokEl.classList.add('suruk');
