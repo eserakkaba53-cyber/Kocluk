@@ -816,10 +816,10 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
   </main>
 </div>
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
-<script src="sunucu.js"></script>
+<script src="sunucu.js?v=20260916b"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260916a"></script>
+<script src="program.js?v=20260916b"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
@@ -1049,80 +1049,75 @@ async function ogrSunucudanOku(){
     D2.topics[c.ders]=D2.topics[c.ders]||{};
     D2.topics[c.ders][c.konu]=c.durum;
   });
+  izKurOgr(D2);   // sunucudan okunan hâlin izi: kayıtta yalnız fark gider
   return D2;
 }
 
-/* ---------- SUNUCUYA YAZ ---------- */
+/* ---------- SUNUCUYA YAZ ----------
+   ★ 16 Eyl 2026 — FARK YAZIMI (koç panelindeki ogrenciYaz ile aynı kural).
+   Eskiden her kayıtta bütün ödevler, bütün konular tam satır olarak
+   yazılıyordu: koç bu arada ödevi başka güne aldıysa öğrencinin bayat
+   kopyası geri alıyor, 600 konuluk upsert kapanışta 64 KB keepalive
+   sınırına takılıyordu. Silmeler (kendi rutin, deneme) sunucuya hiç
+   gitmiyor, yenilemede geri geliyordu. Artık yalnız fark gider. */
+window.FARK = window.FARK || { iz:function(){}, izVar:function(){ return false; },
+  fark:function(a, l){ return { izYok:true, yeni:(l||[]).slice(), degisen:[], silinen:[] }; } };
+var KONU_ANAHTAR = function(r){ return r.ders + '|' + r.konu; };
+function odevSatirOgr(t){
+  return { id:t.id, ogrenci_id:OGRID, tarih:t.date, ders:t.sub, konu:t.konu||'',
+    soru:t.q||0, yapilan:t.yap||0, durum:t.ekstra ? (t.s||1) : (t.s||0),
+    rutin:!!t.rutin, ekstra:!!t.ekstra,
+    dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||(t.ekstra?'Öğrencinin kendi çalışması':''),
+    dogru:+t.dg||0, yanlis:+t.yn||0, bos:+t.bs||0 };
+}
+function denemeSatirOgr(e){
+  return { id:e.id, ogrenci_id:OGRID, tarih:e.date, ad:e.name||'', tur:e.tur||'tyt',
+    netler:e.n||{}, konu_analiz:e.an||[] };
+}
+function konuSatirlariOgr(d){
+  var kSat=[];
+  for(var ders in (d.topics||{}))
+    for(var konu in d.topics[ders])
+      kSat.push({ ogrenci_id:OGRID, ders:ders, konu:konu, durum:d.topics[ders][konu] });
+  return kSat;
+}
+/* Sunucuya yazılacak ödevler: sunucudan gelenler (uuid) + öğrencinin kendi
+   verdikleri (kendi) + kendi çalışmaları (ekstra). Eski paket/kılavuz
+   kalıntıları (uuid'siz, işaretsiz) eskisi gibi dışarıda kalır. */
+function yazilacakOdevler(d){
+  return (d.tasks||[]).filter(function(t){ return uuidMi(t.id) || t.kendi || t.ekstra; });
+}
+function izKurOgr(d){
+  FARK.iz('odev', yazilacakOdevler(d).filter(function(t){ return uuidMi(t.id); }).map(odevSatirOgr));
+  FARK.iz('den',  (d.exams||[]).filter(function(e){ return uuidMi(e.id); }).map(denemeSatirOgr));
+  FARK.iz('konu', konuSatirlariOgr(d), KONU_ANAHTAR);
+}
 async function ogrSunucuyaYaz(){
   if(typeof ORNEKMOD!=='undefined'&&ORNEKMOD) return;   // ornek veri sunucuya ASLA yazilmaz
   if(!OGRID) return;
-  /* ödev durumları ve çözülen sorular */
-  var deg=(D.tasks||[]).filter(function(t){ return uuidMi(t.id); });
-  if(deg.length){
-    await sbYaz('odevler', deg.map(function(t){
-      return { id:t.id, ogrenci_id:OGRID, tarih:t.date, ders:t.sub, konu:t.konu||'',
-        soru:t.q||0, yapilan:t.yap||0, durum:t.s||0, rutin:!!t.rutin, ekstra:!!t.ekstra,
-        dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'',
-        dogru:+t.dg||0, yanlis:+t.yn||0, bos:+t.bs||0 };
-    }), 'id');
-  }
-  /* KOÇSUZ (SOLO) ÖĞRENCİNİN KENDİNE VERDİĞİ ÖDEV — 4 Eyl 2026.
-     soloOdevVer / haftalık plan bunları {id:'s…', kendi:true} ile üretiyor.
-     Ne uuidMi() süzgecine ne de ekstra süzgecine takılıyorlardı; yani
-     sunucuya HİÇ yazılmıyorlardı. Sayfa yenilenince D.tasks sunucudan boş
-     geliyor, haftalık program "0 ödev" görüyor ve dağıtacak bir şey
-     bulamıyordu — "programa dağıtmıyor" şikâyetinin kaynağı buydu.
-     Bunlar gerçek ödevdir (öğrenci kendi koçudur), 'ekstra' değil:
-     ekstra=true "öğrencinin kendi fazladan çalışması" anlamına geliyor ve
-     ödev sayılmıyor. */
-  var yeniOdev=(D.tasks||[]).filter(function(t){ return t.kendi && !t.ekstra && !uuidMi(t.id); });
-  if(yeniOdev.length){
-    yeniOdev.forEach(function(t){ t.id=yeniKimlik(); });
-    await sbYaz('odevler', yeniOdev.map(function(t){
-      return { id:t.id, ogrenci_id:OGRID, tarih:t.date, ders:t.sub, konu:t.konu||'',
-        soru:t.q||0, yapilan:t.yap||0, durum:t.s||0, rutin:!!t.rutin, ekstra:false,
-        dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'' };
-    }), 'id');
-  }
-  /* öğrencinin kendi eklediği çalışmalar */
-  var yeniEk=(D.tasks||[]).filter(function(t){ return t.ekstra && !uuidMi(t.id); });
-  if(yeniEk.length){
-    yeniEk.forEach(function(t){ t.id=yeniKimlik(); });
-    await sbYaz('odevler', yeniEk.map(function(t){
-      return { id:t.id, ogrenci_id:OGRID, tarih:t.date, ders:t.sub, konu:t.konu||'',
-        soru:t.q||0, yapilan:t.yap||0, durum:t.s||1, rutin:false, ekstra:true, aciklama:'Öğrencinin kendi çalışması' };
-    }), 'id');
-  }
-  /* konu durumları */
-  var kSat=[];
-  for(var ders in (D.topics||{}))
-    for(var konu in D.topics[ders])
-      kSat.push({ ogrenci_id:OGRID, ders:ders, konu:konu, durum:D.topics[ders][konu] });
-  if(kSat.length) await sbYaz('konular', kSat, 'ogrenci_id,ders,konu');
-  /* denemeler */
-  var yeniDen=(D.exams||[]).filter(function(e){ return !uuidMi(e.id); });
-  if(yeniDen.length){
-    yeniDen.forEach(function(e){ e.id=yeniKimlik(); });
-    await sbYaz('denemeler', yeniDen.map(function(e){
-      /* konu_analiz eskiden HER ZAMAN boş yazılıyordu; öğrenci kendi
-         denemesine konu girse bile sunucuya çıkmıyordu. */
-      return { id:e.id, ogrenci_id:OGRID, tarih:e.date, ad:e.name||'', tur:e.tur||'tyt',
-        netler:e.n||{}, konu_analiz:e.an||[] };
-    }), 'id');
-  }
-  /* MEVCUT denemelere eklenen konu analizi de yazılır — yoksa öğrencinin
-     kendi fark ettiği zayıf konu öğretmene hiç ulaşmaz. Yalnızca bu
-     oturumda DEĞİŞENLER gönderilir; dokunulmayan denemeye yazılmaz. */
-  if(ANDEGISTI.size){
-    var degisen=(D.exams||[]).filter(function(e){ return uuidMi(e.id) && ANDEGISTI.has(e.id); });
-    if(degisen.length){
-      await sbYaz('denemeler', degisen.map(function(e){
-        return { id:e.id, ogrenci_id:OGRID, tarih:e.date, ad:e.name||'', tur:e.tur||'tyt',
-          netler:e.n||{}, konu_analiz:e.an||[] };
-      }), 'id');
-      degisen.forEach(function(e){ ANDEGISTI.delete(e.id); });
-    }
-  }
+  /* ödevler: yeni satır INSERT, değişen alan PATCH, yerelde silinen DELETE.
+     Koçlu öğrencide koç ödevini silme yetkisi yok (RLS odev_sil); UI zaten
+     yalnız kendi rutinini kaldırır. Koçsuz öğrenci kendi koçudur, silebilir. */
+  var oList=yazilacakOdevler(D);
+  oList.forEach(function(t){ if(!uuidMi(t.id)) t.id=yeniKimlik(); });
+  var oSat=oList.map(odevSatirOgr), f=FARK.fark('odev', oSat);
+  if(f.yeni.length) await sbYaz('odevler', f.yeni, 'id');
+  for(var i=0;i<f.degisen.length;i++) await sbGuncelle('odevler', '?id=eq.'+f.degisen[i].id, f.degisen[i].alan);
+  if(f.silinen.length) await sbSil('odevler', '?id=in.('+f.silinen.map(function(x){ return x.id; }).join(',')+')');
+  /* konu durumları: yalnız değişen ve yeni */
+  var kSat=konuSatirlariOgr(D), fk=FARK.fark('konu', kSat, KONU_ANAHTAR);
+  var kYaz=fk.yeni.concat(fk.degisen.map(function(x){ return x.satir; }));
+  if(kYaz.length) await sbYaz('konular', kYaz, 'ogrenci_id,ders,konu');
+  /* denemeler: konu analizi dâhil değişen alanlar PATCH, silinen DELETE
+     (den_sil politikası öğrenciye açık). ANDEGISTI kümesi artık gerekmiyor. */
+  (D.exams||[]).forEach(function(e){ if(!uuidMi(e.id)) e.id=yeniKimlik(); });
+  var dSat=(D.exams||[]).map(denemeSatirOgr), fd=FARK.fark('den', dSat);
+  if(fd.yeni.length) await sbYaz('denemeler', fd.yeni, 'id');
+  for(var j=0;j<fd.degisen.length;j++) await sbGuncelle('denemeler', '?id=eq.'+fd.degisen[j].id, fd.degisen[j].alan);
+  if(fd.silinen.length) await sbSil('denemeler', '?id=in.('+fd.silinen.map(function(x){ return x.id; }).join(',')+')');
+  ANDEGISTI.clear();
+  /* hepsi tuttu: iz sunucudaki durumu gösteriyor */
+  FARK.iz('odev', oSat); FARK.iz('den', dSat); FARK.iz('konu', kSat, KONU_ANAHTAR);
   /* hedef değişikliği */
   if(D.hedef){
     var alan={};
@@ -1579,7 +1574,11 @@ function saatY(h){
   if(tam===0) return 'yarım saat';
   return buc ? tam+' buçuk saat' : tam+' saat';
 }
-const today=()=>new Date().toISOString().slice(0,10);
+/* ★ 16 Eyl 2026 — YEREL GÜN. toISOString() UTC günü verir; Türkiye'de
+   00:00-03:00 arasında dünün tarihi çıkıyordu: o saatte verilen ödev
+   düne, Pazartesi gecesi verilen ödev GEÇEN HAFTAYA düşüyordu (ölçüldü:
+   Pzt 01:30'da weekKey(today()) bir önceki haftayı veriyordu). */
+const today=()=>{ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
 const uid=()=>Math.random().toString(36).slice(2,9);
 const net=(d,y)=>d-y/4;
 /* ===== KONU ÖĞRENME SÜRELERİ (30 Ağustos 2026'da yeniden türetildi) =====

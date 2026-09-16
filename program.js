@@ -1292,6 +1292,12 @@ var AYLAR=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
            'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 function haftaEtiket(iso){
   var d=new Date(iso+'T00:00'); if(isNaN(d.getTime())) return '';
+  /* Panellerin weekKey'i yerel Pazartesi gece yarısını toISOString ile UTC'ye
+     çevirdiği için Türkiye'de anahtar PAZAR tarihi çıkıyor (ölçüldü:
+     weekKey('2026-09-14') = '2026-09-13'). Anahtarlar sunucuda program
+     kaydının adı olduğu için anahtar değiştirilmez; etiket Pazar görürse
+     bir gün ileri alır. ponytail: anahtar göçü (Pazartesi'ye) ayrı iş. */
+  if(d.getDay()===0) d=new Date(d.getTime()+86400000);
   var b=new Date(d.getTime()+6*86400000);
   var ayA=AYLAR[d.getMonth()], ayB=AYLAR[b.getMonth()];
   return d.getDate()+(ayA===ayB?'':' '+ayA)+'–'+b.getDate()+' '+ayB+' '+
