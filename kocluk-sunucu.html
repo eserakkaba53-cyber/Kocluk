@@ -843,7 +843,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
-<script src="mesaj.js?v=20260909a"></script>
+<script src="mesaj.js?v=20260916b"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -876,6 +876,7 @@ let YAZKUYRUK=null, YAZDURUM='', YAZBEKLEYEN=0;
    daha dokunulmazsa o oturumda kaybolmuş sayılırdı). Artık her save()
    seçili öğrenciyi kümeye ekler, kuyruk hepsini yazar. */
 const YAZKIRLI=new Set();
+let SUNUCUDAN_OKUNDU=false;   // sunucudanYukle() tutunca true; çıkışta false
 /* Üst üste kaçıncı kez başarısız olduğumuz. İlk hatada uyarı penceresi
    AÇILMAZ — kısa bağlantı takılmaları çok yaygın ve her birinde ekranı
    kilitlemek paneli kullanılmaz yapıyor. Sessizce bir kez daha denenir. */
@@ -890,6 +891,11 @@ function sunucuyaKaydet(){
      (rayDurum hiç çalışmıyordu), kullanıcı da kaydedildi sanıyordu. Tarayıcı verisi
      temizlenince ya da başka cihazdan girilince ayarlar yok oluyordu.
      Doğrusu: örnek öğrencinin KENDİ verisi yazılmaz, ama koç ayarları HER ZAMAN yazılır. */
+  /* ★ 16 Eyl 2026 — SUNUCU OKUNMADAN YAZMA YOK. Sunucu okunamayınca panel
+     yerel kopyayla açılıyor (aşağıda load()); o bayat kopyayla yazmak
+     öğrencinin sunucudaki işaretlerini ezerdi. Okuma tutana kadar kayıt
+     bekletilir, köşede sebebi yazar. */
+  if(!SUNUCUDAN_OKUNDU){ YAZDURUM='hata|Sunucu okunamadı; sayfayı yenile'; rayDurum(); return; }
   const simdi=Date.now();
   { const _s=cur(); if(_s && !ornekMi(_s.id)) YAZKIRLI.add(_s.id); }
   if(!YAZBEKLEYEN) YAZBEKLEYEN=simdi;
@@ -898,7 +904,10 @@ function sunucuyaKaydet(){
      900 ms'den sık değişiklik yapılırsa yazma HİÇ tetiklenmiyordu. Artık ilk bekleyen
      değişiklikten 3 sn sonra gecikme sıfırlanır — açlık (starvation) biter. */
   const gecikme = (simdi - YAZBEKLEYEN > 3000) ? 0 : 900;
-  YAZKUYRUK=setTimeout(async()=>{
+  YAZKUYRUK=setTimeout(yazmayiCalistir, gecikme);
+}
+/* Kuyruğun gövdesi: zamanlayıcı da kapanış kurtarması da bunu çağırır. */
+async function yazmayiCalistir(){
     YAZKUYRUK=null; YAZBEKLEYEN=0;
     const kirli=Array.from(YAZKIRLI); YAZKIRLI.clear();
     try{
@@ -920,7 +929,6 @@ function sunucuyaKaydet(){
          yani gerçekten kalıcı bir sorun varsa. */
       if(KAYITHATA<2) setTimeout(sunucuyaKaydet, 2500);
       else kayitUyariGoster(e.message||e, sunucuyaKaydet); }
-  }, gecikme);
 }
 /* Bekleyen yazma varken sekme kapatılırsa uyar — aksi halde son değişiklikler kaybolur. */
 window.addEventListener('beforeunload', function(ev){
@@ -930,9 +938,21 @@ window.addEventListener('beforeunload', function(ev){
    program sekmesi açıldığında kuruluyor; koç o sekmeye hiç girmezse bayrak
    inmeden kalabilirdi. Takılı kalınca her istek keepalive ile gidiyor,
    64 KB'ı aşan gövdeler reddediliyor, panel durmadan "kaydedilmedi" diyordu. */
+/* ★ 16 Eyl 2026 — SAYFA KAPANIRKEN KURTARMA (öğrenci panelindeki
+   ogrBekleyeniHemenYaz'ın eşi). 900 ms'lik kuyruk doluyken sekme kapanır ya
+   da arka plana giderse son değişiklik hiç gönderilmiyordu; beforeunload
+   uyarısı mobilde çıkmaz. Fark yazımıyla gövdeler küçük, keepalive taşır. */
+function kocBekleyeniHemenYaz(){
+  try{ window.KAPANIYOR=true; }catch(e){}   // sbCagri keepalive ekler
+  if(!YAZKUYRUK) return;
+  clearTimeout(YAZKUYRUK);
+  try{ yazmayiCalistir(); }catch(e){}
+}
+window.addEventListener('pagehide', kocBekleyeniHemenYaz);
 window.addEventListener('pageshow', function(){ try{ window.KAPANIYOR=false; }catch(e){} });
 document.addEventListener('visibilitychange', function(){
-  if(document.visibilityState!=='hidden'){ try{ window.KAPANIYOR=false; }catch(e){} }
+  if(document.visibilityState==='hidden') kocBekleyeniHemenYaz();
+  else { try{ window.KAPANIYOR=false; }catch(e){} }
 });
 function rayDurum(){
   const lr=document.getElementById('lisansRozet');
@@ -8084,7 +8104,8 @@ async function sunucudanYukle(){
      Sunucuya da soruyoruz: hesap bir öğrenciye bağlıysa içeri alınmaz. */
   let ogrHesap = (kullaniciRolu()==='ogrenci');
   if(!ogrHesap){
-    try{ ogrHesap = !!(await sbCagri('/rest/v1/rpc/ogrenci_hesabi_mi',{method:'POST',body:{}})); }
+    /* sbGuvenli: süresi dolmuş jetonda 401 alıp kapıyı sessizce atlamasın, tazeleyip tekrar sorsun. */
+    try{ ogrHesap = !!(await sbGuvenli(()=>sbCagri('/rest/v1/rpc/ogrenci_hesabi_mi',{method:'POST',body:{}}))); }
     catch(e){ /* RPC henüz kurulmadıysa eski davranış: yalnız jetona bak */ }
   }
   if(ogrHesap){
@@ -8104,14 +8125,14 @@ async function sunucudanYukle(){
   if(!izin){ GIRISHATA=CIHAZHATA; sbCikis(); render(); return; }
   await cihazlariOku();
   const d=await sunucudanOku();
-  DB=Object.assign({students:[],sel:null},d);
+  DB=Object.assign({students:[],sel:null},d); SUNUCUDAN_OKUNDU=true;
   if(!DB.rutin||!DB.rutin.length) DB.rutin=RUTIN_VAR;
   try{ localStorage.setItem(KEY,JSON.stringify(DB)); }catch(e){}
   TAB='hafta'; render();
 }
 async function sbCikisYap(){
   if(!confirm('Çıkış yapılacak. Verilerin sunucuda kalır, tekrar giriş yapınca gelir.\nDevam?')) return;
-  sbCikis();
+  sbCikis(); SUNUCUDAN_OKUNDU=false;
   DB={students:[],sel:null,siteUrl:'',kocTel:'',kocAd:'',sureler:{},rutin:RUTIN_VAR};
   LISANS=null; DENEME=null; KOCLAR=[]; CIHAZLAR=[]; YOGRENCI=null; YOGRLISTE=[];
   ABONE=false; YAZDURUM=''; CIHAZHATA=''; YONDURUM=''; DAVETDURUM='';
