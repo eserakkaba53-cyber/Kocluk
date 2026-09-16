@@ -4747,6 +4747,24 @@ async function gKodGir(){
   }catch(e){ GHATA=e.message||String(e); }
   GBEKLE=false; render();
 }
+/* ★ 16 Eyl 2026 — LİSANS KAPISI TEK YERDE.
+   Kapı yalnız taze girişte (sunucuAc) vardı; sayfa açılışında oturum geri
+   yüklenirken (aşağıda sbOturum() dalı) HİÇ yoktu. Süresi dolan koçsuz
+   öğrenci çalışır görünen bir panele düşüyor, konuya tıklayınca sunucu
+   RLS ile reddediyor ve "Son işlemin kaydedilmedi" çıkıyordu (ölçüldü:
+   63 koçsuz öğrencinin 15'i bu durumda). Sunucu ile panel aynı
+   lisans_gecerli() fonksiyonuna bakıyor; panel iki yerden birinde bakmayı
+   unutmuştu. */
+function lisansKapisi(){
+  if(!(SONKIM && SONKIM.lisans===false)) return false;
+  if(SONKIM.solo){
+    /* Koçsuz öğrenci: deneme süresi doldu. Veriler duruyor, panel donuk.
+       Paket ekranına düşer, WhatsApp'tan iletişime geçer. */
+    SOLO=true; GMOD='paket'; GHATA=''; render(); return true;
+  }
+  GHATA='Öğretmeninin kullanım süresi dolmuş. Ödevlerin duruyor ama panel şu an açılamıyor.\nÖğretmenine haber ver.';
+  GMOD='giris'; render(); return true;
+}
 async function sunucuAc(){
   if(BEKLEYENKOD) await otoBaglan();
   const d=await ogrSunucudanOku();
@@ -4756,15 +4774,7 @@ async function sunucuAc(){
     if(!GHATA) GHATA='OK|Hesabın açıldı. Öğretmenin yoksa hemen aşağıdan "Kendi başıma başla" de; öğretmenin varsa en alttaki kutuya 6 haneli kodunu yaz.';
     render(); return;
   }
-  if(SONKIM && SONKIM.lisans===false){
-    if(SONKIM.solo){
-      /* Koçsuz öğrenci: deneme süresi doldu. Veriler duruyor, panel donuk.
-         Paket ekranına düşer, WhatsApp'tan iletişime geçer. */
-      SOLO=true; GMOD='paket'; GHATA=''; render(); return;
-    }
-    GHATA='Öğretmeninin kullanım süresi dolmuş. Ödevlerin duruyor ama panel şu an açılamıyor.\nÖğretmenine haber ver.';
-    GMOD='giris'; render(); return;
-  }
+  if(lisansKapisi()) return;
   D=d; try{ localStorage.setItem(KEY,JSON.stringify(D)); }catch(e){}
   TAB='odev'; GHATA=''; render();
   /* Mesaj rozeti: giriş tamamlandıktan sonra okunmamış sayısı alınır —
@@ -4843,6 +4853,30 @@ function sYaz(){
 var KU_TEKRAR=null, KU_SUS=0;
 function kuEsc(x){ return String(x).replace(/[&<>"']/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+/* Sunucunun güvenlik kuralı (RLS) reddini öğrencinin anlayacağı dile çevirir.
+   Koç panelindeki kuRlsSebep'in öğrenci eşi; "iki panel, tek düzeltme". */
+function ogrRlsSebep(s){
+  if(!/row-level security/i.test(String(s||''))) return null;
+  var k=SONKIM||{};
+  var tus=function(etiket,islem){ return '<button type="button" onclick="'+islem+'" style="flex:1;min-width:132px;padding:11px 14px;'+
+    'border:0;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;'+
+    'background:var(--accent,#2b6cb0);color:#fff">'+etiket+'</button>'; };
+  if(k.lisans===false && k.solo) return {
+    bas:'Deneme süren doldu',
+    metin:'Sunucu süre dolduğu için hiçbir değişikliği kabul etmiyor. Konu işaretlerin, '+
+          'denemelerin ve ödev geçmişin duruyor, silinmedi. Paket tanımlanınca kaldığın yerden devam edersin.',
+    dugme:tus('Paketi gör',"kayitUyariKapat();SOLO=true;GMOD='paket';D=null;render()") };
+  if(k.lisans===false) return {
+    bas:'Öğretmeninin kullanım süresi dolmuş',
+    metin:'Sunucu bu yüzden hiçbir değişikliği kabul etmiyor. Ödevlerin ve işaretlerin duruyor. '+
+          'Öğretmenine haber ver; süresi uzatılınca her şey kaldığı yerden çalışır.',
+    dugme:'' };
+  return {
+    bas:'Sunucu bu kaydı kabul etmedi',
+    metin:'Değişiklik sunucunun güvenlik kuralına takıldı. Çoğunlukla sebebi dolmuş bir süredir. '+
+          'Sayfayı yenileyip tekrar dene; sürerse öğretmenine ya da yöneticiye haber ver.',
+    dugme:'' };
+}
 function kayitUyariGoster(sebep, tekrarDene){
   if(tekrarDene) KU_TEKRAR=tekrarDene;
   /* "Şimdilik kapat" denmişse 45 sn boyunca tekrar açılmaz — çevrimdışıyken
@@ -4862,24 +4896,28 @@ function kayitUyariGoster(sebep, tekrarDene){
     gorunureSabitle(k);
   }
   var s=(sebep==null?'':String(sebep)).slice(0,300);
+  var rls=ogrRlsSebep(s);
   k.innerHTML=
     '<div style="max-width:440px;width:100%;background:var(--panel,#fff);color:var(--ink,#1a1a1a);'+
       'border:1px solid var(--line,#ddd);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.4);'+
       'font-family:var(--sans,system-ui,sans-serif);overflow:hidden">'+
       '<div style="padding:15px 18px;background:var(--bad-bg,#fdecea);color:var(--bad-ink,#8a1c11);'+
         'font-weight:700;font-size:15.5px;border-bottom:1px solid var(--line,#ddd)">'+
-        '⚠ Son işlemin kaydedilmedi</div>'+
+        '⚠ '+(rls?kuEsc(rls.bas):'Son işlemin kaydedilmedi')+'</div>'+
       '<div style="padding:16px 18px;font-size:14px;line-height:1.55;color:var(--ink-2,#444)">'+
+        (rls ? rls.metin :
         'Yaptığın son değişiklik sunucuya yazılamadı. Ekranda görünüyor ama '+
-        '<b style="color:var(--ink,#1a1a1a)">kayıtlı değil</b> — sayfayı şimdi kapatırsan kaybolur.'+
+        '<b style="color:var(--ink,#1a1a1a)">kayıtlı değil</b> — sayfayı şimdi kapatırsan kaybolur.')+
         (s?'<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--paper,#f6f6f6);'+
            'border:1px solid var(--line,#ddd);font-family:var(--mono,monospace);font-size:12px;'+
            'color:var(--ink-3,#666);word-break:break-word">'+kuEsc(s)+'</div>':'')+
       '</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 14px">'+
+        /* RLS reddinde "Tekrar dene" anlamsız: aynı kural aynı cevabı verir. */
+        (rls ? rls.dugme :
         '<button type="button" onclick="kayitUyariTekrar()" style="flex:1;min-width:132px;padding:11px 14px;'+
           'border:0;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;'+
-          'background:var(--accent,#2b6cb0);color:#fff">Tekrar dene</button>'+
+          'background:var(--accent,#2b6cb0);color:#fff">Tekrar dene</button>')+
         '<button type="button" onclick="kayitUyariYenile()" style="flex:1;min-width:132px;padding:11px 14px;'+
           'border:1px solid var(--line,#ddd);border-radius:10px;cursor:pointer;font-size:14px;'+
           'background:transparent;color:var(--ink-2,#444)">Sayfayı yenile</button>'+
@@ -5152,10 +5190,10 @@ function kaynakUyarisi(){
   }
   if(sbOturum()){
     try{ const dd=await ogrSunucudanOku();
-      if(dd){ D=dd; render(); return; }
+      if(dd){ if(lisansKapisi()) return; D=dd; render(); return; }
       GMOD='kod'; render(); return;
     }catch(e){
-      if(e.kod===401){ try{ await sbTazele(); const dd=await ogrSunucudanOku(); if(dd){D=dd;render();return;} }catch(e2){ sbCikis(); } }
+      if(e.kod===401){ try{ await sbTazele(); const dd=await ogrSunucudanOku(); if(dd){ if(lisansKapisi()) return; D=dd;render();return;} }catch(e2){ sbCikis(); } }
       else GHATA='Sunucuya ulaşılamadı: '+(e.message||e);
     }
   }
