@@ -7002,6 +7002,37 @@ function keKart(){
        : '<div class="body"><div class="empty">Bekleyen uyumsuz konu yok.</div></div>')+
     '</details>';
 }
+/* ===== ÖĞRENCİYİ ÖĞRETMENE ATA (yönetici) ===== 16 Eyl 2026
+   Şu ana kadar bağlanmanın tek yolu davet koduydu. Özel derse kayıt olup
+   sistemde koçsuz duran hesapları elle bir öğretmene bağlayabilmek için. */
+var ATANABILIR=[], ATAMADURUM='';
+async function atanabilirOku(){
+  try{
+    const r=await sbCagri('/rest/v1/rpc/yonetici_atanabilir_ogrenciler',{method:'POST',body:{}});
+    ATANABILIR = Array.isArray(r) ? r : (r ? JSON.parse(r) : []);
+  }catch(e){ ATANABILIR=[]; }   /* RPC kurulmadıysa kart hiç çıkmaz */
+}
+async function ogrenciKocaAta(authId){
+  const sec=document.getElementById('ata_'+authId);
+  const koc=sec?sec.value:'';
+  if(!koc){ ATAMADURUM='HATA|Önce bir öğretmen seç.'; render(); return; }
+  const o=ATANABILIR.find(x=>x.auth===authId)||{};
+  const k=KOCLAR.find(x=>x.id===koc)||{};
+  if(!confirm(`${o.ad||'Öğrenci'} → ${k.ad||'öğretmen'}\n\nÖğrenci bu öğretmenin listesine geçecek. Koçsuzsa kendi koç kaydı silinecek, verileri kalacak.\n\nOnaylıyor musun?`)) return;
+  ATAMADURUM='Atanıyor...'; render();
+  try{
+    const r=await sbCagri('/rest/v1/rpc/yonetici_ogrenci_koca_ata',
+      {method:'POST',body:{ogrenci_auth:authId, koc:koc}});
+    const s=(typeof r==='string')?JSON.parse(r):r;
+    if(s&&s.ok){
+      ATAMADURUM='OK|'+(s.degisti===false ? (s.ad+' zaten bu öğretmende.')
+                                          : (s.ad+' artık '+(k.ad||'seçilen öğretmen')+' listesinde.'));
+      await koclariOku();
+    }else ATAMADURUM='HATA|'+((s&&s.hata)||'Atanamadı.');
+  }catch(e){ ATAMADURUM='HATA|'+e.message; }
+  render();
+}
+
 async function koclariOku(){
   YONDURUM='Yükleniyor...'; render();
   try{
@@ -7019,6 +7050,7 @@ async function koclariOku(){
        koc_listesi'nin cihazlar tabanlı değeri kullanılmaya devam eder. */
     await kocGirisleriOku();
     await sonIslemleriOku();    /* tablodaki "Son işlem" sütununun kaynağı */
+    await atanabilirOku();      /* öğretmene atanabilecek öğrenci hesapları */
   }catch(e){
     KOCLAR=[];
     YONDURUM = 'HATA|Liste alınamadı: ' + (e.message||e) +
@@ -7299,6 +7331,30 @@ function vYonetici(){
   </div></div>
 
   ${YONDURUM?`<div class="flag ${YONDURUM.startsWith('OK|')?'ok':YONDURUM.startsWith('HATA|')?'bad':'warn'}" style="white-space:pre-wrap;font-family:${YONDURUM.indexOf('TEŞHİS')>=0?'var(--mono);font-size:11.5px':'inherit'}"><span class="ic">·</span><span>${esc(YONDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
+
+  ${ATANABILIR.length?`
+  <details class="card katlanir"><summary><h2 style="margin:0">Öğrenciyi öğretmene ata
+    <small>Sisteme kayıtlı ama bir öğretmene bağlı olmayan hesaplar. Davet kodu beklemeden buradan bağlarsın.</small></h2></summary>
+  <div class="body" style="padding:0;overflow:auto">
+    ${ATAMADURUM?`<div class="flag ${ATAMADURUM.startsWith('OK|')?'ok':ATAMADURUM.startsWith('HATA|')?'bad':'warn'}" style="margin:12px"><span class="ic">·</span><span>${esc(ATAMADURUM.replace(/^(OK|HATA)\|/,''))}</span></div>`:''}
+    <table><thead><tr><th>Öğrenci</th><th>Durum</th><th>Öğretmen</th><th></th></tr></thead><tbody>
+    ${ATANABILIR.map(o=>`<tr>
+      <td><b>${esc(o.ad||'—')}</b>
+        <div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(o.mail||'')}</div></td>
+      <td>${o.kocsuz?'<span class="pill s2" style="font-size:10.5px">koçsuz</span>'
+                  :o.kocId?'<span class="pill s1" style="font-size:10.5px">koçu var</span>'
+                          :'<span class="pill s3" style="font-size:10.5px">kaydı yok</span>'}
+        ${o.ozel?'<div style="font-size:10.5px;color:var(--ink-3)">özel ders</div>':''}</td>
+      <td><select id="ata_${o.auth}" style="min-width:190px">
+        <option value="">öğretmen seç…</option>
+        ${koclarSirali().filter(k=>k.id!==o.auth).map(k=>
+          `<option value="${k.id}"${o.kocId===k.id?' selected':''}>${esc(k.ad||k.eposta||'—')} (${k.ogrenci}/${k.limit})</option>`).join('')}
+      </select></td>
+      <td><button class="btn ghost mini" onclick="ogrenciKocaAta('${o.auth}')">Ata</button></td>
+    </tr>`).join('')}
+    </tbody></table>
+    <p class="hint" style="padding:10px 14px;margin:0">Paketi dolu öğretmene atama yapılmaz; sayıyı yukarıdaki listeden görebilirsin.</p>
+  </div></details>`:''}
 
   <details class="card katlanir" open><summary><h2 style="margin:0">Koçlar<small>Paketi, bitiş tarihini ve cihaz sınırını buradan ayarlarsın. Ödeme alınca "1 yıl ekle" deyip kaydet.</small></h2></summary>
   <div class="body" style="padding:0;overflow:auto">
@@ -7977,7 +8033,17 @@ async function sunucudanYukle(){
   // GÜVENLİK: ÖĞRENCİ hesabı koç paneline KESİNLİKLE giremez.
   // (Koçsuz öğrenci de koclar tablosunda kayıtlı olduğundan sunucu verisi onu içeri
   //  alabilirdi; rolü kimlik jetonundan kesin ayırıp burada durduruyoruz.)
-  if(kullaniciRolu()==='ogrenci'){
+  /* JWT'deki rol TEK BAŞINA YETMİYOR. O bilgi kayıt anında damgalanıyor ve
+     Biyoloji özel ders paneli uzun süre rol GÖNDERMEDEN kayıt açtı; o
+     hesaplarda user_metadata.rol hiç yok, dolayısıyla bu kontrol sessizce
+     geçiyordu ve özel ders öğrencileri koç paneline girebiliyordu.
+     Sunucuya da soruyoruz: hesap bir öğrenciye bağlıysa içeri alınmaz. */
+  let ogrHesap = (kullaniciRolu()==='ogrenci');
+  if(!ogrHesap){
+    try{ ogrHesap = !!(await sbCagri('/rest/v1/rpc/ogrenci_hesabi_mi',{method:'POST',body:{}})); }
+    catch(e){ /* RPC henüz kurulmadıysa eski davranış: yalnız jetona bak */ }
+  }
+  if(ogrHesap){
     sbCikis();
     GIRISHATA='Bu bir ÖĞRENCİ hesabı — koç paneline öğrenci hesabıyla girilemez.\nÖğrenci girişi için: '+ogrenciPaneliAdresi();
     GIRISMOD='giris'; GIRISBEKLE=false; render(); return;
