@@ -819,7 +819,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="sunucu.js"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260913d"></script>
+<script src="program.js?v=20260916a"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
@@ -1972,6 +1972,15 @@ function progMont(){
     /* Örnek mod ÖĞRENCİ deneyimini gösterir, rolü değişmez;
        yalnız solo öğrenci koç yetkisi alır. */
     rol: solo ? 'koc' : 'ogrenci',
+    /* ★ 16 Eyl 2026 — koçlu öğrenci de kendi planını düzenler: blokları
+       taşır, "Tabloyu boşalt" ve "Yeniden dağıt" ona da açık. Rolü 'koc'
+       yapmak yerine ayrı bayrak, çünkü koç dalında öğrencinin kendi saat
+       şablonları (Okul / Uyku / Kurs) yok ve onları kaybederdi.
+       ⚠️ Artık iki taraf da program.bloklar dalını yazıyor; aynı anda
+       düzenlenirse son yazan kalır. Kapalı saatler hâlâ yalnız öğrencinin.
+       Sunucu buna zaten izin veriyordu: program_yetkim_var() hem koçu hem
+       öğrenciyi kabul ediyor, kısıt yalnızca paneldeydi. */
+    blokDuzenle: !ornek,
     odevler: progOdevleri(wk),
     program: (D&&D.program)||{},
     dersAdi: (typeof subName==='function')?subName:null,
@@ -1981,12 +1990,10 @@ function progMont(){
     hafta: wk,
     /* Örnekte tanıtım için, soloda gerçekten gerekli olduğu için dağıtılır. */
     otoDagit: ornek || solo,
-    /* Örnek öğrencide hiçbir şey kaydedilmez.
-       Solo öğrenci hem blokları hem kapalı saatleri yazar;
-       koçu olan öğrenci YALNIZCA kapalı saatleri yazar. */
+    /* Örnek öğrencide hiçbir şey kaydedilmez. Gerçek öğrenci, koçu olsun
+       olmasın, hem kapalı saatlerini hem bloklarını yazar. */
     kaydet: ornek ? {}
-          : solo  ? { kapali: progKapaliYaz, bloklar: progBloklarYaz }
-                  : { kapali: progKapaliYaz }
+                  : { kapali: progKapaliYaz, bloklar: progBloklarYaz }
   });
 }
 
