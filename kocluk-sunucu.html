@@ -835,10 +835,10 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 </div>
 
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
-<script src="sunucu.js"></script>
+<script src="sunucu.js?v=20260916b"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
-<script src="program.js?v=20260916a"></script>
+<script src="program.js?v=20260916b"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
@@ -870,6 +870,12 @@ async function load(){
   return MEM;
 }
 let YAZKUYRUK=null, YAZDURUM='', YAZBEKLEYEN=0;
+/* ★ 16 Eyl 2026 — KİRLİ ÖĞRENCİ KÜMESİ. Kuyruk dolunca yalnız O ANKİ
+   öğrenci yazılıyordu; koç A'yı düzenleyip 900 ms içinde B'ye geçerse
+   A'nın değişikliği sunucuya hiç gitmiyordu (yerelde duruyor, A'ya bir
+   daha dokunulmazsa o oturumda kaybolmuş sayılırdı). Artık her save()
+   seçili öğrenciyi kümeye ekler, kuyruk hepsini yazar. */
+const YAZKIRLI=new Set();
 /* Üst üste kaçıncı kez başarısız olduğumuz. İlk hatada uyarı penceresi
    AÇILMAZ — kısa bağlantı takılmaları çok yaygın ve her birinde ekranı
    kilitlemek paneli kullanılmaz yapıyor. Sessizce bir kez daha denenir. */
@@ -885,6 +891,7 @@ function sunucuyaKaydet(){
      temizlenince ya da başka cihazdan girilince ayarlar yok oluyordu.
      Doğrusu: örnek öğrencinin KENDİ verisi yazılmaz, ama koç ayarları HER ZAMAN yazılır. */
   const simdi=Date.now();
+  { const _s=cur(); if(_s && !ornekMi(_s.id)) YAZKIRLI.add(_s.id); }
   if(!YAZBEKLEYEN) YAZBEKLEYEN=simdi;
   clearTimeout(YAZKUYRUK);
   /* Arka arkaya hızlı değişiklikte 900 ms'lik bekleme her seferinde sıfırlanıyordu;
@@ -893,16 +900,20 @@ function sunucuyaKaydet(){
   const gecikme = (simdi - YAZBEKLEYEN > 3000) ? 0 : 900;
   YAZKUYRUK=setTimeout(async()=>{
     YAZKUYRUK=null; YAZBEKLEYEN=0;
-    const st=cur();
+    const kirli=Array.from(YAZKIRLI); YAZKIRLI.clear();
     try{
       YAZDURUM='yaziliyor'; rayDurum();
-      if(st && !ornekMi(st.id)) await ogrenciYaz(st);   // örnek öğrencinin verisi sunucuya yazılmaz
+      for(const kid of kirli){                           // örnek öğrenci kümeye hiç girmez
+        const s=(DB.students||[]).find(x=>x.id===kid);
+        if(s) await ogrenciYaz(s);
+      }
       await kocYaz();                                   // koç ayarları (süre/soru) HER ZAMAN yazılır
       YAZDURUM='ok'; rayDurum();
       KAYITHATA=0;                      // seri bozuldu
       kayitUyariKapat(); KU_SUS=0;      // yazma tuttu: uyarı varsa kalksın, susturma sıfırlansın
       setTimeout(()=>{ if(YAZDURUM==='ok'){YAZDURUM=''; rayDurum();} },1800);
     }catch(e){ YAZDURUM='hata|'+(e.message||e); rayDurum();
+      kirli.forEach(function(kid){ YAZKIRLI.add(kid); });   // yeniden denemede yine yazılsınlar
       KAYITHATA++;
       /* İlk hatada köşedeki "⚠ kaydedilemedi" yazısıyla yetin ve sessizce
          bir kez daha dene. Pencere ancak İKİNCİ kez de olmazsa açılır —
@@ -2535,15 +2546,29 @@ async function sunucudanOku(){
     s.notlar.push({ t:(n.eklendi||'').slice(0,10), m:n.metin });
   });
 
+  /* Sunucudan okunan hâlin izi: kayıtta yalnız bundan farklı olan gider. */
+  yeni.students.forEach(izKur);
   yeni.sel = yeni.students.length ? yeni.students[0].id : null;
   return yeni;
 }
 
-/* ---------- SUNUCUYA YAZ: tek öğrenci ---------- */
-async function ogrenciYaz(st){
-  if(!uuidMi(st.id)) st.id = yeniKimlik();
-  await sbYaz('ogrenciler', [{
-    id:st.id, koc_id:SB.uid, auth_id:st.authId||null,
+/* ---------- SUNUCUYA YAZ: tek öğrenci ----------
+   ★ 16 Eyl 2026 — FARK YAZIMI. Eskiden her kayıtta öğrencinin TÜM satırları
+   açılışta okunan kopyadan yazılıyor ve o kopyada olmayan uzak satırlar
+   siliniyordu. Öğrenci bu arada ödevi "yaptım" işaretlediyse geri alınıyor,
+   davet koduyla bağlandıysa auth_id null ile kopuyor, deneme eklediyse
+   fazlaSil onu siliyordu (denetim bulgusu, kodla doğrulandı). Artık yalnız
+   koçun değiştirdiği alanlar gider (sunucu.js → FARK). Satır biçimleri
+   tek yerde: iz de yazma da aynı fonksiyondan geçer, yoksa fark yalan söyler. */
+window.FARK = window.FARK || { iz:function(){}, izVar:function(){ return false; },
+  fark:function(a, l){ return { izYok:true, yeni:(l||[]).slice(), degisen:[], silinen:[] }; } };
+var KONU_ANAHTAR = function(r){ return r.ders + '|' + r.konu; };
+function ogrSatir(st){
+  /* auth_id ve davet_kodu BİLEREK yok: ikisini de sunucu/öğrenci tarafı
+     belirler, koçun bayat kopyası onları ezmemeli. Davet kodu ayrı PATCH ile
+     yazılır (davetKoduUret). */
+  return {
+    id:st.id, koc_id:SB.uid,
     ad:st.name||'', eposta:st.eposta||'', telefon:st.tel||'',
     sinif:st.grade||'', alan:st.track||'SAY', bolum:st.dept||'',
     hedef_puan:String(st.score||''), hedef_sira:String(st.rank||''),
@@ -2555,37 +2580,69 @@ async function ogrenciYaz(st){
     yerlesti:!!st.yerlesti,
     haftalik_saat:st.haftalikSaat===''||st.haftalikSaat==null?null:parseInt(st.haftalikSaat,10),
     hedef_netler:st.refNets||{}, arsivlendi:false,
-    davet_kodu: st.davetKodu||null,
     resit: !!st.resit, veli_ad: st.veliAd||'', veli_telefon: st.veliTel||'',
     veli_onay: st.veliOnay||null, veli_onay_notu: st.veliOnayNotu||''
-  }], 'id');
-
-  /* ödevler */
-  (st.tasks||[]).forEach(function(t){ if(!uuidMi(t.id)) t.id=yeniKimlik(); });
-  await sbYaz('odevler', (st.tasks||[]).map(function(t){
-    return { id:t.id, ogrenci_id:st.id, tarih:t.date, ders:t.sub, konu:t.konu||'',
-      soru:t.q||0, yapilan:t.yap||0, durum:t.s||0, rutin:!!t.rutin, ekstra:!!t.ekstra,
-      dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'',
-      dogru:+t.dg||0, yanlis:+t.yn||0, bos:+t.bs||0 };
-  }), 'id');
-
-  /* denemeler */
-  (st.exams||[]).forEach(function(e){ if(!uuidMi(e.id)) e.id=yeniKimlik(); });
-  await sbYaz('denemeler', (st.exams||[]).map(function(e){
-    return { id:e.id, ogrenci_id:st.id, tarih:e.date, ad:e.name||'',
-      tur:e.tur||'tyt', netler:e.n||{}, konu_analiz:e.an||[] };
-  }), 'id');
-
-  /* konular */
+  };
+}
+function odevSatir(st, t){
+  return { id:t.id, ogrenci_id:st.id, tarih:t.date, ders:t.sub, konu:t.konu||'',
+    soru:t.q||0, yapilan:t.yap||0, durum:t.s||0, rutin:!!t.rutin, ekstra:!!t.ekstra,
+    dk_soru:t.dks==null?null:t.dks, aciklama:t.txt||'',
+    dogru:+t.dg||0, yanlis:+t.yn||0, bos:+t.bs||0 };
+}
+function denemeSatir(st, e){
+  return { id:e.id, ogrenci_id:st.id, tarih:e.date, ad:e.name||'',
+    tur:e.tur||'tyt', netler:e.n||{}, konu_analiz:e.an||[] };
+}
+function konuSatirlari(st){
   var kSat=[];
   for(var ders in (st.topics||{}))
     for(var konu in st.topics[ders])
       kSat.push({ ogrenci_id:st.id, ders:ders, konu:konu, durum:st.topics[ders][konu] });
-  await sbYaz('konular', kSat, 'ogrenci_id,ders,konu');
+  return kSat;
+}
+/* Açılışta ve her başarılı yazmadan sonra: "sunucuda şu an bu var" izi. */
+function izKur(st){
+  FARK.iz('ogr:'+st.id,  [ogrSatir(st)]);
+  FARK.iz('odev:'+st.id, (st.tasks||[]).map(function(t){ return odevSatir(st,t); }));
+  FARK.iz('den:'+st.id,  (st.exams||[]).map(function(e){ return denemeSatir(st,e); }));
+  FARK.iz('konu:'+st.id, konuSatirlari(st), KONU_ANAHTAR);
+}
+async function ogrenciYaz(st){
+  if(!uuidMi(st.id)) st.id = yeniKimlik();
 
-  /* sunucuda kalmış ama yerelde silinmiş kayıtları temizle */
-  await fazlaSil('odevler',   st.id, (st.tasks||[]).map(function(t){return t.id;}));
-  await fazlaSil('denemeler', st.id, (st.exams||[]).map(function(e){return e.id;}));
+  /* öğrenci satırı: yeni öğrenciyse tam satır, değilse yalnız değişen alanlar */
+  var ogr=ogrSatir(st), fo=FARK.fark('ogr:'+st.id, [ogr]);
+  if(fo.izYok || fo.yeni.length) await sbYaz('ogrenciler', [ogr], 'id');
+  else if(fo.degisen.length)     await sbGuncelle('ogrenciler', '?id=eq.'+st.id, fo.degisen[0].alan);
+
+  /* ödevler */
+  (st.tasks||[]).forEach(function(t){ if(!uuidMi(t.id)) t.id=yeniKimlik(); });
+  var oSat=(st.tasks||[]).map(function(t){ return odevSatir(st,t); });
+  var f=FARK.fark('odev:'+st.id, oSat);
+  if(f.yeni.length) await sbYaz('odevler', f.yeni, 'id');
+  for(var i=0;i<f.degisen.length;i++) await sbGuncelle('odevler', '?id=eq.'+f.degisen[i].id, f.degisen[i].alan);
+  /* ÖĞRENCİNİN KENDİ KAYITLARI SİLİNMEZ (5 Eyl 2026 kuralı korunur):
+     ekstra=true (kendi çalışması) ve aciklama='Kendi rutinim' koçun
+     listesinden düşse bile sunucudan silinmez. */
+  var sil=f.silinen.filter(function(x){ return !(x.satir.ekstra===true || x.satir.aciklama===KENDI_RUTIN_ETIKET); })
+                   .map(function(x){ return x.id; });
+  if(sil.length) await sbSil('odevler', '?id=in.('+sil.join(',')+')');
+
+  /* denemeler */
+  (st.exams||[]).forEach(function(e){ if(!uuidMi(e.id)) e.id=yeniKimlik(); });
+  var dSat=(st.exams||[]).map(function(e){ return denemeSatir(st,e); });
+  var fd=FARK.fark('den:'+st.id, dSat);
+  if(fd.yeni.length) await sbYaz('denemeler', fd.yeni, 'id');
+  for(var j=0;j<fd.degisen.length;j++) await sbGuncelle('denemeler', '?id=eq.'+fd.degisen[j].id, fd.degisen[j].alan);
+  if(fd.silinen.length) await sbSil('denemeler', '?id=in.('+fd.silinen.map(function(x){ return x.id; }).join(',')+')');
+
+  /* konular: yalnız değişen ve yeni satırlar (600 satırlık tam upsert bitti) */
+  var kSat=konuSatirlari(st), fk=FARK.fark('konu:'+st.id, kSat, KONU_ANAHTAR);
+  var kYaz=fk.yeni.concat(fk.degisen.map(function(x){ return x.satir; }));
+  if(kYaz.length) await sbYaz('konular', kYaz, 'ogrenci_id,ders,konu');
+
+  izKur(st);   // hepsi tuttu: iz artık sunucudaki durumu gösteriyor
 }
 
 /* Öğrencinin kendi eklediği kayıtların işareti. Öğrenci panelindeki
@@ -2593,25 +2650,8 @@ async function ogrenciYaz(st){
    anlaşıyor. Değiştirirsen ikisini birden değiştir. */
 var KENDI_RUTIN_ETIKET = 'Kendi rutinim';
 
-/* ÖĞRENCİNİN KENDİ KAYITLARI SİLİNMEZ — 5 Eyl 2026.
-   Bu fonksiyon "yerelde olmayan uzak satırı sil" diyordu. Koç paneli
-   öğrencinin verisini AÇILIŞTA okuyor; öğrenci paneli açıkken bir şey
-   eklerse (kendi çalışması, kendi rutini) koçun elindeki liste eskimiş
-   olur ve ilk kayıtta o satır SESSİZCE siliniyordu. Öğrencinin ekranında
-   iş kayboluyor, kimse sebebini bilmiyor.
-   Artık öğrencinin yazdığı satırlar korunur: ekstra=true (kendi çalışması)
-   ve aciklama='Kendi rutinim' (kendi rutini). Koçun verdiği ödevlerde
-   davranış değişmez — onları yine temizler. */
-async function fazlaSil(tablo, ogrId, kalanlar){
-  var odev = (tablo==='odevler');
-  var uzak = await sbSorgu(tablo, '?ogrenci_id=eq.'+ogrId+'&select=id'+(odev?',ekstra,aciklama':''));
-  var kal = {}; kalanlar.forEach(function(i){ kal[i]=1; });
-  var silinecek = uzak.filter(function(r){
-    if(odev && (r.ekstra===true || r.aciklama===KENDI_RUTIN_ETIKET)) return false;
-    return !kal[r.id];
-  }).map(function(r){ return r.id; });
-  if(silinecek.length) await sbSil(tablo, '?id=in.('+silinecek.join(',')+')');
-}
+/* fazlaSil kaldırıldı (16 Eyl 2026): silme artık FARK izine göre yalnız
+   koçun gördüğü ve yerelde sildiği satırlarda yapılır — bkz. ogrenciYaz. */
 
 /* ---------- SUNUCUYA YAZ: koç ayarları ---------- */
 async function kocYaz(){
@@ -2962,7 +3002,11 @@ function saatY(h){
   return buc ? tam+' buçuk saat' : tam+' saat';
 }
 const net=(d,y)=>d-y/4;
-const today=()=>new Date().toISOString().slice(0,10);
+/* ★ 16 Eyl 2026 — YEREL GÜN. toISOString() UTC günü verir; Türkiye'de
+   00:00-03:00 arasında dünün tarihi çıkıyordu: o saatte verilen ödev
+   düne, Pazartesi gecesi verilen ödev GEÇEN HAFTAYA düşüyordu (ölçüldü:
+   Pzt 01:30'da weekKey(today()) bir önceki haftayı veriyordu). */
+const today=()=>{ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
 function weekKey(ds){const d=new Date(ds+'T00:00');const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10);}
 /* Görüntülenecek hafta: örnek öğrencinin verisi geçmişte donmuş olduğundan
    içinde ödev bulunan en son haftayı göster; kalıcı ödevler hafta geçse de kaybolmasın. */

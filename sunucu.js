@@ -87,3 +87,69 @@ window.OGRENCI_VIDEOLAR = [
 window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
 
 window.BIYOSER_WP = '905325874992';   // ülke kodu, başında + ve boşluk yok
+
+
+/* ============================================================
+   FARK YAZIMI — yalnız değişeni yaz, görmediğini silme   (16 Eyl 2026)
+   ------------------------------------------------------------
+   İki panel de öğrencinin satırlarını açılışta okuyup her kayıtta TÜM
+   satırları o kopyadan yazıyordu. Karşı taraf bu arada bir şey
+   değiştirdiyse (öğrenci ödevi "yaptım" işaretledi, koç ödevi başka güne
+   aldı, öğrenci deneme ekledi, öğrenci davet koduyla bağlandı) bayat
+   kopya onu eziyor ya da siliyordu.
+
+   Bu yardımcı açılışta okunan satırların izini tutar. Kayıtta yalnız
+     · izden farklı ALANLARI            → degisen  (PATCH, alan alan)
+     · izde hiç olmayan satırları       → yeni     (INSERT)
+     · izde olup yerelde silinenleri    → silinen  (DELETE)
+   gönderir. İzde olmayan uzak satıra DOKUNMAZ: onu karşı taraf yazmıştır.
+   İz yoksa (çevrimdışı yükleme, ilk aktarım) her satır "yeni" sayılır ve
+   eski davranış (tam upsert) sürer; silme yapılmaz.
+
+   Kullanım:
+     FARK.iz('odevler:'+ogrId, satirlar)             // açılışta, sunucu biçiminde
+     var f = FARK.fark('odevler:'+ogrId, simdiki)    // {izYok, yeni, degisen:[{id,alan}], silinen}
+     ... yaz ...
+     FARK.iz('odevler:'+ogrId, simdiki)              // yazma tuttuysa izi tazele
+   Bileşik anahtarlı tablo (konular): üçüncü bağımsız değişken anahtar
+   fonksiyonu, ör. function(r){ return r.ders+'|'+r.konu; }
+   ============================================================ */
+window.FARK = (function(){
+  var IZ = {};
+  function d(x){ return JSON.stringify(x===undefined ? null : x); }
+  function kimlik(r, anahtarAl){ return anahtarAl ? anahtarAl(r) : r.id; }
+  return {
+    iz: function(anahtar, satirlar, anahtarAl){
+      var m = {};
+      (satirlar || []).forEach(function(r){
+        if(!r) return;
+        var k = kimlik(r, anahtarAl); if(k == null) return;
+        m[k] = JSON.parse(d(r));                   // derin kopya: sonradan değişmesin
+      });
+      IZ[anahtar] = m;
+    },
+    izVar: function(anahtar){ return !!IZ[anahtar]; },
+    unut:  function(anahtar){ delete IZ[anahtar]; },
+    fark: function(anahtar, simdiki, anahtarAl){
+      var m = IZ[anahtar];
+      if(!m) return { izYok:true, yeni:(simdiki || []).slice(), degisen:[], silinen:[] };
+      var yeni = [], degisen = [], gorulen = {};
+      (simdiki || []).forEach(function(r){
+        if(!r) return;
+        var k = kimlik(r, anahtarAl); if(k == null) return;
+        gorulen[k] = 1;
+        var eski = m[k];
+        if(!eski){ yeni.push(r); return; }
+        var alan = {}, n = 0;
+        for(var a in r){
+          if(a === 'id') continue;
+          if(d(r[a]) !== d(eski[a])){ alan[a] = r[a]; n++; }
+        }
+        if(n) degisen.push({ id:k, alan:alan, satir:r });
+      });
+      var silinen = [];
+      for(var k2 in m) if(!gorulen[k2]) silinen.push({ id:k2, satir:m[k2] });
+      return { izYok:false, yeni:yeni, degisen:degisen, silinen:silinen };
+    }
+  };
+})();
