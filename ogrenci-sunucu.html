@@ -2463,6 +2463,9 @@ function tavsiyeUygula(){
 }
 function tavsiyeHaftalikKart(){
   const r=tavsiyeHesap();
+  /* Bu hafta zaten ödev alındıysa düğme "bu haftanın ödevi" değil,
+     "yeni ödev" der; yoksa öğrenci ikinci kez basmaya çekiniyor. */
+  const buHaftaVar=(D.tasks||[]).some(t=>!t.rutin && t.konu && weekKey(t.date)===weekKey(today()));
   const ADMAP=Object.fromEntries(subs(D));
   const sar=(ic)=>`<div class="card" style="border:1px solid var(--vurgu)"><h2>Bu haftanın planı<small>Ön koşul + çekirdek + güvenlik payı konuları; seni sınava kadar yetiştiren otomatik plan.</small></h2><div class="body">${ic}</div></div>`;
   if(r.durum==='agirlik') return sar(`<div class="flag warn"><span class="ic">i</span><span>Konu ağırlık verisi yüklenemedi; plan hesaplanamıyor.</span></div>`);
@@ -2511,8 +2514,9 @@ function tavsiyeHaftalikKart(){
     ${devrNot}
     ${valf}
     <div style="margin-top:6px">${liste}</div>
-    <button class="btn wide" style="margin-top:14px" onclick="tavsiyeUygula()">Bu haftanın ödevlerini bana ver (${r.secim.length} konu)</button>
-    <div class="hint" style="margin-top:8px">Plan her hafta yeniden hesaplanır: konu bitirdikçe kalan azalır. Verdiğin konular listeden düşer.</div>
+    <button class="btn wide" style="margin-top:14px" onclick="tavsiyeUygula()">${buHaftaVar?'Yeni ödev ver':'Bu haftanın ödevlerini bana ver'} (${r.secim.length} konu)</button>
+    <div class="hint" style="margin-top:8px">Plan her hafta yeniden hesaplanır: konu bitirdikçe kalan azalır. Verdiğin konular listeden düşer.
+      Bu düğmeye <b>istediğin zaman</b> basabilirsin — ödevini erken bitirdiysen haftayı beklemeden sıradakileri alırsın.</div>
   `);
 }
 
@@ -2532,9 +2536,27 @@ function soloKabulSeridi(wk){
   if(buHafta.length){
     const dk=buHafta.reduce((a,t)=>a+Math.round(sureOf(t.sub,t.konu))
                                     +Math.round(efektifKatsayi(t.sub,t.konu)*(t.q||0)),0);
+    /* ★ 16 Eyl 2026 — ÖDEVİ BİTİRİNCE YENİSİ.
+       Motor bunu zaten yapabiliyordu: bitmiş konu kapsamdan düşer ve
+       tavsiyeHesap() sıradaki konuları döndürür (ölçüldü). Eksik olan tek
+       şey öğrenciye söylemekti — şerit "kabul ettin ✓" deyip susuyordu,
+       öğrenci de yeni ödev için haftanın bitmesini bekliyordu. */
+    const kalanIs = buHafta.filter(t=>t.s!==1).length + devreden.length;
+    if(!kalanIs){
+      const y=tavsiyeHesap();
+      const kutla = `<b>Bu haftanın ${buHafta.length} ödevinin hepsini bitirdin.</b>`;
+      return (y.durum==='ok' && y.secim.length)
+        ? `<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
+            ${kutla} Haftanın bitmesini beklemene gerek yok — sıradaki konuları şimdi alabilirsin.
+            <div style="margin-top:9px"><button class="btn mini" onclick="tavsiyeUygula()">Yeni ödev ver (${y.secim.length} konu)</button></div>
+            </span></div>`
+        : `<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
+            ${kutla} Kapsamda verilecek başka konu kalmadı.</span></div>`;
+    }
     return `<div class="flag ok" style="margin-bottom:12px"><span class="ic">✓</span><span>
       <b>Bu haftanın ödevlerini kabul ettin — ${buHafta.length} konu, tahmini ${sa(dk)}.</b>
-      <b>Programım</b> sekmesinde haftalık takvimine dağıtıldı.</span></div>`;
+      <b>Programım</b> sekmesinde haftalık takvimine dağıtıldı.
+      Bitirince buradan yeni ödev alabilirsin.</span></div>`;
   }
   if(devreden.length){
     return `<div class="flag warn" style="margin-bottom:12px"><span class="ic">!</span><span>
