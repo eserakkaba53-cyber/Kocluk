@@ -824,7 +824,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
-<script src="mesaj.js?v=20260909a"></script>
+<script src="mesaj.js?v=20260916b"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -5214,10 +5214,13 @@ function kaynakUyarisi(){
   }
   if(sbOturum()){
     try{ const dd=await ogrSunucudanOku();
-      if(dd){ if(lisansKapisi()) return; D=dd; render(); return; }
+      if(dd){ if(lisansKapisi()) return; D=dd; render();
+        /* Rozet taze girişte (sunucuAc) alınıyordu, oturum geri yüklenirken alınmıyordu. */
+        try{ if(typeof MESAJ!=='undefined') MESAJ.sayaciTazele(); }catch(e){}
+        return; }
       GMOD='kod'; render(); return;
     }catch(e){
-      if(e.kod===401){ try{ await sbTazele(); const dd=await ogrSunucudanOku(); if(dd){ if(lisansKapisi()) return; D=dd;render();return;} }catch(e2){ sbCikis(); } }
+      if(e.kod===401){ try{ await sbTazele(); const dd=await ogrSunucudanOku(); if(dd){ if(lisansKapisi()) return; D=dd;render(); try{ if(typeof MESAJ!=='undefined') MESAJ.sayaciTazele(); }catch(e){} return;} }catch(e2){ sbCikis(); } }
       else GHATA='Sunucuya ulaşılamadı: '+(e.message||e);
     }
   }

@@ -66,7 +66,12 @@ window.MESAJ = (function(){
     try{
       D.benim = await cagir('mesajlarim') || [];
       D.sayac = 0;                       // açınca yöneticinin cevapları okundu sayılır
-    }catch(e){ D.hata = e.message||String(e); }
+    }catch(e){ D.hata = e.message||String(e);
+      /* ★ 16 Eyl 2026 — benim null kalınca kartKullanici her çizimde yeniden
+         yüklemeyi kuruyor ve hata sürerken sonsuz istek + çizim döngüsü
+         oluşuyordu. Boş liste ile dur; hata kartta görünür, kullanıcı
+         "Yenile" ile tekrar dener. */
+      D.benim = D.benim || []; }
     D.yukleniyor = false; ciz();
   }
   async function gonder(){
@@ -75,10 +80,14 @@ window.MESAJ = (function(){
     if(!m){ alert('Mesaj boş olamaz.'); return; }
     var btn = document.getElementById('msjGonder');
     if(btn){ btn.disabled = true; btn.textContent = 'Gönderiliyor…'; }
+    /* ★ 16 Eyl 2026 — TASLAK KORUNUR. Gönderim başarısız olunca ciz() kartı
+       yeniden çiziyor ve textarea BOŞ geliyordu: kullanıcı yazdığını
+       kaybediyordu. Metin D.taslak'ta durur, ancak başarıda silinir. */
+    D.taslak = m;
     try{
       var r = await cagir('mesaj_gonder', {p_metin: m});
       if(!r || !r.ok) throw new Error((r && r.hata) || 'Gönderilemedi.');
-      if(el) el.value='';
+      if(el) el.value=''; D.taslak='';
       D.benim = await cagir('mesajlarim') || [];
       D.hata='';
     }catch(e){ D.hata = e.message||String(e); }
@@ -125,9 +134,10 @@ window.MESAJ = (function(){
     return '<div class="card"><h2>Yönetime mesaj'+
       '<small>Sorun, öneri ya da soru yaz — yönetim buradan cevaplar.</small></h2>'+
       '<div class="body">'+
-        (D.hata ? '<div class="flag bad" style="margin-bottom:10px"><span class="ic">!</span><span>'+esc(D.hata)+'</span></div>' : '')+
+        (D.hata ? '<div class="flag bad" style="margin-bottom:10px"><span class="ic">!</span><span>'+esc(D.hata)+
+                  ' <button class="btn ghost mini" onclick="MESAJ.tazele()">Yenile</button></span></div>' : '')+
         liste+
-        '<textarea id="msjMetin" rows="3" maxlength="2000" placeholder="Mesajını yaz…" style="margin-top:12px;resize:vertical"></textarea>'+
+        '<textarea id="msjMetin" rows="3" maxlength="2000" placeholder="Mesajını yaz…" style="margin-top:12px;resize:vertical">'+esc(D.taslak||'')+'</textarea>'+
         '<button class="btn" id="msjGonder" style="margin-top:8px" onclick="MESAJ.gonder()">Gönder</button>'+
         '<div class="hint" style="margin-top:8px">Cevap geldiğinde bu sekmenin yanında bildirim işareti çıkar.</div>'+
       '</div></div>';
@@ -164,10 +174,11 @@ window.MESAJ = (function(){
     var el = document.getElementById('msjYanit');
     var m = (el ? el.value : '').trim();
     if(!m){ alert('Mesaj boş olamaz.'); return; }
+    D.yanitTaslak = m;
     try{
       var r = await cagir('mesaj_yanitla', {p_kullanici: D.acik, p_metin: m});
       if(!r || !r.ok) throw new Error((r && r.hata) || 'Gönderilemedi.');
-      if(el) el.value='';
+      if(el) el.value=''; D.yanitTaslak='';
       var k = await cagir('mesaj_konusma', {p_kullanici: D.acik});
       if(k && k.ok) D.acikVeri = k;
       D.konusmalar = await cagir('mesaj_konusmalar') || [];
@@ -176,6 +187,9 @@ window.MESAJ = (function(){
     ciz();
   }
   async function sil(uid, ad){
+    /* Ad onclick içine gömülmüyor (ters bölü içeren ad JS dizgesini bozuyordu);
+       listeden bulunur. */
+    if(!ad){ var kk=(D.konusmalar||[]).filter(function(x){ return x.kullanici===uid; })[0]; ad = kk ? (kk.ad||'') : ''; }
     /* Silme İKİ TARAFTAN birden kaldırır — satırlar fiziksel olarak
        gidiyor. Geri alınamaz, o yüzden açıkça uyarılır. */
     if(!confirm((ad?('"'+ad+'" ile olan '):'Bu ')+'konuşmanın TAMAMI silinecek.\n\n'+
@@ -216,7 +230,7 @@ window.MESAJ = (function(){
       return '<div class="card"><h2>'+esc(kisi.ad||'Konuşma')+
         '<small>'+esc(kisi.rol||'')+(bos?' · yeni konuşma':' · mesajlar okundu işaretlendi')+'</small></h2><div class="body">'+
         hata + govde +
-        '<textarea id="msjYanit" rows="3" maxlength="2000" placeholder="'+(bos?'Mesajını yaz…':'Cevabını yaz…')+'" style="margin-top:12px;resize:vertical"></textarea>'+
+        '<textarea id="msjYanit" rows="3" maxlength="2000" placeholder="'+(bos?'Mesajını yaz…':'Cevabını yaz…')+'" style="margin-top:12px;resize:vertical">'+esc(D.yanitTaslak||'')+'</textarea>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
           '<button class="btn" onclick="MESAJ.yanitla()">'+(bos?'Mesajı gönder':'Cevap gönder')+'</button>'+
           '<button class="btn ghost" onclick="MESAJ.kapat()">Listeye dön</button>'+
@@ -241,7 +255,7 @@ window.MESAJ = (function(){
           '<td class="num" style="color:var(--ink-3);font-size:12px">'+esc(zaman(k.son))+'</td>'+
           '<td class="num">'+(okunmamis?'<span class="msj-rozet">'+okunmamis+'</span>':'·')+'</td>'+
           '<td><button class="btn '+(okunmamis?'':'ghost')+' mini" onclick="MESAJ.ac(\''+esc(k.kullanici)+'\')">aç</button> '+
-              '<button class="btn danger mini" onclick="MESAJ.sil(\''+esc(k.kullanici)+'\',\''+esc(String(k.ad||'').replace(/'/g,''))+'\')">sil</button></td>'+
+              '<button class="btn danger mini" onclick="MESAJ.sil(\''+esc(k.kullanici)+'\')">sil</button></td>'+
         '</tr>';
       }).join('') + '</tbody></table>';
 
