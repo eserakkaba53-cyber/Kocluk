@@ -1623,16 +1623,39 @@ function applyKarne(){
   const box=document.getElementById('kzOut');
 
   // 1) BİRİNCİL: konu analizi tablosu — hem net hem yanlış konuları verir
-  const tablo=parseKonuTablo(txt);
+  /* ★ 18 Eyl 2026 — NETİN KAYNAĞI ÖZET TABLOSUDUR.
+     Eskiden ders netleri konu analizi tablosundan toplanıyordu. Konu
+     bloklarının sınırı kayınca netler bozuluyordu: 37 gerçek karnede 364
+     alanın 216'sı YANLIŞ okundu, Tarih/Coğrafya/Felsefe/Din'in hepsi tam iki
+     katı çıktı. Karnenin üst özet tablosu S=D+Y+B ve Net=D-Y/4 ile kendi
+     kendini doğrular, parseKarne onu aynı 37 karnede 364/364 doğru okuyor.
+     Konu tablosu artık yalnız KONU DÖKÜMÜ için kullanılıyor. */
+  const r=parseKarne(txt,st);
   const gecerli=new Set(subs(st).map(x=>x[0]));
   const out={}, log=[], uyari=[];
+  Object.assign(out, r.out); log.push(...r.log);
+
+  const tablo=parseKonuTablo(txt);
   PENDING_AN=[];
   for(const sk in tablo){
     if(!gecerli.has(sk)){ uyari.push(`${subName(sk)} karnede var ama öğrencinin alanında yok, atlandı.`); continue; }
     const B=tablo[sk], q=subQ(sk);
-    if(B.ss!==q) uyari.push(`${subName(sk)}: karnede ${B.ss} soru görünüyor, bu derste ${q} olmalı. Kontrol et.`);
-    out[sk]={d:B.d,y:B.y};
-    log.push(`${subName(sk)}: ${B.d} doğru / ${B.y} yanlış → ${n1(B.d-B.y/4)} net`);
+    /* Özet tablo okunamadıysa konu tablosu netin yedeği olabilir, ama ancak
+       blok tam o dersin soru sayısını kapsıyorsa. */
+    if(!out[sk] && B.ss===q){
+      out[sk]={d:B.d,y:B.y};
+      log.push(`${subName(sk)}: ${B.d} doğru / ${B.y} yanlış → ${n1(B.d-B.y/4)} net (konu tablosundan)`);
+    }
+    /* Konu dökümü EKSİK olabilir (yayıncı her soruyu konuya bağlamıyor; ölçüldü:
+       Din 5 sorunun 4'ünü, Matematik 30 sorunun 24'ünü listeliyor) ama FAZLA
+       olamaz. Netten fazlasını gösteren blok yanlış dilimlenmiştir, konuları da
+       yanlıştır; kaydedilmez. */
+    const net=out[sk];
+    const tutarli = net ? (B.ss<=q && B.d<=net.d && B.y<=net.y) : (B.ss===q);
+    if(!tutarli){
+      uyari.push(`${subName(sk)}: konu dökümü netlerden fazlasını gösteriyor (konularda ${B.ss} soru / ${B.d} doğru / ${B.y} yanlış, karnede ${net?`${q} soru / ${net.d} doğru / ${net.y} yanlış`:`${q} soru`}). Bu dersin konu analizi atlandı.`);
+      continue;
+    }
     B.konu.forEach(k=>{
       const [konu,unite,esub]=konuEsle(sk,k.ad);
       /* ss/d de aktarılır — "bu konudan kaç soru çıktı" ve "doğru oranı"
@@ -1645,14 +1668,8 @@ function applyKarne(){
     });
   }
 
-  // 2) YEDEK: konu tablosu yoksa eski net-tablosu ayrıştırıcısı
-  let yedek=false;
-  if(!Object.keys(out).length){
-    const r=parseKarne(txt,st);
-    Object.assign(out,r.out); log.push(...r.log);
-    PENDING_AN=parseKonular(txt,st);
-    yedek=true;
-  }
+  // 2) YEDEK: ne özet tablo ne konu tablosu okunduysa serbest konu ayrıştırıcısı
+  if(!Object.keys(out).length && !PENDING_AN.length) PENDING_AN=parseKonular(txt,st);
 
   /* ★ 18 Eyl 2026 — Okunamayan dersler adıyla yazılır; okuyucu sessizce
      boş bırakınca koç eksiği fark etmiyordu. */
@@ -1681,7 +1698,7 @@ function applyKarne(){
   const ty=PENDING_AN.reduce((a,r)=>a+r.y,0), tb=PENDING_AN.reduce((a,r)=>a+r.b,0);
   const eslesen=PENDING_AN.filter(r=>!r.unite.startsWith('Karne konusu')).length;
   box.innerHTML=`
-    <div class="flag ok"><span class="ic">✓</span><span><b>${log.length} dersin neti okundu</b>${yedek?' (net tablosundan)':' (konu analizi tablosundan)'}. Forma yazıldı.<br>${log.join('<br>')}</span></div>
+    <div class="flag ok"><span class="ic">✓</span><span><b>${log.length} dersin neti okundu</b> (karnenin net tablosundan). Forma yazıldı.<br>${log.join('<br>')}</span></div>
     ${PENDING_AN.length?`<div class="flag ok"><span class="ic">✓</span><span><b>${PENDING_AN.length} konu okundu</b> — ${ty} yanlış, ${tb} boş. ${eslesen}'i konu listesiyle eşleşti.</span></div>`
       :`<div class="flag warn"><span class="ic">·</span><span>Konu dökümü çıkmadı. Karnede konu analizi yoksa normaldir.</span></div>`}
     ${uyari.map(u=>`<div class="flag warn"><span class="ic">!</span><span>${esc(u)}</span></div>`).join('')}
@@ -1805,6 +1822,28 @@ function satirBirlestir(text){
   }
   return cikti;
 }
+/* ★ 18 Eyl 2026 — ÖZET SATIRI KONU DEĞİLDİR.
+   Karnenin üst özet tablosunda her ders "Tarih-1 5 5 0 0 5,00" biçiminde bir
+   satır. Bu satırlar konu tablosuna iki ayrı yoldan sızıyordu:
+     1) dersBasligiMi onları blok başlığı sanıyor, satırın kendi sayıları
+        "adı okunamayan konu" diye bloğa ekleniyordu. Aşağıdaki gerçek konu
+        tablosu da aynı derse eklenince ders TAM İKİ KATINA çıkıyordu.
+     2) Ders adı tanınmayan özet satırları ("TYT Fen 20 1 2 17 0,50") konu
+        sanılıp o an açık olan bloğa yazılıyordu; Biyoloji 6 soruluk ders
+        26 soru görünüyordu.
+   Ölçüldü: 37 gerçek karne, 364 alanın 216'sı yanlış.
+   Ayırt edici: özet satırının son sütunu NET'tir. S=D+Y+B, Net=D-Y/4 ve net
+   ondalık yazılır ("5,00"). Konu tablosunun son sütunu tam sayı yüzdedir, o
+   yüzden ondalık koşulu "Konu 1 0 0 1 0" gibi gerçek konu satırlarını korur. */
+function ozetSatiriMi(raw){
+  const m=String(raw).match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
+  if(!m) return false;
+  const t=m[1].match(/-?\d+(?:[.,]\d+)?/g)||[];
+  if(t.length!==5) return false;
+  if(!/[.,]/.test(t[4])) return false;                 // net ondalık yazılır
+  const n=t.map(x=>parseFloat(x.replace(',','.')));
+  return n[0]===n[1]+n[2]+n[3] && Math.abs(n[4]-(n[1]-n[2]/4))<0.02;
+}
 function parseKonuTablo(text){
   let akt=null; const bloklar=[];
   satirBirlestir(text).forEach(raw=>{
@@ -1815,12 +1854,13 @@ function parseKonuTablo(text){
       akt={key:b,ss:0,d:0,y:0,konu:[]}; bloklar.push(akt);
       const tm=raw.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
       const art=tm?konuSatiri('Adı okunamayan konu'+tm[1]):null;
-      if(art&&art.ss>0&&art.ss<=5){ akt.ss+=art.ss; akt.d+=art.d; akt.y+=art.y;
+      if(art&&!ozetSatiriMi(raw)&&art.ss>0&&art.ss<=5){ akt.ss+=art.ss; akt.d+=art.d; akt.y+=art.y;
         /* ss (o konudan çıkan soru) ve d (doğru) DE taşınır. Eskiden yalnız
            y/b saklanıyordu; konu başına doğru ORANI hesaplanamıyordu. */
         if(art.y||art.b) akt.konu.push({ad:'(adı okunamayan konu)',ss:art.ss,d:art.d,y:art.y,b:art.b}); }
       return;
     }
+    if(ozetSatiriMi(raw)) return;          /* özet satırı konu değildir */
     const k=konuSatiri(raw);
     if(!k||!akt) return;
     akt.ss+=k.ss; akt.d+=k.d; akt.y+=k.y;
@@ -1898,6 +1938,12 @@ function parseKonular(text,st){
       if((L.includes(nk)||(nk.length>12&&nk.includes(L)&&L.length>10))&&nk.length>bl){best=[orj,un];bl=nk.length;}
     });
     if(!best) return;
+    /* ★ 18 Eyl 2026 — SAYISIZ SATIRDAN KONU UYDURMA. Satırda hiç sayı yoksa
+       konuCoz son çare olarak "1 boş" döndürüyordu; dikey düzenli karnelerde
+       konu adı ile sayıları ayrı satırlara düştüğü için HER öğrenciye aynı
+       uydurma konu listesi yazılıyordu (ölçüldü: 37 karnede 1110 satır, hepsi
+       aynı ve hepsi "1 boş"). Sayı yoksa o satırdan konu çıkarılmaz. */
+    if(!nums.length) return;
     const c=konuCoz(nums,mod);
     if(!c.y&&!c.b) return;
     bulunan.push({sub:ders,konu:best[0],unite:best[1],y:c.y,b:c.b});
