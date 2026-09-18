@@ -1623,6 +1623,21 @@ function applyKarne(){
   const box=document.getElementById('kzOut');
 
   // 1) BİRİNCİL: konu analizi tablosu — hem net hem yanlış konuları verir
+  /* ★ 18 Eyl 2026 — ÇOK ÖĞRENCİLİ YAPIŞTIRMA. Sınıfın bütün karneleri tek
+     PDF'te geliyor. Önce sayfalara bölünür, seçili öğrencinin sayfası seçilir;
+     bulunamazsa okumak yerine durulur. Yanlış öğrencinin netini kaydetmek,
+     hiç kaydetmemekten kötüdür. */
+  const sayfa=karneSayfalari(txt);
+  let metin=txt;
+  if(sayfa){
+    const ara=norm(st.name||'');
+    const esl=ara?sayfa.filter(p=>norm(p).includes(ara)):[];
+    if(esl.length!==1){
+      box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${sayfa.length} öğrencinin karnesi</b> var${esl.length>1?` ve ${esc(st.name)} adı birden çok sayfada geçiyor`:`, seçili öğrencinin (${esc(st.name)}) sayfası bulunamadı`}. PDF'te yalnız o öğrencinin sayfasını seçip kopyala, sonra yapıştır.</span></div>`;
+      return;
+    }
+    metin=esl[0];
+  }
   /* ★ 18 Eyl 2026 — NETİN KAYNAĞI ÖZET TABLOSUDUR.
      Eskiden ders netleri konu analizi tablosundan toplanıyordu. Konu
      bloklarının sınırı kayınca netler bozuluyordu: 37 gerçek karnede 364
@@ -1630,12 +1645,12 @@ function applyKarne(){
      katı çıktı. Karnenin üst özet tablosu S=D+Y+B ve Net=D-Y/4 ile kendi
      kendini doğrular, parseKarne onu aynı 37 karnede 364/364 doğru okuyor.
      Konu tablosu artık yalnız KONU DÖKÜMÜ için kullanılıyor. */
-  const r=parseKarne(txt,st);
+  const r=parseKarne(metin,st);
   const gecerli=new Set(subs(st).map(x=>x[0]));
   const out={}, log=[], uyari=[];
   Object.assign(out, r.out); log.push(...r.log);
 
-  const tablo=parseKonuTablo(txt);
+  const tablo=parseKonuTablo(metin);
   PENDING_AN=[];
   for(const sk in tablo){
     if(!gecerli.has(sk)){ uyari.push(`${subName(sk)} karnede var ama öğrencinin alanında yok, atlandı.`); continue; }
@@ -1669,7 +1684,7 @@ function applyKarne(){
   }
 
   // 2) YEDEK: ne özet tablo ne konu tablosu okunduysa serbest konu ayrıştırıcısı
-  if(!Object.keys(out).length && !PENDING_AN.length) PENDING_AN=parseKonular(txt,st);
+  if(!Object.keys(out).length && !PENDING_AN.length) PENDING_AN=parseKonular(metin,st);
 
   /* ★ 18 Eyl 2026 — Okunamayan dersler adıyla yazılır; okuyucu sessizce
      boş bırakınca koç eksiği fark etmiyordu. */
@@ -1843,6 +1858,38 @@ function ozetSatiriMi(raw){
   if(!/[.,]/.test(t[4])) return false;                 // net ondalık yazılır
   const n=t.map(x=>parseFloat(x.replace(',','.')));
   return n[0]===n[1]+n[2]+n[3] && Math.abs(n[4]-(n[1]-n[2]/4))<0.02;
+}
+/* ★ 18 Eyl 2026 — TEK PDF'TE ÇOK ÖĞRENCİ. Yayıncı sınıfın bütün karnelerini
+   tek PDF'te veriyor (elimizdeki dosyada 37 öğrenci) ve panelin kendi
+   yönergesi "Ctrl+A → Ctrl+C ile TAMAMINI kopyala" diyor. Okuyucunun sayfa
+   kavramı yoktu: 37 sayfalık metinden yalnız ilk öğrencinin netleri okunuyor
+   ve hangi öğrenci seçiliyse onun formuna yazılıyordu. Bir dersi karnesinde
+   hiç olmayan öğrencinin kutusu da sessizce başka öğrenciden doluyordu.
+   Sayfa işareti: bir dersin KENDİ özet satırı (toplam satırları "TYT Matematik
+   40 ..." aynı ders koduna düşer, onları soru sayısı elemesi ayıklar). Aynı
+   ders ikinci kez görülünce yeni öğrenci başlamıştır. */
+function karneSayfalari(text){
+  const sat=satirBirlestir(text);
+  const veriMi=l=>ozetSatiriMi(l)||!!konuSatiri(l);
+  const dersi=l=>{
+    if(!ozetSatiriMi(l)) return null;
+    const k=dersBasligiMi(l);
+    if(!k||k==='ATLA') return null;
+    const m=l.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);   // ders adındaki "-1" sayılmasın
+    const n=((m&&m[1].match(/-?\d+(?:[.,]\d+)?/g))||[]).map(x=>parseFloat(x.replace(',','.')));
+    return (n.length===5 && n[0]===subQ(k)) ? k : null;
+  };
+  const bas=[0]; let gorulen={};
+  for(let i=0;i<sat.length;i++){
+    const k=dersi(sat[i]); if(!k) continue;
+    if(gorulen[k]){
+      let j=i; while(j>bas[bas.length-1] && !veriMi(sat[j-1])) j--;   // başlık satırlarını yeni sayfaya ver
+      bas.push(j); gorulen={};
+    }
+    gorulen[k]=1;
+  }
+  if(bas.length<2) return null;                                      // tek öğrenci
+  return bas.map((b,i)=>sat.slice(b, i+1<bas.length?bas[i+1]:sat.length).join('\n'));
 }
 function parseKonuTablo(text){
   let akt=null; const bloklar=[];
