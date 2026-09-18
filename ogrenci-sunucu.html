@@ -1365,8 +1365,30 @@ function kDersBul(satir){
 /* Bir satırda BİRDEN FAZLA ders olabilir:
    "TYT Türkçe 40 31 5 4 29,75 % 74   Matematik-1 30 8 2 20 7,50 % 25"
    Hepsini yerleriyle döndürür; her ders kendi parçasındaki sayılarla çözülür. */
+/* ★ 18 Eyl 2026 — KONUM HARİTASI. Ders adları norm()'lanmış metinde aranıp
+   bulunan konumlar HAM metinde dilimleniyordu; norm() boşlukları sıkıştırdığı
+   için her sıkışan boşluk kadar kayma oluyor ve dersin sayıları yanlış
+   dilimleniyordu (ölçüldü: "Fizik 7 0 1 6 -0,25" dilimi "Başarı Fizik 7 0 1"
+   olarak çıkıyor, ders ya hiç okunmuyor ya da konu tablosundan yanlış
+   okunuyordu). Bu fonksiyon norm() ile AYNI metni üretir, ek olarak her
+   karakterin ham metindeki yerini tutar. */
+function normHarita(s){
+  const cikti=[], yer=[];
+  let bosluk=true;                       // baştaki boşlukları at (norm trim eder)
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(/\s/.test(c)){ if(!bosluk){ cikti.push(' '); yer.push(i); bosluk=true; } continue; }
+    bosluk=false;
+    let d=c.toLocaleLowerCase('tr-TR');
+    d=({'ı':'i','İ':'i','ş':'s','Ş':'s','ğ':'g','Ğ':'g','ü':'u','Ü':'u','ö':'o','Ö':'o','ç':'c','Ç':'c'})[d]||d;
+    for(const ch of d){ cikti.push(ch); yer.push(i); }
+  }
+  while(cikti.length && cikti[cikti.length-1]===' '){ cikti.pop(); yer.pop(); }
+  yer.push(s.length);                    // son sınır
+  return {n:cikti.join(''), yer};
+}
 function kDersleriBul(satir){
-  const L=norm(satir);
+  const H=normHarita(satir), L=H.n;
   const bulunan=[];
   for(const [ad,kod] of KARNE_DERS){
     let i=0;
@@ -1378,7 +1400,7 @@ function kDersleriBul(satir){
       if(/[a-z0-9çğıöşü]/.test(onceki)) continue;          // kelime ortası
       if(/[a-zçğıöşü]/.test(sonraki)) continue;            // daha uzun bir adın parçası
       if(bulunan.some(x=>bas<x.son && son>x.bas)) continue; // daha uzun eşleşmeyle çakışıyor
-      bulunan.push({kod, bas, son});
+      bulunan.push({kod, bas, son, hamBas:H.yer[bas], hamSon:H.yer[son]});
     }
   }
   return bulunan.sort((a,b)=>a.bas-b.bas);
@@ -1402,7 +1424,11 @@ function kNetCoz(nums, soru){
     else if(Number.isInteger(B)&&B>=0&&D+Y+B===S) koy(D,Y,'SDYB',2);
   }
   // 2) [D,Y,Net] — soru sayısı satırda yok. Sıfır satırları kabul edilmez.
-  if(!en) for(let i=0;i+2<nums.length;i++){
+  /* ★ 18 Eyl 2026 — En zayıf kanıt yalnız dilimin BAŞINDA geçerli. Eskiden
+     dilimin ortasındaki herhangi üç sayı kabul ediliyordu; konu tablosu
+     satırları ("... 1 1 0 100 Fizik 0 0 0 0") dersin yerine uydurma değer
+     yazdırıyordu (ölçüldü: 37 karnede 38 yanlış okuma). */
+  if(!en) for(let i=0;i<1 && i+2<nums.length;i++){
     const D=nums[i], Y=nums[i+1], N=nums[i+2];
     if(!Number.isInteger(D)||!Number.isInteger(Y)||D<0||Y<0) continue;
     if(D+Y===0) continue;                   // "Türkçe 0 0 0 0" gibi başlık satırlarını ele
@@ -1423,8 +1449,9 @@ function karneSatirlardan(text, list){
     bul.forEach((b,j)=>{
       if(b.kod==='__atla') return;
       // bu dersin parçası: kendi adından sonraki ders adına kadar
-      const son = j+1<bul.length ? bul[j+1].bas : raw.length;
-      const parca = raw.slice(b.son, son);
+      /* ham konumlar: norm() kaymasından sonra doğru dilim (bkz. normHarita) */
+      const son = j+1<bul.length ? bul[j+1].hamBas : raw.length;
+      const parca = raw.slice(b.hamSon, son);
       const nums=(parca.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(s=>parseFloat(s.replace(',','.')));
       if(nums.length<3) return;
       const r=kNetCoz(nums, soruSay[b.kod]);
@@ -1434,6 +1461,46 @@ function karneSatirlardan(text, list){
       out[b.kod]={d:r.d,y:r.y}; kanit[b.kod]=r.g; puan[b.kod]=r.p;
     });
   });
+  return {out,kanit};
+}
+
+/* ---------- A2) DİKEY DÜZEN (her sayı ayrı satırda) ----------
+   ★ 18 Eyl 2026 — PDF karnelerin Chrome/Acrobat kopyasında ders adı bir
+   satırda, S/D/Y/B/Net alt alta gelir. Satır tabanlı okuyucu bu karnelerde
+   HİÇBİR dersi okuyamıyordu (ölçüldü: 37 karne, 364 alanın 364'ü boş).
+   Ders adı satırda YALNIZ BAŞINA ise sonraki sayı satırları toplanır; aynı
+   net denklemiyle doğrulanır, doğrulanmayan kabul edilmez. */
+function karneDikeyden(text, list){
+  const out={}, kanit={}, puan={};
+  const soruSay={}; list.forEach(([k,,q])=>soruSay[k]=q);
+  soruSay.tyt_mat_top=40; soruSay.ayt_mat_top=40; soruSay.tyt_fen_top=20; soruSay.tyt_sos_top=20;
+  const sat=text.split(/[\r\n]+/).map(s=>s.trim());
+  const sayiMi=t=>/^-?\d+(?:[.,]\d+)?$/.test(t);
+  const say=t=>parseFloat(t.replace(',','.'));
+  for(let i=0;i<sat.length;i++){
+    const bul=kDersleriBul(sat[i]);
+    if(bul.length!==1) continue;
+    const b=bul[0];
+    if(b.kod==='__atla') continue;
+    /* Satırda ders adından başka bir şey olmamalı: "Biyoloji ve Canlıların
+       Ortak Özellikleri" gibi KONU satırları ders sanılmasın. */
+    if(b.hamBas!==0) continue;
+    if(sat[i].slice(b.hamSon).replace(/[\s.:·|)(-]/g,'')) continue;
+    const nums=[];
+    for(let j=i+1;j<sat.length && nums.length<6;j++){
+      const t=sat[j];
+      if(!t) continue;
+      if(t.charAt(0)==='%') break;          // "% 75" başarı sütunu: bölüm bitti
+      if(!sayiMi(t)) break;                 // sayı olmayan satır: bölüm bitti
+      nums.push(say(t));
+    }
+    if(nums.length<4) continue;             // en az S,D,Y,Net
+    const r=kNetCoz(nums, soruSay[b.kod]);
+    if(!r) continue;
+    const eski=puan[b.kod];
+    if(eski!==undefined && eski>=r.p) continue;
+    out[b.kod]={d:r.d,y:r.y}; kanit[b.kod]=r.g+' (dikey)'; puan[b.kod]=r.p;
+  }
   return {out,kanit};
 }
 
@@ -1464,11 +1531,19 @@ function karneSutunlardan(text){
   if(!D||!Y||!N) return {out,kanit:{}};
   const kanit={};
   const gecerli=kodlar.filter(x=>x&&x!=='__atla');
-  // hizalama: ders sayısı ile sayı sayısı uyuşmalı
-  const n=Math.min(gecerli.length, D.length, Y.length, N.length);
+  /* ★ 18 Eyl 2026 — SÜTUN HİZALAMASI. Tanınmayan sütun adları listeden
+     atılıyor, kalanlar baştan sayılarla eşleştiriliyordu: başlıkta tanınmayan
+     TEK bir ders ("Matematik") bütün sütunları kaydırıp değerleri YANLIŞ derse
+     yazıyordu (ölçüldü). Sayı sayısı başlıktaki sütun sayısına eşitse boşluklar
+     yerinde tutulur; hiçbiri tutmuyorsa hiç okunmaz. */
+  const sira = (D.length===kodlar.length && Y.length===kodlar.length && N.length===kodlar.length)
+    ? kodlar
+    : (D.length===gecerli.length && Y.length===gecerli.length && N.length===gecerli.length ? gecerli : null);
+  if(!sira) return {out,kanit};
+  const n=Math.min(sira.length, D.length, Y.length, N.length);
   for(let j=0;j<n;j++){
-    const kod=gecerli[j];
-    if(out[kod]) continue;
+    const kod=sira[j];
+    if(!kod || kod==='__atla' || out[kod]) continue;
     if(Math.abs(N[j]-(D[j]-Y[j]/4))<0.02){ out[kod]={d:D[j],y:Y[j]}; kanit[kod]='sutun'; }
   }
   return {out,kanit};
@@ -1510,6 +1585,41 @@ function karneSabitDuzen(text){
 /* ---------- D) KONU TABLOSUNDAN TOPLAM ----------
    Bazı karnelerde (AKBİM) özet tablo ders ders vermez; konu analizi tablosunun
    satırları toplanarak doğru/yanlış çıkarılır. */
+/* Koç panelinden birebir alındı (18 Eyl 2026): öğrenci panelinde hiç
+   tanımlı değildi, karneKonudanToplam try/catch içinde sessizce ölüydü. */
+function parseKonuTablo(text){
+  let akt=null; const bloklar=[];
+  satirBirlestir(text).forEach(raw=>{
+    if(!raw.trim()) return;
+    const b=dersBasligiMi(raw);
+    if(b==='ATLA'){ akt=null; return; }
+    if(b){
+      akt={key:b,ss:0,d:0,y:0,konu:[]}; bloklar.push(akt);
+      const tm=raw.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
+      const art=tm?konuSatiri('Adı okunamayan konu'+tm[1]):null;
+      if(art&&art.ss>0&&art.ss<=5){ akt.ss+=art.ss; akt.d+=art.d; akt.y+=art.y;
+        /* ss (o konudan çıkan soru) ve d (doğru) DE taşınır. Eskiden yalnız
+           y/b saklanıyordu; konu başına doğru ORANI hesaplanamıyordu. */
+        if(art.y||art.b) akt.konu.push({ad:'(adı okunamayan konu)',ss:art.ss,d:art.d,y:art.y,b:art.b}); }
+      return;
+    }
+    const k=konuSatiri(raw);
+    if(!k||!akt) return;
+    akt.ss+=k.ss; akt.d+=k.d; akt.y+=k.y;
+    if(k.y||k.b) akt.konu.push({ad:k.ad,ss:k.ss,d:k.d,y:k.y,b:k.b});
+  });
+  const dolu={}; bloklar.forEach(b=>{ if(b.d||b.y) dolu[b.key]=true; });
+  const blok={};
+  bloklar.forEach(b=>{
+    if(!b.ss) return;
+    if(!b.d && !b.y && dolu[b.key]) return;
+    const B=blok[b.key]=blok[b.key]||{ss:0,d:0,y:0,konu:[]};
+    B.ss+=b.ss; B.d+=b.d; B.y+=b.y; B.konu.push(...b.konu);
+  });
+  for(const k in blok) if(!blok[k].ss) delete blok[k];
+  return blok;
+}
+
 function karneKonudanToplam(text, st){
   const out={}, kanit={};
   let kt=null;
@@ -1531,6 +1641,8 @@ function parseKarne(text, st){
   const list=subs(st);
   const A=karneSatirlardan(text, list);
   let out=A.out, kanit=A.kanit;
+  const D2=karneDikeyden(text, list);          // her sayı ayrı satırdaysa
+  for(const k in D2.out) if(out[k]===undefined){ out[k]=D2.out[k]; kanit[k]=D2.kanit[k]; }
   const zayif=k=>kanit[k]==='DY-net';
   const ekle=(kaynak)=>{ for(const k in kaynak.out){
     if(out[k]===undefined || zayif(k)){ out[k]=kaynak.out[k]; kanit[k]=kaynak.kanit[k]; } } };
