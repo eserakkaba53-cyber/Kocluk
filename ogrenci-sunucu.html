@@ -1690,10 +1690,20 @@ function satirBirlestir(text){
    Ayırt edici: özet satırının son sütunu NET'tir; S=D+Y+B, Net=D-Y/4 ve net
    ondalık yazılır. Konu tablosunun son sütunu tam sayı yüzdedir, o yüzden
    ondalık koşulu "Konu 1 0 0 1 0" gibi gerçek konu satırlarını korur. */
-function ozetSatiriMi(raw){
+/* ★ 19 Eyl 2026 — BAŞARI YÜZDESİ SÜTUNU. Gerçek PDF okuyucusunun kopyasında
+   başarı sütunu özet satırının sonuna düşüyor: "TYT Türkçe 40 32 8 0 30,00 % 75".
+   Sayılar 5 değil 6 görünüyor; özet satırı tanınmıyor, sayfa işareti hiç
+   bulunamıyordu. Ölçüldü: on bir gerçek çıkarım biçiminin yedisinde çok
+   öğrencili yapıştırma bölünmüyor, bütün sınıfın metni tek karne sanılıyordu. */
+function kuyrukSayilari(raw){
   const m=String(raw).match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
-  if(!m) return false;
-  const t=m[1].match(/-?\d+(?:[.,]\d+)?/g)||[];
+  if(!m) return [];
+  const t=m[1].replace(/\s*%\s*-?\d+(?:[.,]\d+)?\s*$/,'')      // "... % 75"
+              .replace(/\s*-?\d+(?:[.,]\d+)?\s*%\s*$/,'');     // "... 75 %"
+  return t.match(/-?\d+(?:[.,]\d+)?/g)||[];                    // ham parçalar
+}
+function ozetSatiriMi(raw){
+  const t=kuyrukSayilari(raw);
   if(t.length!==5) return false;
   if(!/[.,]/.test(t[4])) return false;
   const n=t.map(x=>parseFloat(x.replace(',','.')));
@@ -1708,6 +1718,21 @@ function ozetSatiriMi(raw){
    Sayfa işareti: bir dersin KENDİ özet satırı (toplam satırları "TYT Matematik
    40 ..." aynı ders koduna düşer, onları soru sayısı elemesi ayıklar). Aynı
    ders ikinci kez görülünce yeni öğrenci başlamıştır. */
+/* ★ 19 Eyl 2026 — KAÇ ÖĞRENCİ VAR. karneSayfalari satır düzenine bağlı ve her
+   kopyalama biçiminde bölemiyor (ölçüldü: on bir gerçek çıkarım biçiminin
+   yedisinde bölemiyordu). Bölemediğinde metni tek karne sanıp ilk öğrencinin
+   netlerini yazmak en kötü sonuç. Bu sayaç satır düzenine hiç bakmaz: her ders
+   adı bir karnede en az bir kez geçer, en az geçen dersin sayısı öğrenci
+   sayısıdır. Bölme başarısızsa panel okumak yerine duruyor. */
+function karneOgrenciSayisi(text){
+  const say={};
+  kDersleriBul(text).forEach(b=>{
+    if(!b.kod || b.kod==='__atla' || /_top$/.test(b.kod)) return;
+    say[b.kod]=(say[b.kod]||0)+1;
+  });
+  const v=Object.keys(say).map(k=>say[k]);
+  return v.length?Math.min.apply(null,v):1;
+}
 function karneSayfalari(text){
   const sat=satirBirlestir(text);
   const veriMi=l=>ozetSatiriMi(l)||!!konuSatiri(l);
@@ -1715,8 +1740,7 @@ function karneSayfalari(text){
     if(!ozetSatiriMi(l)) return null;
     const k=dersBasligiMi(l);
     if(!k||k==='ATLA') return null;
-    const m=l.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);   // ders adındaki "-1" sayılmasın
-    const n=((m&&m[1].match(/-?\d+(?:[.,]\d+)?/g))||[]).map(x=>parseFloat(x.replace(',','.')));
+    const n=kuyrukSayilari(l).map(x=>parseFloat(x.replace(',','.')));   // ders adındaki "-1" sayılmasın
     return (n.length===5 && n[0]===subQ(k)) ? k : null;
   };
   const bas=[0]; let gorulen={};
@@ -3358,6 +3382,12 @@ function karneOku(){
      sanan öğrenci başkasının netini kaydediyordu. Adı bulunamazsa okumuyoruz. */
   let metin=t;
   const sayfa=karneSayfalari(t);
+  const kacKisi=sayfa?sayfa.length:karneOgrenciSayisi(t);
+  if(!sayfa && kacKisi>1){
+    KARNE_SONUC=null;
+    KARNE_HATA='Yapıştırdığın metinde '+kacKisi+' öğrencinin karnesi var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır.';
+    render(); return;
+  }
   if(sayfa){
     const ara=norm(D.ad||'');
     const esl=ara?sayfa.filter(p=>norm(p).includes(ara)):[];
