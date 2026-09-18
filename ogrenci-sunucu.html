@@ -1788,12 +1788,21 @@ function parseKarne(text, st){
   let out=A.out, kanit=A.kanit;
   const D2=karneDikeyden(text, list);          // her sayı ayrı satırdaysa
   for(const k in D2.out) if(out[k]===undefined){ out[k]=D2.out[k]; kanit[k]=D2.kanit[k]; }
-  const zayif=k=>kanit[k]==='DY-net';
+  /* ★ 18 Eyl 2026 — Zayıf kanıt dikey okumada da zayıftır. karneDikeyden
+     kanıtı 'DY-net (dikey)' yazıyor, eşitlik denetimi ise tam 'DY-net'
+     arıyordu: dikey okunan zayıf bir değer daha güvenilir kaynakla hiç
+     düzeltilemiyordu. */
+  const zayif=k=>String(kanit[k]||'').indexOf('DY-net')===0;
   const ekle=(kaynak)=>{ for(const k in kaynak.out){
     if(out[k]===undefined || zayif(k)){ out[k]=kaynak.out[k]; kanit[k]=kaynak.kanit[k]; } } };
-  if(Object.keys(out).length<10) ekle(karneSabitDuzen(text));
-  if(Object.keys(out).length<10) ekle(karneSutunlardan(text));
-  if(Object.keys(out).length<10) ekle(karneKonudanToplam(text, st));
+  /* ★ 18 Eyl 2026 — Eşik yalnız GERÇEK dersleri saysın. Toplam anahtarları
+     (tyt_mat_top / tyt_fen_top / tyt_sos_top) kullanıcıya hiç ulaşmıyor ama
+     eşiği dolduruyordu: 7 gerçek ders + 3 toplam = 10 olunca bütün yedek
+     okuyucular kesiliyor, aynı metindeki doğru değerler okunmadan kalıyordu. */
+  const dersSayisi=()=>Object.keys(out).filter(k=>!/_top$/.test(k)).length;
+  if(dersSayisi()<10) ekle(karneSabitDuzen(text));
+  if(dersSayisi()<10) ekle(karneSutunlardan(text));
+  if(dersSayisi()<10) ekle(karneKonudanToplam(text, st));
   // toplam satırlarını çöz: TYT Matematik = Matematik-1 + Geometri
   if(out.tyt_mat_top){
     if(!out.tyt_mat && !out.tyt_geo){ out.tyt_mat=out.tyt_mat_top; kanit.tyt_mat=(kanit.tyt_mat_top||'')+' (geometri dahil)'; }
