@@ -1587,6 +1587,24 @@ function karneSabitDuzen(text){
    satırları toplanarak doğru/yanlış çıkarılır. */
 /* Koç panelinden birebir alındı (18 Eyl 2026): öğrenci panelinde hiç
    tanımlı değildi, karneKonudanToplam try/catch içinde sessizce ölüydü. */
+/* ★ 18 Eyl 2026 — ÖZET SATIRI KONU DEĞİLDİR. Koç panelindekinin aynısı.
+   Karnenin üst özet tablosunda her ders "Tarih-1 5 5 0 0 5,00" biçiminde bir
+   satır. Bu satırlar konu tablosuna iki yoldan sızıyordu: blok başlığı sanılıp
+   kendi sayıları konu diye ekleniyor, ya da ders adı tanınmayanları ("TYT Fen
+   20 1 2 17 0,50") açık bloğa konu olarak yazılıyordu. Ölçüldü: koç panelinde
+   37 gerçek karnede 364 alanın 216'sı yanlış.
+   Ayırt edici: özet satırının son sütunu NET'tir; S=D+Y+B, Net=D-Y/4 ve net
+   ondalık yazılır. Konu tablosunun son sütunu tam sayı yüzdedir, o yüzden
+   ondalık koşulu "Konu 1 0 0 1 0" gibi gerçek konu satırlarını korur. */
+function ozetSatiriMi(raw){
+  const m=String(raw).match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
+  if(!m) return false;
+  const t=m[1].match(/-?\d+(?:[.,]\d+)?/g)||[];
+  if(t.length!==5) return false;
+  if(!/[.,]/.test(t[4])) return false;
+  const n=t.map(x=>parseFloat(x.replace(',','.')));
+  return n[0]===n[1]+n[2]+n[3] && Math.abs(n[4]-(n[1]-n[2]/4))<0.02;
+}
 function parseKonuTablo(text){
   let akt=null; const bloklar=[];
   satirBirlestir(text).forEach(raw=>{
@@ -1597,12 +1615,13 @@ function parseKonuTablo(text){
       akt={key:b,ss:0,d:0,y:0,konu:[]}; bloklar.push(akt);
       const tm=raw.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
       const art=tm?konuSatiri('Adı okunamayan konu'+tm[1]):null;
-      if(art&&art.ss>0&&art.ss<=5){ akt.ss+=art.ss; akt.d+=art.d; akt.y+=art.y;
+      if(art&&!ozetSatiriMi(raw)&&art.ss>0&&art.ss<=5){ akt.ss+=art.ss; akt.d+=art.d; akt.y+=art.y;
         /* ss (o konudan çıkan soru) ve d (doğru) DE taşınır. Eskiden yalnız
            y/b saklanıyordu; konu başına doğru ORANI hesaplanamıyordu. */
         if(art.y||art.b) akt.konu.push({ad:'(adı okunamayan konu)',ss:art.ss,d:art.d,y:art.y,b:art.b}); }
       return;
     }
+    if(ozetSatiriMi(raw)) return;          /* özet satırı konu değildir */
     const k=konuSatiri(raw);
     if(!k||!akt) return;
     akt.ss+=k.ss; akt.d+=k.d; akt.y+=k.y;
