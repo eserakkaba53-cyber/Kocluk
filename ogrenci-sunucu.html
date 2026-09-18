@@ -3212,11 +3212,17 @@ function karneOku(){
     gu.push('TYT Geometri ayrı gelmemiş; TYT Matematik netin geometriyi de içeriyor olabilir. Grafikte geometri boş görünürse şaşırma — istersen geometri netini elle ayır.');
   if(alan.has('ayt_geo') && r.out.ayt_mat && !r.out.ayt_geo)
     gu.push('AYT Geometri ayrı gelmemiş; AYT Matematik netin geometriyi de içeriyor olabilir. Grafikte geometri boş görünürse şaşırma — istersen geometri netini elle ayır.');
-  KARNE_UYARI = gu.join(' ');
   const anahtar=Object.keys(r.out);
   const tytN=anahtar.filter(k=>k.indexOf('tyt_')===0).length;
   const aytN=anahtar.filter(k=>k.indexOf('ayt_')===0).length;
   DTUR = (aytN>tytN) ? 'ayt' : 'tyt';
+  /* ★ 18 Eyl 2026 — OKUNAMAYAN DERSİ SÖYLE. Okuyucu bir dersi çözemeyince
+     kutusunu boş bırakıyor, kullanıcı bunu fark etmiyordu. Aynı sınavın
+     (TYT/AYT) okunamayan dersleri adıyla yazılır. */
+  const okunmayan=subs(D).filter(x=>x[0].indexOf(DTUR+'_')===0 && !r.out[x[0]]).map(x=>x[1]);
+  if(okunmayan.length)
+    gu.push('Şu dersler karnede bulunamadı: '+okunmayan.join(', ')+'. Netlerini elle gir.');
+  KARNE_UYARI = gu.join(' ');
   render();
   setTimeout(karneDoldur, 30);
 }

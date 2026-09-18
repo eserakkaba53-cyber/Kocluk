@@ -1654,6 +1654,14 @@ function applyKarne(){
     yedek=true;
   }
 
+  /* ★ 18 Eyl 2026 — Okunamayan dersler adıyla yazılır; okuyucu sessizce
+     boş bırakınca koç eksiği fark etmiyordu. */
+  if(Object.keys(out).length){
+    const anah=Object.keys(out);
+    const grup=(anah.filter(k=>k.indexOf('ayt_')===0).length > anah.filter(k=>k.indexOf('tyt_')===0).length) ? 'ayt_' : 'tyt_';
+    const okunmayan=subs(st).filter(x=>x[0].indexOf(grup)===0 && !out[x[0]]).map(x=>subName(x[0]));
+    if(okunmayan.length) uyari.push('Karnede bulunamayan dersler: '+okunmayan.join(', ')+'. Netlerini elle gir.');
+  }
   if(!Object.keys(out).length&&!PENDING_AN.length){
     box.innerHTML='<div class="flag bad"><span class="ic">!</span><span>Karne okunamadı. Taranmış görüntü olabilir (metin kopyalanamıyorsa öyledir) ya da düzeni tanınmadı. Netleri elle gir.</span></div>';
     return;
