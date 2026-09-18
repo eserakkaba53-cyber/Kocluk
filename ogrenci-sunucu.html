@@ -1587,6 +1587,100 @@ function karneSabitDuzen(text){
    satırları toplanarak doğru/yanlış çıkarılır. */
 /* Koç panelinden birebir alındı (18 Eyl 2026): öğrenci panelinde hiç
    tanımlı değildi, karneKonudanToplam try/catch içinde sessizce ölüydü. */
+/* ★ 18 Eyl 2026 — Koç panelinden taşındı. parseKonuTablo öğrenci panelinde
+   bu dördünü çağırıyor ama hiçbiri tanımlı değildi; her çağrıda hata veriyor,
+   karneKonudanToplam try/catch içinde yutuyordu. Konu tablosundan toplama
+   yolu böylece hiç çalışmamış. Aynı yardımcılar karneSayfalari için de gerekli. */
+const SAYISATIR=/^[\s]*-?\d+(?:[.,]\d+)?(?:[\s%]+-?\d+(?:[.,]\d+)?)*[\s%]*$/;
+const KAZANIM=/^([A-ZÇĞİÖŞÜ]\.)?\d+(\.\d+)*\.\s*/;
+const DERSALIAS=[
+ // [regex parçası, panel ders kodu]  — uzun olan önce denenir
+ ['t.d. edebiyati','ayt_edb'],['turk dili ve edebiyati','ayt_edb'],['edebiyat','ayt_edb'],['edeb','ayt_edb'],
+ ['temel matematik','tyt_mat'],['t. mat','tyt_mat'],['t.mat','tyt_mat'],
+ ['matematik-1','tyt_mat'],['matematik-2','ayt_mat'],['mat-1','tyt_mat'],['mat-2','ayt_mat'],
+ ['tyt matematik','tyt_mat'],['ayt matematik','ayt_mat'],
+ ['tyt geometri','tyt_geo'],['ayt geometri','ayt_geo'],['geometri-1','tyt_geo'],['geometri-2','ayt_geo'],
+ ['geometri','tyt_geo'],['geo-1','tyt_geo'],['geo-2','ayt_geo'],['geo','tyt_geo'],
+ ['tyt turkce','tyt_tur'],['turkce','tyt_tur'],
+ ['felsefe grubu','tyt_fel'],['felsefe (secmeli)','tyt_fel'],['felsefe','tyt_fel'],['fel-1','tyt_fel'],['fel-2','ayt_fel'],
+ ['din kul','tyt_din'],['din-1','tyt_din'],['din-2','ayt_din'],['din','tyt_din'],
+ ['tarih-1','tyt_tar'],['tarih-2','ayt_tar1'],['tarih-3','ayt_tar2'],
+ ['tar-1','tyt_tar'],['tar-2','ayt_tar1'],['tar-3','ayt_tar2'],['tarih','tyt_tar'],
+ ['cografya-1','tyt_cog'],['cografya-2','ayt_cog1'],['cografya-3','ayt_cog2'],
+ ['cog-1','tyt_cog'],['cog-2','ayt_cog1'],['cog-3','ayt_cog2'],['cografya','tyt_cog'],
+ ['fizik-1','tyt_fiz'],['fizik-2','ayt_fiz'],['fiz-1','tyt_fiz'],['fiz-2','ayt_fiz'],['fizik','tyt_fiz'],
+ ['kimya-1','tyt_kim'],['kimya-2','ayt_kim'],['kim-1','tyt_kim'],['kim-2','ayt_kim'],['kimya','tyt_kim'],
+ ['biyoloji-1','tyt_biy'],['biyoloji-2','ayt_biy'],['biy-1','tyt_biy'],['biy-2','ayt_biy'],['biyoloji','tyt_biy'],
+ ['yabanci dil','ydt'],['ingilizce','ydt'],['din kul ve ahl bil','tyt_din'],['din kulturu ve ahlak bilgisi','tyt_din'],['din kul ve ahlbil','tyt_din'],['tyt sosyal',null],['tyt fen',null],['sosyal bil',null],['fen bil',null],['t mat','tyt_mat'],['tmat','tyt_mat'],['sosyal','tyt_tar'],['fen','tyt_fiz']
+].sort((a,b)=>b[0].length-a[0].length);
+function dersKodu(L){
+  const t=L.replace(/\./g,'').replace(/\s+/g,' ').trim();
+  for(const [a,k] of DERSALIAS){ const b=a.replace(/\./g,'').trim(); if(t===b) return k; }
+  return null;
+}
+function dersBasligiMi(satir){
+  let t=satir.trim();
+  t=t.replace(/(\s+-?\d+(?:[.,]\d+)?\s*%?)+\s*$/,'').replace(/\s*%\s*\d*$/,'').trim();
+  t=t.replace(/\s+(SS|S|D|Y|B%?|%)(\s+(SS|S|D|Y|B%?|%))*$/i,'').trim();
+  if(!t||t.length<3) return null;
+  if(/se[cç]meli/i.test(t)) return 'ATLA';
+  const L=norm(t);
+  if(L.split(' ').length>6) return null;
+  const k=dersKodu(L);
+  return k===null?null:k;
+}
+function konuSatiri(satir){
+  let s=satir.trim().replace(KAZANIM,'');
+  // yalnızca SATIR SONUNDAKİ sayı sütunlarını al; metindeki yıl/yüzyıl sayılarını yoksay
+  const m=s.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);
+  if(!m) return null;
+  const nums=(m[1].match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(',','.')));
+  let ad=s.slice(0,s.length-m[0].length).trim();
+  if(nums.length===3){
+    // bazı PDF'lerde soru sayısı metne yapışır: "...denklem1" ya da "...özkütlelerinden1faydalanılan"
+    let son=null, re=/\d{1,2}/g, mm;
+    while((mm=re.exec(ad))!==null){
+      const on=ad[mm.index-1]||'', ar=ad[mm.index+mm[0].length]||'';
+      const harf=c=>/[^\s\d]/.test(c)&&c!=='';
+      if(harf(on)||harf(ar)) son=mm;
+    }
+    if(son){ nums.unshift(parseInt(son[0],10));
+      ad=(ad.slice(0,son.index)+' '+ad.slice(son.index+son[0].length)).replace(/\s+/g,' ').trim(); }
+  }
+  if(nums.length<4||nums.length>5) return null;
+  if(ad.length<4) return null;
+  const na=norm(ad);
+  if(/^(puan|soru|dogru|yanlis|bos|net|toplam|genel|kurum|ilce|sube|ogrenci|sinav|katilim|derece|cevap|konular?|ders|sonuc|s\.sayisi|basari)\b/.test(na)) return null;
+  if(/(cevap anahtari|cevaplariniz|ogrenci cevabi|sira no)/.test(na)) return null;
+  if(!/[a-zA-ZçğıöşüÇĞİÖŞÜ]/.test(ad)) return null;
+  if(nums.length===5){
+    const [SS,D,Y,B,P]=nums;
+    if(![SS,D,Y,B].every(Number.isInteger)) return null;
+    if(SS!==D+Y+B||SS<1||SS>60) return null;
+    return {ad,ss:SS,d:D,y:Y,b:B};
+  }
+  const [SS,D,Y,P]=nums;
+  if(![SS,D,Y].every(Number.isInteger)) return null;
+  if(D+Y>SS||SS<1||SS>60) return null;
+  const bek=SS?Math.round(D/SS*100):0;
+  if(Math.abs(bek-P)>1.5) return null;
+  return {ad,ss:SS,d:D,y:Y,b:SS-D-Y};
+}
+function satirBirlestir(text){
+  const ham=text.split(/[\r\n]+/);
+  const cikti=[]; let son=-1, adet=0;
+  for(let s of ham){
+    if(!s.trim()) continue;
+    if(SAYISATIR.test(s)){
+      if(son>=0 && adet<6){ cikti[son]+=' '+s.trim(); adet++; }
+      else cikti.push(s.trim());
+      continue;
+    }
+    // metin satırı: kendi içinde sayı varsa zaten tam satırdır
+    cikti.push(s.trim()); son=cikti.length-1; adet=(s.match(/-?\d+(?:[.,]\d+)?/g)||[]).length;
+  }
+  return cikti;
+}
 /* ★ 18 Eyl 2026 — ÖZET SATIRI KONU DEĞİLDİR. Koç panelindekinin aynısı.
    Karnenin üst özet tablosunda her ders "Tarih-1 5 5 0 0 5,00" biçiminde bir
    satır. Bu satırlar konu tablosuna iki yoldan sızıyordu: blok başlığı sanılıp
@@ -1604,6 +1698,38 @@ function ozetSatiriMi(raw){
   if(!/[.,]/.test(t[4])) return false;
   const n=t.map(x=>parseFloat(x.replace(',','.')));
   return n[0]===n[1]+n[2]+n[3] && Math.abs(n[4]-(n[1]-n[2]/4))<0.02;
+}
+/* ★ 18 Eyl 2026 — TEK PDF'TE ÇOK ÖĞRENCİ. Yayıncı sınıfın bütün karnelerini
+   tek PDF'te veriyor (elimizdeki dosyada 37 öğrenci) ve panelin kendi
+   yönergesi "Ctrl+A → Ctrl+C ile TAMAMINI kopyala" diyor. Okuyucunun sayfa
+   kavramı yoktu: 37 sayfalık metinden yalnız ilk öğrencinin netleri okunuyor
+   ve hangi öğrenci seçiliyse onun formuna yazılıyordu. Bir dersi karnesinde
+   hiç olmayan öğrencinin kutusu da sessizce başka öğrenciden doluyordu.
+   Sayfa işareti: bir dersin KENDİ özet satırı (toplam satırları "TYT Matematik
+   40 ..." aynı ders koduna düşer, onları soru sayısı elemesi ayıklar). Aynı
+   ders ikinci kez görülünce yeni öğrenci başlamıştır. */
+function karneSayfalari(text){
+  const sat=satirBirlestir(text);
+  const veriMi=l=>ozetSatiriMi(l)||!!konuSatiri(l);
+  const dersi=l=>{
+    if(!ozetSatiriMi(l)) return null;
+    const k=dersBasligiMi(l);
+    if(!k||k==='ATLA') return null;
+    const m=l.match(/((?:\s+-?\d+(?:[.,]\d+)?\s*%?)+)\s*$/);   // ders adındaki "-1" sayılmasın
+    const n=((m&&m[1].match(/-?\d+(?:[.,]\d+)?/g))||[]).map(x=>parseFloat(x.replace(',','.')));
+    return (n.length===5 && n[0]===subQ(k)) ? k : null;
+  };
+  const bas=[0]; let gorulen={};
+  for(let i=0;i<sat.length;i++){
+    const k=dersi(sat[i]); if(!k) continue;
+    if(gorulen[k]){
+      let j=i; while(j>bas[bas.length-1] && !veriMi(sat[j-1])) j--;   // başlık satırlarını yeni sayfaya ver
+      bas.push(j); gorulen={};
+    }
+    gorulen[k]=1;
+  }
+  if(bas.length<2) return null;                                      // tek öğrenci
+  return bas.map((b,i)=>sat.slice(b, i+1<bas.length?bas[i+1]:sat.length).join('\n'));
 }
 function parseKonuTablo(text){
   let akt=null; const bloklar=[];
@@ -3217,8 +3343,26 @@ function karneOku(){
   const t=(el?el.value:'').trim();
   KARNE_HATA=''; KARNE_UYARI='';
   if(t.length<40){ KARNE_HATA='Karne metni çok kısa. PDF’i açıp tümünü kopyaladığından emin ol.'; render(); return; }
+  /* ★ 18 Eyl 2026 — ÇOK ÖĞRENCİLİ YAPIŞTIRMA. Sınıfın bütün karneleri tek
+     PDF'te geliyor ve panel "tümünü kopyala" diyor. Sayfa kavramı olmadığı
+     için okuyucu ilk öğrencinin netlerini veriyordu; kendi karnesini okuduğunu
+     sanan öğrenci başkasının netini kaydediyordu. Adı bulunamazsa okumuyoruz. */
+  let metin=t;
+  const sayfa=karneSayfalari(t);
+  if(sayfa){
+    const ara=norm(D.ad||'');
+    const esl=ara?sayfa.filter(p=>norm(p).includes(ara)):[];
+    if(esl.length!==1){
+      KARNE_SONUC=null;
+      KARNE_HATA='Yapıştırdığın metinde '+sayfa.length+' öğrencinin karnesi var'+
+        (esl.length>1?' ve adın birden çok sayfada geçiyor.':', kendi sayfan bulunamadı.')+
+        ' PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır.';
+      render(); return;
+    }
+    metin=esl[0];
+  }
   let r=null;
-  try{ r=parseKarne(t, D); }catch(e){ r=null; }
+  try{ r=parseKarne(metin, D); }catch(e){ r=null; }
   if(!r || !Object.keys(r.out).length){
     KARNE_SONUC=null;
     KARNE_HATA='Karne okunamadı. PDF’i açıp Ctrl+A → Ctrl+C ile TAMAMINI kopyalayıp buraya yapıştır. Ekran görüntüsü veya fotoğraf okunamaz.';
