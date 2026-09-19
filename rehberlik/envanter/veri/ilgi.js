@@ -1,0 +1,85 @@
+var KOK = (typeof window !== 'undefined') ? window : global;
+
+KOK.ENV_ILGI = {
+  kod: 'ILGI',
+  ad: 'Mesleki İlgi Envanteri',
+  olcek: ['Hiç ilgimi çekmez','Pek ilgimi çekmez','Kararsızım','İlgimi çeker','Çok ilgimi çeker'],
+
+  boyutlar: [
+    { k:'R', ad:'Gerçekçi',
+      aciklama:'Somut araç, makine, malzeme ve canlılarla doğrudan çalışmayı anlatır. Sonucu gözle görülen, elle tutulan işler bu alana girer.' },
+    { k:'I', ad:'Araştırmacı',
+      aciklama:'Gözlem, ölçüm, deney ve veri üzerinden bir sorunun nedenini anlamayı anlatır. Çözüm yolu düşünerek ve sınayarak bulunur.' },
+    { k:'A', ad:'Sanatsal',
+      aciklama:'Biçim, ses, görüntü ve dil üzerinden yeni bir şey ortaya koymayı anlatır. Kalıp yerine kendi anlatımını kurmaya alan bırakır.' },
+    { k:'S', ad:'Sosyal',
+      aciklama:'İnsanlarla doğrudan çalışmayı, öğretmeyi, destek olmayı ve yol göstermeyi anlatır. İşin merkezinde karşıdaki kişinin durumu vardır.' },
+    { k:'E', ad:'Girişimci',
+      aciklama:'İkna etmeyi, bir işi başlatmayı, ekip ve kaynak yönetmeyi anlatır. Karar alma ve sonuca götürme bu alanın merkezindedir.' },
+    { k:'C', ad:'Geleneksel',
+      aciklama:'Kayıt, düzen, kural ve sayılarla çalışmayı anlatır. İşin doğru, eksiksiz ve izlenebilir biçimde tutulması önceliklidir.' }
+  ],
+
+  maddeler: [
+    { n:1,  m:'Bozulan bir elektrikli aleti söküp arızasını bulmak.', b:'R', t:false },
+    { n:2,  m:'Bir konuyu anlamayan arkadaşına sabırla yeniden anlatmak.', b:'S', t:false },
+    { n:3,  m:'Gelen faturaları tarihe göre sıralayıp kayıt altına almak.', b:'C', t:false },
+    { n:4,  m:'Mikroskopta su örneğini inceleyip içindeki canlıları saymak.', b:'I', t:false },
+    { n:5,  m:'Bir ürünü tanıtıp karşıdaki kişiyi almaya ikna etmek.', b:'E', t:false },
+    { n:6,  m:'Yaşanmış bir olayı kendi cümlelerinle kısa öyküye dönüştürmek.', b:'A', t:false },
+    { n:7,  m:'Tartışan iki kişiyi dinleyip aralarını bulmaya çalışmak.', b:'S', t:false },
+    { n:8,  m:'Bir makinenin parçalarını ölçüp teknik çizimine göre birleştirmek.', b:'R', t:false },
+    { n:9,  m:'Küçük bir işletme kurup gelir gider planını hazırlamak.', b:'E', t:false },
+    { n:10, m:'Bir işletmenin gelir gider tablosunu düzenli olarak tutmak.', b:'C', t:false },
+    { n:11, m:'Bir şarkının melodisini kurup sözlerini yazmak.', b:'A', t:false },
+    { n:12, m:'Deney sonuçlarını tabloya geçirip aralarındaki ilişkiyi hesaplamak.', b:'I', t:false },
+    { n:13, m:'Sözleşme maddelerini ilgili mevzuata göre tek tek denetlemek.', b:'C', t:false },
+    { n:14, m:'Okul afişinin renklerini ve yazı düzenini tasarlamak.', b:'A', t:false },
+    { n:15, m:'Sera kurup toprağın nem ve besin dengesini elle ayarlamak.', b:'R', t:false },
+    { n:16, m:'Bir ekibin işlerini bölüştürüp sürecin yürümesini sağlamak.', b:'E', t:false },
+    { n:17, m:'Belirtilerden yola çıkarak bir hastalığın olası nedenlerini elemek.', b:'I', t:false },
+    { n:18, m:'Yaşlı bir kişinin günlük ihtiyaçlarına düzenli olarak destek olmak.', b:'S', t:false },
+    { n:19, m:'Fiyat konusunda karşı tarafla pazarlık yapıp anlaşmaya varmak.', b:'E', t:false },
+    { n:20, m:'Bir yazılımın neden hata verdiğini adım adım izleyerek bulmak.', b:'I', t:false },
+    { n:21, m:'Bir hastaya tedavi sürecini anlaşılır bir dille anlatmak.', b:'S', t:false },
+    { n:22, m:'Sahnede bir karakteri canlandırıp jest ve sesini çalışmak.', b:'A', t:false },
+    { n:23, m:'Depodaki ürünlerin sayımını yapıp stok listesini güncellemek.', b:'C', t:false },
+    { n:24, m:'Bina temelinde kullanılan demir ve betonu sahada denetlemek.', b:'R', t:false },
+    { n:25, m:'Çekilen bir videoyu kurgulayıp müzikle birlikte düzenlemek.', b:'A', t:false },
+    { n:26, m:'Arşivdeki belgeleri konularına göre ayırıp numaralandırmak.', b:'C', t:false },
+    { n:27, m:'Deprem kayıtlarını inceleyip yer altındaki hareketi yorumlamak.', b:'I', t:false },
+    { n:28, m:'Mahalledeki ailelere yönelik gönüllü bir bilgilendirme çalışması yürütmek.', b:'S', t:false },
+    { n:29, m:'Spor salonunda antrenman programını uygulatıp hareketleri düzeltmek.', b:'R', t:false },
+    { n:30, m:'Bir etkinlik için sponsor bulup destek sağlamak.', b:'E', t:false },
+    { n:31, m:'Gübrenin verime etkisini iki tarlada karşılaştırmalı olarak denemek.', b:'I', t:false },
+    { n:32, m:'Yeni bir markanın tanıtım kampanyasını baştan planlamak.', b:'E', t:false },
+    { n:33, m:'Bir meydanın biçimini ve gölge düzenini kâğıda çizmek.', b:'A', t:false },
+    { n:34, m:'Ahşabı kesip ölçüsüne göre bir mobilya parçası üretmek.', b:'R', t:false },
+    { n:35, m:'Yeni gelen birine okulu tanıtıp ortama alışmasına yardım etmek.', b:'S', t:false },
+    { n:36, m:'Bir projenin aşamalarını takvime bağlayıp ilerlemesini izlemek.', b:'C', t:false },
+    { n:37, m:'Kilden ya da metalden özgün biçimli bir eşya tasarlamak.', b:'A', t:false },
+    { n:38, m:'Küçük çocuklarla oyun kurup birlikte etkinlik yapmak.', b:'S', t:false },
+    { n:39, m:'Kalabalık önünde bir fikri savunup dinleyenleri yönlendirmek.', b:'E', t:false },
+    { n:40, m:'Randevu ve yazışmaları düzenleyip günlük iş akışını planlamak.', b:'C', t:false },
+    { n:41, m:'Elektrik panosunun kablolarını şemaya bakarak bağlamak.', b:'R', t:false },
+    { n:42, m:'Anket verilerini çözümleyip beklenmedik bir örüntüyü ortaya çıkarmak.', b:'I', t:false },
+    { n:43, m:'Bir mağazanın satışlarını artıracak kampanya önerisi hazırlamak.', b:'E', t:false },
+    { n:44, m:'Arazide drone uçurup yol güzergâhının ölçümünü almak.', b:'R', t:false },
+    { n:45, m:'Beyannamedeki rakamları ilgili belgelerle karşılaştırıp doğrulamak.', b:'C', t:false },
+    { n:46, m:'Meslek seçiminde kararsız kalan birine seçenekleri birlikte incelemek.', b:'S', t:false },
+    { n:47, m:'Bir matematik probleminin farklı çözüm yollarını karşılaştırmak.', b:'I', t:false },
+    { n:48, m:'Bir vitrini baştan düzenleyip renk uyumunu kendin kurmak.', b:'A', t:false }
+  ],
+
+  holland_komsuluk: {
+    sira: ['R','I','A','S','E','C'],
+    komsu: {
+      R: ['C','I'],
+      I: ['R','A'],
+      A: ['I','S'],
+      S: ['A','E'],
+      E: ['S','C'],
+      C: ['E','R']
+    }
+  }
+};

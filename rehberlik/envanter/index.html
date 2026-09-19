@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kendini tanı</title>
+<meta name="description" content="Lise öğrencileri için beş envanter: kişilik, ilgi, meslek değerleri, beceri ve yetenek. Sonunda kendi profilin ve sana uyan bölümlerin sıralaması.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="stil.css">
+</head>
+<body>
+
+<!-- ================================================================ -->
+<!-- KARŞILAMA                                                         -->
+<!-- ================================================================ -->
+<main id="ekran-karsilama">
+
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b> <span id="marka-kurum"></span>
+      </div>
+      <button class="dugme dugme-cizgi" data-git="giris">Giriş yap</button>
+    </header>
+  </div>
+
+  <div class="kabuk">
+    <section class="hero">
+      <div>
+        <div class="hero-goz">Lise 9 – 12. sınıf</div>
+        <h1>Kendini <em>tanı</em>,<br>yolunu kendin seç.</h1>
+        <p class="hero-alt">
+          Beş envanter, toplam <b>86 dakika</b>. Sonunda kişilik, ilgi, değer, beceri
+          ve yetenek profilini yan yana görürsün. Ardından <b>70 üniversite bölümü</b>
+          bu profile göre sıralanır.
+        </p>
+        <div class="dugmeler">
+          <button class="dugme dugme-ana" data-git="giris">Başla</button>
+          <a class="dugme dugme-cizgi" href="#nasil">Nasıl işliyor</a>
+        </div>
+      </div>
+
+      <!-- İmza öğe: Holland altıgeni. Altı ilgi tipi, komşuluk gerçek modelin
+           kendisi. Testi bitiren öğrenci kendi çokgenini burada görüyor. -->
+      <div class="altigen-kutu">
+        <svg class="altigen" id="altigen-hero" viewBox="0 0 400 360" role="img"
+             aria-labelledby="altigen-baslik altigen-aciklama">
+          <title id="altigen-baslik">Holland ilgi altıgeni</title>
+          <desc id="altigen-aciklama">Altı ilgi tipinin altıgen düzeni. Yan yana duran
+            tipler birbirine yakın, karşı köşedekiler birbirinden uzaktır.</desc>
+          <g class="altigen-agi"></g>
+          <path class="altigen-alan" d=""></path>
+          <g class="altigen-noktalar"></g>
+          <g class="altigen-yazilar"></g>
+        </svg>
+        <div class="altigen-durum" id="altigen-durum"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="kabuk">
+    <section class="bolum">
+      <div class="bolum-basi">
+        <h2>Kendini anlattığın dört envanter</h2>
+        <span class="kenar-not">Doğru cevap yok</span>
+      </div>
+      <div class="kartlar" id="kartlar-oz"></div>
+    </section>
+
+    <section class="bolum" style="padding-top:0">
+      <div class="bolum-basi">
+        <h2>Doğru cevabı olan tek test</h2>
+        <span class="kenar-not">Puanlanır</span>
+      </div>
+      <div class="kartlar" id="kartlar-yetenek"></div>
+    </section>
+
+    <section class="bolum" id="nasil">
+      <div class="bolum-basi"><h2>Nasıl işliyor</h2></div>
+      <div class="akis">
+        <div class="akis-adim">
+          <span class="akis-no">01</span>
+          <h3>Girersin</h3>
+          <p>Okul numaran ve TC kimlik numaranla. Şifre yok, ezberlenecek bir şey yok.</p>
+        </div>
+        <div class="akis-adim">
+          <span class="akis-no">02</span>
+          <h3>İstediğin sırayla doldurursun</h3>
+          <p>Beşini bir oturuşta bitirmek zorunda değilsin. Bıraktığın yerden devam edersin.</p>
+        </div>
+        <div class="akis-adim">
+          <span class="akis-no">03</span>
+          <h3>Profilini görürsün</h3>
+          <p>Her envanterin kendi boyutları yüzdeyle çıkar. Holland kodun üç harfle özetlenir.</p>
+        </div>
+        <div class="akis-adim">
+          <span class="akis-no">04</span>
+          <h3>Bölümler sıralanır</h3>
+          <p>70 bölüm profiline göre dizilir. Puan türü sana zorluk çıkaracaksa bunu ayrıca yazar.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="alt-bilgi">
+      <p>Bu araç bir karar değil, bir başlangıçtır. Bölüm listesini
+      <a href="https://yokatlas.yok.gov.tr" target="_blank" rel="noopener">YÖK Atlas</a>
+      taban puanlarıyla birlikte oku ve rehber öğretmeninle konuş.</p>
+      <p id="alt-kurum"></p>
+    </footer>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- GİRİŞ                                                             -->
+<!-- ================================================================ -->
+<main id="ekran-giris" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b>
+      </div>
+      <button class="dugme dugme-sade" data-git="karsilama">Geri dön</button>
+    </header>
+  </div>
+
+  <div class="kabuk-dar">
+    <form class="giris-kutu" id="giris-form">
+      <h2>Giriş</h2>
+      <p class="aciklama-yazi" style="margin-bottom:22px">
+        E-posta adresin ve şifrenle giriyorsun.</p>
+
+      <div class="uyari-kutu gizli" id="giris-hata" role="alert"></div>
+      <div class="bilgi-kutu gizli" id="giris-bilgi"></div>
+
+      <div class="alan">
+        <label for="giris-eposta">E-posta</label>
+        <input id="giris-eposta" type="email" autocomplete="email" required>
+      </div>
+
+      <div class="alan">
+        <label for="giris-sifre">Şifre</label>
+        <input id="giris-sifre" type="password" autocomplete="current-password" required>
+      </div>
+
+      <button class="dugme dugme-ana" type="submit" id="giris-dugme"
+              style="width:100%;justify-content:center">Gir</button>
+
+      <div style="display:flex;justify-content:space-between;gap:12px;margin-top:14px">
+        <button type="button" class="dugme dugme-sade" data-git="kayit">Hesabın yok mu</button>
+        <button type="button" class="dugme dugme-sade" id="sifre-unuttum">Şifremi unuttum</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- KAYIT                                                             -->
+<!-- ================================================================ -->
+<main id="ekran-kayit" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b>
+      </div>
+      <button class="dugme dugme-sade" data-git="karsilama">Geri dön</button>
+    </header>
+  </div>
+
+  <div class="kabuk-dar">
+    <form class="giris-kutu" id="kayit-form">
+      <h2>Kayıt</h2>
+      <p class="aciklama-yazi" style="margin-bottom:22px">
+        Okul kodunu rehber öğretmeninden alırsın. Kod olmadan kayıt olamazsın.</p>
+
+      <div class="uyari-kutu gizli" id="kayit-hata" role="alert"></div>
+      <div class="bilgi-kutu gizli" id="kayit-bilgi"></div>
+
+      <div class="alan">
+        <label for="okul-kodu">Okul kodu
+          <span class="ipucu">6 karakter</span></label>
+        <input id="okul-kodu" autocomplete="off" required maxlength="6"
+               style="text-transform:uppercase">
+        <div class="kod-durum" id="kod-durum"></div>
+      </div>
+
+      <div class="alan">
+        <label for="kayit-ad">Ad soyad</label>
+        <input id="kayit-ad" autocomplete="name" required>
+      </div>
+
+      <div class="ikili">
+        <div class="alan">
+          <label for="kayit-sinif">Sınıf</label>
+          <select id="kayit-sinif" required>
+            <option value="">Seç</option>
+            <option value="9">9. sınıf</option>
+            <option value="10">10. sınıf</option>
+            <option value="11">11. sınıf</option>
+            <option value="12">12. sınıf</option>
+          </select>
+        </div>
+        <div class="alan">
+          <label for="kayit-sube">Şube</label>
+          <select id="kayit-sube" required>
+            <option value="">Seç</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="alan">
+        <label for="kayit-no">Okul numaran
+          <span class="ipucu">isteğe bağlı</span></label>
+        <input id="kayit-no" inputmode="numeric" autocomplete="off" maxlength="12">
+      </div>
+
+      <div class="alan">
+        <label for="kayit-eposta">E-posta</label>
+        <input id="kayit-eposta" type="email" autocomplete="email" required>
+      </div>
+
+      <div class="ikili">
+        <div class="alan">
+          <label for="kayit-sifre">Şifre
+            <span class="ipucu">en az 6 karakter</span></label>
+          <input id="kayit-sifre" type="password" autocomplete="new-password"
+                 required minlength="6">
+        </div>
+        <div class="alan">
+          <label for="kayit-sifre2">Şifre tekrar</label>
+          <input id="kayit-sifre2" type="password" autocomplete="new-password"
+                 required minlength="6">
+        </div>
+      </div>
+
+      <div class="bilgi-kutu">
+        Cevapların yalnız senin ve okulundaki rehber öğretmenin görebileceği
+        şekilde saklanır. Sınıf arkadaşların göremez.
+      </div>
+
+      <button class="dugme dugme-ana" type="submit" id="kayit-dugme"
+              style="width:100%;justify-content:center">Kaydol</button>
+
+      <div style="margin-top:14px;text-align:center">
+        <button type="button" class="dugme dugme-sade" data-git="giris">Zaten hesabım var</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- ÖĞRENCİ KAPISI: hangi envanteri açacağını seçtiği ekran            -->
+<!-- ================================================================ -->
+<main id="ekran-kapi" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b> <span id="kapi-kim"></span>
+      </div>
+      <button class="dugme dugme-sade" id="cikis-dugme">Çıkış</button>
+    </header>
+
+    <section class="bolum">
+      <div class="bolum-basi">
+        <h2 id="kapi-selam">Hoş geldin</h2>
+        <span class="kenar-not" id="kapi-ilerleme"></span>
+      </div>
+      <div class="kartlar" id="kapi-kartlar"></div>
+      <div class="dugmeler" style="margin-top:28px">
+        <button class="dugme dugme-ana gizli" id="rapor-dugme">Raporumu gör</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- TEST                                                              -->
+<!-- ================================================================ -->
+<main id="ekran-test" class="gizli">
+  <div class="test-ust">
+    <div class="test-ust-ic">
+      <button class="dugme dugme-sade" id="test-cik" style="padding-left:0">Kaydet ve çık</button>
+      <span class="test-ad" id="test-ad"></span>
+      <span class="test-sayac" id="test-sayac"></span>
+    </div>
+    <div class="ilerleme"><div id="test-ilerleme"></div></div>
+  </div>
+
+  <div class="kabuk-dar">
+    <div class="yonerge" id="test-yonerge"></div>
+    <div id="test-govde"></div>
+
+    <div class="uyari-kutu gizli" id="test-hata" role="alert"></div>
+
+    <nav class="gezinme">
+      <button class="dugme dugme-cizgi" id="test-geri">Geri</button>
+      <div class="sag">
+        <span class="kayit-durum" id="kayit-durum"></span>
+        <button class="dugme dugme-ana" id="test-ileri">İleri</button>
+      </div>
+    </nav>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- RAPOR                                                             -->
+<!-- ================================================================ -->
+<main id="ekran-rapor" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar yazdirma-gizle">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b>
+      </div>
+      <div class="dugmeler">
+        <button class="dugme dugme-cizgi" data-git="kapi">Envanterlere dön</button>
+        <button class="dugme dugme-ana" id="yazdir-dugme">Yazdır</button>
+      </div>
+    </header>
+  </div>
+  <div class="kabuk" id="rapor-govde"></div>
+</main>
+
+<script src="baglanti.js"></script>
+<script src="deneme.js"></script>
+<script src="veri/kisilik.js"></script>
+<script src="veri/ilgi.js"></script>
+<script src="veri/degerler.js"></script>
+<script src="veri/beceri.js"></script>
+<script src="veri/yetenek.js"></script>
+<script src="veri/bolumler.js"></script>
+<script src="puanlama.js"></script>
+<script src="uygulama.js"></script>
+</body>
+</html>

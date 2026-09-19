@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rehber paneli</title>
+<meta name="description" content="Kendini tanı envanterleri rehber öğretmen paneli: okul kodu, okulun envanter durumu, sınıf özetleri ve öğrenci raporu.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="stil.css">
+
+<style>
+/* Yalnız panelde geçen kurallar. Renk ve ölçü stil.css'teki değişkenlerden. */
+.arac { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 20px; }
+.arac select, .arac input {
+  background: var(--gece-koyu); color: var(--kagit); border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-sm); padding: 10px 12px;
+  font-family: var(--govde); font-size: 15px;
+}
+.arac label { font-size: 13px; color: var(--tebesir); }
+.tablo-sar { overflow-x: auto; }
+.ad-dugme {
+  background: none; border: 0; padding: 0; font: inherit; font-weight: 600;
+  color: var(--kagit); cursor: pointer; text-align: left;
+}
+.ad-dugme:hover { color: var(--ilgi); }
+.rozet-sira { display: flex; gap: 4px; flex-wrap: wrap; }
+.rozet-sira .rozet { padding: 2px 7px; font-size: 10.5px; }
+.sayac b { font-family: var(--sayi); font-size: 30px; display: block; line-height: 1.1; }
+.sayac span { font-size: 13.5px; color: var(--tebesir); }
+/* Dört sayaç ya dörtlü ya ikişerli dizilir, auto-fit üçlü sıra yapıp
+   dördüncüyü yalnız bırakıyordu. */
+.sayaclar { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 760px) { .sayaclar { grid-template-columns: repeat(2, 1fr); } }
+.dugme[aria-pressed="true"] {
+  background: var(--ilgi); color: var(--gece-koyu); border-color: var(--ilgi);
+}
+/* Okul kodu kutusu: rehberin ilk işi bu kodu öğrencilerine vermek. */
+.kod-kutu {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px;
+  background: var(--yuzey-ust); border: 1px solid var(--ilgi);
+  border-radius: var(--yuvarlak); padding: 22px 24px; margin-top: 26px;
+}
+.kod-kutu .kod {
+  font-family: var(--sayi); font-weight: 500; line-height: 1;
+  font-size: clamp(30px, 6vw, 44px); letter-spacing: .16em; color: var(--ilgi);
+}
+.kod-kutu p { margin: 0; flex: 1; min-width: 210px; font-size: 14.5px; color: var(--tebesir); }
+</style>
+</head>
+<body>
+
+<!-- ================================================================ -->
+<!-- 1. GİRİŞ                                                          -->
+<!-- ================================================================ -->
+<main id="ekran-giris" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b> <span>Rehber paneli</span>
+      </div>
+    </header>
+  </div>
+
+  <div class="kabuk-dar">
+    <form class="giris-kutu" id="giris-form">
+      <h2>Giriş</h2>
+      <p class="aciklama-yazi" style="margin-bottom:22px">
+        E-posta adresin ve şifrenle giriyorsun.</p>
+
+      <div class="uyari-kutu gizli" id="giris-hata" role="alert"></div>
+      <div class="bilgi-kutu gizli" id="giris-bilgi"></div>
+
+      <div class="alan">
+        <label for="giris-eposta">E-posta</label>
+        <input id="giris-eposta" type="email" autocomplete="email" required>
+      </div>
+
+      <div class="alan">
+        <label for="giris-sifre">Şifre</label>
+        <input id="giris-sifre" type="password" autocomplete="current-password" required>
+      </div>
+
+      <button class="dugme dugme-ana" type="submit" id="giris-dugme"
+              style="width:100%;justify-content:center">Gir</button>
+
+      <div style="display:flex;justify-content:space-between;gap:12px;margin-top:14px">
+        <button type="button" class="dugme dugme-sade" id="kayda-git">Hesabın yok mu, kayıt ol</button>
+        <button type="button" class="dugme dugme-sade" id="sifre-unuttum">Şifremi unuttum</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- 2. KAYIT                                                          -->
+<!-- ================================================================ -->
+<main id="ekran-kayit" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b> <span>Rehber kaydı</span>
+      </div>
+      <button class="dugme dugme-sade" id="kayittan-cik">Girişe dön</button>
+    </header>
+  </div>
+
+  <div class="kabuk-dar">
+    <form class="giris-kutu" id="kayit-form">
+      <h2>Rehber öğretmen kaydı</h2>
+      <p class="aciklama-yazi" style="margin-bottom:22px">
+        Kaydın yönetici onayından sonra açılır. Onaylanınca okulunun kodu üretilir,
+        öğrencilerin o kodla kendileri kayıt olur.</p>
+
+      <div class="uyari-kutu gizli" id="kayit-hata" role="alert"></div>
+      <div class="bilgi-kutu gizli" id="kayit-bilgi"></div>
+
+      <div class="alan">
+        <label for="kayit-ad">Ad soyad</label>
+        <input id="kayit-ad" type="text" autocomplete="name" required maxlength="80">
+      </div>
+
+      <div class="alan">
+        <label for="kayit-okul">Okul adı</label>
+        <input id="kayit-okul" type="text" autocomplete="organization" required maxlength="120">
+      </div>
+
+      <div class="alan">
+        <label for="kayit-il">İl</label>
+        <input id="kayit-il" type="text" autocomplete="address-level1" maxlength="40">
+      </div>
+
+      <div class="alan">
+        <label for="kayit-ilce">İlçe</label>
+        <input id="kayit-ilce" type="text" autocomplete="address-level2" maxlength="40">
+      </div>
+
+      <!-- Hesabı zaten açılmış ama profili olmayan kullanıcıda bu üç alan gizlenir. -->
+      <div id="kayit-hesap-alanlari">
+        <div class="alan">
+          <label for="kayit-eposta">E-posta</label>
+          <input id="kayit-eposta" type="email" autocomplete="email" required>
+        </div>
+
+        <div class="alan">
+          <label for="kayit-sifre">Şifre
+            <span class="ipucu">en az 6 karakter</span></label>
+          <input id="kayit-sifre" type="password" autocomplete="new-password"
+                 required minlength="6">
+        </div>
+
+        <div class="alan">
+          <label for="kayit-sifre2">Şifre tekrar</label>
+          <input id="kayit-sifre2" type="password" autocomplete="new-password"
+                 required minlength="6">
+        </div>
+      </div>
+
+      <button class="dugme dugme-ana" type="submit" id="kayit-dugme"
+              style="width:100%;justify-content:center">Kaydı gönder</button>
+    </form>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- 3. ONAY BEKLİYOR                                                  -->
+<!-- ================================================================ -->
+<main id="ekran-bekliyor" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b> <span>Rehber paneli</span>
+      </div>
+      <button class="dugme dugme-sade" id="bekliyor-cikis">Çıkış</button>
+    </header>
+  </div>
+
+  <div class="kabuk-dar">
+    <section class="giris-kutu">
+      <h2>Onay bekliyor</h2>
+      <p class="aciklama-yazi" style="margin:10px 0 18px" id="bekliyor-kim"></p>
+
+      <div class="bilgi-kutu">
+        Başvurun alındı. Hesabın yönetici onayladıktan sonra açılıyor, o zamana kadar
+        panel görünmüyor. Onaylandığında okulunun kodu bu ekranda çıkar, öğrencilerin
+        o kodla kendileri kayıt olur.
+      </div>
+
+      <div class="uyari-kutu gizli" id="bekliyor-hata" role="alert"></div>
+
+      <div class="dugmeler">
+        <button class="dugme dugme-ana" type="button" id="bekliyor-yenile">Durumu yenile</button>
+      </div>
+      <p class="yardim-yazi" style="margin:14px 0 0" id="bekliyor-not"></p>
+    </section>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- 4. PANEL                                                          -->
+<!-- ================================================================ -->
+<main id="ekran-panel" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b> <span id="panel-kim"></span>
+      </div>
+      <div class="dugmeler">
+        <button class="dugme dugme-cizgi" id="yenile-dugme">Tabloyu tazele</button>
+        <button class="dugme dugme-sade" id="cikis-dugme">Çıkış</button>
+      </div>
+    </header>
+
+    <!-- ---- Okul kodu ---- -->
+    <div class="kod-kutu">
+      <span class="kod" id="okul-kodu">······</span>
+      <p id="okul-kodu-not">Öğrencilerin bu kodla kayıt oluyor.</p>
+      <button class="dugme dugme-cizgi" type="button" id="kod-kopyala">Kopyala</button>
+    </div>
+    <p class="yardim-yazi" style="margin-top:10px" id="okul-adi-yazi"></p>
+
+    <div class="uyari-kutu gizli" id="panel-hata" role="alert" style="margin-top:22px"></div>
+
+    <!-- ---- Görünüm seçimi ---- -->
+    <section class="bolum" style="padding-bottom:0">
+      <div class="dugmeler" role="group" aria-label="Görünüm">
+        <button class="dugme dugme-cizgi" type="button" data-gorunum="genel"
+                aria-pressed="true">Genel</button>
+        <button class="dugme dugme-cizgi" type="button" data-gorunum="sinif"
+                aria-pressed="false">Sınıf bazında</button>
+        <button class="dugme dugme-cizgi" type="button" data-gorunum="tek"
+                aria-pressed="false">Tek tek</button>
+        <button class="dugme dugme-cizgi" type="button" data-gorunum="ornek"
+                aria-pressed="false">Örnek sınıf</button>
+      </div>
+    </section>
+
+    <div id="gorunum-govde" aria-live="polite"></div>
+
+    <footer class="alt-bilgi">
+      <p>Öğrenci silme bu panelde yok. Bir kaydı gerçekten kaldırman gerekirse
+      yöneticiye yaz, çünkü silinen öğrencinin cevapları da gider.</p>
+      <p id="alt-kurum"></p>
+    </footer>
+  </div>
+</main>
+
+<!-- ================================================================ -->
+<!-- 5. ÖĞRENCİ RAPORU                                                 -->
+<!-- ================================================================ -->
+<main id="ekran-rapor" class="gizli">
+  <div class="kabuk">
+    <header class="ust-bar yazdirma-gizle">
+      <div class="marka">
+        <img src="logo.png" alt="Biyoser" class="marka-logo" width="277" height="200">
+        <b>Kendini tanı</b> <span>Öğrenci raporu</span>
+      </div>
+      <div class="dugmeler">
+        <button class="dugme dugme-cizgi" id="rapor-geri">Listeye dön</button>
+        <button class="dugme dugme-ana" id="yazdir-dugme">Yazdır</button>
+      </div>
+    </header>
+  </div>
+  <div class="kabuk" id="rapor-govde"></div>
+</main>
+
+<script src="baglanti.js"></script>
+<script src="deneme.js"></script>
+<script src="veri/kisilik.js"></script>
+<script src="veri/ilgi.js"></script>
+<script src="veri/degerler.js"></script>
+<script src="veri/beceri.js"></script>
+<script src="veri/yetenek.js"></script>
+<script src="veri/bolumler.js"></script>
+<script src="veri/ornek-sinif.js"></script>
+<script src="puanlama.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ------------------------------------------------------------------ */
+/* Kısa yardımcılar                                                     */
+/* ------------------------------------------------------------------ */
+function $(s, k) { return (k || document).querySelector(s); }
+
+function el(etiket, ozellik, icerik) {
+  var d = document.createElement(etiket);
+  if (ozellik) Object.keys(ozellik).forEach(function (a) {
+    if (a === 'class') d.className = ozellik[a];
+    else if (a.slice(0, 2) === 'on') d.addEventListener(a.slice(2), ozellik[a]);
+    else if (ozellik[a] !== null && ozellik[a] !== undefined) d.setAttribute(a, ozellik[a]);
+  });
+  if (icerik !== undefined && icerik !== null) {
+    if (Array.isArray(icerik)) icerik.forEach(function (c) { if (c) d.appendChild(c); });
+    else if (typeof icerik === 'string') d.textContent = icerik;
+    else d.appendChild(icerik);
+  }
+  return d;
+}
+
+function bosalt(k) { while (k.firstChild) k.removeChild(k.firstChild); return k; }
+
+function kacisli(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function tarih(t) {
+  if (!t) return 'yok';
+  var d = new Date(t);
+  if (isNaN(d.getTime())) return 'yok';
+  return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: '2-digit' }) +
+    ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function uyar(kutu, yazi) {
+  kutu.textContent = yazi || '';
+  kutu.classList.toggle('gizli', !yazi);
+}
+
+/* ------------------------------------------------------------------ */
+/* Sabitler                                                             */
+/* ------------------------------------------------------------------ */
+var ENV = {
+  kisilik: window.ENV_KISILIK, ilgi: window.ENV_ILGI, deger: window.ENV_DEGER,
+  beceri: window.ENV_BECERI, yetenek: window.ENV_YETENEK
+};
+
+var ENVANTERLER = [
+  { k: 'kisilik', ad: 'Kişilik envanteri',   kisa: 'Kiş', ton: 'var(--kisilik)' },
+  { k: 'ilgi',    ad: 'İlgi envanteri',      kisa: 'İlg', ton: 'var(--ilgi)' },
+  { k: 'deger',   ad: 'Meslek değerleri',    kisa: 'Değ', ton: 'var(--deger)' },
+  { k: 'beceri',  ad: 'Beceri envanteri',    kisa: 'Bec', ton: 'var(--beceri)' },
+  { k: 'yetenek', ad: 'Yetenek testi',       kisa: 'Yet', ton: 'var(--yetenek)' }
+];
+
+var DURUM_ADI = { bitti: 'bitti', yarim: 'yarım', baslamadi: 'başlamadı' };
+
+var TIP_ADI = { R: 'Gerçekçi', I: 'Araştırmacı', A: 'Sanatsal',
+                S: 'Sosyal', E: 'Girişimci', C: 'Geleneksel' };
+
+var BILESEN_ADI = { ilgi: 'İlgi', yetenek: 'Yetenek', beceri: 'Beceri', deger: 'Değer' };
+var BILESEN_TON = { ilgi: 'var(--ilgi)', yetenek: 'var(--yetenek)',
+                    beceri: 'var(--beceri)', deger: 'var(--deger)' };
+
+/* ------------------------------------------------------------------ */
+/* Durum                                                                */
+/* ------------------------------------------------------------------ */
+var satirlar = [];      /* kendi öğrencileri */
+var ornekler = [];      /* örnek sınıf, sayımlara girmez */
+var gorunum = 'genel';
+var seciliSube = '';
+var aramaYazi = '';
+var doneniz = 'genel';  /* rapordan hangi görünüme dönüleceği */
+
+function goster(ad) {
+  ['giris', 'kayit', 'bekliyor', 'panel', 'rapor'].forEach(function (e) {
+    $('#ekran-' + e).classList.toggle('gizli', e !== ad);
+  });
+  window.scrollTo(0, 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Cevap paketi okuma                                                   */
+/* ------------------------------------------------------------------ */
+function bittiHarita(r) { return (r.cevaplar && r.cevaplar.bitti) || {}; }
+
+function baslandiMi(r, k) {
+  var c = r.cevaplar || {};
+  return Object.keys(c[k] || {}).length > 0;
+}
+
+function durum(r, k) {
+  if (bittiHarita(r)[k]) return 'bitti';
+  return baslandiMi(r, k) ? 'yarim' : 'baslamadi';
+}
+
+function bittiSayisi(r) {
+  var b = bittiHarita(r);
+  return ENVANTERLER.filter(function (t) { return b[t.k]; }).length;
+}
+
+function hicBaslamadi(r) {
+  return !ENVANTERLER.some(function (t) { return durum(r, t.k) !== 'baslamadi'; });
+}
+
+function sinifSube(r) {
+  if (!r.sinif) return r.sube || '';
+  return r.sinif + (r.sube ? '-' + r.sube : '');
+}
+
+function sayiAnahtar(nesne) {
+  var c = {};
+  Object.keys(nesne || {}).forEach(function (n) { c[+n] = nesne[n]; });
+  return c;
+}
+
+/* puanlama.js'e yalnız bitmiş envanterler gider. Değerde de yalnız altı
+   öğesi tam olan turlar gider, yarım tur PUANLAMA.deger'i hata fırlatır. */
+function cevapPaketi(r) {
+  var c = r.cevaplar || {}, b = bittiHarita(r), paket = {};
+  ['kisilik', 'ilgi', 'beceri', 'yetenek'].forEach(function (k) {
+    if (b[k] && c[k]) paket[k] = sayiAnahtar(c[k]);
+  });
+  if (b.deger && c.deger) {
+    var d = {};
+    Object.keys(c.deger).forEach(function (n) {
+      if ((c.deger[n] || []).length === 6) d[+n] = c.deger[n];
+    });
+    paket.deger = d;
+  }
+  return paket;
+}
+
+/* Profil hesabı pahalı, satırda saklanıyor. Envanter yeniden açılınca
+   veri baştan çekildiği için önbellek de kendiliğinden düşüyor. */
+function profilAl(r) {
+  if (r._profil === undefined) {
+    try { r._profil = PUANLAMA.profilCikar(ENV, cevapPaketi(r)); }
+    catch (e) { r._profil = null; r._profilHata = e.message; }
+  }
+  return r._profil;
+}
+
+/* Tabloda yalnız Holland kodu lazım, tam profil çıkarmaya gerek yok. */
+function hollandKodu(r) {
+  if (r._holland !== undefined) return r._holland;
+  var c = r.cevaplar || {};
+  r._holland = '';
+  if (bittiHarita(r).ilgi && c.ilgi) {
+    try { r._holland = PUANLAMA.hollandKodu(PUANLAMA.likert(ENV.ilgi, sayiAnahtar(c.ilgi))); }
+    catch (e) { r._holland = ''; }
+  }
+  return r._holland;
+}
+
+/* ------------------------------------------------------------------ */
+/* Ortak parçalar                                                       */
+/* ------------------------------------------------------------------ */
+function basi(baslik, not) {
+  var b = el('div', { class: 'bolum-basi' });
+  b.appendChild(el('h2', null, baslik));
+  if (not) b.appendChild(el('span', { class: 'kenar-not' }, not));
+  return b;
+}
+
+function cubuk(ad, yuzde, ton) {
+  var s = el('div', { class: 'cubuk-satir' });
+  var e = el('div', { class: 'cubuk-etiket' });
+  e.appendChild(el('span', null, ad));
+  e.appendChild(el('span', { class: 'deger' }, yuzde + '%'));
+  s.appendChild(e);
+  var yol = el('div', { class: 'cubuk-yol' });
+  var dolu = el('div', { class: 'cubuk-dolu' });
+  dolu.style.setProperty('--ton', ton);
+  yol.appendChild(dolu);
+  s.appendChild(yol);
+  requestAnimationFrame(function () { dolu.style.width = yuzde + '%'; });
+  return s;
+}
+
+function rozetHucre(r) {
+  return '<div class="rozet-sira">' + ENVANTERLER.map(function (t) {
+    var d = durum(r, t.k);
+    return '<span class="rozet rozet-' + d + '" title="' +
+      kacisli(t.ad + ': ' + DURUM_ADI[d]) + '">' + kacisli(t.kisa) +
+      '<span class="ekran-okuyucu"> ' + kacisli(t.ad + ' ' + DURUM_ADI[d]) + '</span></span>';
+  }).join('') + '</div>';
+}
+
+/* Öğrenci tablosu. Ada basınca rapor açılır, id satırda taşınır. */
+function ogrenciTablo(liste, bosYazi) {
+  var sar = el('div', { class: 'tablo-sar' });
+  if (!liste.length) {
+    sar.appendChild(el('div', { class: 'bilgi-kutu' }, bosYazi));
+    return sar;
+  }
+
+  var tablo = el('table', { class: 'panel-tablo' });
+  tablo.innerHTML =
+    '<caption class="ekran-okuyucu">Öğrencilerin envanter durumu. ' +
+    'Ad soyada basınca raporu açılır.</caption>' +
+    '<thead><tr>' +
+      '<th scope="col">Okul no</th>' +
+      '<th scope="col">Ad soyad</th>' +
+      '<th scope="col">Sınıf</th>' +
+      '<th scope="col">Envanterler</th>' +
+      '<th scope="col">Holland</th>' +
+      '<th scope="col">Son güncelleme</th>' +
+    '</tr></thead><tbody>' +
+    liste.map(function (r) {
+      return '<tr data-id="' + kacisli(r.ogrenci_id) + '">' +
+        '<td class="veri">' + kacisli(r.okul_no || '') + '</td>' +
+        '<td><button type="button" class="ad-dugme">' + kacisli(r.ad_soyad) + '</button></td>' +
+        '<td>' + kacisli(sinifSube(r)) + '</td>' +
+        '<td>' + rozetHucre(r) + '</td>' +
+        '<td class="veri">' + kacisli(hollandKodu(r) || 'yok') + '</td>' +
+        '<td class="veri">' + kacisli(tarih(r.guncellendi)) + '</td>' +
+      '</tr>';
+    }).join('') + '</tbody>';
+  sar.appendChild(tablo);
+  return sar;
+}
+
+/* Dört sayaç kartı: kayıtlı, beşini bitiren, yarım, hiç başlamamış. */
+function sayacKartlari(liste) {
+  var bitti = 0, yarim = 0, bos = 0;
+  liste.forEach(function (r) {
+    if (bittiSayisi(r) === 5) bitti++;
+    else if (hicBaslamadi(r)) bos++;
+    else yarim++;
+  });
+
+  var agi = el('div', { class: 'kartlar sayaclar' });
+  [{ s: liste.length, a: 'Kayıtlı öğrenci', t: 'var(--beceri)' },
+   { s: bitti, a: 'Beşini de bitirdi',      t: 'var(--ilgi)' },
+   { s: yarim, a: 'Yarım bıraktı',          t: 'var(--deger)' },
+   { s: bos,   a: 'Hiç başlamadı',          t: 'var(--kisilik)' }
+  ].forEach(function (k) {
+    var kart = el('div', { class: 'kart sayac', style: '--ton:' + k.t });
+    kart.appendChild(el('b', { class: 'veri' }, String(k.s)));
+    kart.appendChild(el('span', null, k.a));
+    agi.appendChild(kart);
+  });
+  return agi;
+}
+
+/* Kırılım tablosu: anahtar başına dört sayı. */
+function kirilimTablo(baslikAdi, gruplar, sira) {
+  var sar = el('div', { class: 'tablo-sar' });
+  var tablo = el('table', { class: 'panel-tablo' });
+  tablo.innerHTML =
+    '<thead><tr><th scope="col">' + kacisli(baslikAdi) + '</th>' +
+    '<th scope="col">Kayıtlı</th><th scope="col">Bitirdi</th>' +
+    '<th scope="col">Yarım</th><th scope="col">Başlamadı</th></tr></thead><tbody>' +
+    sira.map(function (a) {
+      var g = gruplar[a], bitti = 0, yarim = 0, bos = 0;
+      g.forEach(function (r) {
+        if (bittiSayisi(r) === 5) bitti++;
+        else if (hicBaslamadi(r)) bos++;
+        else yarim++;
+      });
+      return '<tr><td>' + kacisli(a) + '</td>' +
+        '<td class="veri">' + g.length + '</td>' +
+        '<td class="veri">' + bitti + '</td>' +
+        '<td class="veri">' + yarim + '</td>' +
+        '<td class="veri">' + bos + '</td></tr>';
+    }).join('') + '</tbody>';
+  sar.appendChild(tablo);
+  return sar;
+}
+
+function grupla(liste, anahtarla) {
+  var g = {};
+  liste.forEach(function (r) {
+    var a = anahtarla(r);
+    if (a === '' || a === null || a === undefined) a = 'Belirtilmemiş';
+    (g[a] = g[a] || []).push(r);
+  });
+  return g;
+}
+
+function subeListesi(liste) {
+  return Object.keys(grupla(liste, sinifSube)).sort(function (a, b) {
+    var sa = parseInt(a, 10), sb = parseInt(b, 10);
+    if (sa !== sb) return (isNaN(sa) ? 99 : sa) - (isNaN(sb) ? 99 : sb);
+    return a.localeCompare(b, 'tr');
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Holland ve bölüm dağılımı                                            */
+/* Hesap pahalı olduğu için kutu önce boş çizilir, dolumu bir tik sonra. */
+/* ------------------------------------------------------------------ */
+function dagilimKutusu(liste, aciklama) {
+  var kutu = el('section', { class: 'bolum', style: 'padding-top:0' });
+  kutu.appendChild(basi('Profil dağılımı', 'Beşini de bitirenler'));
+  kutu.appendChild(el('p', { class: 'aciklama-yazi' }, aciklama));
+
+  var hedef = el('div');
+  kutu.appendChild(hedef);
+
+  var tamam = liste.filter(function (r) { return bittiSayisi(r) === 5; });
+  if (!tamam.length) {
+    hedef.appendChild(el('div', { class: 'bilgi-kutu' },
+      'Beş envanteri de bitirmiş öğrenci yok. Dağılım için en az bir öğrencinin ' +
+      'beşini de tamamlaması gerekiyor.'));
+    return kutu;
+  }
+
+  hedef.appendChild(el('p', { class: 'rapor-kim' }, 'Hesaplanıyor'));
+  setTimeout(function () {
+    var tipSayac = {}, bolumSayac = {}, hata = 0;
+    tamam.forEach(function (r) {
+      var profil = profilAl(r);
+      if (!profil) { hata++; return; }
+      if (profil.hollandKodu) {
+        var t = profil.hollandKodu[0];
+        tipSayac[t] = (tipSayac[t] || 0) + 1;
+      }
+      PUANLAMA.bolumOner(window.ENV_BOLUMLER, profil, 10, 3).liste.forEach(function (x) {
+        bolumSayac[x.ad] = (bolumSayac[x.ad] || 0) + 1;
+      });
+    });
+
+    var kisi = tamam.length - hata;
+    bosalt(hedef);
+    hedef.appendChild(el('p', { class: 'rapor-kim' },
+      kisi + ' öğrenciden hesaplandı' +
+      (hata ? ', ' + hata + ' öğrencinin cevapları puanlanamadı' : '') + '.'));
+
+    var ikili = el('div', { class: 'profil-agi' });
+
+    var sol = el('section', { class: 'profil-kutu' });
+    sol.appendChild(el('h3', null, 'Baskın ilgi tipi'));
+    sol.appendChild(el('p', { class: 'alt-not' }, 'Holland kodunun ilk harfine göre'));
+    Object.keys(TIP_ADI).sort(function (a, b) {
+      return (tipSayac[b] || 0) - (tipSayac[a] || 0);
+    }).forEach(function (t) {
+      var n = tipSayac[t] || 0;
+      sol.appendChild(cubuk(TIP_ADI[t] + ' (' + n + ' kişi)',
+        Math.round(100 * n / (kisi || 1)), 'var(--ilgi)'));
+    });
+    ikili.appendChild(sol);
+
+    var sag = el('section', { class: 'profil-kutu' });
+    sag.appendChild(el('h3', null, 'En çok önerilen bölümler'));
+    sag.appendChild(el('p', { class: 'alt-not' }, 'Kaç öğrencinin ilk onunda geçtiği'));
+    Object.keys(bolumSayac).sort(function (a, b) { return bolumSayac[b] - bolumSayac[a]; })
+      .slice(0, 10).forEach(function (ad) {
+        sag.appendChild(cubuk(ad + ' (' + bolumSayac[ad] + ' kişi)',
+          Math.round(100 * bolumSayac[ad] / (kisi || 1)), 'var(--beceri)'));
+      });
+    ikili.appendChild(sag);
+
+    hedef.appendChild(ikili);
+  }, 30);
+
+  return kutu;
+}
+
+/* ------------------------------------------------------------------ */
+/* Görünümler                                                           */
+/* ------------------------------------------------------------------ */
+function gorunumCiz() {
+  var g = bosalt($('#gorunum-govde'));
+  Array.prototype.forEach.call(document.querySelectorAll('[data-gorunum]'), function (d) {
+    d.setAttribute('aria-pressed', d.getAttribute('data-gorunum') === gorunum ? 'true' : 'false');
+  });
+
+  if (gorunum === 'genel') g.appendChild(genelGorunum());
+  else if (gorunum === 'sinif') g.appendChild(sinifGorunum());
+  else if (gorunum === 'tek') g.appendChild(tekGorunum());
+  else g.appendChild(ornekGorunum());
+}
+
+function genelGorunum() {
+  var k = el('div');
+
+  var ozet = el('section', { class: 'bolum' });
+  ozet.appendChild(basi('Okulun tamamı', satirlar.length + ' öğrenci'));
+  ozet.appendChild(sayacKartlari(satirlar));
+  k.appendChild(ozet);
+
+  if (!satirlar.length) {
+    ozet.appendChild(el('div', { class: 'bilgi-kutu', style: 'margin-top:22px' },
+      'Okulunda henüz kayıtlı öğrenci yok. Yukarıdaki okul kodunu öğrencilerine ver, ' +
+      'kayıt olduklarında bu listede çıkarlar. Sistemin ne gösterdiğini görmek için ' +
+      'örnek sınıf sekmesine bak.'));
+    return k;
+  }
+
+  var kir = el('section', { class: 'bolum', style: 'padding-top:0' });
+  kir.appendChild(basi('Sınıf düzeyine göre'));
+  var duzeyler = grupla(satirlar, function (r) { return r.sinif ? r.sinif + '. sınıf' : ''; });
+  kir.appendChild(kirilimTablo('Düzey', duzeyler, Object.keys(duzeyler).sort()));
+  k.appendChild(kir);
+
+  var sub = el('section', { class: 'bolum', style: 'padding-top:0' });
+  sub.appendChild(basi('Şubeye göre'));
+  var subeler = grupla(satirlar, sinifSube);
+  sub.appendChild(kirilimTablo('Şube', subeler, subeListesi(satirlar)));
+  k.appendChild(sub);
+
+  k.appendChild(dagilimKutusu(satirlar,
+    'Aşağıdaki iki liste yalnız beş envanteri de bitirmiş öğrencilerden çıkar. ' +
+    'Hesap tarayıcıda yapılıyor, kalabalık okullarda birkaç saniye sürebilir.'));
+
+  return k;
+}
+
+function sinifGorunum() {
+  var k = el('div');
+  var subeler = subeListesi(satirlar);
+
+  var b = el('section', { class: 'bolum' });
+  b.appendChild(basi('Sınıf bazında'));
+
+  if (!subeler.length) {
+    b.appendChild(el('div', { class: 'bilgi-kutu' },
+      'Okulunda henüz kayıtlı öğrenci yok, seçilecek şube de yok.'));
+    k.appendChild(b);
+    return k;
+  }
+
+  if (subeler.indexOf(seciliSube) === -1) seciliSube = subeler[0];
+
+  var arac = el('div', { class: 'arac' });
+  arac.appendChild(el('label', { for: 'suz-sube' }, 'Şube'));
+  var sec = el('select', { id: 'suz-sube', onchange: function () {
+    seciliSube = this.value;
+    gorunumCiz();
+  } });
+  subeler.forEach(function (s) {
+    sec.appendChild(el('option', s === seciliSube ? { value: s, selected: 'selected' }
+                                                  : { value: s }, s));
+  });
+  arac.appendChild(sec);
+  b.appendChild(arac);
+
+  var liste = satirlar.filter(function (r) { return sinifSube(r) === seciliSube; });
+  b.appendChild(sayacKartlari(liste));
+  k.appendChild(b);
+
+  var t = el('section', { class: 'bolum', style: 'padding-top:0' });
+  t.appendChild(basi(seciliSube + ' listesi', liste.length + ' öğrenci'));
+  t.appendChild(ogrenciTablo(liste, 'Bu şubede öğrenci yok.'));
+  k.appendChild(t);
+
+  k.appendChild(dagilimKutusu(liste,
+    seciliSube + ' şubesinde beş envanteri de bitirmiş öğrencilerden çıkarıldı.'));
+
+  return k;
+}
+
+function tekGorunum() {
+  var k = el('div');
+  var b = el('section', { class: 'bolum' });
+  b.appendChild(basi('Tek tek', satirlar.length + ' öğrenci'));
+  b.appendChild(el('p', { class: 'aciklama-yazi' },
+    'Ad soyada basınca o öğrencinin raporu açılır.'));
+
+  var arac = el('div', { class: 'arac' });
+  arac.appendChild(el('label', { for: 'ara' }, 'Ara'));
+  var giris = el('input', { id: 'ara', type: 'search', autocomplete: 'off',
+    placeholder: 'Ad soyad, okul no veya şube', value: aramaYazi,
+    oninput: function () {
+      aramaYazi = this.value;
+      var yeni = ogrenciTablo(suzulmus(), 'Aramaya uyan öğrenci yok.');
+      sar.parentNode.replaceChild(yeni, sar);
+      sar = yeni;
+    } });
+  arac.appendChild(giris);
+  b.appendChild(arac);
+
+  var sar = ogrenciTablo(suzulmus(), 'Okulunda henüz kayıtlı öğrenci yok.');
+  b.appendChild(sar);
+  k.appendChild(b);
+  return k;
+}
+
+function suzulmus() {
+  var q = aramaYazi.trim().toLocaleLowerCase('tr');
+  if (!q) return satirlar;
+  return satirlar.filter(function (r) {
+    return (r.ad_soyad + ' ' + (r.okul_no || '') + ' ' + sinifSube(r))
+      .toLocaleLowerCase('tr').indexOf(q) !== -1;
+  });
+}
+
+function ornekGorunum() {
+  var k = el('div');
+  var b = el('section', { class: 'bolum' });
+  b.appendChild(basi('Örnek sınıf', ornekler.length + ' öğrenci'));
+  b.appendChild(el('div', { class: 'bilgi-kutu' },
+    'Örnek sınıf, sistemin ne gösterdiğini görmen için. Bu öğrenciler senin okulunun ' +
+    'değil, yukarıdaki sayımlara da girmiyorlar. Raporlarını açabilirsin ama ' +
+    'envanterlerini yeniden açamazsın.'));
+  b.appendChild(ogrenciTablo(ornekler, 'Örnek sınıf yüklenmemiş.'));
+  k.appendChild(b);
+  return k;
+}
+
+/* ------------------------------------------------------------------ */
+/* Öğrenci raporu                                                       */
+/* ------------------------------------------------------------------ */
+function acDugmesi(r, t) {
+  return el('button', {
+    class: 'dugme dugme-sade', type: 'button',
+    onclick: function () {
+      var soru = t.k === 'yetenek'
+        ? r.ad_soyad + ' için yetenek testi yeniden açılsın mı? Verdiği cevaplar durur ama ' +
+          '45 dakikalık süre de sıfırlanır, testi baştan çözebilir.'
+        : r.ad_soyad + ' için ' + t.ad.toLocaleLowerCase('tr') +
+          ' yeniden açılsın mı? Verdiği cevaplar durur, üzerinde değişiklik yapabilir.';
+      if (!window.confirm(soru)) return;
+      var dugme = this;
+      dugme.disabled = true;
+      API.rpc('reh_envanter_ac', { p_ogrenci_id: r.ogrenci_id, p_envanter: t.k })
+        .then(function (g) {
+          if (g && g.hata) throw new Error(g.hata);
+          return veriCek();
+        })
+        .then(function () {
+          var yeni = satirlar.concat(ornekler).filter(function (x) {
+            return x.ogrenci_id === r.ogrenci_id;
+          })[0];
+          if (yeni) raporCiz(yeni);
+        })
+        .catch(function (err) {
+          dugme.disabled = false;
+          window.alert('Envanter açılamadı: ' + err.message +
+            ' Tabloyu tazeleyip bir daha dene.');
+        });
+    }
+  }, 'Yeniden aç');
+}
+
+function durumSatiri(r) {
+  var kutu = el('section', { class: 'bolum', style: 'padding-top:10px' });
+  kutu.appendChild(basi('Envanter durumu', bittiSayisi(r) + ' / 5 bitti'));
+
+  var agi = el('div', { class: 'kartlar' });
+  ENVANTERLER.forEach(function (t) {
+    var d = durum(r, t.k);
+    var k = el('div', { class: 'kart', style: '--ton:' + t.ton });
+    k.appendChild(el('h3', null, t.ad));
+    k.appendChild(el('p', { class: 'kart-ne' },
+      el('span', { class: 'rozet rozet-' + d }, DURUM_ADI[d])));
+    /* Örnek sınıfta yeniden açma yok, o kayıtlar sunucuda da kilitli. */
+    if (d === 'bitti' && !r.demo) k.appendChild(acDugmesi(r, t));
+    else k.appendChild(el('p', { class: 'bolum-kayit' },
+      d === 'bitti' ? 'Örnek kayıt, değiştirilemez.'
+        : d === 'yarim' ? 'Öğrenci devam edebilir.' : 'Öğrenci henüz açmadı.'));
+    agi.appendChild(k);
+  });
+  kutu.appendChild(agi);
+  return kutu;
+}
+
+function profilKutu(r, t, profil) {
+  var kutu = el('section', { class: 'profil-kutu' });
+  kutu.appendChild(el('h3', null, t.ad));
+
+  if (!bittiHarita(r)[t.k]) {
+    kutu.appendChild(el('p', { class: 'alt-not' },
+      'Doldurmadı. Bölüm sıralamasında bu envanter ortalama sayıldı.'));
+    return kutu;
+  }
+
+  if (t.k === 'yetenek' && profil.ham.yetenek) {
+    var h = profil.ham.yetenek;
+    kutu.appendChild(el('p', { class: 'alt-not' },
+      h.dogru + ' / ' + h.soru + ' doğru' + (h.bos ? ', ' + h.bos + ' soru boş' : '')));
+  } else {
+    kutu.appendChild(el('p', { class: 'alt-not' }, 'Kendi boyutları içindeki sıralaması'));
+  }
+
+  var y = profil[t.k];
+  ENV[t.k].boyutlar.slice().sort(function (a, b) { return y[b.k] - y[a.k]; })
+    .forEach(function (b) { kutu.appendChild(cubuk(b.ad, y[b.k], t.ton)); });
+  return kutu;
+}
+
+function bolumSatiri(x) {
+  var satir = el('div', { class: 'bolum-satir' });
+
+  var u = el('div', { class: 'bolum-uyum' }, String(x.uyum));
+  u.appendChild(el('span', null, 'UYUM'));
+  satir.appendChild(u);
+
+  var orta = el('div');
+  orta.appendChild(el('div', { class: 'bolum-ad' }, x.ad));
+  orta.appendChild(el('div', { class: 'bolum-bilgi' }, x.isler));
+
+  var etiketler = el('div', { class: 'bolum-etiketler' });
+  etiketler.appendChild(el('span', { class: 'etiket etiket-puan' }, x.puan + ' puanı'));
+  etiketler.appendChild(el('span', { class: 'etiket' }, x.holland));
+  etiketler.appendChild(el('span', { class: 'etiket' }, x.grup));
+  orta.appendChild(etiketler);
+
+  var bil = el('div', { class: 'bilesen-cubuklar' });
+  Object.keys(x.bilesen).forEach(function (k) {
+    var i = el('i', { title: BILESEN_ADI[k] + ' ' + x.bilesen[k] });
+    i.style.background = 'linear-gradient(to right, ' + BILESEN_TON[k] + ' ' +
+      x.bilesen[k] + '%, var(--cizgi) ' + x.bilesen[k] + '%)';
+    bil.appendChild(i);
+  });
+  orta.appendChild(bil);
+
+  x.gerekce.notlar.forEach(function (n) {
+    orta.appendChild(el('div', { class: 'bolum-not' }, n));
+  });
+
+  satir.appendChild(orta);
+  return satir;
+}
+
+function raporCiz(r) {
+  var g = bosalt($('#rapor-govde'));
+
+  var bas = el('section', { class: 'rapor-basi' });
+  bas.appendChild(el('div', { class: 'hero-goz' },
+    r.demo ? 'Örnek sınıf raporu' : 'Öğrenci raporu'));
+  bas.appendChild(el('h1', null, r.ad_soyad));
+  bas.appendChild(el('p', { class: 'rapor-kim' },
+    [r.okul_no ? 'Okul no ' + r.okul_no : '', sinifSube(r),
+     'Son güncelleme ' + tarih(r.guncellendi)].filter(Boolean).join('  ·  ')));
+  g.appendChild(bas);
+
+  if (r.demo) g.appendChild(el('div', { class: 'bilgi-kutu' },
+    'Örnek sınıf, sistemin ne gösterdiğini görmen için. Bu öğrenci senin okulunun değil.'));
+
+  g.appendChild(durumSatiri(r));
+
+  var profil = profilAl(r);
+  if (!profil) {
+    g.appendChild(el('div', { class: 'uyari-kutu' },
+      'Bu öğrencinin cevapları puanlanamadı: ' + r._profilHata +
+      ' İlgili envanteri yukarıdan yeniden açıp öğrenciden o bölümü tekrar doldurmasını iste.'));
+    goster('rapor');
+    return;
+  }
+
+  if (profil.eksikEnvanter.length) {
+    var adlar = profil.eksikEnvanter.map(function (k) {
+      return ENVANTERLER.filter(function (t) { return t.k === k; })[0].ad.toLocaleLowerCase('tr');
+    });
+    g.appendChild(el('div', { class: 'uyari-kutu', style: 'margin-bottom:26px' },
+      'Doldurulmayan envanterler: ' + adlar.join(', ') + '. Bunlar ortalama sayıldığı için ' +
+      'aşağıdaki bölüm sıralaması eksik bilgiyle çıkıyor.'));
+  }
+
+  if (profil.hollandKodu) {
+    var h = el('section', { class: 'bolum', style: 'padding-top:0' });
+    h.appendChild(basi('İlgi profili', 'Holland kodu ' + profil.hollandKodu));
+    h.appendChild(el('p', { class: 'bolum-girisi' },
+      'En yüksek üç tip: ' + profil.hollandKodu.split('').map(function (t) {
+        return TIP_ADI[t];
+      }).join(', ') + '. ' + (profil.tutarlilik === 3
+        ? 'İlk iki tip altıgende yan yana, ilgileri birbirini destekliyor.'
+        : profil.tutarlilik === 2
+          ? 'İlk iki tip altıgende bir köşe arayla, ilgileri iki ayrı yöne bakıyor.'
+          : 'İlk iki tip altıgende karşı köşelerde, listedeki bölümler dağınık çıkabilir.')));
+    g.appendChild(h);
+  }
+
+  var p = el('section', { class: 'bolum', style: 'padding-top:0' });
+  p.appendChild(basi('Beş envanterin sonucu'));
+  var agi = el('div', { class: 'profil-agi' });
+  ENVANTERLER.forEach(function (t) { agi.appendChild(profilKutu(r, t, profil)); });
+  p.appendChild(agi);
+  g.appendChild(p);
+
+  var oneri = PUANLAMA.bolumOner(window.ENV_BOLUMLER, profil, 10, 3);
+  var b = el('section', { class: 'bolum', style: 'padding-top:0' });
+  b.appendChild(basi('En uygun bölümler', 'İlk 10'));
+
+  var gosterge = el('div', { class: 'bilesen-gosterge' });
+  ['ilgi', 'yetenek', 'beceri', 'deger'].forEach(function (k) {
+    var s = el('span');
+    var kutu = el('i'); kutu.style.background = BILESEN_TON[k];
+    s.appendChild(kutu);
+    s.appendChild(document.createTextNode(BILESEN_ADI[k]));
+    gosterge.appendChild(s);
+  });
+  b.appendChild(gosterge);
+
+  oneri.liste.forEach(function (x) { b.appendChild(bolumSatiri(x)); });
+  g.appendChild(b);
+
+  goster('rapor');
+}
+
+/* ------------------------------------------------------------------ */
+/* Veri                                                                 */
+/* ------------------------------------------------------------------ */
+function veriCek() {
+  return API.rpc('reh_rehber_ogrenciler', {}).then(function (g) {
+    var hepsi = Array.isArray(g) ? g : [];
+    satirlar = hepsi.filter(function (r) { return !r.demo; });
+    ornekler = hepsi.filter(function (r) { return r.demo; });
+    uyar($('#panel-hata'), '');
+  }, function (err) {
+    uyar($('#panel-hata'), 'Öğrenci listesi alınamadı: ' + err.message +
+      ' Tabloyu tazele düğmesine bas, sürerse çıkıp tekrar gir.');
+    throw err;
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Yönlendirme                                                          */
+/* ------------------------------------------------------------------ */
+function yonlendir(p) {
+  if (!p) { goster('giris'); return; }
+
+  if (p.rol === 'yonetici') { location.replace('yonetici.html'); return; }
+  if (p.rol === 'ogrenci')  { location.replace('index.html'); return; }
+
+  /* Auth hesabı var, profili yok: kayıt formunu doldurması gerekiyor. */
+  if (!p.rol) {
+    kayitKipi(true);
+    uyar($('#kayit-bilgi'), 'Hesabın açıldı ama rehber kaydın tamamlanmadı. ' +
+      'Aşağıdaki bilgileri doldurup gönder.');
+    goster('kayit');
+    return;
+  }
+
+  if (!p.onayli) {
+    $('#bekliyor-kim').textContent = p.ad_soyad
+      ? p.ad_soyad + (p.okul_adi ? '  ·  ' + p.okul_adi : '') : (p.eposta || '');
+    $('#bekliyor-not').textContent = '';
+    uyar($('#bekliyor-hata'), '');
+    goster('bekliyor');
+    return;
+  }
+
+  panelAc(p);
+}
+
+function panelAc(p) {
+  $('#panel-kim').textContent = p.ad_soyad || '';
+  $('#okul-adi-yazi').textContent = p.okul_adi
+    ? p.okul_adi + ' okulunun panelini görüyorsun.' : '';
+  $('#okul-kodu').textContent = p.okul_kodu || 'kod yok';
+  $('#okul-kodu-not').textContent = p.okul_kodu
+    ? 'Öğrencilerin bu kodla kayıt oluyor.'
+    : 'Okuluna henüz kod üretilmemiş. Yöneticiye yaz.';
+  $('#kod-kopyala').classList.toggle('gizli', !p.okul_kodu);
+  $('#alt-kurum').textContent = AYAR.SAHIP + '  ·  ' + AYAR.URUN +
+    '  ·  ' + AYAR.OGRETIM_YILI;
+
+  goster('panel');
+  veriCek().then(gorunumCiz, function () { gorunumCiz(); });
+}
+
+/* ------------------------------------------------------------------ */
+/* Kayıt ekranının iki kipi                                             */
+/* hesapVar true: Auth hesabı açılmış, yalnız profil bilgileri isteniyor */
+/* ------------------------------------------------------------------ */
+var kayitHesapVar = false;
+
+function kayitKipi(hesapVar) {
+  kayitHesapVar = hesapVar;
+  var kutu = $('#kayit-hesap-alanlari');
+  kutu.classList.toggle('gizli', hesapVar);
+  ['kayit-eposta', 'kayit-sifre', 'kayit-sifre2'].forEach(function (id) {
+    $('#' + id).required = !hesapVar;
+  });
+  $('#kayittan-cik').textContent = hesapVar ? 'Çıkış' : 'Girişe dön';
+}
+
+/* ------------------------------------------------------------------ */
+/* Olaylar                                                              */
+/* ------------------------------------------------------------------ */
+$('#giris-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  uyar($('#giris-hata'), '');
+  uyar($('#giris-bilgi'), '');
+  $('#giris-dugme').disabled = true;
+  API.girisYap($('#giris-eposta').value.trim(), $('#giris-sifre').value)
+    .then(API.durumTazele)
+    .then(yonlendir)
+    .catch(function (err) {
+      uyar($('#giris-hata'), err.message);
+    })
+    .then(function () { $('#giris-dugme').disabled = false; });
+});
+
+$('#sifre-unuttum').addEventListener('click', function () {
+  var eposta = $('#giris-eposta').value.trim();
+  uyar($('#giris-hata'), '');
+  uyar($('#giris-bilgi'), '');
+  if (!eposta) {
+    uyar($('#giris-hata'), 'Önce e-posta alanına adresini yaz, sonra bu bağlantıya bas.');
+    return;
+  }
+  API.sifreUnuttum(eposta)
+    .then(function () {
+      uyar($('#giris-bilgi'), 'Sıfırlama bağlantısı gönderildi. ' + eposta +
+        ' adresinin gelen kutusuna bak.');
+    })
+    .catch(function (err) {
+      uyar($('#giris-hata'), 'Sıfırlama bağlantısı gönderilemedi: ' + err.message);
+    });
+});
+
+$('#kayda-git').addEventListener('click', function () {
+  uyar($('#kayit-hata'), '');
+  uyar($('#kayit-bilgi'), '');
+  kayitKipi(false);
+  goster('kayit');
+});
+
+$('#kayittan-cik').addEventListener('click', function () {
+  if (kayitHesapVar) { cikisYap(); return; }
+  goster('giris');
+});
+
+$('#kayit-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  uyar($('#kayit-hata'), '');
+  uyar($('#kayit-bilgi'), '');
+
+  var bilgi = {
+    p_ad_soyad: $('#kayit-ad').value.trim(),
+    p_okul_adi: $('#kayit-okul').value.trim(),
+    p_il:       $('#kayit-il').value.trim(),
+    p_ilce:     $('#kayit-ilce').value.trim()
+  };
+
+  if (!bilgi.p_ad_soyad || !bilgi.p_okul_adi) {
+    uyar($('#kayit-hata'), 'Ad soyad ve okul adı boş olamaz.');
+    return;
+  }
+
+  var dugme = $('#kayit-dugme');
+  dugme.disabled = true;
+
+  var hesap;
+  if (kayitHesapVar) {
+    hesap = Promise.resolve(null);
+  } else {
+    var eposta = $('#kayit-eposta').value.trim();
+    var sifre = $('#kayit-sifre').value;
+    if (sifre !== $('#kayit-sifre2').value) {
+      uyar($('#kayit-hata'), 'İki şifre aynı değil. Alanları tekrar doldur.');
+      dugme.disabled = false;
+      return;
+    }
+    hesap = API.kayitOl(eposta, sifre);
+  }
+
+  hesap.then(function (g) {
+    /* E-posta doğrulaması açıksa oturum gelmez. Profil kaydı, kullanıcı
+       adresini doğrulayıp giriş yaptıktan sonra bu formda tamamlanır. */
+    if (g && g.dogrulama_gerekli) {
+      goster('giris');
+      uyar($('#giris-bilgi'), 'Hesabın açıldı. E-postana gelen bağlantıyla adresini ' +
+        'doğrula, sonra buradan giriş yap. Kayıt formu kaldığı yerden devam eder.');
+      return null;
+    }
+    return API.rpc('reh_rehber_kayit', bilgi).then(function (s) {
+      if (s && s.hata) throw new Error(s.hata);
+      return API.durumTazele().then(yonlendir);
+    });
+  })
+  .catch(function (err) {
+    uyar($('#kayit-hata'), err.message);
+  })
+  .then(function () { dugme.disabled = false; });
+});
+
+$('#bekliyor-yenile').addEventListener('click', function () {
+  var d = this;
+  d.disabled = true;
+  uyar($('#bekliyor-hata'), '');
+  $('#bekliyor-not').textContent = 'Bakılıyor';
+  API.durumTazele()
+    .then(function (p) {
+      /* Notu yonlendir'den sonra yaz: o da aynı alanı temizliyor. */
+      yonlendir(p);
+      if (p && p.rol === 'rehber' && !p.onayli)
+        $('#bekliyor-not').textContent = 'Henüz onaylanmamış. Biraz sonra tekrar dene.';
+    })
+    .catch(function (err) {
+      $('#bekliyor-not').textContent = '';
+      uyar($('#bekliyor-hata'), 'Durum sorulamadı: ' + err.message +
+        ' İnternet bağlantını kontrol edip tekrar dene.');
+    })
+    .then(function () { d.disabled = false; });
+});
+
+function cikisYap() {
+  API.cikis().then(function () {
+    satirlar = []; ornekler = [];
+    gorunum = 'genel'; seciliSube = ''; aramaYazi = '';
+    $('#giris-sifre').value = '';
+    uyar($('#giris-hata'), '');
+    uyar($('#giris-bilgi'), '');
+    kayitKipi(false);
+    goster('giris');
+  });
+}
+
+$('#cikis-dugme').addEventListener('click', cikisYap);
+$('#bekliyor-cikis').addEventListener('click', cikisYap);
+
+$('#yenile-dugme').addEventListener('click', function () {
+  var d = this;
+  d.disabled = true;
+  veriCek().then(gorunumCiz, function () { /* hata kutusu zaten yazıldı */ })
+    .then(function () { d.disabled = false; });
+});
+
+$('#kod-kopyala').addEventListener('click', function () {
+  var kod = $('#okul-kodu').textContent;
+  var d = this;
+  var bitir = function (yazi) {
+    d.textContent = yazi;
+    setTimeout(function () { d.textContent = 'Kopyala'; }, 1800);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(kod)
+      .then(function () { bitir('Kopyalandı'); },
+            function () { bitir('Kopyalanamadı'); });
+  } else {
+    bitir('Kopyalanamadı');
+  }
+});
+
+document.querySelector('[role="group"][aria-label="Görünüm"]')
+  .addEventListener('click', function (e) {
+    var d = e.target.closest('[data-gorunum]');
+    if (!d) return;
+    gorunum = d.getAttribute('data-gorunum');
+    gorunumCiz();
+  });
+
+$('#gorunum-govde').addEventListener('click', function (e) {
+  var tr = e.target.closest('tr[data-id]');
+  if (!tr || !e.target.closest('.ad-dugme')) return;
+  var id = tr.getAttribute('data-id');
+  var r = satirlar.concat(ornekler).filter(function (x) {
+    return String(x.ogrenci_id) === id;
+  })[0];
+  if (r) { doneniz = gorunum; raporCiz(r); }
+});
+
+$('#rapor-geri').addEventListener('click', function () {
+  gorunum = doneniz;
+  goster('panel');
+  gorunumCiz();
+});
+
+$('#yazdir-dugme').addEventListener('click', function () { window.print(); });
+
+/* ------------------------------------------------------------------ */
+/* Açılış                                                               */
+/* ------------------------------------------------------------------ */
+kayitKipi(false);
+goster('giris');
+$('#giris-dugme').disabled = true;
+
+API.baslat()
+  .then(yonlendir)
+  .catch(function (err) {
+    uyar($('#giris-hata'), 'Oturum açılamadı: ' + err.message + ' Tekrar giriş yap.');
+    goster('giris');
+  })
+  .then(function () { $('#giris-dugme').disabled = false; });
+
+if (window.DENEME_KIPI)
+  uyar($('#giris-bilgi'), 'Deneme kipi: Supabase ayarları girilmedi, veriler tarayıcıda ' +
+    'duruyor. Hazır rehber hesabı rehber@deneme.com, şifresi deneme.');
+
+})();
+</script>
+</body>
+</html>
