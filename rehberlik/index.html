@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rehberlik — Biyoser</title>
+<meta name="description" content="Lise öğrencisinin kendini tanıması ve bölüm seçimi için Biyoser rehberlik araçları. Şu an açık: beş envanterlik Kendini tanı çalışması.">
+<link rel="canonical" href="https://biyoser.com.tr/rehberlik/">
+<meta property="og:title" content="Rehberlik — Biyoser">
+<meta property="og:description" content="Kendini tanı envanterleri ve bölüm seçimi araçları.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#03182B">
+<link rel="icon" href="../g/logo.png">
+<style>
+/* Biyoser tanıtım sayfasının değişkenleri birebir. Bu bölüm ayrı bir kimlik
+   değil, aynı sitenin bir odası. */
+:root{
+  --ink:#122430; --ink-2:#3D5566; --ink-3:#7E939F;
+  --paper:#F4F7F8; --panel:#fff; --line:#CBD6DB; --line-soft:#E2E9EC;
+  --accent:#186C68; --accent-2:#2FA79E; --accent-soft:#D8E8E6;
+  --lacivert:#03182B; --gece-2:#0B2D45; --turuncu:#E8873A; --turuncu-2:#F5A661;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono",'JetBrains Mono',Consolas,Menlo,monospace;
+  --yay:cubic-bezier(.22,.68,.32,1);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;font-size:16px}
+.kap{max-width:1060px;margin:0 auto;padding:0 22px}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--turuncu);outline-offset:3px;border-radius:6px}
+
+/* ---- üst menü ---- */
+.nav{background:rgba(3,24,43,.94);color:#fff;position:sticky;top:0;z-index:50;
+  border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:saturate(160%) blur(12px);
+  -webkit-backdrop-filter:saturate(160%) blur(12px)}
+.nav .kap{display:flex;align-items:center;gap:16px;height:66px}
+.nav .marka{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.5px;font-size:15px;color:#fff;text-decoration:none}
+.nav .marka img{width:44px;height:44px;object-fit:contain}
+.nav .geri{margin-left:auto;color:#B9CEDD;text-decoration:none;font-size:14px}
+.nav .geri:hover{color:#fff}
+
+/* ---- başlık şeridi ---- */
+.ust{background:linear-gradient(160deg,var(--lacivert),var(--gece-2));color:#fff;padding:54px 0 48px;position:relative;overflow:hidden}
+.ust::after{content:"";position:absolute;right:-90px;top:-90px;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(47,167,158,.26),transparent 68%)}
+.ust .kap{position:relative;z-index:2;max-width:760px}
+.rozet{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  color:var(--turuncu-2);border:1px solid rgba(245,166,97,.4);border-radius:999px;padding:5px 12px;margin-bottom:16px}
+.ust h1{font-size:clamp(28px,4.2vw,42px);line-height:1.14;letter-spacing:-.015em;margin:0 0 14px;font-weight:780}
+.ust p{margin:0;color:#C6D8E3;font-size:17px;max-width:60ch}
+
+/* ---- bölümler ---- */
+section{padding:56px 0;border-bottom:1px solid var(--line-soft)}
+.beyaz{background:var(--panel)}
+h2{font-size:clamp(21px,2.6vw,27px);margin:0 0 8px;letter-spacing:-.01em}
+.alt{color:var(--ink-2);margin:0 0 26px;font-size:16.5px}
+
+/* ---- açık araç kartı ---- */
+.arac{background:var(--panel);border:1px solid var(--line-soft);border-radius:16px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(18,36,48,.04),0 12px 30px rgba(18,36,48,.055)}
+.arac .govde{padding:26px 26px 22px;display:grid;grid-template-columns:1.25fr .75fr;gap:30px}
+.arac h3{margin:0 0 8px;font-size:20px;letter-spacing:-.01em}
+.arac .ne{margin:0 0 18px;color:var(--ink-2)}
+.sayilar{display:flex;gap:26px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--line-soft)}
+.sayilar div{padding-top:14px}
+.sayilar b{display:block;font-family:var(--mono);font-size:22px;font-weight:800;color:var(--accent);line-height:1}
+.sayilar span{font-size:12.5px;color:var(--ink-3)}
+.girisler{background:var(--paper);border-left:1px solid var(--line-soft);margin:-26px -26px -22px 0;padding:26px}
+.girisler p{margin:0 0 12px;font-size:13.5px;color:var(--ink-3)}
+.dugme{display:block;text-align:center;text-decoration:none;font-size:14.5px;font-weight:650;
+  padding:11px 16px;border-radius:10px;margin-bottom:9px;transition:transform .2s var(--yay),box-shadow .2s var(--yay)}
+.dugme.dolu{background:var(--turuncu);color:#fff;box-shadow:0 6px 16px rgba(232,135,58,.28)}
+.dugme.hat{background:var(--panel);color:var(--accent);border:1px solid var(--line)}
+.dugme:hover{transform:translateY(-2px)}
+.dugme.dolu:hover{box-shadow:0 10px 22px rgba(232,135,58,.34)}
+.notlar{margin:14px 0 0;font-size:12.5px;color:var(--ink-3);line-height:1.55}
+
+/* ---- sıradaki araçlar: kart değil, ince liste. Açık olanla karışmasın. ---- */
+.sirada{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-soft)}
+.sirada li{display:flex;gap:16px;align-items:baseline;padding:14px 2px;border-bottom:1px solid var(--line-soft)}
+.sirada .ad{font-weight:650;min-width:190px}
+.sirada .ac{color:var(--ink-2);font-size:15px}
+.sirada .durum{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  color:var(--ink-3);white-space:nowrap;padding-left:14px}
+
+footer{background:var(--lacivert);color:#9FB6C6;padding:30px 0;font-size:14px}
+footer a{color:#C6D8E3;text-decoration:none}
+footer a:hover{color:#fff;text-decoration:underline}
+
+@media (max-width:820px){
+  .arac .govde{grid-template-columns:1fr;gap:22px}
+  .girisler{border-left:0;border-top:1px solid var(--line-soft);margin:0 -26px -22px;}
+  .sirada li{flex-wrap:wrap;gap:6px}
+  .sirada .ad{min-width:0;width:100%}
+  .sirada .durum{margin-left:0;padding-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<div class="nav"><div class="kap">
+  <a class="marka" href="../index.html"><img src="../g/logo.png" alt="" width="176" height="186" decoding="async"><span>BİYOSER</span></a>
+  <a class="geri" href="../index.html">← Ana sayfa</a>
+</div></div>
+
+<header class="ust"><div class="kap">
+  <span class="rozet">REHBERLİK</span>
+  <h1>Bölüm seçimi kendini tanımakla başlar.</h1>
+  <p>Lise öğrencisinin kendini tanıması ve bölüm seçimine yön vermesi için hazırlanan araçlar burada toplanıyor. Rehber öğretmen sınıfını buradan izler.</p>
+</div></header>
+
+<section class="beyaz"><div class="kap">
+  <h2>Şimdi açık</h2>
+  <p class="alt">Bugün kullanabileceğin tek çalışma bu.</p>
+
+  <div class="arac">
+    <div class="govde">
+      <div>
+        <h3>Kendini tanı envanterleri</h3>
+        <p class="ne">Öğrenci beş envanteri doldurur, sonunda kişilik, ilgi, değer, beceri ve yetenek profilini ve bu profile en yakın bölümleri görür. Rehber öğretmen aynı sonuçları öğrenci, sınıf ve okul düzeyinde izler.</p>
+        <div class="sayilar">
+          <div><b>5</b><span>envanter</span></div>
+          <div><b>148</b><span>madde</span></div>
+          <div><b>40</b><span>yetenek sorusu</span></div>
+          <div><b>70</b><span>eşleşen bölüm</span></div>
+        </div>
+      </div>
+      <div class="girisler">
+        <p>Hesabın hangisiyse oradan gir.</p>
+        <a class="dugme dolu" href="envanter/index.html">Öğrenci girişi</a>
+        <a class="dugme hat" href="envanter/panel.html">Rehber öğretmen paneli</a>
+        <p class="notlar">Öğrenci, rehber öğretmeninden aldığı okul koduyla kayıt olur. Rehber öğretmen kendisi kayıt olur, yönetici onaylayınca hesabı açılır.</p>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="kap">
+  <h2>Sırada</h2>
+  <p class="alt">Bu bölüm büyüyecek. Aşağıdakiler hazırlanıyor, hazır olan buraya açık araç olarak taşınır.</p>
+  <ul class="sirada">
+    <li><span class="ad">Bölüm tanıtımları</span><span class="ac">Bölüm ne okutur, mezunu ne iş yapar, hangi dersleri sever.</span><span class="durum">HAZIRLANIYOR</span></li>
+    <li><span class="ad">Meslek rehberi</span><span class="ac">Mesleğin günlük işi, çalışma ortamı ve gerektirdiği beceriler.</span><span class="durum">HAZIRLANIYOR</span></li>
+    <li><span class="ad">Tercih çalışması</span><span class="ac">Puan ve sıralamaya göre gerçekçi tercih listesi kurma.</span><span class="durum">HAZIRLANIYOR</span></li>
+    <li><span class="ad">Burs ve barınma</span><span class="ac">Hangi burs kime açık, başvuru ne zaman, ne isteniyor.</span><span class="durum">HAZIRLANIYOR</span></li>
+  </ul>
+</div></section>
+
+<footer><div class="kap">
+  <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;align-items:center">
+    <div><b style="color:#fff">Biyoser Rehberlik</b><br>Eser Akkaba · YKS Biyoloji</div>
+    <div><a href="../index.html">Ana sayfa</a> · <a href="../kocluk-sunucu.html">Öğretmen girişi</a> · <a href="../ogrenci-sunucu.html">Öğrenci girişi</a> · <a href="envanter/yonetici.html">Yönetici</a></div>
+  </div>
+</div></footer>
+
+</body>
+</html>
