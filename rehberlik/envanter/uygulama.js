@@ -125,6 +125,62 @@ function paketle() {
   return p;
 }
 
+/* ------------------------------------------------------------------ */
+/* Misafir kipi                                                         */
+/* ★ 20 Eyl 2026 — Kayıt olmadan da çözülebilsin.                       */
+/*                                                                      */
+/* Cevaplar tarayıcıda durur, sunucuya hiç gitmez. Biçim paketle()      */
+/* çıktısıyla birebir aynı, üstüne yetenek_baslangic ekli; böylece      */
+/* yukle() ikinci bir çözümleyici yazmadan okuyor.                      */
+/*                                                                      */
+/* localStorage seçildi, sessionStorage değil: amaç "yarım bıraktığın   */
+/* yerden dön", sessionStorage ise sekme kapanınca siliniyor. Paylaşılan */
+/* bilgisayar için kapıda görünür uyarı ve "Cevaplarımı sil" düğmesi var. */
+/* ------------------------------------------------------------------ */
+var MISAFIR_ANAHTAR = 'kendini-tani-misafir';
+var MISAFIR = false;              /* oturum yok, misafir akışındayız */
+var MISAFIR_YAZILAMIYOR = false;  /* özel pencere ya da kota dolu */
+
+function misafirYaz() {
+  var p = paketle();
+  p.yetenek_baslangic = D.yetenek_baslangic;
+  try {
+    localStorage.setItem(MISAFIR_ANAHTAR, JSON.stringify(p));
+    MISAFIR_YAZILAMIYOR = false;
+  } catch (e) {
+    /* Sessizce yutmak, öğrencinin 148 maddeyi doldurup tazelemede
+       kaybetmesi demek. Durumu tutuyoruz, kapı ekranı söylüyor. */
+    MISAFIR_YAZILAMIYOR = true;
+  }
+}
+
+function misafirOku() {
+  try { return JSON.parse(localStorage.getItem(MISAFIR_ANAHTAR) || 'null'); }
+  catch (e) { return null; }
+}
+
+function misafirSil() {
+  try { localStorage.removeItem(MISAFIR_ANAHTAR); } catch (e) { /* yoksay */ }
+}
+
+/* Tek madde işaretlendiyse ya da yetenek sayacı başladıysa dolu sayılır. */
+function misafirDolu() {
+  var p = misafirOku();
+  if (!p) return false;
+  if (p.yetenek_baslangic) return true;
+  return ENVANTERLER.some(function (t) { return Object.keys(p[t.k] || {}).length; });
+}
+
+/* Her çağrıda aynı sonucu verir: varsa okur, yoksa boş kurar.
+   yukle() ZORUNLU: D.cevaplar başlangıçta boş nesne, likertCiz ise
+   D.cevaplar[k][m.n] okuyor; yukle çağrılmazsa ilk maddede hata atar. */
+function misafirBaslat() {
+  MISAFIR = true;
+  yukle(misafirOku() || {});
+  kapiCiz();
+  goster('kapi');
+}
+
 /* Oturumu API tutuyor. Burada yalnız profilin ekrana yazılan kısmı duruyor. */
 function profiliAl(p) {
   D.ad_soyad = p.ad_soyad || '';
@@ -314,8 +370,15 @@ function kartCiz(t, genis) {
 }
 
 function karsilamaCiz() {
-  $('#marka-kurum').textContent = AYAR.KURUM;
-  $('#alt-kurum').textContent = AYAR.KURUM + ' · ' + AYAR.OGRETIM_YILI + ' · ' + AYAR.REHBER;
+  /* ★ 20 Eyl 2026 — AYAR.KURUM ve AYAR.REHBER hiç tanımlı değildi (baglanti.js
+     yalnız URUN, OGRETIM_YILI ve SAHIP tutuyor), sayfanın altında
+     "undefined · 2026–2027 · undefined" yazıyordu. */
+  $('#marka-kurum').textContent = AYAR.SAHIP;
+  $('#alt-kurum').textContent = AYAR.SAHIP + ' · ' + AYAR.OGRETIM_YILI + ' · ' + AYAR.URUN;
+
+  /* Yarım kalmış misafir çalışması varsa ana düğme onu söylesin. */
+  var bd = $('#basla-dugme');
+  if (bd) bd.textContent = misafirDolu() ? 'Kaldığın yerden devam et' : 'Kayıt olmadan başla';
 
   var oz = bosalt($('#kartlar-oz'));
   ENVANTERLER.filter(function (t) { return t.k !== 'yetenek'; })
@@ -460,6 +523,10 @@ function kayitGonder(olay) {
   var d = $('#kayit-dugme');
   d.disabled = true; d.textContent = 'Kaydediliyor';
 
+  /* Taşıma sunucuca onaylandı mı: yerel veriyi ancak bu true olunca sileriz.
+     Not: e-posta doğrulaması bu projede kapalı, o yüzden dogrulama_gerekli
+     dalında taşıma yapılmıyor; açılırsa o dal için de taşıma gerekir. */
+  var tasindi = false;
   var ilk = yeniHesap ? API.kayitOl(eposta, sifre) : Promise.resolve({});
 
   ilk.then(function (g) {
@@ -477,12 +544,35 @@ function kayitGonder(olay) {
     .then(function (g) {
       if (g === null) return null;
       if (!g || g.hata) throw new Error((g && g.hata) || 'Kayıt tamamlanamadı.');
-      return API.durumTazele();
+      /* ★ 20 Eyl 2026 — MİSAFİR CEVAPLARINI HESABA TAŞI.
+         kaydet() kullanılmıyor: onun catch'i hatayı yutup başarılı gibi
+         dönüyor, o zaman aşağıda yerel veriyi silerdik ve öğrenci hem
+         sunucuda hem tarayıcıda cevapsız kalırdı. Doğrudan RPC çağırıp
+         sonucu denetliyoruz; yerel silme YALNIZ taşıma onaylanınca. */
+      var yerel = misafirOku();
+      var dolu = yerel && ENVANTERLER.some(function (t) {
+        return Object.keys(yerel[t.k] || {}).length;
+      });
+      if (!dolu) return API.durumTazele();
+      var paket = { bitti: yerel.bitti || {} };
+      ENVANTERLER.forEach(function (t) { paket[t.k] = yerel[t.k] || {}; });
+      return API.rpc('reh_envanter_kaydet', { p_cevaplar: paket, p_yetenek_basladi: false })
+        .then(function (k) {
+          if (k && k.hata) throw new Error('Hesabın açıldı ama cevapların taşınamadı: ' +
+            k.hata + ' Cevapların tarayıcıda duruyor, çıkış yapınca geri gelir.');
+          tasindi = true;
+          return API.durumTazele();
+        });
     })
     .then(function (p) {
       if (p === null) return;
       $('#kayit-sifre').value = ''; $('#kayit-sifre2').value = '';
       profiliAl(p);
+      if (tasindi) {
+        misafirSil();
+        MISAFIR = false;
+        kutuYaz('#kayit-bilgi', 'Hesabın açıldı, kayıt olmadan verdiğin cevaplar hesabına taşındı.');
+      }
       goster('kapi');
     })
     .catch(function (x) { kayitHata(x.message); })
@@ -498,7 +588,16 @@ function kayitYaz(m) {
 }
 
 function kaydet(hemen, yetenekBasladi) {
-  if (!OTURUM.jwt) return Promise.resolve();
+  /* ★ 20 Eyl 2026 — Misafirde sunucu yok, tarayıcıya yazıyoruz. Kanca burada
+     çünkü cevabın değiştiği her yol (likertSec, siraSec, sikSec, ileri,
+     sureBitti, çık ve çıkış) zaten kaydet'ten geçiyor. 1400 ms'lik
+     geciktirmenin ÖNÜNDE: misafirde beforeunload kancası çalışmıyor, sekme
+     kapanırken son saniyelerin cevabı kaybolmasın. */
+  if (!OTURUM.jwt) {
+    misafirYaz();
+    kayitYaz(MISAFIR_YAZILAMIYOR ? 'bu tarayıcıya yazılamıyor' : 'bu tarayıcıda saklandı');
+    return Promise.resolve();
+  }
   if (D.kayitBekliyor) { clearTimeout(D.kayitBekliyor); D.kayitBekliyor = null; }
   if (!hemen) {
     return new Promise(function (coz) {
@@ -540,10 +639,30 @@ function doluSayisi(k) {
 }
 
 function kapiCiz() {
-  $('#kapi-kim').textContent = D.ad_soyad +
-    (sinifSube() ? ' · ' + sinifSube() : '') +
-    (D.okul_adi ? ' · ' + D.okul_adi : '');
-  $('#kapi-selam').textContent = D.ad_soyad.split(' ')[0] + ', nereden devam edelim';
+  /* ★ 20 Eyl 2026 — Misafirde ad ve okul yok; eski hâlinde selam
+     ", nereden devam edelim" diye başlıyor, kimlik satırı boş ayraç diziyordu. */
+  var mis = !OTURUM.jwt;
+  $('#kapi-kim').textContent = mis ? 'Misafir' :
+    (D.ad_soyad + (sinifSube() ? ' · ' + sinifSube() : '') +
+     (D.okul_adi ? ' · ' + D.okul_adi : ''));
+  $('#kapi-selam').textContent = mis ? 'Nereden başlayalım'
+    : (D.ad_soyad.split(' ')[0] + ', nereden devam edelim');
+
+  /* Misafir kutusu gövdede duruyor, üst bardaki #kapi-kim mobilde gizleniyor
+     (stil.css) ve tek işaret olarak güvenilmez. */
+  var mk = $('#kapi-misafir');
+  if (mk) {
+    mk.classList.toggle('gizli', !mis);
+    var uyari = $('#kapi-misafir-uyari');
+    if (uyari) {
+      uyari.textContent = MISAFIR_YAZILAMIYOR
+        ? 'Bu tarayıcı kayıt tutmuyor (özel pencere olabilir). Sayfayı kapatırsan cevapların gider.'
+        : '';
+      uyari.classList.toggle('gizli', !MISAFIR_YAZILAMIYOR);
+    }
+  }
+  var cd = $('#cikis-dugme');
+  if (cd) cd.textContent = mis ? 'Bitir' : 'Çıkış';
 
   var bittiSayi = ENVANTERLER.filter(function (t) { return D.bitti[t.k]; }).length;
   $('#kapi-ilerleme').textContent = bittiSayi + ' / 5 envanter tamam';
@@ -603,6 +722,11 @@ function testAc(k) {
   $('#test-ilerleme').style.setProperty('--ton', t.ton);
 
   if (k === 'yetenek' && !D.bitti.yetenek && !D.yetenek_baslangic) {
+    /* ★ 20 Eyl 2026 — Kayıtlıda saati sunucu damgalıyor. Misafirde sunucu yok,
+       damgayı istemci atıyor ve yerele yazılıyor, böylece sayfa tazelenince
+       süre kaldığı yerden işler. Tarayıcıdaki damga kurcalanabilir; sonuç
+       kimseye raporlanmadığı için bu kabul edildi. */
+    if (!OTURUM.jwt) D.yetenek_baslangic = new Date().toISOString();
     goster('test');
     sayfaCiz();
     kaydet(true, true).then(function () { sayfaCiz(); });
@@ -1009,7 +1133,8 @@ function raporCiz() {
   /* Başlık */
   var bas = el('section', { class: 'rapor-basi' });
   bas.appendChild(el('div', { class: 'hero-goz' }, 'Kendini tanı raporu'));
-  bas.appendChild(el('h1', null, D.ad_soyad));
+  /* ★ 20 Eyl 2026 — Misafirde ad ve okul yok; başlık boş kalmasın. */
+  bas.appendChild(el('h1', null, D.ad_soyad || 'Raporun'));
   bas.appendChild(el('p', { class: 'rapor-kim' },
     [D.okul_adi, sinifSube(), D.okul_no ? 'Okul no ' + D.okul_no : '', AYAR.OGRETIM_YILI]
       .filter(Boolean).join('  ·  ')));
@@ -1134,6 +1259,27 @@ function raporCiz() {
   });
   g.appendChild(b);
 
+  /* ★ 20 Eyl 2026 — Misafire rapor sonunda saklama teklifi. Rapor uzun,
+     üstteki düğmelere dönmek için yukarı çıkmak gerekiyor; teklif de,
+     envanterlere dönüş de burada dursun. */
+  if (!OTURUM.jwt) {
+    var t = el('section', { class: 'bilgi-kutu', style: 'margin-top:28px' });
+    t.appendChild(el('p', { style: 'margin:0 0 12px' },
+      'Bu rapor yalnız bu tarayıcıda duruyor. Okul kodun varsa hesap aç, raporun ' +
+      'hesabına taşınsın ve rehber öğretmenin de görsün. Kodun yoksa raporu yazdırıp saklayabilirsin.'));
+    var td = el('div', { class: 'dugmeler' });
+    td.appendChild(el('button', {
+      class: 'dugme dugme-ana', type: 'button',
+      onclick: function () { goster('kayit'); }
+    }, 'Hesap aç ve sakla'));
+    td.appendChild(el('button', {
+      class: 'dugme dugme-cizgi', type: 'button',
+      onclick: function () { window.print(); }
+    }, 'Yazdır'));
+    t.appendChild(td);
+    g.appendChild(t);
+  }
+
   g.appendChild(el('footer', { class: 'alt-bilgi' },
     el('p', null, 'Bu rapor bir karar değil, bir başlangıçtır. Rehber öğretmeninle birlikte oku.')));
 }
@@ -1150,8 +1296,22 @@ function kur() {
   $$('[data-git]').forEach(function (d) {
     d.addEventListener('click', function () {
       var hedef = d.getAttribute('data-git');
-      if ((hedef === 'giris' || hedef === 'kayit') && OTURUM.profil &&
-          OTURUM.profil.rol === 'ogrenci') { goster('kapi'); return; }
+      var ogrenci = OTURUM.profil && OTURUM.profil.rol === 'ogrenci';
+      /* ★ 20 Eyl 2026 — misafir dalı: oturum açmadan doğrudan envanterlere. */
+      if (hedef === 'misafir') {
+        if (ogrenci) { goster('kapi'); return; }
+        misafirBaslat();
+        return;
+      }
+      /* Misafirin cevapları varken GİRİŞ yapmak onları eziyor: roleGore →
+         profiliAl → yukle, D.cevaplar sunucudakiyle değişiyor. Sessizce
+         kaybettirmek yerine soruyoruz. Cevaplar yine de tarayıcıda kalıyor. */
+      if (hedef === 'giris' && !OTURUM.jwt && misafirDolu() &&
+          !window.confirm('Kayıt olmadan verdiğin cevaplar bu tarayıcıda duruyor. ' +
+            'Giriş yaparsan ekranda hesabındaki cevaplar açılır. ' +
+            'Buradaki cevaplar silinmez, çıkış yapınca geri gelir. Devam edilsin mi?'))
+        return;
+      if ((hedef === 'giris' || hedef === 'kayit') && ogrenci) { goster('kapi'); return; }
       goster(hedef);
     });
   });
@@ -1173,9 +1333,28 @@ function kur() {
   });
   $('#yazdir-dugme').addEventListener('click', function () { window.print(); });
   $('#cikis-dugme').addEventListener('click', function () {
+    /* ★ 20 Eyl 2026 — Misafirin çıkacağı bir hesap yok; sunucuya gitmek
+       yerine tanıtıma dönüyor. Cevaplar SİLİNMİYOR, silme ayrı düğmede. */
+    if (!OTURUM.jwt) {
+      kaydet(true).then(function () { MISAFIR = false; karsilamaCiz(); goster('karsilama'); });
+      return;
+    }
     kaydet(true)
       .then(function () { return API.cikis(); })
       .then(function () { location.reload(); });
+  });
+
+  /* ★ 20 Eyl 2026 — Paylaşılan bilgisayarda kendinden sonrakine cevap
+     bırakmamak için. Geri alınamaz, o yüzden soruyor. */
+  var sifirla = $('#misafir-sifirla');
+  if (sifirla) sifirla.addEventListener('click', function () {
+    if (!window.confirm('Bu tarayıcıdaki bütün cevapların silinsin mi? Geri alınamaz.')) return;
+    misafirSil();
+    yukle({});
+    D.yetenek_baslangic = null;
+    MISAFIR = false;
+    karsilamaCiz();
+    goster('karsilama');
   });
 
   /* Sekme kapanırken bekleyen kayıt varsa keepalive isteğiyle gönder. */

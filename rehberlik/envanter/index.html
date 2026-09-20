@@ -39,7 +39,7 @@
           bu profile göre sıralanır.
         </p>
         <div class="dugmeler">
-          <button class="dugme dugme-ana" data-git="giris">Başla</button>
+          <button class="dugme dugme-ana" id="basla-dugme" data-git="misafir">Kayıt olmadan başla</button>
           <a class="dugme dugme-cizgi" href="#nasil">Nasıl işliyor</a>
         </div>
       </div>
@@ -85,7 +85,7 @@
         <div class="akis-adim">
           <span class="akis-no">01</span>
           <h3>Girersin</h3>
-          <p>Okul numaran ve TC kimlik numaranla. Şifre yok, ezberlenecek bir şey yok.</p>
+          <p>Kayıt olmadan başlarsın. Cevapların bu tarayıcıda durur, istersen sonra hesap açıp taşırsın.</p>
         </div>
         <div class="akis-adim">
           <span class="akis-no">02</span>
@@ -270,6 +270,16 @@
       <div class="bolum-basi">
         <h2 id="kapi-selam">Hoş geldin</h2>
         <span class="kenar-not" id="kapi-ilerleme"></span>
+      </div>
+      <div class="bilgi-kutu gizli" id="kapi-misafir">
+        Kayıt olmadan dolduruyorsun. Cevapların yalnız bu tarayıcıda durur; başka bir cihazda
+        açılmaz, rehber öğretmenin göremez. Saklamak istersen okul kodunla hesap aç, buraya
+        kadar doldurduğun her şey hesabına taşınır.
+        <p class="uyari-kutu gizli" id="kapi-misafir-uyari" style="margin-top:12px"></p>
+        <div class="dugmeler" style="margin-top:14px">
+          <button class="dugme dugme-cizgi" data-git="kayit">Hesap aç ve sakla</button>
+          <button class="dugme dugme-sade" id="misafir-sifirla">Cevaplarımı sil</button>
+        </div>
       </div>
       <div class="kartlar" id="kapi-kartlar"></div>
       <div class="dugmeler" style="margin-top:28px">
