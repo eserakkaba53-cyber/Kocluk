@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test kataloğu — Biyoser</title>
+<meta name="description" content="Özel ders test kataloğu: ara, süz, seç, bağlantıları kopyala ve listeyi indir.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#03182B">
+<link rel="icon" href="g/logo.png">
+<script src="sunucu.js?v=20260920a"></script>
+<style>
+/* Ana sayfanın değişkenleri ve dili. Ayrı bir kimlik değil, aynı sitenin odası. */
+:root{
+  --ink:#122430; --ink-2:#3D5566; --ink-3:#7E939F;
+  --paper:#F4F7F8; --panel:#fff; --line:#CBD6DB; --line-soft:#E2E9EC;
+  --accent:#186C68; --accent-2:#2FA79E; --accent-soft:#D8E8E6;
+  --lacivert:#03182B; --gece-2:#0B2D45; --turuncu:#E8873A; --turuncu-2:#F5A661;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono",'JetBrains Mono',Consolas,Menlo,monospace;
+  --yay:cubic-bezier(.22,.68,.32,1);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.6;font-size:16px}
+.kap{max-width:1120px;margin:0 auto;padding:0 22px}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--turuncu);outline-offset:3px;border-radius:6px}
+.gizli{display:none !important}
+
+/* üst menü */
+.nav{background:rgba(3,24,43,.94);color:#fff;position:sticky;top:0;z-index:50;
+  border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:saturate(160%) blur(12px);
+  -webkit-backdrop-filter:saturate(160%) blur(12px)}
+.nav .kap{display:flex;align-items:center;gap:16px;height:62px}
+.nav .marka{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.5px;font-size:15px;color:#fff;text-decoration:none}
+.nav .marka img{width:40px;height:40px;object-fit:contain}
+.nav .sag{margin-left:auto;display:flex;gap:14px;align-items:center}
+.nav .sag a,.nav .sag button{color:#B9CEDD;text-decoration:none;font-size:14px;background:none;border:0;font-family:inherit;cursor:pointer}
+.nav .sag a:hover,.nav .sag button:hover{color:#fff}
+
+/* başlık şeridi */
+.ust{background:linear-gradient(165deg,#0A3555 0%,var(--gece-2) 48%,var(--lacivert) 100%);
+  color:#fff;padding:34px 0 30px;position:relative;overflow:hidden}
+.ust::after{content:"";position:absolute;right:-80px;top:-120px;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(47,167,158,.26),transparent 68%);pointer-events:none}
+.ust .kap{position:relative;z-index:2;display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:#8FD3CE;font-weight:700;
+  background:rgba(47,167,158,.12);border:1px solid rgba(47,167,158,.3);padding:6px 13px;border-radius:30px}
+.ust h1{font-size:clamp(24px,3.4vw,33px);line-height:1.15;letter-spacing:-.015em;margin:12px 0 4px;font-weight:780}
+.ust p{margin:0;color:#C6D8E3;font-size:15.5px}
+.sayac{margin-left:auto;display:flex;gap:26px;flex-wrap:wrap}
+.sayac b{display:block;font-family:var(--mono);font-size:24px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.sayac span{font-size:12px;color:#9FC0D2}
+
+/* giriş */
+.girisAlan{max-width:430px;margin:56px auto;background:var(--panel);border:1px solid var(--line-soft);
+  border-radius:18px;padding:28px;box-shadow:0 18px 44px rgba(18,36,48,.09)}
+.girisAlan h2{margin:0 0 6px;font-size:20px}
+.girisAlan .ac{margin:0 0 20px;color:var(--ink-3);font-size:14px}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-2);margin:0 0 6px;
+  text-transform:uppercase;letter-spacing:.06em}
+input[type=email],input[type=password],input[type=search],select{
+  width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:inherit;
+  background:var(--panel);color:var(--ink);transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus{border-color:var(--accent-2);box-shadow:0 0 0 3px var(--accent-soft);outline:none}
+.alan{margin-bottom:14px}
+.btn{font:inherit;font-weight:700;font-size:14.5px;padding:11px 18px;border-radius:10px;border:0;cursor:pointer;
+  transition:transform .2s var(--yay),box-shadow .2s var(--yay),background .2s}
+.btn.ana{background:var(--turuncu);color:#fff;box-shadow:0 8px 20px rgba(232,135,58,.3);width:100%}
+.btn.ana:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(232,135,58,.4)}
+.btn.hat{background:var(--panel);color:var(--accent);border:1px solid var(--line)}
+.btn.hat:hover{background:var(--accent-soft);transform:translateY(-2px)}
+.btn.koyu{background:var(--accent);color:#fff}
+.btn.koyu:hover{background:#12817B;transform:translateY(-2px)}
+.btn.mini{font-size:13px;padding:8px 13px}
+.btn:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
+.uyari{background:#FDECE4;border:1px solid #F3C3A5;color:#8A3E12;border-radius:10px;padding:11px 13px;font-size:14px;margin-bottom:14px}
+
+/* süzgeç şeridi */
+.suzgec{position:sticky;top:62px;z-index:30;background:rgba(244,247,248,.93);
+  backdrop-filter:saturate(150%) blur(10px);-webkit-backdrop-filter:saturate(150%) blur(10px);
+  border-bottom:1px solid var(--line-soft);padding:14px 0}
+.suzgec .kap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.suzgec .ara{flex:1 1 260px;min-width:200px}
+.suzgec select{width:auto;min-width:140px}
+.rozet{font-family:var(--mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
+
+/* liste */
+.liste{padding:22px 0 130px}
+.tbl{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line-soft);
+  border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(18,36,48,.04),0 10px 26px rgba(18,36,48,.05)}
+.tbl th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+  padding:12px 14px;border-bottom:1px solid var(--line-soft);background:#FAFCFC;white-space:nowrap}
+.tbl td{padding:12px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top;font-size:14.5px}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr{transition:background .15s}
+.tbl tbody tr:hover{background:#F7FAFA}
+.tbl tbody tr.sec{background:var(--accent-soft)}
+.tbl .ad{font-weight:650}
+.tbl .kucuk{font-size:12.5px;color:var(--ink-3)}
+.tbl .sayi{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.tbl input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+.yok{background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:40px 22px;text-align:center;color:var(--ink-3)}
+
+/* seçim tepsisi */
+.tepsi{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--lacivert);color:#fff;
+  box-shadow:0 -10px 30px rgba(3,24,43,.3);transform:translateY(110%);transition:transform .3s var(--yay)}
+.tepsi.acik{transform:translateY(0)}
+.tepsi .kap{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-top:14px;padding-bottom:14px}
+.tepsi .bilgi{font-weight:700;margin-right:auto}
+.tepsi .bilgi small{display:block;font-weight:400;font-size:12.5px;color:#9FC0D2}
+.tepsi .btn.hat{background:transparent;color:#C6D8E3;border-color:rgba(255,255,255,.28)}
+.tepsi .btn.hat:hover{background:rgba(255,255,255,.1);color:#fff}
+
+.bildirim{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);z-index:60;
+  background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s var(--yay)}
+.bildirim.gor{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:760px){
+  .sayac{margin-left:0;gap:18px}
+  .tbl thead{display:none}
+  .tbl tr{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:12px 14px;border-bottom:1px solid var(--line-soft)}
+  .tbl td{border:0;padding:2px 0}
+  .tbl td:first-child{grid-row:1/4}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<div class="nav"><div class="kap">
+  <a class="marka" href="index.html"><img src="g/logo.png" alt="" width="176" height="186" decoding="async"><span>BİYOSER</span></a>
+  <div class="sag">
+    <a href="index.html">← Ana sayfa</a>
+    <button type="button" id="cikisDugme" class="gizli">Çıkış</button>
+  </div>
+</div></div>
+
+<!-- ══ GİRİŞ ══ -->
+<main id="ekranGiris">
+  <div class="girisAlan">
+    <h2>Test kataloğu</h2>
+    <p class="ac">Özel ders hesabınla gir. Katalog yalnız sana görünür.</p>
+    <div class="uyari gizli" id="girisHata" role="alert"></div>
+    <form id="girisForm">
+      <div class="alan"><label for="eposta">E-posta</label>
+        <input id="eposta" type="email" autocomplete="email" required></div>
+      <div class="alan"><label for="sifre">Şifre</label>
+        <input id="sifre" type="password" autocomplete="current-password" required></div>
+      <button class="btn ana" type="submit" id="girisDugme">Gir</button>
+    </form>
+  </div>
+</main>
+
+<!-- ══ KATALOG ══ -->
+<main id="ekranKatalog" class="gizli">
+  <header class="ust"><div class="kap">
+    <div>
+      <span class="eyebrow">ÖZEL DERS · TEST KATALOĞU</span>
+      <h1>Kataloğun</h1>
+      <p>Ara, süz, seç; bağlantıları kopyala ya da listeyi indir.</p>
+    </div>
+    <div class="sayac">
+      <div><b id="sTest">0</b><span>test</span></div>
+      <div><b id="sSoru">0</b><span>soru</span></div>
+      <div><b id="sUnite">0</b><span>ünite</span></div>
+    </div>
+  </div></header>
+
+  <div class="suzgec"><div class="kap">
+    <div class="ara"><input type="search" id="ara" placeholder="Test adı, konu, ünite ya da kaynak ara…" aria-label="Katalogda ara"></div>
+    <select id="fSinif" aria-label="Sınıf süzgeci"><option value="">Bütün sınıflar</option></select>
+    <select id="fUnite" aria-label="Ünite süzgeci"><option value="">Bütün üniteler</option></select>
+    <button class="btn hat mini" type="button" id="hepsiniSec">Görünenleri seç</button>
+    <span class="rozet" id="suzgecRozet"></span>
+  </div></div>
+
+  <div class="liste"><div class="kap">
+    <div id="kutu"></div>
+  </div></div>
+</main>
+
+<div class="tepsi" id="tepsi"><div class="kap">
+  <div class="bilgi"><span id="tSay">0 test seçildi</span><small id="tAlt"></small></div>
+  <button class="btn hat mini" type="button" id="tAc">Bağlantıları aç</button>
+  <button class="btn hat mini" type="button" id="tKopya">Bağlantıları kopyala</button>
+  <button class="btn hat mini" type="button" id="tMetin">Liste indir (.txt)</button>
+  <button class="btn koyu mini" type="button" id="tCsv">Tablo indir (.csv)</button>
+  <button class="btn hat mini" type="button" id="tTemiz">Temizle</button>
+</div></div>
+
+<div class="bildirim" id="bildirim" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ★ 20 Eyl 2026 — Özel ders test kataloğunun Biyoser tarafındaki görünümü.
+   Veri oz_katalog tablosundan geliyor, koçluk paneliyle aynı Supabase projesi.
+   RLS zaten sınırlıyor: koç kendi kataloğunu, öğrenci koçununkini görür
+   (oz_kat_oku: koc_id = auth.uid() OR koc_id = oz_kocum()). Bu sayfa yalnız
+   OKUR; ekleme, taşıma ve silme özel ders panelinde kalıyor. */
+
+var AYAR = (window.SUNUCU_AYAR || {});
+var ANAHTAR = 'biyoser_katalog_oturum';
+var JWT = null, YENILEME = null;
+var KATALOG = [], SECILI = Object.create(null);
+
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g,
+  function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+function nrm(s){ return String(s || '').toLocaleLowerCase('tr-TR')
+  .replace(/[ıİ]/g,'i').replace(/[şŞ]/g,'s').replace(/[ğĞ]/g,'g')
+  .replace(/[üÜ]/g,'u').replace(/[öÖ]/g,'o').replace(/[çÇ]/g,'c'); }
+function say(n){ return Number(n || 0).toLocaleString('tr-TR'); }
+
+var bildirimZaman = null;
+function bildir(m){
+  var b = $('#bildirim');
+  b.textContent = m; b.classList.add('gor');
+  clearTimeout(bildirimZaman);
+  bildirimZaman = setTimeout(function(){ b.classList.remove('gor'); }, 2600);
+}
+
+/* ---- oturum ---- */
+function oturumYaz(){
+  try{ localStorage.setItem(ANAHTAR, JSON.stringify({ jwt: JWT, yenileme: YENILEME })); }
+  catch(e){ /* özel pencere */ }
+}
+function oturumOku(){
+  try{
+    var v = JSON.parse(localStorage.getItem(ANAHTAR) || 'null');
+    if(v && v.jwt){ JWT = v.jwt; YENILEME = v.yenileme || null; return true; }
+  }catch(e){}
+  return false;
+}
+function oturumSil(){ JWT = null; YENILEME = null; try{ localStorage.removeItem(ANAHTAR); }catch(e){} }
+
+function girisYap(eposta, sifre){
+  return fetch(AYAR.url + '/auth/v1/token?grant_type=password', {
+    method: 'POST',
+    headers: { 'apikey': AYAR.key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: eposta, password: sifre })
+  }).then(function(r){ return r.json().then(function(g){
+    if(!r.ok) throw new Error(g.error_description || g.msg || g.message || 'Giriş yapılamadı.');
+    return g;
+  }); }).then(function(g){
+    JWT = g.access_token; YENILEME = g.refresh_token || null; oturumYaz();
+  });
+}
+
+function katalogCek(){
+  return fetch(AYAR.url + '/rest/v1/oz_katalog?select=*&order=unite.asc,konu.asc,ad.asc', {
+    headers: { 'apikey': AYAR.key, 'Authorization': 'Bearer ' + JWT }
+  }).then(function(r){
+    if(r.status === 401) { oturumSil(); throw new Error('Oturum süresi doldu, yeniden gir.'); }
+    if(!r.ok) throw new Error('Katalog okunamadı (' + r.status + ').');
+    return r.json();
+  });
+}
+
+/* ---- çizim ---- */
+function suzulmus(){
+  var q = nrm($('#ara').value.trim());
+  var s = $('#fSinif').value, u = $('#fUnite').value;
+  return KATALOG.filter(function(t){
+    if(s && t.sinif !== s) return false;
+    if(u && t.unite !== u) return false;
+    if(!q) return true;
+    return nrm([t.ad, t.konu, t.unite, t.sinif, t.kaynak].join(' ')).indexOf(q) >= 0;
+  });
+}
+
+function ozetYaz(){
+  $('#sTest').textContent = say(KATALOG.length);
+  $('#sSoru').textContent = say(KATALOG.reduce(function(a,t){ return a + (+t.soru || 0); }, 0));
+  var un = {}; KATALOG.forEach(function(t){ if(t.unite) un[t.unite] = 1; });
+  $('#sUnite').textContent = say(Object.keys(un).length);
+}
+
+function suzgecDoldur(){
+  var sin = [], un = [];
+  KATALOG.forEach(function(t){
+    if(t.sinif && sin.indexOf(t.sinif) < 0) sin.push(t.sinif);
+    if(t.unite && un.indexOf(t.unite) < 0) un.push(t.unite);
+  });
+  sin.sort(); un.sort(function(a,b){ return a.localeCompare(b,'tr'); });
+  $('#fSinif').innerHTML = '<option value="">Bütün sınıflar</option>' +
+    sin.map(function(x){ return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('');
+  $('#fUnite').innerHTML = '<option value="">Bütün üniteler</option>' +
+    un.map(function(x){ return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('');
+}
+
+function ciz(){
+  var list = suzulmus();
+  $('#suzgecRozet').textContent = list.length === KATALOG.length
+    ? say(KATALOG.length) + ' test'
+    : say(list.length) + ' / ' + say(KATALOG.length) + ' test';
+
+  if(!KATALOG.length){
+    $('#kutu').innerHTML = '<div class="yok"><b>Katalog boş.</b><br>' +
+      'Testlerini özel ders panelinden ekleyince burada görünür.</div>';
+    tepsiCiz(); return;
+  }
+  if(!list.length){
+    $('#kutu').innerHTML = '<div class="yok"><b>Bu süzgeçle test yok.</b><br>Aramayı ya da süzgeci değiştir.</div>';
+    tepsiCiz(); return;
+  }
+
+  $('#kutu').innerHTML =
+    '<table class="tbl"><thead><tr><th style="width:38px"></th><th>Test</th><th>Konu</th>' +
+    '<th>Ünite</th><th style="width:70px">Soru</th><th style="width:70px">Bağlantı</th></tr></thead><tbody>' +
+    list.map(function(t){
+      return '<tr data-id="' + esc(t.id) + '"' + (SECILI[t.id] ? ' class="sec"' : '') + '>' +
+        '<td><input type="checkbox" data-sec="' + esc(t.id) + '"' + (SECILI[t.id] ? ' checked' : '') +
+          ' aria-label="' + esc(t.ad) + ' seç"></td>' +
+        '<td><div class="ad">' + esc(t.ad) + '</div>' +
+          (t.kaynak ? '<div class="kucuk">' + esc(t.kaynak) + '</div>' : '') + '</td>' +
+        '<td>' + esc(t.konu || '—') + '</td>' +
+        '<td>' + esc(t.unite || '—') + (t.sinif ? '<div class="kucuk">' + esc(t.sinif) + '</div>' : '') + '</td>' +
+        '<td class="sayi">' + (t.soru ? esc(t.soru) : '—') + '</td>' +
+        '<td>' + (t.link ? '<a href="' + esc(t.link) + '" target="_blank" rel="noopener">aç</a>'
+                         : '<span class="kucuk">yok</span>') + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  tepsiCiz();
+}
+
+function secilenler(){
+  return KATALOG.filter(function(t){ return SECILI[t.id]; });
+}
+
+function tepsiCiz(){
+  var s = secilenler();
+  $('#tepsi').classList.toggle('acik', s.length > 0);
+  $('#tSay').textContent = say(s.length) + ' test seçildi';
+  var soru = s.reduce(function(a,t){ return a + (+t.soru || 0); }, 0);
+  var baglantili = s.filter(function(t){ return t.link; }).length;
+  $('#tAlt').textContent = say(soru) + ' soru · ' + say(baglantili) + ' tanesinin bağlantısı var';
+  $('#tAc').disabled = !baglantili;
+  $('#tKopya').disabled = !baglantili;
+}
+
+/* ---- indirme ---- */
+function indir(ad, icerik, tur){
+  var b = new Blob(['﻿' + icerik], { type: tur + ';charset=utf-8' });
+  var u = URL.createObjectURL(b);
+  var a = document.createElement('a');
+  a.href = u; a.download = ad; document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(u); }, 1000);
+}
+function bugun(){ var d = new Date(); return d.toISOString().slice(0,10); }
+function csvAlan(v){
+  var s = String(v == null ? '' : v);
+  return /[";\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+
+/* ---- olaylar ---- */
+document.addEventListener('DOMContentLoaded', function(){
+  if(!AYAR.url || !AYAR.key){
+    $('#girisHata').textContent = 'Sunucu ayarı yüklenemedi. Sayfayı tazele.';
+    $('#girisHata').classList.remove('gizli');
+    return;
+  }
+
+  $('#girisForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var d = $('#girisDugme');
+    d.disabled = true; d.textContent = 'Giriliyor';
+    $('#girisHata').classList.add('gizli');
+    girisYap($('#eposta').value.trim(), $('#sifre').value)
+      .then(baslat)
+      .catch(function(err){
+        $('#girisHata').textContent = err.message;
+        $('#girisHata').classList.remove('gizli');
+      })
+      .then(function(){ d.disabled = false; d.textContent = 'Gir'; });
+  });
+
+  $('#cikisDugme').addEventListener('click', function(){
+    var j = JWT;
+    oturumSil();
+    /* scope=local: bu sekmeden çık, kullanıcının öbür panellerdeki
+       oturumunu düşürme. Kapsamsız çağrı bütün jetonları iptal ediyor. */
+    if(j) fetch(AYAR.url + '/auth/v1/logout?scope=local', {
+      method: 'POST', headers: { 'apikey': AYAR.key, 'Authorization': 'Bearer ' + j }
+    }).catch(function(){});
+    location.reload();
+  });
+
+  ['#ara','#fSinif','#fUnite'].forEach(function(s){
+    $(s).addEventListener('input', ciz);
+    $(s).addEventListener('change', ciz);
+  });
+
+  $('#kutu').addEventListener('change', function(e){
+    var id = e.target.getAttribute && e.target.getAttribute('data-sec');
+    if(!id) return;
+    if(e.target.checked) SECILI[id] = true; else delete SECILI[id];
+    var tr = e.target.closest('tr');
+    if(tr) tr.classList.toggle('sec', !!SECILI[id]);
+    tepsiCiz();
+  });
+
+  $('#hepsiniSec').addEventListener('click', function(){
+    var l = suzulmus();
+    var hepsiSecili = l.length && l.every(function(t){ return SECILI[t.id]; });
+    l.forEach(function(t){ if(hepsiSecili) delete SECILI[t.id]; else SECILI[t.id] = true; });
+    ciz();
+    bildir(hepsiSecili ? 'Seçim kaldırıldı.' : say(l.length) + ' test seçildi.');
+  });
+
+  $('#tTemiz').addEventListener('click', function(){ SECILI = Object.create(null); ciz(); });
+
+  $('#tAc').addEventListener('click', function(){
+    var l = secilenler().filter(function(t){ return t.link; });
+    if(l.length > 8 && !window.confirm(l.length + ' sekme açılacak. Devam edilsin mi?')) return;
+    l.forEach(function(t){ window.open(t.link, '_blank', 'noopener'); });
+  });
+
+  $('#tKopya').addEventListener('click', function(){
+    var m = secilenler().filter(function(t){ return t.link; })
+      .map(function(t){ return t.ad + '  ' + t.link; }).join('\n');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(m).then(function(){ bildir('Bağlantılar kopyalandı.'); },
+        function(){ bildir('Kopyalanamadı, tarayıcı izin vermedi.'); });
+    } else bildir('Bu tarayıcı panoya yazmıyor.');
+  });
+
+  $('#tMetin').addEventListener('click', function(){
+    var m = secilenler().map(function(t){
+      return [t.sinif, t.unite, t.konu, t.ad, (t.soru || 0) + ' soru', t.link].filter(Boolean).join(' | ');
+    }).join('\n');
+    indir('test-katalogu-' + bugun() + '.txt', m, 'text/plain');
+    bildir('Liste indirildi.');
+  });
+
+  $('#tCsv').addEventListener('click', function(){
+    var bas = ['Sınıf','Ünite','Konu','Test','Kaynak','Soru','Bağlantı'];
+    var sat = secilenler().map(function(t){
+      return [t.sinif, t.unite, t.konu, t.ad, t.kaynak, t.soru || 0, t.link].map(csvAlan).join(';');
+    });
+    /* Noktalı virgül: Türkçe Excel varsayılan ayırıcısı budur, virgülle
+       açınca her şey tek sütuna düşüyor. Başa BOM da yazılıyor. */
+    indir('test-katalogu-' + bugun() + '.csv', [bas.join(';')].concat(sat).join('\n'), 'text/csv');
+    bildir('Tablo indirildi.');
+  });
+
+  if(oturumOku()) baslat();
+});
+
+function baslat(){
+  return katalogCek().then(function(g){
+    KATALOG = (g || []).map(function(t){
+      return { id: t.id, sinif: t.sinif || '', unite: t.unite || '', konu: t.konu || '',
+               ad: t.ad || '', link: t.link || '', kaynak: t.kaynak || '', soru: +t.soru || 0 };
+    });
+    $('#ekranGiris').classList.add('gizli');
+    $('#ekranKatalog').classList.remove('gizli');
+    $('#cikisDugme').classList.remove('gizli');
+    ozetYaz(); suzgecDoldur(); ciz();
+  }).catch(function(err){
+    $('#ekranGiris').classList.remove('gizli');
+    $('#ekranKatalog').classList.add('gizli');
+    $('#cikisDugme').classList.add('gizli');
+    $('#girisHata').textContent = err.message;
+    $('#girisHata').classList.remove('gizli');
+  });
+}
+</script>
+</body>
+</html>
