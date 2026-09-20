@@ -672,6 +672,6 @@ where not exists (select 1 from reh_okullar where demo);
 --     sonra alttaki satırın başındaki -- işaretini kaldırıp çalıştır.
 -- ---------------------------------------------------------------------
 
--- select reh_yonetici_ata('eserakkaba53@gmail.com', 'Eser Akkaba');
+select reh_yonetici_ata('eserakkaba@hotmail.com.tr', 'Eser Akkaba');
 
 notify pgrst, 'reload schema';
