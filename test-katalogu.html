@@ -204,6 +204,13 @@ input:focus,select:focus{border-color:var(--accent-2);box-shadow:0 0 0 3px var(-
    OKUR; ekleme, taşıma ve silme özel ders panelinde kalıyor. */
 
 var AYAR = (window.SUNUCU_AYAR || {});
+/* ★ 20 Eyl 2026 — BU SAYFA TEK HESABA AÇIK.
+   Katalogda 1032 test var ve sahibinin 87 öğrencisi bulunuyor. Veritabanı
+   kuralı (oz_kat_oku) katalogu koça VE onun öğrencilerine açıyor; öğrenci
+   panelindeki "Kütüphane" görünümü bunun üstüne kurulu, o yüzden kural
+   daraltılmadı. Bu sayfa ise yalnız sahibinin: giriş yapan kimlik
+   eşleşmezse oturum kapatılır ve katalog hiç istenmez. */
+var SAHIP_ID = 'c61b0314-7525-4e1a-a254-de95324053ce';
 var ANAHTAR = 'biyoser_katalog_oturum';
 var JWT = null, YENILEME = null;
 var KATALOG = [], SECILI = Object.create(null);
@@ -491,8 +498,27 @@ document.addEventListener('DOMContentLoaded', function(){
   if(oturumOku()) baslat();
 });
 
+/* Jetonun gerçekten kime ait olduğunu sunucuya sorar. Jetonun içini
+   istemcide çözmek yerine soruyoruz: süresi geçmiş ya da iptal edilmiş
+   jeton da burada elenir. */
+function kimlikSor(){
+  return fetch(AYAR.url + '/auth/v1/user', {
+    headers: { 'apikey': AYAR.key, 'Authorization': 'Bearer ' + JWT }
+  }).then(function(r){
+    if(!r.ok){ oturumSil(); throw new Error('Oturum doğrulanamadı, yeniden gir.'); }
+    return r.json();
+  });
+}
+
 function baslat(){
-  return katalogCek().then(function(g){
+  return kimlikSor().then(function(u){
+    if(!u || u.id !== SAHIP_ID){
+      oturumSil();
+      throw new Error('Bu sayfa yalnız katalog sahibinin hesabına açık. ' +
+        'Öğrenciysen testlerini kendi panelindeki Kütüphane bölümünden görürsün.');
+    }
+    return katalogCek();
+  }).then(function(g){
     KATALOG = (g || []).map(function(t){
       return { id: t.id, sinif: t.sinif || '', unite: t.unite || '', konu: t.konu || '',
                ad: t.ad || '', link: t.link || '', kaynak: t.kaynak || '', soru: +t.soru || 0 };
