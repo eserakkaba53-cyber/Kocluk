@@ -241,6 +241,7 @@ var PUAN_SIRA = ['SAY', 'EA', 'SOZ', 'DIL', 'TYT', 'OZEL'];
 /* Durum                                                               */
 /* ------------------------------------------------------------------ */
 var REHBERLER = [], OKULLAR = [], OGRENCILER = [];
+var BENIM_OKUL = null;          /* yöneticinin kendi okulu, reh_profiller.okul_id */
 var GENEL = null;                 /* genel görünüm hesabı, sekme açılınca dolar */
 var ORNEK_KAT = false;            /* genel görünümde örnek okul sayıma katılsın mı */
 var MUJDE = null;                 /* son onay ya da son kod yenileme bildirimi */
@@ -439,11 +440,14 @@ function veriCek() {
   return Promise.all([
     cagir('reh_yonetici_rehberler', {}),
     cagir('reh_yonetici_okullar', {}),
-    cagir('reh_yonetici_ogrenciler', { p_okul_id: null })
+    cagir('reh_yonetici_ogrenciler', { p_okul_id: null }),
+    cagir('reh_benim_okulum', {})
   ]).then(function (g) {
     REHBERLER = g[0] || [];
     OKULLAR = g[1] || [];
     OGRENCILER = g[2] || [];
+    /* deneme kipi bu ucu tanimiyorsa {hata:...} doner; uuid degilse yok say */
+    BENIM_OKUL = (typeof g[3] === 'string') ? g[3] : null;
     GENEL = null;
     panelHata('');
     ciz();
@@ -637,9 +641,12 @@ function okullarCiz() {
   var mujde = mujdeKutusu('reh_okullar');
   if (mujde) b.appendChild(mujde);
 
+  b.appendChild(okulAcmaFormu());
+
   if (!OKULLAR.length) {
     b.appendChild(el('p', { class: 'aciklama-yazi' },
-      'Henüz okul yok. İlk okul, bir rehber öğretmeni onayladığında açılır.'));
+      'Henüz okul yok. Yukarıdan bir okul açabilir ya da bir rehber öğretmeni ' +
+      'onaylayarak okulunun açılmasını sağlayabilirsin.'));
     g.appendChild(b);
     return;
   }
@@ -653,6 +660,8 @@ function okullarCiz() {
       }, o.ad));
       if (o.demo) ad.appendChild(el('span', { class: 'etiket' }, 'örnek'));
       if (!o.aktif) ad.appendChild(el('span', { class: 'etiket' }, 'pasif'));
+      if (BENIM_OKUL && o.okul_id === BENIM_OKUL)
+        ad.appendChild(el('span', { class: 'etiket' }, 'kendi okulum'));
 
       var oran = yuzde(o.biten_sayisi, o.ogrenci_sayisi);
       return [
@@ -664,16 +673,90 @@ function okullarCiz() {
         el('span', { class: 'sayi' }, sayi(o.biten_sayisi)),
         el('span', { class: 'sayi' }, o.ogrenci_sayisi ? '%' + oran : 'öğrenci yok'),
         o.demo ? el('span', { class: 'yardim-yazi' }, 'kod yenilenmez')
-               : el('button', {
-                   class: 'dugme dugme-sade', type: 'button',
-                   onclick: function () { kodYenile(o, this); }
-                 }, 'Kodu yenile')
+               : (function () {
+                   var kap = el('div', { class: 'satir-dugmeler' });
+                   kap.appendChild(el('button', {
+                     class: 'dugme dugme-sade', type: 'button',
+                     onclick: function () { kodYenile(o, this); }
+                   }, 'Kodu yenile'));
+                   if (!BENIM_OKUL || o.okul_id !== BENIM_OKUL)
+                     kap.appendChild(el('button', {
+                       class: 'dugme dugme-sade', type: 'button',
+                       onclick: function () { okulSahiplen(o, this); }
+                     }, 'Kendi okulum yap'));
+                   return kap;
+                 })()
       ];
     })));
 
   b.appendChild(el('p', { class: 'bolum-kayit' },
     'Okul adına tıklayınca o okulun öğrenci listesi açılır.'));
   g.appendChild(b);
+}
+
+/* ★ 20 Eyl 2026 — YÖNETİCİ DOĞRUDAN OKUL AÇAR.
+   Okul eskiden yalnız bir rehber öğretmen onaylanırken doğuyordu. Kendi
+   öğrencisi olan yönetici için bu dolambaçlıydı: kendine ikinci bir hesap
+   açıp rehber olarak kaydolması, sonra kendi kendini onaylaması gerekiyordu.
+   Açılan okulun kodu doğrudan öğrencilere verilebilir; öğrenci kaydı okulun
+   etkin ve örnek olmaması dışında bir şey aramıyor. */
+function okulAcmaFormu() {
+  var k = el('div', { class: 'bilgi-kutu' });
+  k.appendChild(el('p', { style: 'margin:0 0 10px' },
+    'Kendi öğrencilerin için okul aç. Kod açılışta üretilir, öğrencilerine o kodu verirsin.'));
+
+  var ad = el('input', { type: 'text', 'aria-label': 'Okul adı',
+    placeholder: 'Okul adı', maxlength: '120' });
+  var il = el('input', { type: 'text', 'aria-label': 'İl', placeholder: 'İl (isteğe bağlı)' });
+  var ilce = el('input', { type: 'text', 'aria-label': 'İlçe', placeholder: 'İlçe (isteğe bağlı)' });
+
+  var benim = el('input', { type: 'checkbox', id: 'okul-benim' });
+  benim.checked = true;
+  var benimEtiket = el('label', { for: 'okul-benim', style: 'display:flex;gap:7px;align-items:center' });
+  benimEtiket.appendChild(benim);
+  benimEtiket.appendChild(el('span', null, 'Kendi okulum olarak işaretle'));
+
+  var dugme = el('button', { class: 'dugme', type: 'button' }, 'Okul aç');
+  dugme.addEventListener('click', function () {
+    var adDeger = ad.value.trim();
+    if (!adDeger) { panelHata('Okul adı boş olamaz.'); ad.focus(); return; }
+    dugme.disabled = true;
+    cagir('reh_yonetici_okul_ekle', {
+      p_ad: adDeger, p_il: il.value.trim(), p_ilce: ilce.value.trim(),
+      p_benim: benim.checked
+    }).then(function (c) {
+      if (c && c.hata) { dugme.disabled = false; panelHata(c.hata); return; }
+      MUJDE = {
+        bolum: 'reh_okullar',
+        metin: c.ad + ' açıldı. Öğrencilerine vereceğin kod bu.',
+        kod: c.kod
+      };
+      panelHata('');
+      return veriCek();
+    }).catch(function (err) {
+      dugme.disabled = false;
+      panelHata('Okul açılamadı: ' + err.message + ' Sayfayı tazeleyip yeniden dene.');
+    });
+  });
+
+  var satir = el('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;align-items:center' });
+  [ad, il, ilce, benimEtiket, dugme].forEach(function (x) { satir.appendChild(x); });
+  k.appendChild(satir);
+  return k;
+}
+
+function okulSahiplen(o, dugme) {
+  dugme.disabled = true;
+  cagir('reh_yonetici_okul_sahiplen', { p_okul_id: o.okul_id })
+    .then(function (c) {
+      if (c && c.hata) { dugme.disabled = false; panelHata(c.hata); return; }
+      panelHata('');
+      return veriCek();
+    })
+    .catch(function (err) {
+      dugme.disabled = false;
+      panelHata('İşaretlenemedi: ' + err.message);
+    });
 }
 
 function okulaGit(okulId) {
@@ -726,7 +809,7 @@ function ogrencilerCiz() {
   b.appendChild(basi('Öğrenciler',
     sayi(liste.length) + ' / ' + sayi(OGRENCILER.length) + ' öğrenci'));
 
-  var okullarSec = [['', 'Bütün reh_okullar']];
+  var okullarSec = [['', 'Bütün okullar']];
   OKULLAR.forEach(function (o) {
     okullarSec.push([o.okul_id, o.ad + (o.demo ? ' (örnek)' : '')]);
   });
