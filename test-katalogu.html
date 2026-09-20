@@ -165,14 +165,16 @@ input:focus,select:focus{border-color:var(--accent-2);box-shadow:0 0 0 3px var(-
     <div class="sayac">
       <div><b id="sTest">0</b><span>test</span></div>
       <div><b id="sSoru">0</b><span>soru</span></div>
-      <div><b id="sUnite">0</b><span>ünite</span></div>
+      <div><b id="sKaynak">0</b><span>kaynak</span></div>
     </div>
   </div></header>
 
   <div class="suzgec"><div class="kap">
-    <div class="ara"><input type="search" id="ara" placeholder="Test adı, konu, ünite ya da kaynak ara…" aria-label="Katalogda ara"></div>
+    <div class="ara"><input type="search" id="ara" list="oneriler" autocomplete="off"
+        placeholder="Test adı, konu, ünite ya da kaynak ara…" aria-label="Katalogda ara">
+      <datalist id="oneriler"></datalist></div>
     <select id="fSinif" aria-label="Sınıf süzgeci"><option value="">Bütün sınıflar</option></select>
-    <select id="fUnite" aria-label="Ünite süzgeci"><option value="">Bütün üniteler</option></select>
+    <select id="fKaynak" aria-label="Kaynak süzgeci"><option value="">Bütün kaynaklar</option></select>
     <button class="btn hat mini" type="button" id="hepsiniSec">Görünenleri seç</button>
     <span class="rozet" id="suzgecRozet"></span>
   </div></div>
@@ -249,23 +251,47 @@ function girisYap(eposta, sifre){
   });
 }
 
+/* ★ 20 Eyl 2026 — SAYFALAMA ZORUNLU. PostgREST tek istekte en çok 1000 satır
+   döndürüyor; katalogda 1032 test varken sayfa 1000 gösteriyordu ve eksiği
+   hiçbir yerde söylemiyordu. Range başlığıyla parça parça çekiliyor,
+   Content-Range'deki toplam sayı bitiş ölçütü.
+   Sıralamaya id de eklendi: unite+konu+ad eşit olan satırlarda sıra
+   belirsiz kalıyor, sayfalar arasında aynı kayıt iki kez gelip başkası
+   hiç gelmeyebiliyordu. */
+var SAYFA_BOY = 1000;
 function katalogCek(){
-  return fetch(AYAR.url + '/rest/v1/oz_katalog?select=*&order=unite.asc,konu.asc,ad.asc', {
-    headers: { 'apikey': AYAR.key, 'Authorization': 'Bearer ' + JWT }
-  }).then(function(r){
-    if(r.status === 401) { oturumSil(); throw new Error('Oturum süresi doldu, yeniden gir.'); }
-    if(!r.ok) throw new Error('Katalog okunamadı (' + r.status + ').');
-    return r.json();
-  });
+  var hepsi = [];
+  function parca(bas){
+    return fetch(AYAR.url + '/rest/v1/oz_katalog?select=*&order=unite.asc,konu.asc,ad.asc,id.asc', {
+      headers: {
+        'apikey': AYAR.key, 'Authorization': 'Bearer ' + JWT,
+        'Range-Unit': 'items', 'Range': bas + '-' + (bas + SAYFA_BOY - 1),
+        'Prefer': 'count=exact'
+      }
+    }).then(function(r){
+      if(r.status === 401){ oturumSil(); throw new Error('Oturum süresi doldu, yeniden gir.'); }
+      if(!r.ok && r.status !== 206) throw new Error('Katalog okunamadı (' + r.status + ').');
+      var cr = r.headers.get('Content-Range') || '';
+      return r.json().then(function(g){
+        hepsi = hepsi.concat(g || []);
+        var toplam = parseInt((cr.split('/')[1] || ''), 10);
+        /* Boş parça geldiyse dur: toplam okunamasa bile sonsuz döngüye girme. */
+        if(!g || !g.length) return hepsi;
+        if(isNaN(toplam) || hepsi.length >= toplam) return hepsi;
+        return parca(bas + SAYFA_BOY);
+      });
+    });
+  }
+  return parca(0);
 }
 
 /* ---- çizim ---- */
 function suzulmus(){
   var q = nrm($('#ara').value.trim());
-  var s = $('#fSinif').value, u = $('#fUnite').value;
+  var s = $('#fSinif').value, u = $('#fKaynak').value;
   return KATALOG.filter(function(t){
     if(s && t.sinif !== s) return false;
-    if(u && t.unite !== u) return false;
+    if(u && t.kaynak !== u) return false;
     if(!q) return true;
     return nrm([t.ad, t.konu, t.unite, t.sinif, t.kaynak].join(' ')).indexOf(q) >= 0;
   });
@@ -274,21 +300,38 @@ function suzulmus(){
 function ozetYaz(){
   $('#sTest').textContent = say(KATALOG.length);
   $('#sSoru').textContent = say(KATALOG.reduce(function(a,t){ return a + (+t.soru || 0); }, 0));
-  var un = {}; KATALOG.forEach(function(t){ if(t.unite) un[t.unite] = 1; });
-  $('#sUnite').textContent = say(Object.keys(un).length);
+  var kn = {}; KATALOG.forEach(function(t){ if(t.kaynak) kn[t.kaynak] = 1; });
+  $('#sKaynak').textContent = say(Object.keys(kn).length);
 }
 
 function suzgecDoldur(){
   var sin = [], un = [];
   KATALOG.forEach(function(t){
     if(t.sinif && sin.indexOf(t.sinif) < 0) sin.push(t.sinif);
-    if(t.unite && un.indexOf(t.unite) < 0) un.push(t.unite);
+    if(t.kaynak && un.indexOf(t.kaynak) < 0) un.push(t.kaynak);
   });
   sin.sort(); un.sort(function(a,b){ return a.localeCompare(b,'tr'); });
   $('#fSinif').innerHTML = '<option value="">Bütün sınıflar</option>' +
     sin.map(function(x){ return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('');
-  $('#fUnite').innerHTML = '<option value="">Bütün üniteler</option>' +
+  $('#fKaynak').innerHTML = '<option value="">Bütün kaynaklar</option>' +
     un.map(function(x){ return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('');
+
+  /* ★ 20 Eyl 2026 — ARAMAYA ÖNERİ. Kutu yalnız süzüyordu, yazarken hiçbir
+     şey önermiyordu; 1032 testin içinde konunun tam adını hatırlamak
+     gerekiyordu. Öneriler kataloğun kendisinden: ünite, konu, kaynak ve test
+     adları. Tarayıcı yazdıkça kendi süzüyor, ek kod gerekmiyor. */
+  var gorulen = Object.create(null), oneri = [];
+  KATALOG.forEach(function(t){
+    [t.unite, t.konu, t.kaynak, t.ad].forEach(function(v){
+      v = (v || '').trim();
+      if(!v || gorulen[v]) return;
+      gorulen[v] = 1; oneri.push(v);
+    });
+  });
+  oneri.sort(function(a,b){ return a.localeCompare(b,'tr'); });
+  $('#oneriler').innerHTML = oneri.map(function(x){
+    return '<option value="' + esc(x) + '"></option>';
+  }).join('');
 }
 
 function ciz(){
@@ -309,15 +352,14 @@ function ciz(){
 
   $('#kutu').innerHTML =
     '<table class="tbl"><thead><tr><th style="width:38px"></th><th>Test</th><th>Konu</th>' +
-    '<th>Ünite</th><th style="width:70px">Soru</th><th style="width:70px">Bağlantı</th></tr></thead><tbody>' +
+    '<th>Kaynak</th><th style="width:70px">Soru</th><th style="width:70px">Bağlantı</th></tr></thead><tbody>' +
     list.map(function(t){
       return '<tr data-id="' + esc(t.id) + '"' + (SECILI[t.id] ? ' class="sec"' : '') + '>' +
         '<td><input type="checkbox" data-sec="' + esc(t.id) + '"' + (SECILI[t.id] ? ' checked' : '') +
           ' aria-label="' + esc(t.ad) + ' seç"></td>' +
-        '<td><div class="ad">' + esc(t.ad) + '</div>' +
-          (t.kaynak ? '<div class="kucuk">' + esc(t.kaynak) + '</div>' : '') + '</td>' +
+        '<td><div class="ad">' + esc(t.ad) + '</div></td>' +
         '<td>' + esc(t.konu || '—') + '</td>' +
-        '<td>' + esc(t.unite || '—') + (t.sinif ? '<div class="kucuk">' + esc(t.sinif) + '</div>' : '') + '</td>' +
+        '<td>' + esc(t.kaynak || '—') + (t.sinif ? '<div class="kucuk">' + esc(t.sinif) + '</div>' : '') + '</td>' +
         '<td class="sayi">' + (t.soru ? esc(t.soru) : '—') + '</td>' +
         '<td>' + (t.link ? '<a href="' + esc(t.link) + '" target="_blank" rel="noopener">aç</a>'
                          : '<span class="kucuk">yok</span>') + '</td></tr>';
@@ -388,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function(){
     location.reload();
   });
 
-  ['#ara','#fSinif','#fUnite'].forEach(function(s){
+  ['#ara','#fSinif','#fKaynak'].forEach(function(s){
     $(s).addEventListener('input', ciz);
     $(s).addEventListener('change', ciz);
   });
