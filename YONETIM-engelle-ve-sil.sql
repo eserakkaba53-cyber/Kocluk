@@ -572,3 +572,31 @@ grant execute on function public.engelli_mi() to anon, authenticated;
 --   drop trigger if exists tg_engel_yazma on public.ozel_ders;  -- ve diğer 9 tablo
 --   -- yardımcı fonksiyonlar: bu dosyadaki gövdelerden "not public.engelli_mi() and"
 --   -- ve "case when public.engelli_mi() then null else ... end" sarmalları silinir.
+
+
+-- =====================================================================
+-- 10. ELLE E-POSTA ONAYI  (21 Eylül 2026, gece ekleme)
+--
+-- NEDEN
+-- Doğrulama açıldıktan sonra kaydolan 11 hesap onay bağlantısına tıklamadı.
+-- Ölçüm: gmail'de 9 hesaptan 4'ü onayladı, yani posta teslim ediliyor;
+-- ulaşmayanlar hotmail ve icloud. Gönderen kimliği kurulu (send.biyoser.com.tr
+-- üzerinde SPF, kök alanda DKIM, DMARC p=none), yani imza geçerli. Microsoft
+-- ve Apple, geçmişi yeni olan bir gönderen alan adını imzası geçse de eliyor.
+-- Kullanıcının kurtulma yolu yoktu: panelde "yeniden gönder" düğmesi yok,
+-- yöneticide de elle onaylama yetkisi yoktu.
+--
+-- NOT: auth.users.confirmed_at ÜRETİLEN sütun, ona yazılmaz. Yalnız
+-- email_confirmed_at doldurulur, confirmed_at kendiliğinden gelir.
+--
+-- GÜVENLİK
+-- Doğrulamanın amacı adresin sahibinin o kişi olduğunu kanıtlamak; bu
+-- fonksiyon o kanıtı atlıyor. Bu yüzden yalnız yöneticiye açık, kim yaptı ve
+-- ne zaman yaptı raw_app_meta_data.elle_onay altına yazılıyor ve tek
+-- kullanımlık posta kara listesindeki adreslerde çalışmıyor.
+-- =====================================================================
+
+-- yonetici_onaysiz_hesaplar(): koc_listesi() bunları göstermiyor, çünkü
+-- rol='rehberlik' ya da 'ogrenci' olan kayıtlarda yeni_kullanici()
+-- tetikleyicisi koclar satırı açmıyor.
+--   (gövdeler canlıda kuruldu; bu dosya kaydın kendisi)

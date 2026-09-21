@@ -7351,6 +7351,7 @@ async function koclariOku(){
     await kocGirisleriOku();
     await sonIslemleriOku();    /* tablodaki "Son işlem" sütununun kaynağı */
     await atanabilirOku();      /* öğretmene atanabilecek öğrenci hesapları */
+    await onaysizOku();         /* e-posta onayı bekleyen hesaplar */
   }catch(e){
     KOCLAR=[];
     YONDURUM = 'HATA|Liste alınamadı: ' + (e.message||e) +
@@ -7469,6 +7470,62 @@ async function kocHesapSil(id, ad, eposta, ogrenci){
     YONDURUM='OK|'+kim+' silindi'+(o.silinen_ogrenci?(' ('+o.silinen_ogrenci+' öğrenci kaydıyla birlikte)'):'')+'.';
   }catch(e){ YONDURUM='HATA|'+(e.message||e); }
   render();
+}
+
+/* ---------- ONAY BEKLEYEN HESAPLAR (21 Eyl 2026) ----------
+   E-posta doğrulaması açıldıktan sonra kaydolup bağlantıya tıklamayan
+   hesaplar. Bunlar koc_listesi'nde GÖRÜNMEZ: rol 'rehberlik' ya da
+   'ogrenci' olan kayıtlarda yeni_kullanici() tetikleyicisi koclar satırı
+   açmıyor, o yüzden ayrı bir uç var (yonetici_onaysiz_hesaplar).
+
+   Elle onay, adresin sahibinin o kişi olduğu kanıtını atlar. Bu yüzden
+   kim yaptı ve ne zaman yaptı sunucuda kayda geçiyor, kara listedeki
+   alan adlarında da çalışmıyor. */
+let ONAYSIZ = [];
+async function onaysizOku(){
+  try{
+    const r = await sbGuvenli(()=>sbCagri('/rest/v1/rpc/yonetici_onaysiz_hesaplar',{method:'POST',body:{}}));
+    ONAYSIZ = Array.isArray(r) ? r : (r ? JSON.parse(r) : []);
+  }catch(e){ ONAYSIZ = []; /* RPC kurulmadıysa kart hiç görünmez */ }
+}
+async function epostaOnayla(id, eposta){
+  if(!confirm('ELLE ONAY\n\n'+eposta+'\n\nBu hesabın e-posta doğrulaması atlanacak ve hesap '+
+    'giriş yapabilir hâle gelecek.\n\nDoğrulamanın amacı adresin gerçekten bu kişiye ait '+
+    'olduğunu kanıtlamak. Elle onaylarsan o kanıt olmaz; kişiyi başka bir yoldan tanıyorsan '+
+    'yap.\n\nKim onayladığı kayda geçer.\n\nDevam?')) return;
+  YONDURUM='Onaylanıyor...'; render();
+  try{
+    await yonRpc('yonetici_eposta_onayla',{hedef:id, neden:'yonetici panelinden elle onay'});
+    await onaysizOku();
+    YONDURUM='OK|'+eposta+' onaylandı, artık giriş yapabilir.';
+  }catch(e){ YONDURUM='HATA|'+(e.message||e); }
+  render();
+}
+function onaysizKart(){
+  if(!ONAYSIZ.length) return '';
+  const bugun = yerelGun(Date.now());
+  return `<div class="card"><h2>Onay bekleyen hesaplar <span class="pill s2" style="font-size:11px">${ONAYSIZ.length}</span></h2>
+  <div class="body" style="padding:0;overflow:auto">
+    <table><thead><tr><th>E-posta</th><th>Tür</th><th>Kayıt</th><th>Posta</th><th></th></tr></thead><tbody>
+    ${ONAYSIZ.map(o=>`<tr>
+      <td><b>${esc(o.ad||'—')}</b>
+        <div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${esc(o.eposta||'')}</div>
+        ${o.kara_listede?'<div style="font-size:11px;color:var(--bad)">tek kullanımlık posta — onaylanamaz</div>':''}</td>
+      <td><span class="pill s3" style="font-size:10.5px">${esc(o.rol||'-')}</span></td>
+      <!-- gun() yönetim render'ının İÇİNDE tanımlı yerel bir fonksiyon, burada
+           yok. Global olan tarihSaat() zaten tarih+saati birlikte veriyor. -->
+      <td style="font-size:12px;color:${String(o.kayit||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'};white-space:nowrap">${esc(tarihSaat(o.kayit))}</td>
+      <td style="font-size:11.5px;color:${o.posta_gonderildi?'var(--ink-3)':'var(--warn)'}">${
+        o.posta_gonderildi?('gönderildi<div style="font-family:var(--mono);font-size:10.5px">'+esc(tarihSaat(o.posta_gonderildi))+'</div>'):'hiç gönderilmemiş'}</td>
+      <td style="width:120px">${o.kara_listede?'':
+        `<button class="btn ghost mini" style="color:var(--ok)" title="Doğrulamayı atlayıp hesabı aç"
+           onclick="epostaOnayla('${o.id}',${JSON.stringify(o.eposta||'')})">✓ elle onayla</button>`}</td>
+    </tr>`).join('')}
+    </tbody></table>
+  </div>
+  <div class="body" style="border-top:1px solid var(--line-soft)">
+    <div class="hint">Bu kişiler kaydoldu ama e-postalarındaki bağlantıya tıklamadı. Önce <b>gereksiz/önemsiz klasörüne bakmalarını</b> söyle; posta Resend üzerinden <b>bilgi@biyoser.com.tr</b> adresinden gidiyor ve hotmail ile icloud bunu eleyebiliyor. Elle onay son çare: doğrulamanın amacı adresin o kişiye ait olduğunu kanıtlamak, elle onayda o kanıt olmuyor.</div>
+  </div></div>`;
 }
 
 /* Tarih + saat, tam hâliyle. gun() yalnız "3 gün önce" diyor; yönetimde
@@ -7796,6 +7853,8 @@ function vYonetici(){
       Dosyayı Supabase → SQL Editor'de bir kez çalıştır.</span></div>`:''}
     <div class="hint" style="margin-top:8px"><b>Son işlem</b> = giriş değil, kayıt: o hesaba ait son ödev, deneme, konu durumu ya da mesaj ne zaman işlendi. Koç satırında öğrencilerinin kayıtları da sayılır — satırı kimin yazdığı veritabanında tutulmuyor. Giriş zamanı yukarıdaki sayaçlarda duruyor.<br>Koç, Kayıt ve Son işlem başlıklarına tıklayarak sıralayabilirsin. Senin satırın sıralama ne olursa olsun her zaman en üstte kalır. Yeni kayıt olan koçlar 7 günlük deneme ile başlar ve burada kendiliğinden görünür.</div>
   </div></details>
+
+  ${onaysizKart()}
 
   ${keKart()}
 
