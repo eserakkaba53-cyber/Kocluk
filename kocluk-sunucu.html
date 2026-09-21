@@ -7517,9 +7517,11 @@ function onaysizKart(){
       <td style="font-size:12px;color:${String(o.kayit||'').slice(0,10)===bugun?'var(--ok)':'var(--ink-3)'};white-space:nowrap">${esc(tarihSaat(o.kayit))}</td>
       <td style="font-size:11.5px;color:${o.posta_gonderildi?'var(--ink-3)':'var(--warn)'}">${
         o.posta_gonderildi?('gönderildi<div style="font-family:var(--mono);font-size:10.5px">'+esc(tarihSaat(o.posta_gonderildi))+'</div>'):'hiç gönderilmemiş'}</td>
+      <!-- esc() şart: onclick özniteliği çift tırnakla sınırlı, düz
+           JSON.stringify çıktısı özniteliği erken kapatıyor. -->
       <td style="width:120px">${o.kara_listede?'':
         `<button class="btn ghost mini" style="color:var(--ok)" title="Doğrulamayı atlayıp hesabı aç"
-           onclick="epostaOnayla('${o.id}',${JSON.stringify(o.eposta||'')})">✓ elle onayla</button>`}</td>
+           onclick="epostaOnayla('${o.id}',${esc(JSON.stringify(o.eposta||''))})">✓ elle onayla</button>`}</td>
     </tr>`).join('')}
     </tbody></table>
   </div>
@@ -7835,13 +7837,20 @@ function vYonetici(){
             onclick="MESAJ.ac('${k.id}')">✉ mesaj</button>
           <!-- Engelle/Sil kendi satırında gösterilmez: sunucu da reddediyor ama
                düğmeyi hiç göstermemek yanlış tıklamayı baştan keser. -->
+          <!-- DİKKAT: onclick="..." özniteliği ÇİFT TIRNAKLA sınırlı. İçine
+               düz JSON.stringify koymak çift tırnak üretir ve öznitelik orada
+               kapanır; tarayıcı kocEngelle('id', gibi yarım bir metin görür ve
+               düğme hiçbir şey yapmaz. esc() tırnakları &quot; yapıyor,
+               tarayıcı onu geri çözüyor. (21 Eyl 2026, üç düğme birden böyleydi.)
+               Bu yorum bir şablon dizgisinin İÇİNDE: backtick ve dolar-süslü
+               yazma, ikisi de dizgiyi erken kapatır. -->
           ${k.id===SB.uid?'':`
           <button class="btn ghost mini" style="margin-top:4px;color:${k.engelli?'var(--ok)':'var(--warn)'}"
             title="${k.engelli?'Engeli kaldır':'Girişi ve bütün işlemleri anında durdur'}"
-            onclick="${k.engelli?`kocEngelKaldir('${k.id}',${JSON.stringify(k.ad||'')})`:`kocEngelle('${k.id}',${JSON.stringify(k.ad||'')},${JSON.stringify(k.eposta||'')})`}">${k.engelli?'⤺ engeli kaldır':'⛔ engelle'}</button>
+            onclick="${k.engelli?`kocEngelKaldir('${k.id}',${esc(JSON.stringify(k.ad||''))})`:`kocEngelle('${k.id}',${esc(JSON.stringify(k.ad||''))},${esc(JSON.stringify(k.eposta||''))})`}">${k.engelli?'⤺ engeli kaldır':'⛔ engelle'}</button>
           <button class="btn ghost mini" style="margin-top:4px;color:var(--bad)"
             title="Hesabı ve bütün verisini kalıcı olarak siler"
-            onclick="kocHesapSil('${k.id}',${JSON.stringify(k.ad||'')},${JSON.stringify(k.eposta||'')},${k.ogrenci||0})">🗑 sil</button>`}</td>
+            onclick="kocHesapSil('${k.id}',${esc(JSON.stringify(k.ad||''))},${esc(JSON.stringify(k.eposta||''))},${k.ogrenci||0})">🗑 sil</button>`}</td>
       </tr>`;}).join('')}
     </tbody></table>
   </div>
