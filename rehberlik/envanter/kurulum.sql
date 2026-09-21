@@ -650,6 +650,16 @@ revoke all on function reh_okul_kodu_uret()                           from publi
 revoke execute on function reh_yonetici_ata(text, text) from anon, authenticated;
 revoke execute on function reh_okul_kodu_uret()         from anon, authenticated;
 
+-- ★ 21 Eyl 2026 — Bu dört iç yardımcı yukarıdaki revoke listesinde hiç yoktu,
+-- o yüzden PUBLIC EXECUTE ile duruyorlardı: giriş yapmamış biri çağırabiliyordu.
+-- Panelden hiçbiri çağrılmıyor, hiçbir RLS politikasında geçmiyorlar; yalnız
+-- SECURITY DEFINER fonksiyonların içinden çağrılıyorlar ve onlar sahibin
+-- yetkisiyle çalıştığı için çağıranın EXECUTE yetkisine ihtiyacı yok.
+revoke all on function reh_rolum()             from public, anon, authenticated;
+revoke all on function reh_rehber_mi()         from public, anon, authenticated;
+revoke all on function reh_yonetici_mi()       from public, anon, authenticated;
+revoke all on function reh_benim_profilim_id() from public, anon, authenticated;
+
 -- Kod sorgulaması kayıt formunda, giriş yapılmadan çalışır.
 grant execute on function reh_okul_kodu_sor(text) to anon, authenticated;
 

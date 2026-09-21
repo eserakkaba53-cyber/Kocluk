@@ -33,10 +33,22 @@
 -- Sızan gerçek veri yok: gerçek okulda (Akçakoca Sosyal Bilimler Lisesi) o
 -- sırada kayıtlı gerçek öğrenci yoktu, 15 envanter yanıtının tamamı demo
 -- okuluna aitti.
--- Aşağıdaki ilk revoke canlıda uygulandı; doğrulandı: anon=false, girisli=false.
+-- TAMAMI CANLIDA UYGULANDI ve DOĞRULANDI (21 Eyl 2026).
 -- Saldırganın hesapları ve 'Hacked School' silindi, tek yönetici yeniden
 -- eserakkaba@hotmail.com.tr.
--- İkinci bölümdeki anon revoke'ları HENÜZ UYGULANMADI (otomatik kip engelledi).
+-- Son durum: anon'a açık tek reh_ fonksiyonu reh_okul_kodu_sor, o da
+-- kurulum.sql:641 gereği bilerek açık. 22 reh_ fonksiyonunun 16'sı
+-- authenticated'a açık; kapalı 6 tanesi reh_yonetici_ata,
+-- reh_okul_kodu_uret ve dört iç yardımcı (reh_rolum, reh_rehber_mi,
+-- reh_yonetici_mi, reh_benim_profilim_id).
+--
+-- O dört yardımcı bu dosyanın ilk sürümünde eksikti: kurulum.sql'in revoke
+-- listesinde hiç yer almadıkları için PUBLIC EXECUTE ile duruyorlardı ve
+-- "revoke from anon" onları kapatmıyordu (anon, PUBLIC'ten miras alıyor).
+-- Kapatmadan önce doğrulandı: hiçbir panel çağırmıyor, hiçbir RLS
+-- politikasında geçmiyorlar, yalnız 10 SECURITY DEFINER fonksiyonun
+-- içinden çağrılıyorlar ve onlar sahibin yetkisiyle çalışıyor.
+-- Kapatma sonrası reh_durumum() yönetici kimliğiyle normal döndü.
 -- ---------------------------------------------------------------------
 
 -- 1. Yalnız service role ile çalışması gereken ikisi
