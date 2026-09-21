@@ -637,6 +637,19 @@ revoke all on function reh_yonetici_kod_yenile(uuid)                  from publi
 revoke all on function reh_yonetici_ata(text, text)                   from public;
 revoke all on function reh_okul_kodu_uret()                           from public;
 
+-- ★ 21 Eyl 2026 — "from public" YETMİYOR. Supabase kurulumda şunu tanımlıyor:
+--   alter default privileges in schema public grant execute on functions
+--     to anon, authenticated, service_role;
+-- Bu, her YENİ fonksiyona anon ve authenticated için AYRI birer grant yazar.
+-- "revoke from public" yalnız PUBLIC sözde-rolünü kaldırır, o iki açık grant
+-- yerinde kalır. Sonuç: reh_yonetici_ata gövdesinde hiçbir yetki denetimi
+-- olmadığı hâlde public anon anahtarıyla çağrılabiliyordu; çağıran kendini
+-- yönetici yapıp bütün okulların envanter yanıtlarını okuyabilirdi.
+-- Canlıda GUVENLIK-yonetici-ata-yetkisi.sql ile kapatıldı; aşağıdaki iki satır
+-- kurulumun bunu yeniden açmasını engelliyor.
+revoke execute on function reh_yonetici_ata(text, text) from anon, authenticated;
+revoke execute on function reh_okul_kodu_uret()         from anon, authenticated;
+
 -- Kod sorgulaması kayıt formunda, giriş yapılmadan çalışır.
 grant execute on function reh_okul_kodu_sor(text) to anon, authenticated;
 
