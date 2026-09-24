@@ -219,6 +219,20 @@ svg.piyano.tikla .siyah:hover{fill:#2f6f5e}
 svg.piyano .il.vurgu{fill:var(--tema3);stroke:#fff;stroke-width:3}
 svg.piyano .il.dogru{fill:#3ecfb0;stroke:#fff;stroke-width:3}
 svg.piyano .il.yanlis{fill:#e0483c;stroke:#fff;stroke-width:3}
+/* dört oktav (8. seviye): masaüstünde ve tablette sığar, telefonda tuşlar
+   çok incelmesin diye en az 600px kalır ve yatay kayar; açılışta orta Do
+   ortaya gelir (soruCiz içinde) */
+/* contain:inline-size ŞART: yoksa kutunun genişliği içindeki 600px'lik klavyeye
+   göre hesaplanıyor, o da bütün oyun ızgarasını itip telefonda sayfayı 638px'e
+   taşırıyordu (ekran 375px). Ölçüldü, düzeltildi. */
+.piyanoKaydir{contain:inline-size;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  max-width:960px;margin:8px auto 0;padding-bottom:6px}
+.piyanoKaydir svg.piyano{max-width:960px;min-width:600px;margin:0 auto}
+svg.piyano .ortaDoNokta{fill:var(--tema1);stroke:#2b2018;stroke-width:2}
+/* viewBox 1120 birim; 600px klavyede 1 birim ≈ 0,54px. 28/24 birim orada
+   ~15/13px harf boyu verir, 960px masaüstünde ~24/21px. */
+svg.piyano .ortaDoYazi{font-family:var(--display);font-weight:800;font-size:28px;fill:var(--tema1)}
+svg.piyano .yarimYazi{font-family:var(--display);font-weight:700;font-size:24px;fill:rgba(255,255,255,.55)}
 
 .secenekler{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
 .secenek{font-family:var(--display);font-weight:800;font-size:clamp(22px,5.6vw,34px);color:#241a4a;
@@ -536,7 +550,10 @@ function dizekCiz(anahtar, step, vurgu, kilavuzZorla){
   if(kilavuzZorla || kilavuzAcik) p+=kilavuzCiz(anahtar);
   if(step!=null){
     const nRenk = vurgu || '#2a1d0e';
-    const sapAsagi=o>4, sx=sapAsagi?NOTA_X-NS*.66:NOTA_X+NS*.66, sy2=sapAsagi?y+NS*3.4:y-NS*3.4;
+    /* Orta çizgi (o=4) dahil üstündekiler sapı AŞAĞI çizer (Gould, Behind Bars).
+       Eskiden o>4 yazıyordu; sol anahtarında Si4, fa anahtarında Re3 yukarı
+       saplı çıkıyordu. Sınaması: sinama-nota.js, 6. bölüm. */
+    const sapAsagi=o>=4, sx=sapAsagi?NOTA_X-NS*.66:NOTA_X+NS*.66, sy2=sapAsagi?y+NS*3.4:y-NS*3.4;
     p+=`<line x1="${sx}" y1="${y}" x2="${sx}" y2="${sy2}" stroke="${nRenk}" stroke-width="3" stroke-linecap="round"/>`;
     p+=`<ellipse cx="${NOTA_X}" cy="${y}" rx="${NS*.7}" ry="${NS*.52}" fill="${nRenk}" transform="rotate(-20 ${NOTA_X} ${y})"/>`;
   }
@@ -634,20 +651,43 @@ const bayrakCiz = kod => {
 };
 
 /* ---- PİYANO ----
-   Do4 (step 28) ile Si5 (step 41) arası iki oktav: 14 beyaz, 10 siyah tuş.
-   Tuş kimlikleri: beyaz "b28".."b41" · siyah "s28" (Do♯4) gibi. */
-const P_BAS=28, P_GEN=40, P_YUK=152, P_SGEN=24, P_SYUK=96;
-const P_SIYAH=[0,1,3,4,5,7,8,10,11,12];          /* Mi ve Si'den sonra siyah tuş yok */
-function piyanoCiz(vurgu, tik){
+   Varsayılan (6. ve 7. seviye): Do4 (step 28) ile Si5 (step 41) arası iki oktav.
+   ay = {bas, oktav, ortaDo} ile genişler. 8. seviye Do2–Si5 dört oktav kullanır:
+   alt iki oktav fa anahtarının, üst iki oktav sol anahtarının alanı; ikisinin
+   tam sınırında orta Do (Do4, step 28) durur.
+   Tuş kimlikleri: beyaz "b28" · siyah "s28" (Do♯4) gibi. */
+const P_BAS=28, P_GEN=40, P_YUK=152, P_SGEN=24, P_SYUK=96, ORTA_DO=28;
+function piyanoCiz(vurgu, tik, ay){
+  ay = ay || {};
+  const bas = ay.bas!=null ? ay.bas : P_BAS, n = 7*(ay.oktav||2);
   let s='';
-  for(let i=0;i<14;i++)
-    s+=`<rect class="il beyaz" data-p="b${P_BAS+i}" x="${i*P_GEN+1}" y="4"`+
+  for(let i=0;i<n;i++)
+    s+=`<rect class="il beyaz" data-p="b${bas+i}" x="${i*P_GEN+1}" y="4"`+
        ` width="${P_GEN-2}" height="${P_YUK}" rx="4"/>`;
-  for(const i of P_SIYAH)
-    s+=`<rect class="il siyah" data-p="s${P_BAS+i}" x="${(i+1)*P_GEN-P_SGEN/2}" y="4"`+
+  /* Siyah tuşlar sabit listeden değil kuraldan: Mi (2) ve Si (6) sonrasında
+     siyah tuş yok, en sağdaki beyazın sağında da yok. İki oktavda eski
+     P_SIYAH=[0,1,3,4,5,7,8,10,11,12] listesiyle birebir aynı sonucu verir. */
+  for(let i=0;i<n-1;i++){
+    const k=((bas+i)%7+7)%7;
+    if(k===2 || k===6) continue;
+    s+=`<rect class="il siyah" data-p="s${bas+i}" x="${(i+1)*P_GEN-P_SGEN/2}" y="4"`+
        ` width="${P_SGEN}" height="${P_SYUK}" rx="3"/>`;
-  return `<svg class="piyano${tik?' tikla':''}" viewBox="0 0 ${14*P_GEN} 162"`+
+  }
+  let yuk=162;
+  if(ay.ortaDo && ORTA_DO>=bas && ORTA_DO<bas+n){
+    const cx=(ORTA_DO-bas+.5)*P_GEN, orta=(ORTA_DO-bas)*P_GEN;
+    /* işaretler tıklamayı kesmesin: pointer-events none. Yazılar klavyenin
+       ALTINDA: tuşun üstüne yazılsa hangi tuşa basıldığı okunmazdı. */
+    s+=`<circle class="ortaDoNokta" cx="${cx}" cy="${P_YUK-18}" r="8" pointer-events="none"/>`;
+    s+=`<text class="ortaDoYazi" x="${cx}" y="${P_YUK+36}" text-anchor="middle" pointer-events="none">Orta Do</text>`;
+    s+=`<text class="yarimYazi" x="${orta/2}" y="${P_YUK+36}" text-anchor="middle" pointer-events="none">Fa anahtarı</text>`;
+    s+=`<text class="yarimYazi" x="${(orta+n*P_GEN)/2}" y="${P_YUK+36}" text-anchor="middle" pointer-events="none">Sol anahtarı</text>`;
+    yuk=P_YUK+48;
+  }
+  const svg=`<svg class="piyano${tik?' tikla':''}${n>14?' genis':''}" viewBox="0 0 ${n*P_GEN} ${yuk}"`+
     ` xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Piyano klavyesi">${s}</svg>`;
+  /* dört oktav telefonda sığmıyor: kaydırma kutusuna al, çizim sonrası ortalanır */
+  return n>14 ? `<div class="piyanoKaydir">${svg}</div>` : svg;
 }
 const diyezAd = st => ISIM[((st%7)+7)%7]+'♯';
 const bemolAd = st => ISIM[(((st+1)%7)+7)%7]+'♭';
@@ -984,7 +1024,7 @@ const KONULAR=[
     '--btn1':'linear-gradient(165deg,#f7d98a,#e8b13c)','--btn2':'linear-gradient(165deg,#8fe6cf,#34b394)',
     '--btn3':'linear-gradient(165deg,#f5a99f,#dd5b4c)','--btn4':'linear-gradient(165deg,#cdb392,#a37f4f)'},
   seviyeler:[
-    {id:'r1',ad:'Güverte',emoji:'🪢',renk:'#f0b429',ornek:'Sol anahtarı · dizek üstü (Mi–Fa)',
+    {id:'r1',ad:'Güverte',emoji:'🚢',renk:'#f0b429',ornek:'Sol anahtarı · dizek üstü (Mi–Fa)',
      uret:()=>notaSoru('sol', t=>t+rnd(0,8))},
     {id:'r2',ad:'Ambar',emoji:'⚓',renk:'#2fbfa0',ornek:'Fa anahtarı · dizek üstü (Sol–La)',
      uret:()=>notaSoru('fa', t=>t+rnd(0,8))},
@@ -1017,12 +1057,26 @@ const KONULAR=[
          secenekler:secenekYapMetin(dogru, karistir(havuz.filter(v=>v!==dogru))),
          yazi:`Siyah tuş → ${dogru}` }; }},
 
-    {id:'r8',ad:'Porteden Tuşa',emoji:'🪗',renk:'#cdb392',
-     ornek:'Portedeki notayı piyanoda tıkla · oktav dahil',
-     benzersiz:true, havuz:()=>Array.from({length:14},(_,i)=>P_BAS+i), tekil:st=>st,
-     uretIle:st=>({ metin:'', gorsel:dizekCiz('sol',st)+piyanoCiz(null,true),
-       cevap:'b'+st, tur:'harita-tik', coz:tusAd, step:st, anahtar:'sol',
-       yazi:`${isimAl(st)} → piyanoda` })}
+    /* İki anahtar da sorulur, klavye dört oktav (Do2–Si5):
+         fa  : Do2–Do4 (step 14–28) · iki ek çizgi aşağıdan orta Do'ya
+         sol : Do4–Si5 (step 28–41) · orta Do'dan bir ek çizgi yukarıya
+       Orta Do İKİ anahtarda da sorulur: fa'da dizeğin üstünde, sol'da altında
+       tek ek çizgide durur ve ikisi de klavyede AYNI tuştur. Büyük dizeğin
+       öğrettiği asıl şey bu. Aynı adım iki anahtarda da çıkabildiği için
+       tekil anahtar+adım.
+       Simge 🪗 (akordeon, Unicode 13) Windows'un eski yazı tiplerinde boş kare
+       çıkıyordu; 🎶 Unicode 6.0, her yerde görünüyor. */
+    {id:'r8',ad:'Porteden Tuşa',emoji:'🎶',renk:'#cdb392',
+     ornek:'Fa ve sol anahtarı · dört oktav · orta Do işaretli',
+     benzersiz:true,
+     havuz:()=>[
+       ...Array.from({length:15},(_,i)=>['fa', 14+i]),
+       ...Array.from({length:14},(_,i)=>['sol',28+i])],
+     tekil:x=>x[0]+x[1],
+     uretIle:([anahtar,st])=>({ metin:'',
+       gorsel:dizekCiz(anahtar,st)+piyanoCiz(null,true,{bas:14,oktav:4,ortaDo:true}),
+       cevap:'b'+st, tur:'harita-tik', coz:tusAd, step:st, anahtar,
+       yazi:`${anahtar==='sol'?'Sol':'Fa'} anahtarı · ${isimAl(st)} → piyanoda` })}
   ]},
 
 { id:'harita', ad:'Türkiye', simge:'🗺️', baslik:'Anadolu Atlası', altBaslik:'81 İl Seferi', arka:'pusula',
@@ -1112,14 +1166,14 @@ const KONULAR=[
        yazi:`${u.a} bayrağı` })}
   ]},
 
-{ id:'vucut', ad:'Vücudumuz', simge:'🫀', baslik:'Vücudumuz', altBaslik:'İç Keşif Seferi', arka:'hucre',
+{ id:'vucut', ad:'Vücudumuz', simge:'🧠', baslik:'Vücudumuz', altBaslik:'İç Keşif Seferi', arka:'hucre',
   yaris:{sen:'💊',hayalet:'🦠',hedef:'🧠',yon:'yukari'},
   tema:{'--tema1':'#4fd1b0','--tema2':'#e5453f','--tema3':'#ffc861','--taban1':'#2b1220','--taban2':'#12060c',
     '--isik1':'rgba(126,32,46,.8)','--isik2':'rgba(28,92,84,.6)','--kara':'#9c7182',
     '--btn1':'linear-gradient(160deg,#a8ecdc,#3fc0a4)','--btn2':'linear-gradient(160deg,#ffb0ac,#e5453f)',
     '--btn3':'linear-gradient(160deg,#ffe3a8,#ffc250)','--btn4':'linear-gradient(160deg,#e0bfa8,#b98d6c)'},
   seviyeler:[
-    {id:'v1',ad:'Organlarımız',emoji:'🫀',renk:'#ff6b7a',ornek:'Adı verilen organın resmini bul · 11 organ',
+    {id:'v1',ad:'Organlarımız',emoji:'🧠',renk:'#ff6b7a',ornek:'Adı verilen organın resmini bul · 11 organ',
      benzersiz:true, havuz:()=>KARE_LISTE, tekil:o=>o.k,
      uretIle:o=>({ metin:o.a, gorsel:kareCiz(true), cevap:o.k, tur:'harita-tik',
        coz:kareAd, kucukSoru:true, yazi:`${o.a} hangisi?` })},
@@ -1154,13 +1208,13 @@ const KONULAR=[
   ]},
 
 { id:'turkce', ad:'Türkçe', simge:'📖', baslik:'Söz Sarayı', altBaslik:'Kelime Ustalığı', arka:'cini',
-  yaris:{sen:'🖋️',hayalet:'🪶',hedef:'👑',yon:'yukari'},
+  yaris:{sen:'🖋️',hayalet:'✒️',hedef:'👑',yon:'yukari'},
   tema:{'--tema1':'#2fb6c9','--tema2':'#e0523f','--tema3':'#f0c14b','--taban1':'#0d2b3e','--taban2':'#04121b',
     '--isik1':'rgba(16,86,102,.9)','--isik2':'rgba(120,50,36,.6)','--kara':'#4e8a99',
     '--btn1':'linear-gradient(160deg,#a7e6ef,#37b3c6)','--btn2':'linear-gradient(160deg,#f7b5a6,#e0523f)',
     '--btn3':'linear-gradient(160deg,#fbe6ab,#f0c14b)','--btn4':'linear-gradient(160deg,#bcd3d9,#7ba3ad)'},
   seviyeler:[
-    {id:'k1',ad:'Aynadakiler',emoji:'🪞',renk:'#2fb6c9',
+    {id:'k1',ad:'Aynadakiler',emoji:'👥',renk:'#2fb6c9',
      ornek:`Eş anlamlı kelimeyi bul · ${TURKCE.es.length} kelime çifti`,
      benzersiz:true, havuz:()=>ES_HAVUZ, tekil:x=>x.id,
      uretIle:x=>{ const s=x.c[x.y], d=x.c[1-x.y];
@@ -1526,6 +1580,8 @@ function sonrakiSoru(){
 
   $('#gorsel').innerHTML=q.gorsel||'';
   $('#gorsel').classList.toggle('gizli', !q.gorsel);
+  /* dört oktavlık klavye kayıyorsa orta Do'yu ortala (Do2–Si5'te tam ortada) */
+  { const k=$('#gorsel .piyanoKaydir'); if(k) k.scrollLeft=(k.scrollWidth-k.clientWidth)/2; }
   /* kılavuz düğmesi yalnızca dizek görünen sorularda anlamlı */
   $('#kilavuzDugme').classList.toggle('gizli', !(q.anahtar && q.step!=null));
   kilavuzDugmesiYaz();
@@ -1563,8 +1619,12 @@ function cevapVer(deger, el){
     const boya=(p,cls)=>{ const g=$(`#gorsel .il[data-p="${p}"]:not(.hale)`);
       if(g){ g.classList.add(cls);
         /* SVG haritada boyanan yol üstte kalsin diye tasinir; organ kareleri DOM
-           izgarasinda oldugu icin tasinirsa kartlarin yeri degisiyordu. */
-        if(!g.classList.contains('kare')) g.parentNode.insertBefore(g, g.parentNode.querySelector('.hale')); } };
+           izgarasinda oldugu icin tasinirsa kartlarin yeri degisiyordu.
+           Beyaz piyano tusu da TASINMAZ: en uste cikarsa yanindaki siyah tuslarin
+           ustune biniyor ve onlari ortuyordu (8. seviye). vurgula() bu korumaya
+           zaten sahipti, burada eksikti. */
+        if(!g.classList.contains('kare') && !g.classList.contains('beyaz'))
+          g.parentNode.insertBefore(g, g.parentNode.querySelector('.hale')); } };
     boya(el.dataset.p, dogruMu?'dogru':'yanlis');
     if(!dogruMu) boya(q.cevap,'dogru');
     $('#gorsel').querySelectorAll('.il').forEach(x=>x.onclick=null);
