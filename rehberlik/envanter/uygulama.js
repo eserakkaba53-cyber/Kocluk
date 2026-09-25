@@ -534,6 +534,9 @@ function kayitGonder(olay) {
         kutuYaz('#kayit-bilgi', 'Hesabın açıldı. ' + eposta + ' adresine bir doğrulama ' +
           'bağlantısı gönderildi. Bağlantıya tıkladıktan sonra giriş yap, kaydın ' +
           'kaldığı yerden devam edecek.');
+        /* Tam ekran onay ekranı. Misafir cevaplar yerelde kalır: silme yalnız
+           sunucu taşımayı onaylayınca yapılıyor. */
+        if (window.kayitTamam) kayitTamam({ rol: 'reh-ogrenci', eposta: eposta });
         return null;
       }
       return API.rpc('reh_ogrenci_kayit', {

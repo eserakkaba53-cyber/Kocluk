@@ -825,6 +825,8 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
+<!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
+<script src="kayit-tamam.js?v=20260925a"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -5033,7 +5035,12 @@ async function gGiris(){
         // e-posta doğrulaması açıksa oturum gelmez
         GBEKLE=false;
         GHATA='OK|Hesabın açıldı. E-postana gelen bağlantıya tıkla, sonra buradan giriş yap.';
-        GMOD='giris'; render(); return;
+        GMOD='giris'; render();
+        /* Tam ekran onay ekranı panelin ÜSTÜNDE açılır; sayfa değişmediği için
+           BEKLEYENKOD (öğretmen kodu) bellekte kalır, öğrenci bu sekmede giriş
+           yapınca kendiliğinden bağlanır. */
+        if(window.kayitTamam) kayitTamam({rol:'ogrenci', eposta:m});
+        return;
       }
     } else await sbGiris(m,s);
     await sunucuAc();
