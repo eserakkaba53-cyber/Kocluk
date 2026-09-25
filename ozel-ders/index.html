@@ -100,6 +100,7 @@ a{color:var(--accent)}
 .rol .b i{font-style:normal;font-size:19px;transition:transform .3s var(--yay)}
 .rol:hover .b i{transform:scale(1.18) rotate(-7deg)}
 .rol .ikili{display:flex;gap:8px}
+.rol .ikili .rbtn{padding:12px 8px;font-size:14.5px}
 .rbtn{flex:1;text-align:center;text-decoration:none;font-weight:700;font-size:13.5px;padding:11px 8px;border-radius:9px;
   transition:transform .2s var(--yay),box-shadow .22s,background .22s,color .22s}
 .rbtn.dolu{background:var(--accent);color:#fff}
@@ -197,19 +198,18 @@ footer a:hover{color:#fff;text-decoration:underline}
         <span class="satir"><span style="animation-delay:.24s">takip <em>başlıyor.</em></span></span>
       </h1>
       <p class="ph">Öğretmen testleri <b>teslim tarihli ödev</b> olarak verir. Öğrenci çözdükçe sonuçlar iki panele de düşer; ikiniz aynı <b>konu tablosuna</b> ve aynı <b>deneme netlerine</b> bakarsınız.</p>
-      <p class="ipucu"><span><b>Öğrenciysen</b> önce hesabını aç, sonra öğretmeninin gönderdiği davet kodunu gir. Bağlantıyla geldiysen kod kendiliğinden tanınır.</span></p>
+      <p class="ipucu"><span><b>Öğrenciysen</b> öğretmeninin gönderdiği davet bağlantısını aç. Kayıt ekranı o bağlantıyla gelir, kodun kendiliğinden tanınır.</span></p>
     </div>
 
     <div class="kartSar">
       <div class="giriskart">
         <h2>Kim olarak gireceksin</h2>
-        <p class="ac">Öğretmen ve öğrenci ayrı panellerden girer.</p>
+        <p class="ac">Özel derse yeni kayıt açık değil; öğrenciler davetle katılır.</p>
 
         <div class="rol">
           <div class="b"><i aria-hidden="true">📚</i> Öğretmen</div>
           <div class="ikili">
             <a class="rbtn dolu" href="https://eserakkaba53-cyber.github.io/Biyoloji/biyoloji-koc-sunucu.html">Öğretmen girişi</a>
-            <a class="rbtn gh" href="https://eserakkaba53-cyber.github.io/Biyoloji/biyoloji-koc-sunucu.html">Yeni hesap aç</a>
           </div>
           <p class="fiy">Öğrencini eklersin, davet kodu panelde üretilir</p>
         </div>
@@ -225,9 +225,8 @@ footer a:hover{color:#fff;text-decoration:underline}
           <div class="b"><i aria-hidden="true">🎓</i> Öğrenci</div>
           <div class="ikili">
             <a class="rbtn turuncu" href="https://eserakkaba53-cyber.github.io/Biyoloji/biyoloji-ogrenci-sunucu.html">Öğrenci girişi</a>
-            <a class="rbtn gh" href="https://eserakkaba53-cyber.github.io/Biyoloji/biyoloji-ogrenci-sunucu.html">Hesap oluştur</a>
           </div>
-          <p class="fiy">Hesabını açtıktan sonra davet kodunla öğretmenine bağlanırsın</p>
+          <p class="fiy">Hesap yalnız öğretmeninin gönderdiği davet bağlantısıyla açılır</p>
         </div>
       </div>
     </div>
@@ -248,7 +247,7 @@ footer a:hover{color:#fff;text-decoration:underline}
   <div class="ikiPanel">
     <div class="panelKart">
       <h3>Öğretmen paneli</h3>
-      <p class="kim">Özel ders veren öğretmen için</p>
+      <p class="kim">Özel dersin öğretmeni için</p>
       <ul>
         <li><b>Test kataloğundan</b> ödev ver, teslim tarihini belirle</li>
         <li>Bekleyen ve <b>geciken ödevleri</b> öğrenci öğrenci gör</li>
@@ -259,7 +258,7 @@ footer a:hover{color:#fff;text-decoration:underline}
     </div>
     <div class="panelKart ogr">
       <h3>Öğrenci paneli</h3>
-      <p class="kim">Öğretmeninden davet kodu alan öğrenci için</p>
+      <p class="kim">Davet bağlantısıyla katılan öğrenci için</p>
       <ul>
         <li>Ödevlerini gör, çözdüğün testin <b>sonucunu kaydet</b></li>
         <li>Her konuyu <b>Bitti, İşliyorum ya da Görmedim</b> diye işaretle</li>
