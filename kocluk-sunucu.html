@@ -844,6 +844,8 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <script src="deneme.js?v=20260906a"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
+<!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
+<script src="kayit-tamam.js?v=20260925a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -8445,7 +8447,12 @@ async function girisYap(){
       if(s.length<8){ throw new Error('Şifre en az 8 karakter olmalı'); }
       const r=await sbKayit(m,s,ad);
       KAYIT={};   // kayıt başarılı: form alanlarını temizle
-      if(!r.giris){ GIRISBEKLE=false; GIRISHATA='OK|Hesap açıldı. E-postana gelen bağlantıya tıkla, sonra giriş yap.'; GIRISMOD='giris'; render(); return; }
+      if(!r.giris){ GIRISBEKLE=false; GIRISHATA='OK|Hesap açıldı. E-postana gelen bağlantıya tıkla, sonra giriş yap.'; GIRISMOD='giris'; render();
+        /* Kullanıcılar küçük yazıyı fark etmiyordu: tam ekran onay ekranı. Arkada
+           giriş ekranı hazır bekler; kapatınca oraya düşer. Betik yüklenmezse
+           yukarıdaki yazı yedek olarak kalır. */
+        if(window.kayitTamam) kayitTamam({rol:'koc', eposta:m});
+        return; }
     } else {
       await sbGiris(m,s);
     }

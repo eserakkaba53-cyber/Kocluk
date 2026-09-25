@@ -271,6 +271,7 @@
 </main>
 
 <script src="baglanti.js"></script>
+<script src="../../kayit-tamam.js?v=20260925a"></script>
 <script src="deneme.js"></script>
 <script src="veri/kisilik.js"></script>
 <script src="veri/ilgi.js"></script>
@@ -1145,6 +1146,7 @@ $('#kayit-form').addEventListener('submit', function (e) {
       goster('giris');
       uyar($('#giris-bilgi'), 'Hesabın açıldı. E-postana gelen bağlantıyla adresini ' +
         'doğrula, sonra buradan giriş yap. Kayıt formu kaldığı yerden devam eder.');
+      if (window.kayitTamam) kayitTamam({ rol: 'reh-ogretmen', eposta: eposta });
       return null;
     }
     return API.rpc('reh_rehber_kayit', bilgi).then(function (s) {
