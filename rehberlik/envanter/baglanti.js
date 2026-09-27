@@ -79,19 +79,32 @@ window.API = {
            O durumda kullanıcıya e-postasına bakması söylenir. */
         if (g.access_token) return API.oturumKur(g);
         if (g.session && g.session.access_token) return API.oturumKur(g.session);
+        /* ★ 27 Eyl 2026 — Kayıtlı ve onaylı adrese GoTrue 200 + BOŞ identities
+           döner ve posta göndermez. Bu da 'doğrulama gerekli' sayılıyordu:
+           Biyoser koç ya da öğrencisi buradan kaydolunca hiç gelmeyecek postayı
+           bekliyordu. Kullanıcı havuzu ortak, giriş yapması yeter. */
+        if (Array.isArray(g.identities) && !g.identities.length)
+          throw new Error('Bu e-posta ile zaten bir Biyoser hesabı var. Giriş ekranından aynı e-posta ve şifreyle gir; şifreni unuttuysan "Şifremi unuttum"u kullan.');
         return { dogrulama_gerekli: true };
       });
   },
 
   girisYap: function (eposta, sifre) {
     return API.auth('/auth/v1/token?grant_type=password',
-      { email: eposta, password: sifre }).then(API.oturumKur);
+      { email: eposta, password: sifre }).then(API.oturumKur)
+      .catch(function (x) {
+        /* Onaylanmamış hesap: yazının yanında yeni posta isteyebileceği ekran. */
+        if (x.kod === 'email_not_confirmed' && window.kayitTamam)
+          kayitTamam({ durum: 'onaysiz', eposta: eposta,
+            rol: /panel\.html$/.test(location.pathname) ? 'reh-ogretmen' : 'reh-ogrenci' });
+        throw x;
+      });
   },
 
   sifreUnuttum: function (eposta) {
     /* ★ 20 Eyl 2026 — redirect_to yazılmazsa Supabase projenin Site URL'ini
-       kullanır, o da koçluk panelidir: rehber öğretmen yeni şifre ekranını hiç
-       göremez, koç panelinde bulur kendini. Adresin Supabase panelinde
+       kullanır, o da biyoser.com.tr ana sayfasıdır: rehber öğretmen yeni şifre
+       ekranını hiç göremez. Adresin Supabase panelinde
        Authentication > URL Configuration > Redirect URLs listesinde olması da
        gerekir, yoksa sessizce Site URL'e düşürülür. */
     var geri = encodeURIComponent(location.href.split('#')[0].split('?')[0]);
@@ -121,7 +134,11 @@ window.API = {
       body: JSON.stringify(govde)
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (g) {
-        if (!r.ok) throw new Error(API.authMesaji(g, r.status));
+        if (!r.ok) {
+          var h = new Error(API.authMesaji(g, r.status));
+          h.kod = g.error_code || '';   /* email_not_confirmed gibi: ekranı seçmek için */
+          throw h;
+        }
         return g;
       });
     });
@@ -135,14 +152,25 @@ window.API = {
       return 'E-posta ya da şifre hatalı. Şifreni unuttuysan aşağıdaki bağlantıyı kullan.';
     if (m.indexOf('already registered') >= 0 || m.indexOf('already been registered') >= 0)
       return 'Bu e-posta zaten kayıtlı. Giriş yapmayı dene.';
+    if (m.indexOf('different from the old') >= 0)
+      return 'Yeni şifre eskisiyle aynı olamaz.';
     if (m.indexOf('password should be') >= 0 || m.indexOf('password must') >= 0)
       return 'Şifre en az 6 karakter olmalı.';
     if (m.indexOf('email not confirmed') >= 0)
       return 'E-postanı doğrulaman gerekiyor. Gelen kutunu kontrol et.';
     if (m.indexOf('unable to validate email') >= 0 || m.indexOf('invalid email') >= 0)
       return 'E-posta adresi geçerli görünmüyor.';
+    if (m.indexOf('only request this after') >= 0)
+      return 'Bu adrese az önce posta gönderildi. Gelen kutuna bak; gelmediyse bir dakika sonra yeniden dene.';
     if (m.indexOf('rate limit') >= 0 || durum === 429)
       return 'Çok fazla deneme yapıldı. Birkaç dakika sonra tekrar dene.';
+    /* E-posta sınırında ya da posta gönderilemeyince GoTrue hesabı açmaz. */
+    if (m.indexOf('error sending') >= 0)
+      return 'Onay postası şu an gönderilemedi, hesap açılmadı. Birkaç dakika sonra yeniden kaydol.';
+    /* auth.users tetikleyicisi (geçici posta kara listesi) patlarsa istemciye
+       yalnız 'Database error saving new user' gelir, Türkçe metin gelmez. */
+    if (m.indexOf('database error') >= 0)
+      return 'Bu e-posta adresiyle hesap açılamadı. Geçici posta servisleri kabul edilmiyor; Gmail, Outlook ya da okul adresinle kaydol.';
     return g.error_description || g.msg || g.message || ('Sunucu hatası (' + durum + ')');
   },
 
@@ -222,3 +250,109 @@ window.API = {
     return API.durumTazele().catch(function () { API.oturumSil(); return null; });
   }
 };
+
+/* ---- Şifre sıfırlama dönüşü ----
+   ★ 27 Eyl 2026 — sifreUnuttum() bağlantıyı bu sayfaya döndürüyordu ama hiçbir
+   rehberlik sayfası dönüşü okumuyordu: kullanıcı "bağlantı gönderildi" yazısını
+   görüyor, bağlantıya tıklayınca düz giriş ekranına düşüyor, şifresi hiç
+   değişmiyordu. Dönüş iki biçimde gelir:
+     #access_token=…&refresh_token=…&type=recovery    geçerli bağlantı
+     #error=access_denied&error_code=otp_expired       kullanılmış / süresi dolmuş
+   Geçerli bağlantıda yeni şifre sorulur; kaydedilince oturum açılır ve sayfa
+   yenilenir. Jeton adres çubuğundan hemen silinir. Üç sayfanın CSS'i farklı,
+   ekran kendi stilini taşır (renkler kayit-tamam.js ile aynı). */
+(function () {
+  var hp = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  var jwt = hp.get('type') === 'recovery' ? hp.get('access_token') : null;
+  var hata = hp.get('error_code') || hp.get('error');
+  if (!jwt && !hata) return;
+  var oturum = jwt ? { access_token: jwt, refresh_token: hp.get('refresh_token'),
+                       expires_in: +hp.get('expires_in') || 3600 } : null;
+  history.replaceState(null, '', location.pathname + location.search);
+
+  var DUGME = 'display:block;width:100%;min-height:50px;margin-top:16px;border:0;border-radius:12px;' +
+    'background:#E8873A;color:#03182B;font:inherit;font-weight:700;font-size:16px;cursor:pointer';
+  var SADE = 'display:block;margin:12px auto 0;border:0;background:none;color:#9FB2BD;' +
+    'font:inherit;font-size:14.5px;text-decoration:underline;cursor:pointer';
+  var GIRDI = 'display:block;width:100%;box-sizing:border-box;margin-top:10px;min-height:48px;padding:10px 14px;' +
+    'border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);' +
+    'color:#fff;font:inherit;font-size:16px';
+
+  function kur() {
+    var perde = document.createElement('div');
+    perde.setAttribute('role', 'dialog');
+    perde.setAttribute('aria-modal', 'true');
+    perde.setAttribute('aria-labelledby', 'ys-baslik');
+    perde.style.cssText = 'position:fixed;inset:0;z-index:2147483000;overflow-y:auto;display:flex;' +
+      'align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box;' +
+      'background:radial-gradient(130% 80% at 50% -10%,#123a57 0%,#0B2D45 34%,#03182B 72%,#020f1c 100%);' +
+      'color:#DDE7EC;line-height:1.55;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif';
+    var kutu = document.createElement('div');
+    kutu.style.cssText = 'width:100%;max-width:420px';
+    function ekle(etiket, metin, css) {
+      var e = document.createElement(etiket);
+      if (metin) e.textContent = metin;
+      if (css) e.style.cssText = css;
+      kutu.appendChild(e);
+      return e;
+    }
+    function kapat() { if (perde.parentNode) perde.parentNode.removeChild(perde); }
+    var BASLIK = 'margin:0;font-family:inherit;font-size:27px;font-weight:800;letter-spacing:-.02em;line-height:1.15;color:#fff';
+    var METIN = 'margin:12px 0 4px;font-size:16px;color:#B9C8D1';
+
+    if (!oturum) {
+      ekle('h2', 'Bu bağlantı artık geçerli değil.', BASLIK).id = 'ys-baslik';
+      ekle('p', 'Şifre sıfırlama bağlantıları tek kullanımlık ve süreli. Bazı posta servisleri ' +
+        'bağlantıyı güvenlik taraması için senden önce açabiliyor. Giriş ekranında e-postanı ' +
+        'yazıp "Şifremi unuttum"a yeniden bas.', METIN);
+      var don = ekle('button', 'Giriş ekranına dön', DUGME);
+      don.type = 'button'; don.onclick = kapat;
+    } else {
+      ekle('h2', 'Yeni şifreni belirle.', BASLIK).id = 'ys-baslik';
+      ekle('p', 'En az 6 karakter. Kaydedince bu sayfada oturumun açılır.', METIN);
+      var s1 = ekle('input', null, GIRDI);
+      s1.type = 'password'; s1.autocomplete = 'new-password';
+      s1.placeholder = 'Yeni şifre'; s1.setAttribute('aria-label', 'Yeni şifre');
+      var s2 = ekle('input', null, GIRDI);
+      s2.type = 'password'; s2.autocomplete = 'new-password';
+      s2.placeholder = 'Yeni şifre (tekrar)'; s2.setAttribute('aria-label', 'Yeni şifre tekrar');
+      var kaydet = ekle('button', 'Şifreyi kaydet', DUGME);
+      kaydet.type = 'button';
+      var not = ekle('div', '', 'margin-top:12px;min-height:1.3em;font-size:14.5px;color:#F5A69F');
+      not.setAttribute('role', 'alert');
+      var vazgec = ekle('button', 'Vazgeç', SADE);
+      vazgec.type = 'button'; vazgec.onclick = kapat;
+
+      kaydet.onclick = function () {
+        var a = s1.value;
+        if (a.length < 6) { not.textContent = 'Şifre en az 6 karakter olmalı.'; s1.focus(); return; }
+        if (a !== s2.value) { not.textContent = 'İki şifre aynı değil.'; s2.focus(); return; }
+        kaydet.disabled = true; kaydet.textContent = 'Kaydediliyor…'; not.textContent = '';
+        fetch(AYAR.URL + '/auth/v1/user', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'apikey': AYAR.ANON,
+                     'Authorization': 'Bearer ' + oturum.access_token },
+          body: JSON.stringify({ password: a })
+        }).then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (g) {
+            if (!r.ok) throw new Error(r.status === 401 || r.status === 403
+              ? 'Bağlantının süresi dolmuş. Giriş ekranında "Şifremi unuttum"a yeniden bas.'
+              : API.authMesaji(g, r.status));
+            API.oturumKur(oturum);
+            location.reload();
+          });
+        }).catch(function (x) {
+          not.textContent = x.message || 'Bağlantı kurulamadı. İnternetini kontrol et.';
+          kaydet.disabled = false; kaydet.textContent = 'Şifreyi kaydet';
+        });
+      };
+      s2.addEventListener('keydown', function (e) { if (e.key === 'Enter') kaydet.click(); });
+    }
+    perde.appendChild(kutu);
+    document.body.appendChild(perde);
+    var ilk = kutu.querySelector('input,button');
+    if (ilk) ilk.focus();
+  }
+  if (document.body) kur(); else document.addEventListener('DOMContentLoaded', kur);
+})();
+

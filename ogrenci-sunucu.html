@@ -826,7 +826,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
 <!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
-<script src="kayit-tamam.js?v=20260925a"></script>
+<script src="kayit-tamam.js?v=20260927a"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -902,12 +902,6 @@ async function sbCagri(yol, secenek){
 }
 
 /* ---------- oturum ---------- */
-async function sbKayit(mail, sifre, ad){
-  var r = await sbCagri('/auth/v1/signup', { method:'POST',
-    body:{ email:mail, password:sifre, data:{ ad:ad||'', rol:'koc' } } });
-  if(r && r.access_token){ sbOturumKur(r); return { giris:true }; }
-  return { giris:false, dogrulama:true };   // e-posta onayı bekleniyor
-}
 async function sbGiris(mail, sifre){
   var r = await sbCagri('/auth/v1/token?grant_type=password', { method:'POST',
     body:{ email:mail, password:sifre } });
@@ -4739,13 +4733,28 @@ function davettenKur(hs){
   }catch(e){ return false; }
 }
 /* giriş/kayıt sonrası: bekleyen kod varsa kendiliğinden bağlan */
+/* Öğrenci e-postasını çoğu zaman BAŞKA sekmede onaylayıp paneli sıfırdan
+   açıyor; bellekteki kod o zaman kayboluyor, davet bağlantısıyla gelen ve
+   kodu hiç yazmamış öğrenci "Kendi başıma başla" ekranına düşüyordu. Kod
+   e-postaya bağlı saklanır: ortak bilgisayarda sıradaki öğrenciye uygulanmaz. */
+const KODKEY='ogrenci_bekleyen_kod';
+function kodSakla(eposta){
+  try{
+    if(BEKLEYENKOD) localStorage.setItem(KODKEY, JSON.stringify({kod:BEKLEYENKOD, eposta:String(eposta||'').toLowerCase()}));
+    else localStorage.removeItem(KODKEY);
+  }catch(e){}
+}
 async function otoBaglan(){
+  if(!BEKLEYENKOD){
+    try{ const b=JSON.parse(localStorage.getItem(KODKEY)||'null');
+      if(b && b.kod && b.eposta===String(SB.mail||'').toLowerCase()) BEKLEYENKOD=b.kod; }catch(e){}
+  }
   if(!BEKLEYENKOD) return false;
   try{
     const r=await ogrBaglan(BEKLEYENKOD);
-    if(r&&r.ok){ BEKLEYENKOD=''; return true; }
-    GHATA=(r&&r.hata)||'Kod kabul edilmedi'; BEKLEYENKOD='';
-  }catch(e){ GHATA=e.message||String(e); BEKLEYENKOD=''; }
+    if(r&&r.ok){ BEKLEYENKOD=''; kodSakla(); return true; }
+    GHATA=(r&&r.hata)||'Kod kabul edilmedi'; BEKLEYENKOD=''; kodSakla();
+  }catch(e){ GHATA=e.message||String(e); BEKLEYENKOD=''; }   // ağ hatası: saklı kod kalır, sonraki girişte dener
   return false;
 }
 
@@ -5004,7 +5013,7 @@ async function gYeniSifre(){
     if(/jwt|token|expired|session|invalid|401|403/i.test(m)){
       sbCikis(); GMOD='giris';
       GHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
-    } else GHATA='Şifre değiştirilemedi: '+m;
+    } else GHATA='Şifre değiştirilemedi: '+((window.kayitTamam && kayitTamam.hata && kayitTamam.hata(m)) || m);
   }
   GBEKLE=false; render();
 }
@@ -5030,6 +5039,8 @@ async function gGiris(){
     if(GMOD==='kayit'){
       if(s.length<8) throw new Error('Şifre en az 8 karakter olmalı');
       const r=await sbCagri('/auth/v1/signup',{method:'POST',body:{email:m,password:s,data:{rol:'ogrenci'}}});
+      /* Kayıtlı ve onaylı adrese GoTrue 200 + boş identities döner, posta göndermez. */
+      if(r&&Array.isArray(r.identities)&&!r.identities.length) throw new Error('User already registered');
       if(r&&r.access_token) sbOturumKur(r);
       else {
         // e-posta doğrulaması açıksa oturum gelmez
@@ -5039,6 +5050,7 @@ async function gGiris(){
         /* Tam ekran onay ekranı panelin ÜSTÜNDE açılır; sayfa değişmediği için
            BEKLEYENKOD (öğretmen kodu) bellekte kalır, öğrenci bu sekmede giriş
            yapınca kendiliğinden bağlanır. */
+        kodSakla(m);
         if(window.kayitTamam) kayitTamam({rol:'ogrenci', eposta:m});
         return;
       }
@@ -5046,7 +5058,9 @@ async function gGiris(){
     await sunucuAc();
   }catch(e){
     const ham=(e&&e.message)?String(e.message):String(e);
-    GHATA =
+    if(/email not confirmed/i.test(ham) && window.kayitTamam) kayitTamam({durum:'onaysiz', rol:'ogrenci', eposta:m});
+    /* Ortak çeviri (kayit-tamam.js) önce; tanımazsa ya da betik yüklenmediyse aşağıdaki zincir. */
+    GHATA = (window.kayitTamam && kayitTamam.hata && kayitTamam.hata(ham)) || (
         /invalid login/i.test(ham) ? 'E-posta ya da şifre yanlış.'
       : /already registered|already exists|user_already/i.test(ham)
         ? 'Bu e-posta ile zaten bir hesap var.\n\nDaha önce kayıt olduysan "Zaten hesabım var" deyip giriş yap.\nŞifreni unuttuysan "Şifremi unuttum" bağlantısını kullan.'
@@ -5060,7 +5074,7 @@ async function gGiris(){
         ? 'Şifre çok kısa ya da zayıf. En az 8 karakter, harf ve rakam karışık olsun.'
       : /database error|unexpected_failure/i.test(ham)
         ? 'Sunucu kaydı oluşturamadı. Öğretmenine haber ver.\n\nTeknik ayrıntı: '+ham
-      : ham + '\n\n(Bu mesajı öğretmenine iletebilirsin.)';
+      : ham + '\n\n(Bu mesajı öğretmenine iletebilirsin.)');
   }
   GBEKLE=false; render();
 }
@@ -5134,7 +5148,7 @@ function lisansKapisi(){
   GMOD='giris'; render(); return true;
 }
 async function sunucuAc(){
-  if(BEKLEYENKOD) await otoBaglan();
+  await otoBaglan();   // bellekte ya da bu e-postaya saklı kod varsa bağlanır
   const d=await ogrSunucudanOku();
   if(!d){
     GMOD='kod';
@@ -5512,7 +5526,7 @@ function kaynakUyarisi(){
     if(hata){
       history.replaceState(null,'',location.pathname);
       GHATA = /expired|otp/i.test(hata)
-        ? 'Bu bağlantı artık geçerli değil. Bağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Öğretmeninden yeni bağlantı iste.'
+        ? 'Bu bağlantı artık geçerli değil. Bağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Giriş ekranındaki "Şifremi unuttum" ile yenisini iste.'
         : 'Bağlantı doğrulanamadı. Yeni bir bağlantı iste.';
       GMOD='giris'; render(); return;
     }
@@ -5533,7 +5547,7 @@ function kaynakUyarisi(){
         }
       }catch(e){
         history.replaceState(null,'',location.pathname);
-        GHATA='Bağlantı geçersiz ya da süresi dolmuş. Öğretmeninden yeni bağlantı iste.';
+        GHATA='Bağlantı geçersiz ya da süresi dolmuş. Giriş ekranındaki "Şifremi unuttum" ile yenisini iste.';
         GMOD='giris'; render(); return;
       }
     }

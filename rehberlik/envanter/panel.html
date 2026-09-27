@@ -270,8 +270,8 @@
   <div class="kabuk" id="rapor-govde"></div>
 </main>
 
-<script src="baglanti.js"></script>
-<script src="../../kayit-tamam.js?v=20260925a"></script>
+<script src="baglanti.js?v=20260927a"></script>
+<script src="../../kayit-tamam.js?v=20260927a"></script>
 <script src="deneme.js"></script>
 <script src="veri/kisilik.js"></script>
 <script src="veri/ilgi.js"></script>
@@ -1144,8 +1144,9 @@ $('#kayit-form').addEventListener('submit', function (e) {
        adresini doğrulayıp giriş yaptıktan sonra bu formda tamamlanır. */
     if (g && g.dogrulama_gerekli) {
       goster('giris');
+      $('#giris-eposta').value = eposta;
       uyar($('#giris-bilgi'), 'Hesabın açıldı. E-postana gelen bağlantıyla adresini ' +
-        'doğrula, sonra buradan giriş yap. Kayıt formu kaldığı yerden devam eder.');
+        'doğrula, sonra buradan giriş yap. Kayıt formu bu sekmede dolu kalır.');
       if (window.kayitTamam) kayitTamam({ rol: 'reh-ogretmen', eposta: eposta });
       return null;
     }

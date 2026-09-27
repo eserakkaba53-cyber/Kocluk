@@ -845,7 +845,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
 <!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
-<script src="kayit-tamam.js?v=20260925a"></script>
+<script src="kayit-tamam.js?v=20260927a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -2638,6 +2638,10 @@ async function sbKayit(mail, sifre, ad){
       kvkk_surum: KVKK_SURUM, kvkk_onay_tarihi: new Date().toISOString(),
       kvkk_beyan: 'Kullanici, ogrenci ve 18 yas alti icin veli acik rizasini aldigini beyan etti.' } } });
   if(r && r.access_token){ sbOturumKur(r); return { giris:true }; }
+  /* Onay açıkken kayıtlı ve onaylı adrese GoTrue 200 + BOŞ identities döner,
+     posta GÖNDERMEZ. Bu da başarı sayılıyordu: kullanıcı onay ekranını görüp
+     hiç gelmeyecek postayı bekliyordu (26-27 Eyl günlüğünde dört kişi). */
+  if(r && Array.isArray(r.identities) && !r.identities.length) throw new Error('User already registered');
   return { giris:false, dogrulama:true };   // e-posta onayı bekleniyor
 }
 async function sbGiris(mail, sifre){
@@ -8190,7 +8194,7 @@ function davetKart(st){
         <div style="font-size:11.5px;color:var(--ink-3);margin-top:8px;word-break:break-all;font-family:var(--mono)">${esc(davetLinki(st))}</div>
       </div>
       <div class="flag ok" style="margin-top:10px"><span class="ic">i</span><span>
-        Bu bağlantı sunucu bilgilerini de taşır. Öğrenci tıklar, <b>sadece e-posta ve şifre</b> belirler — kod yazmasına bile gerek kalmaz.</span></div>
+        Bu bağlantı sunucu bilgilerini de taşır. Öğrenci tıklar, <b>e-posta ve şifre</b> belirler, e-postasına gelen <b>onay bağlantısına</b> tıklar ve giriş yapar. Kod yazmasına gerek kalmaz.</span></div>
       <button class="btn wide" style="margin-top:10px" onclick="davetWa()">Daveti WhatsApp'la gönder</button>
       <button class="btn ghost wide" style="margin-top:8px" onclick="davetUret()">Yeni kod üret</button>
       <div class="hint" style="margin-top:8px">Kod bir kez kullanılır. Bağlantı açılmazsa öğrenci panele girip kodu elle de yazabilir.</div>`
@@ -8214,7 +8218,7 @@ function davetLinki(st){
 function davetWa(){
   const st=cur(); if(!st||!st.davetKodu) return;
   const link=davetLinki(st);
-  const mesaj=`${st.name}, çalışma panelin hazır.\n\nAşağıdaki bağlantıya tıkla, e-posta ve şifre belirle. Hepsi bu kadar.\n\n${link}\n\nKaydını yaptıktan sonra sisteme HEP bu adresten gireceksin:\n${ogrenciPaneliAdresi()}\n(Bu adresi telefonuna kaydetmen iyi olur — bir daha bağlantıyı aramana gerek kalmaz.)\n\nBundan sonra ödevlerin doğrudan panelinde görünecek; WhatsApp'tan kod göndermeye gerek kalmayacak.\n\n(Bağlantı açılmazsa: ${ogrenciPaneliAdresi()} adresine gir ve kodu elle yaz: ${st.davetKodu})`;
+  const mesaj=`${st.name}, çalışma panelin hazır.\n\nAşağıdaki bağlantıya tıkla, e-posta ve şifre belirle. Sonra e-postana gelen onay bağlantısına tıkla (gelmezse Gereksiz klasörüne bak) ve giriş yap.\n\n${link}\n\nKaydını yaptıktan sonra sisteme HEP bu adresten gireceksin:\n${ogrenciPaneliAdresi()}\n(Bu adresi telefonuna kaydetmen iyi olur — bir daha bağlantıyı aramana gerek kalmaz.)\n\nBundan sonra ödevlerin doğrudan panelinde görünecek; WhatsApp'tan kod göndermeye gerek kalmayacak.\n\n(Bağlantı açılmazsa: ${ogrenciPaneliAdresi()} adresine gir ve kodu elle yaz: ${st.davetKodu})`;
   let tel=String(st.tel||'').replace(/\D/g,'');
   if(tel.startsWith('0')) tel='90'+tel.slice(1); else if(tel.length===10&&tel.startsWith('5')) tel='90'+tel;
   baglantiAc((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),'WhatsApp — davet');
@@ -8390,7 +8394,7 @@ async function yeniSifreKaydet(){
     if(/jwt|token|expired|session|invalid|401|403/i.test(m)){
       sbCikis(); GIRISMOD='giris';
       GIRISHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
-    } else GIRISHATA='Şifre değiştirilemedi: '+m;
+    } else GIRISHATA='Şifre değiştirilemedi: '+((window.kayitTamam && kayitTamam.hata && kayitTamam.hata(m)) || m);
   }
   GIRISBEKLE=false; render();
 }
@@ -8458,9 +8462,14 @@ async function girisYap(){
     }
     await sunucudanYukle();
   }catch(e){
-    GIRISHATA = /Invalid login/i.test(e.message) ? 'E-posta ya da şifre yanlış.'
-      : /already registered/i.test(e.message) ? 'Bu e-posta zaten kayıtlı. "Giriş yap" seç.'
-      : (e.message||String(e));
+    const ham=e.message||String(e);
+    GIRISHATA = (window.kayitTamam && kayitTamam.hata && kayitTamam.hata(ham))
+      || (/Invalid login/i.test(ham) ? 'E-posta ya da şifre yanlış.'
+      : /already registered/i.test(ham) ? 'Bu e-posta zaten kayıtlı. "Giriş yap" seç.'
+      : ham);
+    /* Onaylamadan giriş: yeniden gönderme düğmesi eskiden yalnız kayıt anındaki
+       ekranda vardı, kapatan kullanıcının yeni posta isteyecek yeri yoktu. */
+    if(/email not confirmed/i.test(ham) && window.kayitTamam) kayitTamam({durum:'onaysiz', rol:'koc', eposta:m});
   }
   GIRISBEKLE=false; render();
 }
@@ -8678,6 +8687,7 @@ async function ogrPanelGiris(){
     OGRHATA = /Invalid login/i.test(h) ? 'E-posta ya da şifre yanlış.'
       : /Email not confirmed/i.test(h) ? 'E-postanı henüz onaylamamışsın. Gelen kutundaki onay bağlantısına tıkla.'
       : h;
+    if(/Email not confirmed/i.test(h) && window.kayitTamam) kayitTamam({durum:'onaysiz', rol:'ogrenci', eposta:mail});
   }
   OGRBEKLE=false; render();
 }
@@ -8917,7 +8927,10 @@ function kaynakUyarisi(){
     /* TEŞHİS: sıfırlama bağlantısından gelindiği belli ama biçim tanınmadıysa
        sessizce panele düşme — ne geldiğini ekranda göster. */
     const sifirlamaIzi = (location.search+location.hash);
-    const izVar = /token|code|recovery|error/i.test(sifirlamaIzi);
+    /* Yalnız parametre ADINA bakılır. Eski desen herhangi bir yerde 'code' ya da
+       'token' harf dizisi arıyordu; uzun bir #KOCRAPOR1: bağlantısının base64
+       gövdesinde bu dizi rastgele çıkınca koçu dışarı atıyordu. */
+    const izVar = /(^|[#?&])(access_token|token_hash|code|error_code|error|type)=/.test(sifirlamaIzi);
 
     // 1) hash içinde hazır oturum
     if(hh.indexOf('type=recovery')>=0 && hp.get('access_token')){
@@ -8963,7 +8976,7 @@ function kaynakUyarisi(){
     /* Hiçbir biçime uymadı ama sıfırlama izi var: adresi göster ki sebep anlaşılsın. */
     if(izVar){
       sbCikis();
-      GIRISHATA='TEŞHİS · Sıfırlama bağlantısı tanınmadı.\n\nGelen adres:\n'+sifirlamaIzi+
+      GIRISHATA='TEŞHİS · Sıfırlama bağlantısı tanınmadı.\n\nGelen adres:\n'+sifirlamaIzi.replace(/((?:access|refresh)_token=)[^&]+/g,'$1…')+
                 '\n\nBu metni Eser\'e ilet.';
       GIRISMOD='giris'; render(); return;
     }

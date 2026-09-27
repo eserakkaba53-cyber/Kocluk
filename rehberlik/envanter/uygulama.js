@@ -524,8 +524,9 @@ function kayitGonder(olay) {
   d.disabled = true; d.textContent = 'Kaydediliyor';
 
   /* Taşıma sunucuca onaylandı mı: yerel veriyi ancak bu true olunca sileriz.
-     Not: e-posta doğrulaması bu projede kapalı, o yüzden dogrulama_gerekli
-     dalında taşıma yapılmıyor; açılırsa o dal için de taşıma gerekir. */
+     Not: e-posta doğrulaması 22 Eyl 2026'dan beri açık. dogrulama_gerekli
+     dalında taşıma yapılmaz; cevaplar yerelde kalır, öğrenci giriş yapıp
+     formu yeniden gönderince aşağıdaki dal taşır. */
   var tasindi = false;
   var ilk = yeniHesap ? API.kayitOl(eposta, sifre) : Promise.resolve({});
 
@@ -536,7 +537,11 @@ function kayitGonder(olay) {
           'kaldığı yerden devam edecek.');
         /* Tam ekran onay ekranı. Misafir cevaplar yerelde kalır: silme yalnız
            sunucu taşımayı onaylayınca yapılıyor. */
-        if (window.kayitTamam) kayitTamam({ rol: 'reh-ogrenci', eposta: eposta });
+        if (window.kayitTamam) kayitTamam({ rol: 'reh-ogrenci', eposta: eposta, kapat: function () {
+          /* Kapatınca giriş ekranı açılsın; kayıt formu bu sekmede dolu kalır,
+             giriş yapınca roleGore onu yeniden açar. */
+          goster('giris'); $('#giris-eposta').value = eposta;
+        } });
         return null;
       }
       return API.rpc('reh_ogrenci_kayit', {

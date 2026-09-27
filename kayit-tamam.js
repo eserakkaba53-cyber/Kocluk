@@ -20,8 +20,21 @@
    Stil çakışmasın diye Shadow DOM içinde çizilir: altı panelin altısının da
    kendi CSS'i var, bu ekran hiçbirinden etkilenmez, hiçbirini etkilemez.
 
-   Kullanım:  kayitTamam({ rol:'koc', eposta:'ali@x.com', kapat:fn })
+   27 Eylül 2026: aynı ekran dört durumu karşılıyor. Kayıt günlüğünde onayı
+   yapıp ana sayfaya düşen, hiçbir şey görmeyip ikinci kez kaydolan
+   kullanıcılar vardı; onay dönüşü ve süresi dolmuş bağlantı da buradan
+   karşılanıyor ki kullanıcı hep aynı zarfı görsün.
+
+   Kullanım:
+     kayitTamam({ rol:'koc', eposta:'ali@x.com', kapat:fn })        kayıttan hemen sonra
+     kayitTamam({ durum:'onaysiz',  rol, eposta })                    onaylamadan girmeyi denedi
+     kayitTamam({ durum:'onaylandi', rol, eposta, paneller })         onay bağlantısından dönüş
+     kayitTamam({ durum:'gecersiz', paneller })                       kullanılmış / süresi dolmuş bağlantı
    rol: koc | ogrenci | ozel-ogretmen | ozel-ogrenci | reh-ogrenci | reh-ogretmen
+   paneller: [{ ad:'Koç paneli', href:'kocluk-sunucu.html', ana:true }, ...]
+   donus: yeniden gönderilen postadaki bağlantının döneceği adres (isteğe bağlı)
+   kayitTamam.hata(ham): GoTrue'nun İngilizce hata metnini Türkçeye çevirir,
+   tanımadığı metinde null döner (paneller kendi yedek metnini gösterir).
    --------------------------------------------------------------------- */
 (function () {
   'use strict';
@@ -39,12 +52,43 @@
                        devam: 'Öğretmeninin kodunu yazdıysan giriş yapınca kendiliğinden bağlanırsın.' },
     'ozel-ogretmen': { ad: 'Özel ders öğretmen hesabın' },
     'ozel-ogrenci':  { ad: 'Özel ders öğrenci hesabın',
-                       devam: 'Öğretmeninin davet kodu bu sekmede bekliyor, giriş yapınca kendiliğinden kullanılır.' },
+                       devam: 'Öğretmeninin davet kodu bu tarayıcıda saklı, giriş yapınca kendiliğinden kullanılır.' },
     'reh-ogrenci':   { ad: 'Kendini Tanı hesabın',
-                       devam: 'Giriş yapınca kaydın kaldığı yerden devam eder, verdiğin cevaplar kaybolmaz.' },
+                       devam: 'Giriş yapınca kayıt formun yeniden açılır, okul kodunu yanında bulundur. Verdiğin cevaplar kaybolmaz.' },
     'reh-ogretmen':  { ad: 'Rehber öğretmen hesabın',
-                       devam: 'Giriş yapınca rehber kaydın kaldığı yerden devam eder.' }
+                       devam: 'Giriş yapınca rehber kayıt formu yeniden açılır.' }
   };
+
+  var E_DESEN = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+
+  /* GoTrue'nun İngilizce hata metinleri. Sıra önemli: özelden genele.
+     E-posta sınırında hesap AÇILMAZ (GoTrue kaydı postayla aynı işlemde
+     yapıyor, posta gitmezse geri alıyor); 60 sn kuralında ise hesap zaten
+     önceki denemeden var. */
+  function hataCevir(ham) {
+    var m = String(ham || '');
+    if (/invalid login/i.test(m)) return 'E-posta ya da şifre yanlış.';
+    if (/email not confirmed/i.test(m))
+      return 'E-postan henüz onaylanmadı. Gelen kutundaki (ve Gereksiz klasöründeki) onay bağlantısına tıkla.';
+    if (/already registered|already been registered|already exists|user_already/i.test(m))
+      return 'Bu e-posta ile zaten bir hesap var. Giriş ekranından aynı e-posta ve şifreyle gir; şifreni unuttuysan "Şifremi unuttum"u kullan.';
+    if (/only request this after/i.test(m))
+      return 'Bu adrese az önce posta gönderildi. Gelen kutuna bak; gelmediyse bir dakika sonra yeniden dene.';
+    if (/over_email_send_rate|email rate limit/i.test(m))
+      return 'Şu an çok fazla posta gönderildi, sunucu sınıra takıldı. Birkaç dakika sonra yeniden dene.';
+    if (/over_request_rate|too many requests|rate limit/i.test(m))
+      return 'Çok hızlı denendi. Biraz bekleyip yeniden dene.';
+    if (/error sending/i.test(m))
+      return 'Onay postası şu an gönderilemedi, hesap açılmadı. Birkaç dakika sonra yeniden kaydol.';
+    if (/database error|unexpected_failure/i.test(m))
+      return 'Bu e-posta adresiyle hesap açılamadı. Geçici posta servisleri kabul edilmiyor; Gmail, Outlook ya da okul adresinle kaydol.';
+    if (/different from the old/i.test(m)) return 'Yeni şifre eskisiyle aynı olamaz.';
+    if (/password/i.test(m) && /short|least|weak|characters/i.test(m))
+      return 'Şifre çok kısa ya da zayıf. Daha uzun bir şifre seç.';
+    if (/unable to validate email|invalid format|invalid email/i.test(m)) return 'E-posta adresi geçerli görünmüyor.';
+    if (/signups? not allowed|signup_disabled/i.test(m)) return 'Yeni kayıtlar şu an kapalı.';
+    return null;
+  }
 
   /* Bilinen posta sağlayıcıları. Gmail araması "in:anywhere" ile Spam'i de
      kapsar, çocuk postayı hangi klasörde olursa olsun bulur. */
@@ -106,6 +150,7 @@
     '.damga{position:absolute;top:4%;right:17%;width:30%;color:rgba(18,36,48,.62);transform:rotate(-13deg);',
     '  mix-blend-mode:multiply;pointer-events:none}',
     '.damga svg{display:block;width:100%;height:auto}',
+    '.damga.onay{color:rgba(24,108,104,.8)}',
     '.etiket{position:absolute;left:9%;right:9%;bottom:15%}',
     '.etiket small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.2em;color:#7E939F;margin-bottom:6px}',
     '.adres{font-family:"SF Mono","JetBrains Mono",Consolas,Menlo,monospace;font-weight:700;color:#122430;',
@@ -140,7 +185,10 @@
     '.btn.dolu:hover{background:#F5A661}',
     '.btn.bos{background:transparent;color:#DDE7EC;border-color:rgba(255,255,255,.22)}',
     '.btn.bos:hover{border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.05)}',
-    '.btn:focus-visible,.kapat:focus-visible,.yeniden:focus-visible,input:focus-visible{outline:3px solid #F5A661;outline-offset:3px}',
+    '.btn:focus-visible,.kapat:focus-visible,.yeniden:focus-visible,input:focus-visible,.diger a:focus-visible{outline:3px solid #F5A661;outline-offset:3px}',
+    '.diger{margin:14px 2px 0;font-size:13.5px;color:#9FB2BD}',
+    '.diger a{color:#8FE0D6;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(143,224,214,.35)}',
+    '.diger a:hover{border-bottom-color:#8FE0D6}',
 
     /* posta gelmedi mi */
     '.yardim{margin-top:30px;padding-top:22px;border-top:1px dashed rgba(255,255,255,.16)}',
@@ -178,17 +226,18 @@
     '<line x1="10" y1="6" x2="20" y2="6"/><line x1="11" y1="19" x2="19" y2="19"/>' +
     '<line x1="11" y1="29" x2="19" y2="29"/><line x1="10" y1="42" x2="20" y2="42"/></g></svg>';
 
-  function damgaSVG(gun, ay, yil) {
+  /* Posta damgası. Onay dönüşünde tarihin yerine ONAYLANDI basılır. */
+  function damgaSVG(orta, alt, ortaBoy) {
     return '<svg viewBox="0 0 120 120" aria-hidden="true">' +
       '<defs><path id="yay" d="M17,60 a43,43 0 1,1 86,0"/></defs>' +
       '<circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="3.2"/>' +
       '<circle cx="60" cy="60" r="38" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
       '<text font-family="Segoe UI,Arial,sans-serif" font-size="11.5" font-weight="800" letter-spacing="3.2" fill="currentColor">' +
       '<textPath href="#yay" startOffset="50%" text-anchor="middle">BİYOSER</textPath></text>' +
-      '<text x="60" y="61" text-anchor="middle" font-family="Consolas,monospace" font-size="17" font-weight="800" fill="currentColor">' +
-      gun + ' ' + ay + '</text>' +
+      '<text x="60" y="61" text-anchor="middle" font-family="Consolas,monospace" font-size="' + (ortaBoy || 17) + '" font-weight="800" fill="currentColor">' +
+      orta + '</text>' +
       '<text x="60" y="80" text-anchor="middle" font-family="Consolas,monospace" font-size="12" font-weight="700" fill="currentColor">' +
-      yil + '</text></svg>';
+      alt + '</text></svg>';
   }
 
   var acik = null;
@@ -197,9 +246,11 @@
     ayar = ayar || {};
     if (acik) acik.kapat(true);
 
+    var durumAd = ({ onaysiz: 1, onaylandi: 1, gecersiz: 1 })[ayar.durum] ? ayar.durum : 'bekliyor';
     var rol = ROLLER[ayar.rol] || { ad: 'Hesabın' };
     var eposta = String(ayar.eposta || '').trim();
-    var eGecerli = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(eposta);
+    var eGecerli = E_DESEN.test(eposta);
+    var paneller = Array.isArray(ayar.paneller) ? ayar.paneller : [];
     var onceki = document.activeElement;
 
     var konak = el('div');
@@ -216,7 +267,7 @@
 
     var kapatBtn = el('button', 'kapat', '×');
     kapatBtn.type = 'button';
-    kapatBtn.setAttribute('aria-label', 'Kapat ve giriş ekranına dön');
+    kapatBtn.setAttribute('aria-label', (durumAd === 'bekliyor' || durumAd === 'onaysiz') ? 'Kapat ve giriş ekranına dön' : 'Kapat');
     kap.appendChild(kapatBtn);
 
     /* ---- zarf ---- */
@@ -224,13 +275,18 @@
     var zarfSar = el('div', 'zarfSar');
     var zarf = el('div', 'zarf');
     zarf.setAttribute('role', 'img');
-    zarf.setAttribute('aria-label', eGecerli ? (eposta + ' adresine gönderilmiş bir onay postası') : 'Gönderilmiş bir onay postası');
+    zarf.setAttribute('aria-label', durumAd === 'onaylandi'
+      ? (eGecerli ? eposta + ' adresi onaylandı' : 'E-posta adresi onaylandı')
+      : (eGecerli ? eposta + ' adresine gönderilmiş bir onay postası' : 'Gönderilmiş bir onay postası'));
     var kagit = el('div', 'kagit');
     var pul = el('div', 'pul'); var pulIc = el('div', 'pulIc');
     pulIc.innerHTML = DNA; pulIc.appendChild(el('span', null, 'BİYOSER'));
     pul.appendChild(pulIc);
-    var damga = el('div', 'damga');
-    damga.innerHTML = damgaSVG(String(simdi.getDate()).padStart(2, '0'), AY[simdi.getMonth()], simdi.getFullYear());
+    var gunAy = String(simdi.getDate()).padStart(2, '0') + ' ' + AY[simdi.getMonth()];
+    var damga = el('div', 'damga' + (durumAd === 'onaylandi' ? ' onay' : ''));
+    damga.innerHTML = durumAd === 'onaylandi'
+      ? damgaSVG('ONAYLANDI', gunAy, 12.5)
+      : damgaSVG(gunAy, simdi.getFullYear(), 17);
     var etiket = el('div', 'etiket');
     etiket.appendChild(el('small', null, 'ALICI'));
     var adres = el('div', 'adres' + (eGecerli ? '' : ' bos'), eGecerli ? eposta : 'kayıt olduğun e-posta adresi');
@@ -238,51 +294,103 @@
     kagit.appendChild(pul); kagit.appendChild(damga); kagit.appendChild(etiket);
     zarf.appendChild(kagit); zarfSar.appendChild(zarf);
     kap.appendChild(zarfSar);
-    if (eGecerli) kap.appendChild(el('p', 'yanlis', 'Adres yanlış mı? Bu ekranı kapatıp doğru adresle yeniden kaydol.'));
+    if (eGecerli && durumAd === 'bekliyor')
+      kap.appendChild(el('p', 'yanlis', 'Adres yanlış mı? Bu ekranı kapatıp doğru adresle yeniden kaydol.'));
 
     /* ---- metin ---- */
     var gov = el('div', 'gov');
     var h = el('h2'); h.id = 'kt-baslik';
-    h.appendChild(document.createTextNode('Hesabın açıldı. '));
-    h.appendChild(el('em', null, 'Bir adım kaldı.'));
+    var baslik = {
+      bekliyor:  ['Hesabın açıldı. ', 'Bir adım kaldı.'],
+      onaysiz:   ['Hesabın hazır. ', 'E-postan onay bekliyor.'],
+      onaylandi: ['E-postan onaylandı. ', 'Giriş yapabilirsin.'],
+      gecersiz:  ['Bu bağlantı ', 'artık geçerli değil.']
+    }[durumAd];
+    h.appendChild(document.createTextNode(baslik[0]));
+    h.appendChild(el('em', null, baslik[1]));
     gov.appendChild(h);
     var alt = el('p', 'alt');
-    alt.appendChild(document.createTextNode(rol.ad + ' hazır, ama giriş yapabilmen için '));
-    alt.appendChild(el('b', null, 'e-posta adresini onaylaman'));
-    alt.appendChild(document.createTextNode(' gerekiyor. Onaylamadan giriş yapmayı denersen içeri alınmazsın.'));
+    if (durumAd === 'bekliyor') {
+      alt.appendChild(document.createTextNode(rol.ad + ' hazır, ama giriş yapabilmen için '));
+      alt.appendChild(el('b', null, 'e-posta adresini onaylaman'));
+      alt.appendChild(document.createTextNode(' gerekiyor. Onaylamadan giriş yapmayı denersen içeri alınmazsın.'));
+    } else if (durumAd === 'onaysiz') {
+      alt.appendChild(document.createTextNode(rol.ad + ' açılmış, ama içeri girebilmen için önce '));
+      alt.appendChild(el('b', null, 'e-posta adresini onaylaman'));
+      alt.appendChild(document.createTextNode(' gerekiyor. Gelen kutundaki bağlantıya tıkla; posta yoksa aşağıdan yenisini iste.'));
+    } else if (durumAd === 'onaylandi') {
+      alt.appendChild(document.createTextNode((ayar.rol && ROLLER[ayar.rol] ? rol.ad : 'Hesabın') + ' artık açık. Kayıt olurken yazdığın '));
+      alt.appendChild(el('b', null, 'e-posta ve şifreyle'));
+      alt.appendChild(document.createTextNode(' giriş yap.'));
+    } else {
+      alt.appendChild(document.createTextNode('E-postadaki bağlantılar tek kullanımlık ve süreli. Bazı posta servisleri bağlantıyı güvenlik taraması için senden önce açıyor; kayıt onayıysa '));
+      alt.appendChild(el('b', null, 'hesabın büyük ihtimalle zaten onaylandı'));
+      alt.appendChild(document.createTextNode('. Giriş yapmayı dene.'));
+    }
     gov.appendChild(alt);
 
-    var ol = el('ol');
-    var li1 = el('li'); li1.appendChild(el('div', 'no', '1'));
-    var li1m = el('div'); li1m.appendChild(el('b', null, 'E-postandaki onay bağlantısına tıkla'));
-    li1m.appendChild(el('span', null, 'Postayı ' + GONDEREN + ' gönderdi; bir iki dakika içinde gelir.'));
-    li1.appendChild(li1m); ol.appendChild(li1);
-    var li2 = el('li'); li2.appendChild(el('div', 'no', '2'));
-    var li2m = el('div'); li2m.appendChild(el('b', null, 'Bu sekmeye dön ve giriş yap'));
-    li2m.appendChild(el('span', null, rol.devam || 'Bu sekmeyi açık bırak; onaydan sonra aynı e-posta ve şifreyle girersin.'));
-    li2.appendChild(li2m); ol.appendChild(li2);
-    gov.appendChild(ol);
+    if (durumAd === 'bekliyor' || durumAd === 'onaysiz') {
+      var ol = el('ol');
+      var li1 = el('li'); li1.appendChild(el('div', 'no', '1'));
+      var li1m = el('div'); li1m.appendChild(el('b', null, 'E-postandaki onay bağlantısına tıkla'));
+      li1m.appendChild(el('span', null, 'Postayı ' + GONDEREN + ' gönderdi; bir iki dakika içinde gelir.'));
+      li1.appendChild(li1m); ol.appendChild(li1);
+      var li2 = el('li'); li2.appendChild(el('div', 'no', '2'));
+      var li2m = el('div'); li2m.appendChild(el('b', null, 'Bu sekmeye dön ve giriş yap'));
+      li2m.appendChild(el('span', null, rol.devam || 'Bu sekmeyi açık bırak; onaydan sonra aynı e-posta ve şifreyle girersin.'));
+      li2.appendChild(li2m); ol.appendChild(li2);
+      gov.appendChild(ol);
+    }
 
     var dugmeler = el('div', 'dugmeler');
-    var sag = eGecerli ? saglayici(eposta) : null;
+    var sag = (eGecerli && (durumAd === 'bekliyor' || durumAd === 'onaysiz')) ? saglayici(eposta) : null;
     if (sag) {
       var ac = el('a', 'btn dolu', sag.etiket + ' ↗');
       ac.href = sag.url; ac.target = '_blank'; ac.rel = 'noopener noreferrer';
       dugmeler.appendChild(ac);
     }
-    var don = el('button', 'btn ' + (sag ? 'bos' : 'dolu'), 'Giriş ekranına dön');
-    don.type = 'button';
-    dugmeler.appendChild(don);
+    /* Onay dönüşünde düğmeler panellere gider. Ana panel(ler) düğme olur,
+       kalanlar altta küçük bağlantı; hiçbiri ana değilse hepsi düğme. */
+    var don = null, digerler = [];
+    if ((durumAd === 'onaylandi' || durumAd === 'gecersiz') && paneller.length) {
+      var anaVar = paneller.some(function (p) { return p.ana; });
+      paneller.forEach(function (p) {
+        if (anaVar && !p.ana) { digerler.push(p); return; }
+        var a = el('a', 'btn ' + (dugmeler.firstChild ? 'bos' : 'dolu'), p.ad);
+        a.href = p.href;
+        dugmeler.appendChild(a);
+      });
+    } else {
+      var donYazi = (durumAd === 'bekliyor' || durumAd === 'onaysiz') ? 'Giriş ekranına dön' : 'Giriş yap';
+      don = el('button', 'btn ' + (sag ? 'bos' : 'dolu'), donYazi);
+      don.type = 'button';
+      dugmeler.appendChild(don);
+    }
     gov.appendChild(dugmeler);
+    if (digerler.length) {
+      var dp = el('p', 'diger');
+      dp.appendChild(document.createTextNode('Başka bir panele mi kayıt oldun? '));
+      digerler.forEach(function (p, i) {
+        if (i) dp.appendChild(document.createTextNode(' · '));
+        var a = el('a', null, p.ad); a.href = p.href;
+        dp.appendChild(a);
+      });
+      gov.appendChild(dp);
+    }
 
     /* ---- posta gelmedi mi ---- */
     var yardim = el('div', 'yardim');
-    yardim.appendChild(el('h3', null, 'Posta gelmedi mi?'));
-    var p1 = el('p');
-    p1.appendChild(document.createTextNode('Önce Gereksiz / Spam klasörüne bak. Gönderen: '));
-    p1.appendChild(el('b', null, GONDEREN));
-    yardim.appendChild(p1);
-    yardim.appendChild(el('p', null, 'Orada da yoksa yeniden gönder.'));
+    if (durumAd === 'gecersiz') {
+      yardim.appendChild(el('h3', null, 'Giriş "onaylanmadı" mı diyor?'));
+      yardim.appendChild(el('p', null, 'Kayıt olduğun adresi yaz, yeni onay bağlantısı gönderelim. Şifre sıfırlama bağlantısıysa panelde "Şifremi unuttum"u yeniden kullan.'));
+    } else {
+      yardim.appendChild(el('h3', null, 'Posta gelmedi mi?'));
+      var p1 = el('p');
+      p1.appendChild(document.createTextNode('Önce Gereksiz / Spam klasörüne bak. Gönderen: '));
+      p1.appendChild(el('b', null, GONDEREN));
+      yardim.appendChild(p1);
+      yardim.appendChild(el('p', null, 'Orada da yoksa yeniden gönder.'));
+    }
     var satir = el('div', 'satir');
     var giris = null;
     if (!eGecerli) {
@@ -296,7 +404,7 @@
     yardim.appendChild(satir);
     var durum = el('div', 'durum'); durum.setAttribute('role', 'status'); durum.setAttribute('aria-live', 'polite');
     yardim.appendChild(durum);
-    gov.appendChild(yardim);
+    if (durumAd !== 'onaylandi') gov.appendChild(yardim);   /* onaylı hesaba yeniden posta gitmez */
     kap.appendChild(gov);
 
     golge.appendChild(perde);
@@ -318,19 +426,21 @@
       }, 1000);
     }
     /* Kayıt anında GoTrue zaten bir posta gönderdi: ilk 60 sn içinde yeniden
-       göndermek 429 döner. Düğme o süre kilitli başlar. */
-    geriSay(BEKLEME_SN);
+       göndermek 429 döner. Düğme o süre kilitli başlar. Girişten ya da süresi
+       dolmuş bağlantıdan açıldıysa az önce posta gitmedi, düğme hemen açık. */
+    if (durumAd === 'bekliyor') geriSay(BEKLEME_SN);
 
     yeniden.onclick = function () {
       var adr = eGecerli ? eposta : String(giris.value || '').trim();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(adr)) {
+      if (!E_DESEN.test(adr)) {
         durum.className = 'durum hata'; durum.textContent = 'Geçerli bir e-posta adresi yaz.';
         if (giris) giris.focus();
         return;
       }
       yeniden.disabled = true; yeniden.textContent = 'Gönderiliyor…';
       durum.className = 'durum'; durum.textContent = '';
-      fetch(SB_URL + '/auth/v1/resend', {
+      /* redirect_to yalnız sorgu dizgisinden okunur, gövdeden değil. */
+      fetch(SB_URL + '/auth/v1/resend' + (ayar.donus ? '?redirect_to=' + encodeURIComponent(ayar.donus) : ''), {
         method: 'POST',
         headers: { 'apikey': SB_ANON, 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'signup', email: adr })
@@ -338,16 +448,21 @@
         return r.json().catch(function () { return {}; }).then(function (g) { return { r: r, g: g }; });
       }).then(function (s) {
         if (s.r.ok) {
+          /* GoTrue onaylı ya da bilinmeyen adrese de 200 döner ve posta
+             göndermez; "gönderildi" demek o durumda yalan olurdu. */
           durum.className = 'durum ok';
-          durum.textContent = 'Yeni onay postası gönderildi. Gelmezse Gereksiz klasörüne bak.';
+          durum.textContent = durumAd === 'gecersiz'
+            ? 'İstek alındı. Hesabın onaylı değilse birkaç dakika içinde yeni bağlantı gelir; onaylıysa posta gelmez, doğrudan giriş yap.'
+            : 'Yeni onay postası gönderildi. Gelmezse Gereksiz klasörüne bak.';
           geriSay(BEKLEME_SN);
         } else if (s.r.status === 429) {
           durum.className = 'durum hata';
           durum.textContent = 'Çok sık denendi. Bir dakika sonra tekrar dene.';
           geriSay(BEKLEME_SN);
         } else {
+          var ham = s.g.msg || s.g.error_description || s.g.message || ('sunucu ' + s.r.status);
           durum.className = 'durum hata';
-          durum.textContent = 'Gönderilemedi: ' + (s.g.msg || s.g.error_description || s.g.message || ('sunucu ' + s.r.status));
+          durum.textContent = hataCevir(ham) || ('Gönderilemedi: ' + ham);
           yeniden.disabled = false; yeniden.textContent = 'Postayı yeniden gönder';
         }
       }).catch(function () {
@@ -383,12 +498,14 @@
       }
     }
     kapatBtn.onclick = function () { kapat(); };
-    don.onclick = function () { kapat(); };
+    if (don) don.onclick = function () { kapat(); };
     document.addEventListener('keydown', tus, true);
 
-    setTimeout(function () { (sag ? dugmeler.firstChild : don).focus(); }, 60);
+    setTimeout(function () { (dugmeler.firstChild || kapatBtn).focus(); }, 60);
 
     acik = { kapat: kapat };
     return acik;
   };
+
+  window.kayitTamam.hata = hataCevir;
 })();
