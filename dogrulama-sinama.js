@@ -4,13 +4,14 @@
    yalnız doğrulanmış faktörde ve aal1 oturumda sorar. */
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const giden = [];
-let faktorlu = false, kodlar = [];
+let faktorlu = false, kodlar = [], tsHata = false;
 const yanit = (govde, durum) => Promise.resolve(new Response(JSON.stringify(govde), { status: durum || 200 }));
 const ctx = {
   location: { protocol: 'https:', hostname: 'biyoser.com.tr' },
   document: { head: { appendChild() {} }, body: { appendChild() {} },
               createElement: () => ({ style: {}, remove() {} }) },
-  turnstile: { render: (kutu, o) => { setTimeout(() => o.callback('JETON'), 0); return 1; }, remove() {} },
+  turnstile: { render: (kutu, o) => { setTimeout(() => tsHata ? o['error-callback']('600010') : o.callback('JETON'), 0); return 1; }, remove() {} },
+  console: { warn() {} },
   ikiAdimKodSor: () => Promise.resolve(kodlar.shift()),
   Response, Promise, JSON, Object, String, Error, setTimeout, atob,
   fetch: (u, a) => {
@@ -40,6 +41,10 @@ const jwt = aal => 'x.' + Buffer.from(JSON.stringify({ aal })).toString('base64u
   assert.strictEqual(giden[2][1], undefined);
   assert.deepStrictEqual(JSON.parse(giden[3][1]).gotrue_meta_security, { captcha_token: 'JETON' });
   assert.match((await r.json()).msg, /Bot doğrulaması/);
+  tsHata = true; giden.length = 0;
+  await ctx.fetch(U + '/auth/v1/recover', { method: 'POST', body: '{"email":"a"}' });
+  assert.strictEqual(giden[0][1], '{"email":"a"}', 'jeton alınamazsa istek jetonsuz gider, kararı sunucu verir');
+  tsHata = false;
 
   /* iki adımlı giriş */
   giden.length = 0;
@@ -50,5 +55,5 @@ const jwt = aal => 'x.' + Buffer.from(JSON.stringify({ aal })).toString('base64u
   assert.deepStrictEqual(await ctx.ikiAdimTamamla(U, 'k', jwt('aal1')), { access_token: 'aal2-oturum' });
   kodlar = [null];
   await assert.rejects(ctx.ikiAdimTamamla(U, 'k', jwt('aal1')), /tamamlanmadı/);
-  console.log('dogrulama.js: 9 denetim geçti');
+  console.log('dogrulama.js: 10 denetim geçti');
 })().catch(e => { console.error(e); process.exit(1); });

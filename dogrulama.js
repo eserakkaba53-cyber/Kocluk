@@ -6,6 +6,10 @@
    kapsanır. Jeton tek kullanımlık, her istekte bileşen yeniden çizilir.
    Çoğu kişi hiçbir şey görmez; Cloudflare şüphelenirse ekranın altında bir
    kutu çıkar, tıklanınca istek devam eder.
+   Jeton alınamazsa istek jetonsuz gider: kararı sunucu verir. Captcha
+   kapalıyken giriş engellenmez, açıkken GoTrue reddeder ve kullanıcı Türkçe
+   iletiyi görür. (İlk sürüm istemcide engelliyordu; Cloudflare'in şüpheli
+   bulduğu tarayıcıda koruma kapalıyken bile giriş yapılamıyordu.)
    Yerelde (localhost, file:) Cloudflare'in her zaman geçen deneme anahtarı
    kullanılır; Supabase'de captcha açıldıktan sonra yerel giriş çalışmaz.
    Aynı dosyada iki adımlı giriş yardımcısı da var (ikiAdimTamamla). */
@@ -45,14 +49,14 @@
           if (bitti) return true;
           bitti = true;
           setTimeout(function () { try { turnstile.remove(id); } catch (e) {} kutu.remove(); }, 0);
-          if (hata) red(new Error(HATA)); else tamam(j);
+          if (hata) red(new Error('Turnstile ' + hata)); else tamam(j);
           return true;
         }
         id = turnstile.render(kutu, {
           sitekey: SITE, appearance: 'interaction-only', language: 'tr',
           callback: function (j) { son(false, j); },
-          'error-callback': function () { return son(true); },
-          'timeout-callback': function () { son(true); }
+          'error-callback': function (kod) { return son('hata ' + kod); },
+          'timeout-callback': function () { son('zaman aşımı'); }
         });
       });
     });
@@ -135,7 +139,12 @@
     try { govde = JSON.parse(ayar.body); } catch (e) { return asil(girdi, ayar); }
     return jeton().then(function (j) {
       govde.gotrue_meta_security = { captcha_token: j };
-      return asil(girdi, Object.assign({}, ayar, { body: JSON.stringify(govde) }));
+      return JSON.stringify(govde);
+    }, function (e) {
+      console.warn('[dogrulama] jetonsuz gönderiliyor:', e.message);
+      return ayar.body;
+    }).then(function (b) {
+      return asil(girdi, Object.assign({}, ayar, { body: b }));
     }).then(function (r) {
       if (r.ok) return r;
       /* GoTrue'nun İngilizce captcha hatasını sayfaların okuduğu alanlara Türkçe yaz. */
