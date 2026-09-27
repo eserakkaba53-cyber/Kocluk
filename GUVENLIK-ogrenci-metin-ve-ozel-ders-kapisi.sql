@@ -48,6 +48,8 @@ drop trigger if exists tg_ogrenciler_temizle on public.ogrenciler;
 create trigger tg_ogrenciler_temizle
   before insert or update on public.ogrenciler
   for each row execute function public.ogrenciler_temizle();
+-- Yeni işlev PUBLIC üzerinden anon'a açık doğar (bkz. GUVENLIK-anon-yetki-kisma.sql).
+revoke execute on function public.ogrenciler_temizle() from public, anon;
 
 -- ---------------------------------------------------------------------
 -- od_koc_mu(): dört özel ders fonksiyonunun kapısı (od_acik, od_kabul,

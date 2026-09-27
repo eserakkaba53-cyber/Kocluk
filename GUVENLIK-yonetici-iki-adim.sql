@@ -26,6 +26,8 @@ as $$
       or not exists (select 1 from auth.mfa_factors f
                      where f.user_id = auth.uid() and f.status = 'verified');
 $$;
+-- Yalnız öteki güvenlik tanımlı işlevlerin içinden çağrılır; anon'a gerek yok.
+revoke execute on function public.mfa_tamam() from public, anon;
 
 create or replace function public.yonetici_mi()
 returns boolean

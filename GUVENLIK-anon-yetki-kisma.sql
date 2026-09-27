@@ -25,9 +25,14 @@
 --   * Tetikleyici fonksiyonları da kısılır: tetikleyici çalışırken EXECUTE
 --     yetkisi denetlenmez (yalnız tetikleyici kurulurken denetlenir).
 --
--- İLERİSİ İÇİN: public şemasında bundan sonra açılan fonksiyonlar anon'a
--- kendiliğinden açılmaz (varsayılan yetki değişti). Girişsiz çağrılması
--- gereken yeni bir fonksiyon olursa: grant execute on function ... to anon;
+-- İLERİSİ İÇİN (27 Eyl düzeltmesi): aşağıdaki varsayılan yetki değişikliği
+-- yalnız Supabase'in anon'a verdiği şema düzeyindeki izni kaldırır. Postgres
+-- her yeni fonksiyona PUBLIC üzerinden EXECUTE verir ve bu genel varsayılan
+-- şema düzeyinde geri alınamaz; yani YENİ FONKSİYON YİNE ANON'A AÇIK DOĞAR.
+-- Genel varsayılanı değiştirmedik: panelden kurulacak eklentilerin
+-- fonksiyonlarını da kilitlerdi. Kural: her yeni fonksiyonun ardına
+--   revoke execute on function ... from public, anon;
+-- yaz (girişsiz çağrılması gerekiyorsa yazma). Denetim: aşağıdaki sorgu 17.
 -- =====================================================================
 
 do $$
@@ -65,7 +70,8 @@ begin
   raise notice 'anon yetkisi kaldirilan fonksiyon: %', n;
 end $$;
 
--- Bundan sonra açılan fonksiyonlar anon'a kendiliğinden açılmasın.
+-- Supabase'in şema düzeyinde anon'a verdiği varsayılanı kaldırır (PUBLIC
+-- varsayılanı sürer; yukarıdaki "İLERİSİ İÇİN" notuna bak).
 alter default privileges for role postgres in schema public
   revoke execute on functions from public, anon;
 
