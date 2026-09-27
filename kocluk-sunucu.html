@@ -8393,7 +8393,7 @@ async function yeniSifreKaydet(){
     const m=String(e.message||e);
     if(/jwt|token|expired|session|invalid|401|403/i.test(m)){
       sbCikis(); GIRISMOD='giris';
-      GIRISHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
+      GIRISHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantıyla açılan şifre ekranı 1 saat içinde kullanılmalı. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
     } else GIRISHATA='Şifre değiştirilemedi: '+((window.kayitTamam && kayitTamam.hata && kayitTamam.hata(m)) || m);
   }
   GIRISBEKLE=false; render();
@@ -8919,7 +8919,7 @@ function kaynakUyarisi(){
     if(hata){
       history.replaceState(null,'',location.pathname);
       GIRISHATA = /expired|otp/i.test(hata)
-        ? 'Bu sıfırlama bağlantısı artık geçerli değil.\n\nBağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Ayrıca bazı e-posta servisleri (Outlook, Hotmail) güvenlik taraması yaparken bağlantıyı sizin adınıza açıp tüketebiliyor.\n\nYeni bir bağlantı isteyin; mümkünse farklı bir e-posta adresi kullanın.'
+        ? 'Bu sıfırlama bağlantısı artık geçerli değil.\n\nBağlantılar tek kullanımlıktır ve 24 saat geçerlidir. Ayrıca bazı e-posta servisleri (Outlook, Hotmail) güvenlik taraması yaparken bağlantıyı sizin adınıza açıp tüketebiliyor.\n\nYeni bir bağlantı isteyin; mümkünse farklı bir e-posta adresi kullanın.'
         : 'Sıfırlama bağlantısı doğrulanamadı ('+hata+'). Yeni bir bağlantı isteyin.';
       GIRISMOD='giris'; render(); return;
     }
@@ -8951,7 +8951,7 @@ function kaynakUyarisi(){
         }
       }catch(e){
         history.replaceState(null,'',location.pathname);
-        GIRISHATA='Sıfırlama bağlantısı geçersiz ya da süresi dolmuş (bağlantılar 1 saat geçerlidir). Lütfen yeni bir bağlantı iste.';
+        GIRISHATA='Sıfırlama bağlantısı geçersiz ya da süresi dolmuş (bağlantılar 24 saat geçerlidir). Lütfen yeni bir bağlantı iste.';
         GIRISMOD='giris'; render(); return;
       }
     }

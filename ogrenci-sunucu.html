@@ -5012,7 +5012,7 @@ async function gYeniSifre(){
     const m=String(e.message||e);
     if(/jwt|token|expired|session|invalid|401|403/i.test(m)){
       sbCikis(); GMOD='giris';
-      GHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
+      GHATA='Sıfırlama bağlantının süresi dolmuş.\n\nBağlantıyla açılan şifre ekranı 1 saat içinde kullanılmalı. Aşağıdan e-postanı yazıp "Şifremi unuttum" ile yeni bir bağlantı iste.';
     } else GHATA='Şifre değiştirilemedi: '+((window.kayitTamam && kayitTamam.hata && kayitTamam.hata(m)) || m);
   }
   GBEKLE=false; render();
@@ -5526,7 +5526,7 @@ function kaynakUyarisi(){
     if(hata){
       history.replaceState(null,'',location.pathname);
       GHATA = /expired|otp/i.test(hata)
-        ? 'Bu bağlantı artık geçerli değil. Bağlantılar tek kullanımlıktır ve 1 saat geçerlidir. Giriş ekranındaki "Şifremi unuttum" ile yenisini iste.'
+        ? 'Bu bağlantı artık geçerli değil. Bağlantılar tek kullanımlıktır ve 24 saat geçerlidir. Giriş ekranındaki "Şifremi unuttum" ile yenisini iste.'
         : 'Bağlantı doğrulanamadı. Yeni bir bağlantı iste.';
       GMOD='giris'; render(); return;
     }
