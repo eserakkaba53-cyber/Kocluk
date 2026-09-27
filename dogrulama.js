@@ -86,17 +86,47 @@
       var f = (u.factors || []).filter(function (x) { return x.factor_type === 'totp' && x.status === 'verified'; })[0];
       if (!f) return null;
       return (function sor(mesaj) {
-        var kod = window.prompt(mesaj);
-        if (kod === null) throw new Error('İki adımlı giriş tamamlanmadı. Yeniden giriş yapıp doğrulama uygulamandaki kodu yaz.');
-        return cagir('/auth/v1/factors/' + f.id + '/challenge', {})
-          .then(function (c) { return cagir('/auth/v1/factors/' + f.id + '/verify', { challenge_id: c.id, code: kod.replace(/\s/g, '') }); })
-          .catch(function (e) {
-            if (e.kod === 400 || e.kod === 422) return sor('Kod tutmadı ya da süresi geçti. Uygulamadaki güncel 6 haneli kodu yaz.');
-            throw e;
-          });
-      })('İki adımlı giriş: doğrulama uygulamandaki 6 haneli kodu yaz.');
+        return (window.ikiAdimKodSor || kodKutusu)(mesaj).then(function (kod) {
+          if (kod === null) throw new Error('İki adımlı giriş tamamlanmadı. Yeniden giriş yapıp doğrulama uygulamandaki kodu yaz.');
+          return cagir('/auth/v1/factors/' + f.id + '/challenge', {})
+            .then(function (c) { return cagir('/auth/v1/factors/' + f.id + '/verify', { challenge_id: c.id, code: kod.replace(/\s/g, '') }); })
+            .catch(function (e) {
+              if (e.kod === 400 || e.kod === 422) return sor('Kod tutmadı ya da süresi geçti. Uygulamadaki güncel 6 haneli kodu yaz.');
+              throw e;
+            });
+        });
+      })('Doğrulama uygulamasında Biyoser satırındaki 6 haneli kodu yaz.');
     });
   };
+
+  /* Kod kutusu. prompt() uygulama içi tarayıcılarda (WhatsApp, Instagram,
+     masaüstü uygulama panelleri) çoğu zaman açılmıyor; sayfa içi kutu her
+     yerde çalışır. Vazgeç = null. */
+  function kodKutusu(mesaj) {
+    return new Promise(function (tamam) {
+      var ort = document.createElement('div');
+      ort.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(10,31,51,.6);' +
+        'display:flex;align-items:center;justify-content:center;padding:16px';
+      ort.innerHTML =
+        '<form style="background:#fff;color:#0a1f33;border-radius:14px;padding:22px;width:100%;max-width:340px;' +
+        'font:15px/1.45 system-ui,sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.35)">' +
+        '<b style="display:block;font-size:17px;margin-bottom:6px">İki adımlı giriş</b><p style="margin:0 0 12px"></p>' +
+        '<input inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" aria-label="6 haneli kod" ' +
+        'style="width:100%;box-sizing:border-box;font-size:22px;letter-spacing:4px;text-align:center;padding:10px;' +
+        'border:1.5px solid #9fb0bf;border-radius:10px">' +
+        '<div style="display:flex;gap:8px;margin-top:14px">' +
+        '<button type="button" style="flex:1;padding:10px;border-radius:10px;border:1px solid #9fb0bf;background:#fff;color:#0a1f33;font:inherit">Vazgeç</button>' +
+        '<button type="submit" style="flex:1;padding:10px;border-radius:10px;border:0;background:#1f6f63;color:#fff;font:inherit;font-weight:700">Doğrula</button>' +
+        '</div></form>';
+      var f = ort.firstChild, g = f.querySelector('input');
+      f.querySelector('p').textContent = mesaj;
+      function bitir(v) { ort.remove(); tamam(v); }
+      f.onsubmit = function (e) { e.preventDefault(); bitir(g.value); };
+      f.querySelector('button[type=button]').onclick = function () { bitir(null); };
+      document.body.appendChild(ort);
+      g.focus();
+    });
+  }
 
   window.fetch = function (girdi, ayar) {
     var url = String((girdi && girdi.url) || girdi);

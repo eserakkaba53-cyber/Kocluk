@@ -11,7 +11,7 @@ const ctx = {
   document: { head: { appendChild() {} }, body: { appendChild() {} },
               createElement: () => ({ style: {}, remove() {} }) },
   turnstile: { render: (kutu, o) => { setTimeout(() => o.callback('JETON'), 0); return 1; }, remove() {} },
-  prompt: () => kodlar.shift(),
+  ikiAdimKodSor: () => Promise.resolve(kodlar.shift()),
   Response, Promise, JSON, Object, String, Error, setTimeout, atob,
   fetch: (u, a) => {
     u = String(u); giden.push([u, a && a.body]);
