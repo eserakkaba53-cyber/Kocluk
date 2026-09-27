@@ -431,14 +431,22 @@ function kaydiTamamla(p, b) {
   goster('giris');
   girisHata('');
   kutuYaz('#giris-bilgi', 'Kaydın tamamlanıyor, bir saniye.');
+  var kayitOldu = false;
   API.rpc('reh_ogrenci_kayit', {
     p_ad_soyad: b.p_ad_soyad, p_okul_kodu: b.p_okul_kodu, p_sinif: b.p_sinif,
     p_sube: b.p_sube, p_okul_no: b.p_okul_no || null
   })
-    .then(kayitSonrasi)
+    .then(function (g) { kayitOldu = !!(g && !g.hata); return kayitSonrasi(g); })
     .then(function () { kutuYaz('#giris-bilgi', ''); })
     .catch(function (x) {
       kutuYaz('#giris-bilgi', '');
+      /* Profil kurulduysa formu yeniden açma; yalnız cevap taşıma ya da durum
+         okuma aksadı. Kapıya geç, sebebi söyle. */
+      if (kayitOldu) {
+        API.durumTazele().then(roleGore, function () {});
+        alert(x.message);
+        return;
+      }
       tamamlamaFormu(p, b);
       kayitHata(x.message);
     });
@@ -455,6 +463,9 @@ function tamamlamaFormu(p, b) {
   e.value = p.eposta || e.value;
   e.readOnly = true;
   $('#kayit-sifre').parentNode.parentNode.classList.add('gizli');
+  /* Gizli ama zorunlu şifre alanı tarayıcı denetiminde formu kilitliyordu:
+     düğmeye basınca hiçbir şey olmuyordu. */
+  $('#kayit-sifre').required = false; $('#kayit-sifre2').required = false;
   if (b) {
     if (b.p_okul_kodu) { $('#okul-kodu').value = b.p_okul_kodu; kodDenetle(); }
     if (b.p_ad_soyad) $('#kayit-ad').value = b.p_ad_soyad;

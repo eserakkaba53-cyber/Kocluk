@@ -8492,7 +8492,9 @@ async function bekleyenReferans(){
   try{
     const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_uygula',{method:'POST',body:{kod:k}}));
     if(r&&r.ok) REFDURUM='OK|Seni davet eden: '+(r.davet_eden_ad||'—')+'. Pakete geçtiğinde onun sayacı ilerler.';
-    else if(r&&r.hata) REFDURUM='HATA|Referans kodu uygulanamadı: '+r.hata+' ("Davet et süre kazan" sekmesinden tekrar deneyebilirsin.)';
+    /* "Zaten tanımlı": kod daha önce uygulanmış (başka tarayıcıda ya da eski
+       jetondaki damgayla). Hata değil, sessiz geç. */
+    else if(r&&r.hata&&!/Zaten bir referans/i.test(r.hata)) REFDURUM='HATA|Referans kodu uygulanamadı: '+r.hata+' ("Davet et süre kazan" sekmesinden tekrar deneyebilirsin.)';
   }catch(e){ REFDURUM='HATA|Referans kodu şimdilik uygulanamadı. "Davet et süre kazan" sekmesinden tekrar deneyebilirsin.'; }
   try{ localStorage.removeItem('bekleyen_referans'); }catch(e){}
   if(jwtMeta().bekleyen_referans) sbCagri('/auth/v1/user',{method:'PUT',body:{data:{bekleyen_referans:null}}}).catch(()=>{});

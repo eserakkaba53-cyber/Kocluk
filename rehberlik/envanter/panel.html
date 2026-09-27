@@ -1021,16 +1021,23 @@ function yonlendir(p) {
         otoKayitDenendi = true;
         goster('giris');
         uyar($('#giris-bilgi'), 'Rehber kaydın tamamlanıyor, bir saniye.');
+        var kayitOldu = false;
         API.rpc('reh_rehber_kayit', { p_ad_soyad: b.p_ad_soyad, p_okul_adi: b.p_okul_adi,
                                       p_il: b.p_il || null, p_ilce: b.p_ilce || null })
           .then(function (s) {
             if (!s || s.hata) throw new Error((s && s.hata) || 'Kayıt tamamlanamadı.');
+            kayitOldu = true;
             API.bekleyenSil();
             uyar($('#giris-bilgi'), '');
             return API.durumTazele().then(yonlendir);
           })
           .catch(function (err) {
             uyar($('#giris-bilgi'), '');
+            if (kayitOldu) {   /* profil kuruldu, yalnız durum okunamadı: formu yeniden açma */
+              uyar($('#giris-hata'), 'Rehber kaydın tamamlandı ama durum okunamadı: ' + err.message + ' Sayfayı yenile.');
+              goster('giris');
+              return;
+            }
             uyar($('#kayit-hata'), err.message);
             goster('kayit');
           });
@@ -1184,6 +1191,7 @@ $('#kayit-form').addEventListener('submit', function (e) {
     }
     return API.rpc('reh_rehber_kayit', bilgi).then(function (s) {
       if (s && s.hata) throw new Error(s.hata);
+      API.bekleyenSil();   /* elle tamamlamada da damgadaki kişisel bilgi silinsin */
       return API.durumTazele().then(yonlendir);
     });
   })
