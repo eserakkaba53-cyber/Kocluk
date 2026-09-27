@@ -92,6 +92,7 @@ window.API = {
   girisYap: function (eposta, sifre) {
     return API.auth('/auth/v1/token?grant_type=password',
       { email: eposta, password: sifre }).then(API.oturumKur)
+      .then(API.ikiAdim)
       .catch(function (x) {
         /* Onaylanmamış hesap: yazının yanında yeni posta isteyebileceği ekran. */
         if (x.kod === 'email_not_confirmed' && window.kayitTamam)
@@ -99,6 +100,16 @@ window.API = {
             rol: /panel\.html$/.test(location.pathname) ? 'reh-ogretmen' : 'reh-ogrenci' });
         throw x;
       });
+  },
+
+  /* ★ 27 Eyl 2026 — İki adımlı giriş: hesapta doğrulanmış faktör varsa
+     (yönetici) kod sorulur. Yönetici yetkisi veritabanında aal2 ister; kod
+     girilmezse oturum silinir. Yardımcı koçlukla ortak: /dogrulama.js */
+  ikiAdim: function (g) {
+    if (!window.ikiAdimTamamla) return g;
+    return ikiAdimTamamla(AYAR.URL, AYAR.ANON, OTURUM.jwt)
+      .then(function (y) { return y ? API.oturumKur(y) : g; },
+            function (x) { API.oturumSil(); throw x; });
   },
 
   sifreUnuttum: function (eposta) {

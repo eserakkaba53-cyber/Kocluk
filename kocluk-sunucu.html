@@ -835,7 +835,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 </div>
 
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
-<script src="dogrulama.js?v=20260927"></script>
+<script src="dogrulama.js?v=20260927b"></script>
 <script src="sunucu.js?v=20260916b"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
@@ -3652,6 +3652,7 @@ function render(){
        şey bekleyen mesaj olmalı, koç tablosunun altında kalmamalı. */
     v.innerHTML=kaynakUyarisi()
       +((typeof MESAJ!=='undefined')?MESAJ.kartYonetici():'')
+      +mfaKarti()
       +vYonetici()
       +((typeof odAcikKart==='function')?odAcikKart():'')
       +((typeof odYonetimKart==='function')?odYonetimKart():'');
@@ -7730,6 +7731,67 @@ function vKocOgrencileri(){
   </div></div>`;
 }
 
+/* ---------- iki adımlı giriş (yönetici) ----------
+   Doğrulama uygulaması (TOTP). Girişteki kod sorgusu sunucudanYukle'de,
+   yardımcı dogrulama.js'te. Veritabanı yönetici yetkisi için aal2 ister. */
+let MFA={faktor:undefined, kayit:null, hata:'', yuk:false};
+async function mfaOku(){
+  try{ const u=await sbGuvenli(()=>sbCagri('/auth/v1/user'));
+       MFA.faktor=(u.factors||[]).find(f=>f.factor_type==='totp'&&f.status==='verified')||null; }
+  catch(e){ MFA.hata=e.message||String(e); }
+  render();
+}
+async function mfaBasla(){
+  MFA.hata='';
+  try{
+    const u=await sbGuvenli(()=>sbCagri('/auth/v1/user'));
+    /* Yarım kalmış kurulum yenisini engeller: doğrulanmamış faktörleri sil. */
+    for(const f of (u.factors||[]).filter(f=>f.status!=='verified'))
+      await sbCagri('/auth/v1/factors/'+f.id,{method:'DELETE'});
+    MFA.kayit=await sbCagri('/auth/v1/factors',{method:'POST',
+      body:{factor_type:'totp', friendly_name:'Biyoser yönetici', issuer:'Biyoser'}});
+  }catch(e){ MFA.hata=e.message||String(e); }
+  render();
+}
+async function mfaDogrula(){
+  const kod=((document.getElementById('mfaKod')||{}).value||'').replace(/\s/g,'');
+  MFA.hata='';
+  try{
+    const c=await sbCagri('/auth/v1/factors/'+MFA.kayit.id+'/challenge',{method:'POST',body:{}});
+    sbOturumKur(await sbCagri('/auth/v1/factors/'+MFA.kayit.id+'/verify',{method:'POST',body:{challenge_id:c.id, code:kod}}));
+    MFA.kayit=null; await mfaOku(); return;
+  }catch(e){ MFA.hata=(e.kod===422||e.kod===400)?'Kod tutmadı. Uygulamadaki güncel 6 haneli kodu yaz.':(e.message||String(e)); }
+  render();
+}
+async function mfaKaldir(){
+  if(!confirm('İki adımlı giriş kapatılacak; yönetici hesabın yalnız şifreyle korunur.\nDevam?')) return;
+  try{ await sbCagri('/auth/v1/factors/'+MFA.faktor.id,{method:'DELETE'}); MFA.faktor=null; MFA.hata=''; }
+  catch(e){ MFA.hata=e.message||String(e); }
+  render();
+}
+function mfaKarti(){
+  if(!(LISANS&&LISANS.yonetici)) return '';
+  if(MFA.faktor===undefined && !MFA.yuk){ MFA.yuk=true; setTimeout(mfaOku,10); }
+  let ic;
+  if(MFA.kayit){
+    const q=MFA.kayit.totp.qr_code, svg=q.slice(q.indexOf(',')+1);
+    ic=`<p>1. Telefonuna Google Authenticator ya da Microsoft Authenticator kur.<br>
+      2. Uygulamada QR kodu tara. Tarayamazsan anahtarı elle gir: <code>${esc(MFA.kayit.totp.secret)}</code></p>
+      <img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}" width="180" height="180" alt="Kurulum QR kodu" style="background:#fff;padding:8px;border-radius:8px">
+      <p>3. Uygulamanın gösterdiği 6 haneli kodu yaz.</p>
+      <div class="fr"><input type="text" id="mfaKod" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" style="max-width:140px">
+      <button class="btn" onclick="mfaDogrula()">Doğrula ve aç</button></div>`;
+  } else if(MFA.faktor){
+    ic=`<p><b>Açık.</b> Her girişte şifreden sonra doğrulama uygulamasındaki kod sorulur; yönetici işlemleri kodsuz oturumda çalışmaz.</p>
+      <p class="hint">Telefonunu kaybedersen: Supabase panelinde Authentication, Users, hesabın, MFA faktörünü sil; sonra buradan yeniden kur.</p>
+      <button class="btn ghost" onclick="mfaKaldir()">Kapat</button>`;
+  } else if(MFA.faktor===null){
+    ic=`<p><b>Kapalı.</b> Şifren ele geçirilirse yönetici işlemleri de ele geçer. Açınca her girişte telefonundaki kod da sorulur.</p>
+      <button class="btn" onclick="mfaBasla()">Kur</button>`;
+  } else ic='<p class="hint">Yükleniyor…</p>';
+  return `<div class="card"><h2>İki adımlı giriş<small>Yönetici hesabı · doğrulama uygulaması</small></h2><div class="body">${ic}${
+    MFA.hata?`<div class="hint" style="color:var(--bad)">${esc(MFA.hata)}</div>`:''}</div></div>`;
+}
 function vYonetici(){
   const bugun=today();
   const otuzGun=yerelGun(Date.now()+30*864e5);
@@ -8531,6 +8593,15 @@ async function sunucudanYukle(){
     sbCikis();
     GIRISHATA='Bu bir ÖĞRENCİ hesabı — koç paneline öğrenci hesabıyla girilemez.\nÖğrenci girişi için: '+ogrenciPaneliAdresi();
     GIRISMOD='giris'; GIRISBEKLE=false; render(); return;
+  }
+  /* İki adımlı giriş: doğrulanmış faktörü olan hesapta (yönetici) kod sorulur.
+     Yönetici yetkisi veritabanında aal2 ister; kod girilmezse oturum kapanır. */
+  if(window.ikiAdimTamamla){
+    try{ const y=await ikiAdimTamamla(SB.url, SB.key, SB.tok); if(y) sbOturumKur(y); }
+    catch(e){
+      if(e.kod===401) throw e;   // süresi dolmuş jeton: çağıran tazeleyip yeniden dener
+      sbCikis(); GIRISHATA=e.message||String(e); GIRISMOD='giris'; GIRISBEKLE=false; render(); return;
+    }
   }
   await bekleyenReferans();
   await lisansOku();

@@ -7,7 +7,8 @@
    Çoğu kişi hiçbir şey görmez; Cloudflare şüphelenirse ekranın altında bir
    kutu çıkar, tıklanınca istek devam eder.
    Yerelde (localhost, file:) Cloudflare'in her zaman geçen deneme anahtarı
-   kullanılır; Supabase'de captcha açıldıktan sonra yerel giriş çalışmaz. */
+   kullanılır; Supabase'de captcha açıldıktan sonra yerel giriş çalışmaz.
+   Aynı dosyada iki adımlı giriş yardımcısı da var (ikiAdimTamamla). */
 (function () {
   if (window.__dogrulamaKurulu || !window.fetch) return;
   window.__dogrulamaKurulu = true;
@@ -58,6 +59,45 @@
   }
 
   var asil = window.fetch.bind(window);
+
+  /* İki adımlı giriş (TOTP). Hesapta doğrulanmış faktör varsa ve oturum aal2
+     değilse doğrulama uygulamasındaki kodu sorar ve aal2 oturumunu döndürür;
+     gerek yoksa null. Yönetici yetkisi veritabanında aal2 ister
+     (GUVENLIK-yonetici-iki-adim.sql). Hata nesnesinde kod = HTTP durumu. */
+  window.ikiAdimTamamla = function (url, anahtar, jeton) {
+    var aal;
+    try { aal = JSON.parse(atob(jeton.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).aal; } catch (e) {}
+    if (aal === 'aal2') return Promise.resolve(null);
+    function cagir(yol, govde) {
+      return asil(url.replace(/\/+$/, '') + yol, {
+        method: govde ? 'POST' : 'GET',
+        headers: { apikey: anahtar, Authorization: 'Bearer ' + jeton, 'Content-Type': 'application/json' },
+        body: govde ? JSON.stringify(govde) : undefined
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.ok) return j;
+          var h = new Error(j.msg || j.message || j.error_description || ('HTTP ' + r.status));
+          h.kod = r.status;
+          throw h;
+        });
+      });
+    }
+    return cagir('/auth/v1/user').then(function (u) {
+      var f = (u.factors || []).filter(function (x) { return x.factor_type === 'totp' && x.status === 'verified'; })[0];
+      if (!f) return null;
+      return (function sor(mesaj) {
+        var kod = window.prompt(mesaj);
+        if (kod === null) throw new Error('İki adımlı giriş tamamlanmadı. Yeniden giriş yapıp doğrulama uygulamandaki kodu yaz.');
+        return cagir('/auth/v1/factors/' + f.id + '/challenge', {})
+          .then(function (c) { return cagir('/auth/v1/factors/' + f.id + '/verify', { challenge_id: c.id, code: kod.replace(/\s/g, '') }); })
+          .catch(function (e) {
+            if (e.kod === 400 || e.kod === 422) return sor('Kod tutmadı ya da süresi geçti. Uygulamadaki güncel 6 haneli kodu yaz.');
+            throw e;
+          });
+      })('İki adımlı giriş: doğrulama uygulamandaki 6 haneli kodu yaz.');
+    });
+  };
+
   window.fetch = function (girdi, ayar) {
     var url = String((girdi && girdi.url) || girdi);
     if (!UC.test(url) || !ayar || typeof ayar.body !== 'string') return asil(girdi, ayar);
