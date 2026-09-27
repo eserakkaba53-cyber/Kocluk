@@ -405,15 +405,15 @@ function kayitHata(m) { kutuYaz('#kayit-hata', m); }
 function roleGore(p) {
   if (!p || !p.rol) {
     if (p && p.kayitsiz) {
-      /* Auth hesabı var, profili yok: e-posta doğrulamasından sonra
-         kaydını yarım bırakmış. Formu şifresiz olarak yeniden aç. */
-      goster('kayit');
-      kutuYaz('#kayit-bilgi',
-        'Hesabın açıldı. Kaydı tamamlamak için aşağıdaki bilgileri doldur.');
-      var e = $('#kayit-eposta');
-      e.value = p.eposta || e.value;
-      e.readOnly = true;
-      $('#kayit-sifre').parentNode.parentNode.classList.add('gizli');
+      /* Auth hesabı var, profili yok: e-posta onayı açık olduğundan profil ancak
+         ilk girişte kurulabiliyor. ★ 27 Eyl 2026 — Eskiden burada kayıt formu boş
+         açılıyordu, öğrenci "gene kayıt sayfasına yönlendi" diyordu. Formun
+         bilgileri hesabın kayıt damgasında: kayıt kendiliğinden tamamlanır,
+         olmazsa form dolu açılır. */
+      var b = API.bekleyenKayit();
+      if (b && b.tur === 'rehber') { location.href = 'panel.html'; return true; }
+      if (b && b.tur === 'ogrenci' && !OTOKAYIT) { OTOKAYIT = true; kaydiTamamla(p, b); return true; }
+      tamamlamaFormu(p, b);
       return true;
     }
     return false;
@@ -423,6 +423,46 @@ function roleGore(p) {
   profiliAl(p);
   goster('kapi');
   return true;
+}
+
+var OTOKAYIT = false;   /* aynı sayfada bir kez denenir; olmazsa form dolu açılır */
+
+function kaydiTamamla(p, b) {
+  goster('giris');
+  girisHata('');
+  kutuYaz('#giris-bilgi', 'Kaydın tamamlanıyor, bir saniye.');
+  API.rpc('reh_ogrenci_kayit', {
+    p_ad_soyad: b.p_ad_soyad, p_okul_kodu: b.p_okul_kodu, p_sinif: b.p_sinif,
+    p_sube: b.p_sube, p_okul_no: b.p_okul_no || null
+  })
+    .then(kayitSonrasi)
+    .then(function () { kutuYaz('#giris-bilgi', ''); })
+    .catch(function (x) {
+      kutuYaz('#giris-bilgi', '');
+      tamamlamaFormu(p, b);
+      kayitHata(x.message);
+    });
+}
+
+/* Formu kaydı tamamlama kipinde aç: şifre alanları gizli, e-posta kilitli,
+   kayıtta yazılan bilgiler (varsa) yerinde. */
+function tamamlamaFormu(p, b) {
+  goster('kayit');
+  var bas = $('#kayit-form h2');
+  if (bas) bas.textContent = 'Kaydını tamamla';
+  kutuYaz('#kayit-bilgi', 'Hesabın açıldı. Okul bilgilerini kontrol edip gönder, kaydın tamamlansın.');
+  var e = $('#kayit-eposta');
+  e.value = p.eposta || e.value;
+  e.readOnly = true;
+  $('#kayit-sifre').parentNode.parentNode.classList.add('gizli');
+  if (b) {
+    if (b.p_okul_kodu) { $('#okul-kodu').value = b.p_okul_kodu; kodDenetle(); }
+    if (b.p_ad_soyad) $('#kayit-ad').value = b.p_ad_soyad;
+    if (b.p_sinif) $('#kayit-sinif').value = String(b.p_sinif);
+    if (b.p_sube) $('#kayit-sube').value = b.p_sube;
+    if (b.p_okul_no) $('#kayit-no').value = b.p_okul_no;
+  }
+  $('#kayit-dugme').textContent = 'Kaydı tamamla';
 }
 
 function girisGonder(olay) {
@@ -523,68 +563,73 @@ function kayitGonder(olay) {
   var d = $('#kayit-dugme');
   d.disabled = true; d.textContent = 'Kaydediliyor';
 
-  /* Taşıma sunucuca onaylandı mı: yerel veriyi ancak bu true olunca sileriz.
-     Not: e-posta doğrulaması 22 Eyl 2026'dan beri açık. dogrulama_gerekli
-     dalında taşıma yapılmaz; cevaplar yerelde kalır, öğrenci giriş yapıp
-     formu yeniden gönderince aşağıdaki dal taşır. */
-  var tasindi = false;
-  var ilk = yeniHesap ? API.kayitOl(eposta, sifre) : Promise.resolve({});
+  var bilgi = { p_ad_soyad: ad, p_okul_kodu: kod, p_sinif: sinif,
+                p_sube: sube, p_okul_no: no || null };
+
+  /* ★ 27 Eyl 2026 — Yeni hesapta okul kodu hesap AÇILMADAN denetlenir; eskiden
+     yanlış kodla da hesap açılıyor, hata ancak onaydan sonraki ilk girişte
+     çıkıyordu. Form bilgileri hesabın kayıt damgasına yazılır: profil ancak
+     ilk girişte kurulabildiği için roleGore onları kullanıp kaydı tamamlar. */
+  var ilk = yeniHesap
+    ? API.rpcAnon('reh_okul_kodu_sor', { p_kod: kod }).then(function (k) {
+        if (!k || !k.gecerli) throw new Error((k && k.mesaj) || 'Okul kodu tanınmadı. Rehber öğretmeninden kodu tekrar iste.');
+        return API.kayitOl(eposta, sifre, Object.assign({ tur: 'ogrenci' }, bilgi));
+      })
+    : Promise.resolve({});
 
   ilk.then(function (g) {
       if (g && g.dogrulama_gerekli) {
         kutuYaz('#kayit-bilgi', 'Hesabın açıldı. ' + eposta + ' adresine bir doğrulama ' +
-          'bağlantısı gönderildi. Bağlantıya tıkladıktan sonra giriş yap, kaydın ' +
-          'kaldığı yerden devam edecek.');
+          'bağlantısı gönderildi. Bağlantıya tıkladıktan sonra giriş yap; kaydın ' +
+          'kendiliğinden tamamlanır.');
         /* Tam ekran onay ekranı. Misafir cevaplar yerelde kalır: silme yalnız
            sunucu taşımayı onaylayınca yapılıyor. */
         if (window.kayitTamam) kayitTamam({ rol: 'reh-ogrenci', eposta: eposta, kapat: function () {
-          /* Kapatınca giriş ekranı açılsın; kayıt formu bu sekmede dolu kalır,
-             giriş yapınca roleGore onu yeniden açar. */
           goster('giris'); $('#giris-eposta').value = eposta;
         } });
         return null;
       }
-      return API.rpc('reh_ogrenci_kayit', {
-        p_ad_soyad: ad, p_okul_kodu: kod, p_sinif: sinif,
-        p_sube: sube, p_okul_no: no || null
-      });
-    })
-    .then(function (g) {
-      if (g === null) return null;
-      if (!g || g.hata) throw new Error((g && g.hata) || 'Kayıt tamamlanamadı.');
-      /* ★ 20 Eyl 2026 — MİSAFİR CEVAPLARINI HESABA TAŞI.
-         kaydet() kullanılmıyor: onun catch'i hatayı yutup başarılı gibi
-         dönüyor, o zaman aşağıda yerel veriyi silerdik ve öğrenci hem
-         sunucuda hem tarayıcıda cevapsız kalırdı. Doğrudan RPC çağırıp
-         sonucu denetliyoruz; yerel silme YALNIZ taşıma onaylanınca. */
-      var yerel = misafirOku();
-      var dolu = yerel && ENVANTERLER.some(function (t) {
-        return Object.keys(yerel[t.k] || {}).length;
-      });
-      if (!dolu) return API.durumTazele();
-      var paket = { bitti: yerel.bitti || {} };
-      ENVANTERLER.forEach(function (t) { paket[t.k] = yerel[t.k] || {}; });
-      return API.rpc('reh_envanter_kaydet', { p_cevaplar: paket, p_yetenek_basladi: false })
-        .then(function (k) {
-          if (k && k.hata) throw new Error('Hesabın açıldı ama cevapların taşınamadı: ' +
-            k.hata + ' Cevapların tarayıcıda duruyor, çıkış yapınca geri gelir.');
-          tasindi = true;
-          return API.durumTazele();
-        });
-    })
-    .then(function (p) {
-      if (p === null) return;
-      $('#kayit-sifre').value = ''; $('#kayit-sifre2').value = '';
-      profiliAl(p);
-      if (tasindi) {
-        misafirSil();
-        MISAFIR = false;
-        kutuYaz('#kayit-bilgi', 'Hesabın açıldı, kayıt olmadan verdiğin cevaplar hesabına taşındı.');
-      }
-      goster('kapi');
+      return API.rpc('reh_ogrenci_kayit', bilgi).then(kayitSonrasi);
     })
     .catch(function (x) { kayitHata(x.message); })
-    .then(function () { d.disabled = false; d.textContent = 'Kaydol'; });
+    .then(function () { d.disabled = false; d.textContent = yeniHesap ? 'Kaydol' : 'Kaydı tamamla'; });
+}
+
+/* reh_ogrenci_kayit döndükten sonrası: misafir cevaplarını hesaba taşı,
+   profili al, kapıyı aç. Formdan kayıt da girişte kendiliğinden tamamlama
+   da buradan geçer.
+   ★ 20 Eyl 2026 — kaydet() kullanılmıyor: onun catch'i hatayı yutup başarılı
+   gibi dönüyor, o zaman yerel veriyi silerdik ve öğrenci hem sunucuda hem
+   tarayıcıda cevapsız kalırdı. Yerel silme YALNIZ taşıma onaylanınca. */
+function kayitSonrasi(g) {
+  if (!g || g.hata) return Promise.reject(new Error((g && g.hata) || 'Kayıt tamamlanamadı.'));
+  API.bekleyenSil();
+  var tasindi = false;
+  var yerel = misafirOku();
+  var dolu = yerel && ENVANTERLER.some(function (t) {
+    return Object.keys(yerel[t.k] || {}).length;
+  });
+  var tasima = Promise.resolve();
+  if (dolu) {
+    var paket = { bitti: yerel.bitti || {} };
+    ENVANTERLER.forEach(function (t) { paket[t.k] = yerel[t.k] || {}; });
+    tasima = API.rpc('reh_envanter_kaydet', { p_cevaplar: paket, p_yetenek_basladi: false })
+      .then(function (k) {
+        if (k && k.hata) throw new Error('Hesabın açıldı ama cevapların taşınamadı: ' +
+          k.hata + ' Cevapların tarayıcıda duruyor, çıkış yapınca geri gelir.');
+        tasindi = true;
+      });
+  }
+  return tasima.then(function () { return API.durumTazele(); }).then(function (p) {
+    $('#kayit-sifre').value = ''; $('#kayit-sifre2').value = '';
+    profiliAl(p);
+    if (tasindi) {
+      misafirSil();
+      MISAFIR = false;
+      kutuYaz('#kayit-bilgi', 'Hesabın açıldı, kayıt olmadan verdiğin cevaplar hesabına taşındı.');
+    }
+    goster('kapi');
+  });
 }
 
 /* ------------------------------------------------------------------ */

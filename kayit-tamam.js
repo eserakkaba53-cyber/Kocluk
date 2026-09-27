@@ -49,14 +49,14 @@
   var ROLLER = {
     'koc':           { ad: 'Koç hesabın' },
     'ogrenci':       { ad: 'Öğrenci hesabın',
-                       devam: 'Öğretmeninin kodunu yazdıysan giriş yapınca kendiliğinden bağlanırsın.' },
+                       devam: 'Öğretmeninin kodunu yazdıysan giriş yapınca kendiliğinden bağlanırsın; kod hesabında saklı.' },
     'ozel-ogretmen': { ad: 'Özel ders öğretmen hesabın' },
     'ozel-ogrenci':  { ad: 'Özel ders öğrenci hesabın',
-                       devam: 'Öğretmeninin davet kodu bu tarayıcıda saklı, giriş yapınca kendiliğinden kullanılır.' },
+                       devam: 'Öğretmeninin davet kodu hesabında saklı, giriş yapınca kendiliğinden kullanılır.' },
     'reh-ogrenci':   { ad: 'Kendini Tanı hesabın',
-                       devam: 'Giriş yapınca kayıt formun yeniden açılır, okul kodunu yanında bulundur. Verdiğin cevaplar kaybolmaz.' },
+                       devam: 'Giriş yapınca kaydın kendiliğinden tamamlanır, verdiğin cevaplar kaybolmaz.' },
     'reh-ogretmen':  { ad: 'Rehber öğretmen hesabın',
-                       devam: 'Giriş yapınca rehber kayıt formu yeniden açılır.' }
+                       devam: 'Giriş yapınca rehber kaydın kendiliğinden tamamlanır.' }
   };
 
   var E_DESEN = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
@@ -174,6 +174,12 @@
     '  background:#E8873A;color:#03182B;font-weight:900;font-size:16px}',
     'li b{display:block;color:#fff;font-size:16px;font-weight:700;line-height:1.35;margin-top:5px}',
     'li span{display:block;font-size:13.5px;color:#9FB2BD;margin-top:3px}',
+    /* 1. adım yanıp söner: kullanıcılar ekranı görüp postaya bakmadan kapatıyordu. */
+    'li.dikkat{border-color:rgba(232,135,58,.6);animation:yanip 1.4s ease-in-out infinite}',
+    '@keyframes yanip{0%,100%{background:rgba(232,135,58,.06);box-shadow:0 0 0 0 rgba(232,135,58,0)}',
+    '  50%{background:rgba(232,135,58,.22);box-shadow:0 0 0 4px rgba(232,135,58,.3)}}',
+    'li.dikkat .no{animation:halka 1.4s ease-out infinite}',
+    '@keyframes halka{0%{box-shadow:0 0 0 0 rgba(232,135,58,.8)}80%,100%{box-shadow:0 0 0 12px rgba(232,135,58,0)}}',
 
     /* düğmeler */
     '.dugmeler{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}',
@@ -214,7 +220,8 @@
     '.zarf{animation:gel .75s cubic-bezier(.22,.68,.32,1) both}',
     '.damga{animation:bas .45s cubic-bezier(.22,.68,.32,1) .62s both}',
     '.gov{animation:belir .5s ease .35s both}',
-    '@media (prefers-reduced-motion:reduce){.zarf,.damga,.gov{animation:none}.btn:hover{transform:none}}',
+    '@media (prefers-reduced-motion:reduce){.zarf,.damga,.gov,li.dikkat,li.dikkat .no{animation:none}',
+    '  li.dikkat{background:rgba(232,135,58,.16)}.btn:hover{transform:none}}',
     '@media (max-width:420px){.kap{padding-left:16px;padding-right:16px}li{padding:12px 13px}}'
   ].join('\n');
 
@@ -331,7 +338,7 @@
 
     if (durumAd === 'bekliyor' || durumAd === 'onaysiz') {
       var ol = el('ol');
-      var li1 = el('li'); li1.appendChild(el('div', 'no', '1'));
+      var li1 = el('li', 'dikkat'); li1.appendChild(el('div', 'no', '1'));
       var li1m = el('div'); li1m.appendChild(el('b', null, 'E-postandaki onay bağlantısına tıkla'));
       li1m.appendChild(el('span', null, 'Postayı ' + GONDEREN + ' gönderdi; bir iki dakika içinde gelir.'));
       li1.appendChild(li1m); ol.appendChild(li1);

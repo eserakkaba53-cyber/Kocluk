@@ -845,7 +845,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
 <!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
-<script src="kayit-tamam.js?v=20260927a"></script>
+<script src="kayit-tamam.js?v=20260927b"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -2631,8 +2631,11 @@ async function sbCagri(yol, secenek){
 
 /* ---------- oturum ---------- */
 async function sbKayit(mail, sifre, ad){
+  /* Referans kodu hesabın kayıt damgasına da yazılır: e-posta onayı başka
+     tarayıcıda yapılırsa localStorage'daki kopya orada yok, referans kaybolurdu. */
+  var ref; try{ ref=localStorage.getItem('bekleyen_referans')||undefined; }catch(e){}
   var r = await sbCagri('/auth/v1/signup', { method:'POST',
-    body:{ email:mail, password:sifre, data:{ ad:ad||'', rol:'koc',
+    body:{ email:mail, password:sifre, data:{ ad:ad||'', rol:'koc', bekleyen_referans:ref,
       /* Onay kanıtı: hangi metin sürümü, ne zaman kabul edildi.
          Uyuşmazlık hâlinde kullanıcının hesabında kayıtlı kalır. */
       kvkk_surum: KVKK_SURUM, kvkk_onay_tarihi: new Date().toISOString(),
@@ -8473,9 +8476,18 @@ async function girisYap(){
   }
   GIRISBEKLE=false; render();
 }
+function jwtMeta(){
+  try{
+    const g=(SB.tok||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    return (JSON.parse(decodeURIComponent(escape(atob(g))))||{}).user_metadata||{};
+  }catch(e){ return {}; }
+}
+let REF_DAMGA_DENENDI=false;
 async function bekleyenReferans(){
   let k=null;
   try{ k=localStorage.getItem('bekleyen_referans'); }catch(e){}
+  /* Bu tarayıcıda yoksa kayıt damgasına bak (oturumda bir kez). */
+  if(!k && !REF_DAMGA_DENENDI && jwtMeta().bekleyen_referans){ REF_DAMGA_DENENDI=true; k=jwtMeta().bekleyen_referans; }
   if(!k) return;
   try{
     const r=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/referans_uygula',{method:'POST',body:{kod:k}}));
@@ -8483,6 +8495,7 @@ async function bekleyenReferans(){
     else if(r&&r.hata) REFDURUM='HATA|Referans kodu uygulanamadı: '+r.hata+' ("Davet et süre kazan" sekmesinden tekrar deneyebilirsin.)';
   }catch(e){ REFDURUM='HATA|Referans kodu şimdilik uygulanamadı. "Davet et süre kazan" sekmesinden tekrar deneyebilirsin.'; }
   try{ localStorage.removeItem('bekleyen_referans'); }catch(e){}
+  if(jwtMeta().bekleyen_referans) sbCagri('/auth/v1/user',{method:'PUT',body:{data:{bekleyen_referans:null}}}).catch(()=>{});
 }
 function kullaniciRolu(){
   // Kimlik jetonundaki (JWT) kayıt rolünü okur: 'koc' / 'ogrenci' / '' (bilinmiyor)

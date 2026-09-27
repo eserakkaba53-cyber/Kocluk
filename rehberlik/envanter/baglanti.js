@@ -63,7 +63,7 @@ window.API = {
 
   /* ---- Auth ---- */
 
-  kayitOl: function (eposta, sifre) {
+  kayitOl: function (eposta, sifre, bekleyen) {
     /* ★ 20 Eyl 2026 — ROL DAMGASI ZORUNLU. Bu proje Biyoser ile ortak ve
        auth.users üzerinde yeni_kullanici() tetikleyicisi var:
          if coalesce(new.raw_user_meta_data->>'rol','koc') <> 'koc' then return new;
@@ -73,7 +73,7 @@ window.API = {
        (Biyoser code/OZEL-DERS-ogrencileri-koc-degil.sql). Buradaki kayıt lise
        öğrencisi ve rehber öğretmen; hiçbiri koç değil. */
     return API.auth('/auth/v1/signup',
-      { email: eposta, password: sifre, data: { rol: 'rehberlik' } })
+      { email: eposta, password: sifre, data: { rol: 'rehberlik', reh_bekleyen: bekleyen || undefined } })
       .then(function (g) {
         /* Supabase'de e-posta doğrulaması açıksa oturum gelmez.
            O durumda kullanıcıya e-postasına bakması söylenir. */
@@ -109,6 +109,29 @@ window.API = {
        gerekir, yoksa sessizce Site URL'e düşürülür. */
     var geri = encodeURIComponent(location.href.split('#')[0].split('?')[0]);
     return API.auth('/auth/v1/recover?redirect_to=' + geri, { email: eposta });
+  },
+
+  /* ★ 27 Eyl 2026 — Kayıt formunun bilgileri hesabın kayıt damgasına
+     (user_metadata.reh_bekleyen) yazılır. E-posta onayı açık olduğundan profil
+     ancak ilk girişte kurulabiliyor; bilgiler burada olmasa kullanıcı onayı başka
+     sekmede ya da telefonda yaptığında formu baştan doldurmak zorunda kalıyordu
+     ("gene kayıt sayfasına yönlendi"). Damga jetonun içinde gelir. */
+  bekleyenKayit: function () {
+    try {
+      var b = OTURUM.jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      var y = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b), function (c) { return c.charCodeAt(0); })));
+      return (y.user_metadata && y.user_metadata.reh_bekleyen) || null;
+    } catch (e) { return null; }
+  },
+
+  /* Profil kurulunca kişisel bilgi damgada durmasın (en iyi çaba). */
+  bekleyenSil: function () {
+    if (!OTURUM.jwt || !API.bekleyenKayit()) return;
+    fetch(AYAR.URL + '/auth/v1/user', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'apikey': AYAR.ANON, 'Authorization': 'Bearer ' + OTURUM.jwt },
+      body: JSON.stringify({ data: { reh_bekleyen: null } })
+    }).catch(function () { /* bir sonraki kayıtta zararsız */ });
   },
 
   cikis: function () {

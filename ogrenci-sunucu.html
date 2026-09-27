@@ -826,7 +826,7 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
 <!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
-<script src="kayit-tamam.js?v=20260927a"></script>
+<script src="kayit-tamam.js?v=20260927b"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -4744,16 +4744,32 @@ function kodSakla(eposta){
     else localStorage.removeItem(KODKEY);
   }catch(e){}
 }
-async function otoBaglan(){
-  if(!BEKLEYENKOD){
-    try{ const b=JSON.parse(localStorage.getItem(KODKEY)||'null');
-      if(b && b.kod && b.eposta===String(SB.mail||'').toLowerCase()) BEKLEYENKOD=b.kod; }catch(e){}
+function jwtMeta(){
+  try{
+    const g=(SB.tok||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    return (JSON.parse(decodeURIComponent(escape(atob(g))))||{}).user_metadata||{};
+  }catch(e){ return {}; }
+}
+/* Saklı kod: önce bu tarayıcı (e-postaya bağlı), sonra hesabın kayıt damgası. */
+function sakliKod(){
+  try{ const b=JSON.parse(localStorage.getItem(KODKEY)||'null');
+    if(b && b.kod && b.eposta===String(SB.mail||'').toLowerCase()) return b.kod; }catch(e){}
+  return jwtMeta().bekleyen_kod||'';
+}
+let KOD_DAMGA_SILINDI=false;
+function sakliKodSil(){
+  try{ localStorage.removeItem(KODKEY); }catch(e){}
+  if(!KOD_DAMGA_SILINDI && jwtMeta().bekleyen_kod){
+    KOD_DAMGA_SILINDI=true;
+    sbCagri('/auth/v1/user',{method:'PUT',body:{data:{bekleyen_kod:null}}}).catch(()=>{});
   }
+}
+async function otoBaglan(){
   if(!BEKLEYENKOD) return false;
   try{
     const r=await ogrBaglan(BEKLEYENKOD);
-    if(r&&r.ok){ BEKLEYENKOD=''; kodSakla(); return true; }
-    GHATA=(r&&r.hata)||'Kod kabul edilmedi'; BEKLEYENKOD=''; kodSakla();
+    if(r&&r.ok){ BEKLEYENKOD=''; sakliKodSil(); return true; }
+    GHATA=(r&&r.hata)||'Kod kabul edilmedi'; BEKLEYENKOD=''; sakliKodSil();
   }catch(e){ GHATA=e.message||String(e); BEKLEYENKOD=''; }   // ağ hatası: saklı kod kalır, sonraki girişte dener
   return false;
 }
@@ -5038,7 +5054,10 @@ async function gGiris(){
   try{
     if(GMOD==='kayit'){
       if(s.length<8) throw new Error('Şifre en az 8 karakter olmalı');
-      const r=await sbCagri('/auth/v1/signup',{method:'POST',body:{email:m,password:s,data:{rol:'ogrenci'}}});
+      /* Öğretmen kodu hesabın kayıt damgasına da yazılır: onay bağlantısı çoğu
+         zaman posta uygulamasının tarayıcısında açılıyor, orada bu tarayıcının
+         localStorage'ı yok. */
+      const r=await sbCagri('/auth/v1/signup',{method:'POST',body:{email:m,password:s,data:{rol:'ogrenci', bekleyen_kod:BEKLEYENKOD||undefined}}});
       /* Kayıtlı ve onaylı adrese GoTrue 200 + boş identities döner, posta göndermez. */
       if(r&&Array.isArray(r.identities)&&!r.identities.length) throw new Error('User already registered');
       if(r&&r.access_token) sbOturumKur(r);
@@ -5148,8 +5167,11 @@ function lisansKapisi(){
   GMOD='giris'; render(); return true;
 }
 async function sunucuAc(){
-  await otoBaglan();   // bellekte ya da bu e-postaya saklı kod varsa bağlanır
-  const d=await ogrSunucudanOku();
+  if(BEKLEYENKOD) await otoBaglan();   // bu sekmede davet bağlantısıyla gelen ya da kayıtta yazılan kod
+  let d=await ogrSunucudanOku();
+  /* Hâlâ bağlı değilse saklı koda bak; bağlıysa saklı kod artık gereksiz. */
+  if(!d){ const k=sakliKod(); if(k){ BEKLEYENKOD=k; if(await otoBaglan()) d=await ogrSunucudanOku(); } }
+  else sakliKodSil();
   if(!d){
     GMOD='kod';
     /* Metin ekrandaki SIRAYI anlatır: solo kart üstte, kod kartı altta. */

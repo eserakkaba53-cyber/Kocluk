@@ -270,8 +270,8 @@
   <div class="kabuk" id="rapor-govde"></div>
 </main>
 
-<script src="baglanti.js?v=20260927a"></script>
-<script src="../../kayit-tamam.js?v=20260927a"></script>
+<script src="baglanti.js?v=20260927b"></script>
+<script src="../../kayit-tamam.js?v=20260927b"></script>
 <script src="deneme.js"></script>
 <script src="veri/kisilik.js"></script>
 <script src="veri/ilgi.js"></script>
@@ -1005,9 +1005,38 @@ function yonlendir(p) {
   if (p.rol === 'yonetici') { location.replace('yonetici.html'); return; }
   if (p.rol === 'ogrenci')  { location.replace('index.html'); return; }
 
-  /* Auth hesabı var, profili yok: kayıt formunu doldurması gerekiyor. */
+  /* Auth hesabı var, profili yok. ★ 27 Eyl 2026 — Kayıt formunun bilgileri
+     hesabın kayıt damgasında (reh_bekleyen): kayıt kendiliğinden tamamlanır,
+     olmazsa form dolu açılır. Eskiden form boş açılıyordu. */
   if (!p.rol) {
+    var b = API.bekleyenKayit();
+    if (b && b.tur === 'ogrenci') { location.replace('index.html'); return; }
     kayitKipi(true);
+    if (b && b.tur === 'rehber') {
+      $('#kayit-ad').value = b.p_ad_soyad || '';
+      $('#kayit-okul').value = b.p_okul_adi || '';
+      $('#kayit-il').value = b.p_il || '';
+      $('#kayit-ilce').value = b.p_ilce || '';
+      if (!otoKayitDenendi) {
+        otoKayitDenendi = true;
+        goster('giris');
+        uyar($('#giris-bilgi'), 'Rehber kaydın tamamlanıyor, bir saniye.');
+        API.rpc('reh_rehber_kayit', { p_ad_soyad: b.p_ad_soyad, p_okul_adi: b.p_okul_adi,
+                                      p_il: b.p_il || null, p_ilce: b.p_ilce || null })
+          .then(function (s) {
+            if (!s || s.hata) throw new Error((s && s.hata) || 'Kayıt tamamlanamadı.');
+            API.bekleyenSil();
+            uyar($('#giris-bilgi'), '');
+            return API.durumTazele().then(yonlendir);
+          })
+          .catch(function (err) {
+            uyar($('#giris-bilgi'), '');
+            uyar($('#kayit-hata'), err.message);
+            goster('kayit');
+          });
+        return;
+      }
+    }
     uyar($('#kayit-bilgi'), 'Hesabın açıldı ama rehber kaydın tamamlanmadı. ' +
       'Aşağıdaki bilgileri doldurup gönder.');
     goster('kayit');
@@ -1047,6 +1076,7 @@ function panelAc(p) {
 /* hesapVar true: Auth hesabı açılmış, yalnız profil bilgileri isteniyor */
 /* ------------------------------------------------------------------ */
 var kayitHesapVar = false;
+var otoKayitDenendi = false;   /* aynı sayfada bir kez denenir */
 
 function kayitKipi(hesapVar) {
   kayitHesapVar = hesapVar;
@@ -1136,7 +1166,9 @@ $('#kayit-form').addEventListener('submit', function (e) {
       dugme.disabled = false;
       return;
     }
-    hesap = API.kayitOl(eposta, sifre);
+    /* Form bilgileri hesabın kayıt damgasına da yazılır: onaydan sonraki
+       ilk girişte yonlendir kaydı kendiliğinden tamamlar. */
+    hesap = API.kayitOl(eposta, sifre, Object.assign({ tur: 'rehber' }, bilgi));
   }
 
   hesap.then(function (g) {
@@ -1146,7 +1178,7 @@ $('#kayit-form').addEventListener('submit', function (e) {
       goster('giris');
       $('#giris-eposta').value = eposta;
       uyar($('#giris-bilgi'), 'Hesabın açıldı. E-postana gelen bağlantıyla adresini ' +
-        'doğrula, sonra buradan giriş yap. Kayıt formu bu sekmede dolu kalır.');
+        'doğrula, sonra buradan giriş yap. Rehber kaydın kendiliğinden tamamlanır.');
       if (window.kayitTamam) kayitTamam({ rol: 'reh-ogretmen', eposta: eposta });
       return null;
     }
