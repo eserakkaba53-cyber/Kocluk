@@ -1932,7 +1932,7 @@ function kalanSureAyrik(sk){
 function kalanSure(sk){ return kalanSureAyrik(sk).dk; }
 function sa(dk){const h=Math.floor(dk/60),m=Math.round(dk%60);return h?`${h} sa${m?' '+m+' dk':''}`:`${m} dk`;}
 const SL=['Bekliyor','Yaptım','Yarım','Yapamadım'];
-function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'}[t]||t;}
+function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'}[t]||String(t||'').replace(/[<>"'&`]/g,'');}
 const TL=['Görmedim','İşliyorum','Bitirdim','Eksiğim var'];
 
 let D=null, TAB='odev', KSUB=null;

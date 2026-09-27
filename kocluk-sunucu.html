@@ -2751,12 +2751,16 @@ async function sunucudanOku(){
     sonYedek: (k && k.ayarlar && k.ayarlar.sonYedek) || null
   };
 
+  /* Öğrenci bu alanları kendi panelinden yazabiliyor ve panelin pek çok yeri
+     onları kaçışsız basıyor. Meşru değerler rakam ya da kısa etiket; işaretleri
+     burada, tek girişte atıyoruz. */
+  var duz = function(v){ return String(v||'').replace(/[<>"'&`]/g,''); };
   ogr.forEach(function(o){
     var st = {
       id:o.id, name:o.ad, tel:o.telefon||'', eposta:o.eposta||'',
-      grade:o.sinif||'', track:o.alan||'SAY', dept:o.bolum||'',
-      score:o.hedef_puan||'', rank:o.hedef_sira||'',
-      tabanPuan:o.taban_puan||'', tabanSira:o.taban_sira||'', tabanYil:o.taban_yil||'',
+      grade:duz(o.sinif), track:duz(o.alan)||'SAY', dept:o.bolum||'',
+      score:duz(o.hedef_puan), rank:duz(o.hedef_sira),
+      tabanPuan:duz(o.taban_puan), tabanSira:duz(o.taban_sira), tabanYil:duz(o.taban_yil),
       sinavTarihi:o.sinav_tarihi||'', dip:o.diploma_notu==null?'':o.diploma_notu,
       obp:o.obp==null?'':o.obp, yerlesti:!!o.yerlesti,
       haftalikSaat:o.haftalik_saat==null?'':o.haftalik_saat,
@@ -3273,7 +3277,7 @@ function sonRutinHafta(st){
   (st.tasks||[]).forEach(t=>{ if(!t.rutin) return; const w=weekKey(t.date); if(mx===null||w>mx) mx=w; });
   return mx;
 }
-function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'}[t]||t;}
+function trLabel(t){return {SAY:'Sayısal',EA:'Eşit Ağırlık',SOZ:'Sözel',DIL:'Dil'}[t]||String(t||'').replace(/[<>"'&`]/g,'');}
 
 /* ================= ÖĞRENCİ ================= */
 let YENIOGR=null;
@@ -3559,7 +3563,7 @@ function render(){
   document.getElementById('stName').textContent = st?st.name:'Öğrenci seç';
   document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()}${st.startedAt?' · BAŞLANGIÇ '+st.startedAt:''}`:'';
   document.getElementById('stGoal').innerHTML = st&&st.dept
-    ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${st.rank||'—'} · puan ${st.score||'—'}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
+    ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${esc(st.rank||'—')} · puan ${esc(st.score||'—')}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
   document.getElementById('tabs').innerHTML='';   // sekmeler artık sol rayda, öğrencinin altında
 
   const v=document.getElementById('view');
@@ -4227,7 +4231,7 @@ function vVeli(st){
   <div class="card" style="border-width:2px;border-color:var(--accent)">
     <div style="background:var(--accent);color:#fff;padding:14px 20px;border-radius:5px 5px 0 0">
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">BİYOSER Koçluk · Haftalık Veli Bilgilendirmesi</div>
-      <div style="font-size:19px;font-weight:700;margin-top:3px">${esc(st.name)} — ${st.grade}. Sınıf ${trLabel(st.track)}</div>
+      <div style="font-size:19px;font-weight:700;margin-top:3px">${esc(st.name)} — ${esc(st.grade)}. Sınıf ${trLabel(st.track)}</div>
       <div style="font-size:12.5px;opacity:.9;font-family:var(--mono)">${st.dept?'Hedef: '+esc(st.dept)+' · ':''}Hafta ${V.wk}</div>
     </div>
     <div class="body">
@@ -4322,7 +4326,7 @@ ul{margin:6px 0 0;padding-left:20px}li{margin:3px 0;font-size:14px}
 .bar{background:#186C68;color:#fff;padding:12px 16px;border-radius:6px;margin-bottom:6px}
 @media print{.noprint{display:none}}</style></head><body>
 <div class="bar"><div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.85">BİYOSER Koçluk · Haftalık Veli Bilgilendirmesi</div>
-<div style="font-size:18px;font-weight:700">${esc(st.name)} — ${st.grade}. Sınıf ${trLabel(st.track)}</div></div>
+<div style="font-size:18px;font-weight:700">${esc(st.name)} — ${esc(st.grade)}. Sınıf ${trLabel(st.track)}</div></div>
 <div class="muted">${st.dept?esc(st.dept)+' · ':''}Hafta ${V.wk}</div>
 <table>${satir('Ödev uyumu', V.ws.rate==null?'—':'%'+V.ws.rate)}${satir('Çözülen soru', V.cozulen||0)}${satir('Çalışma süresi', V.sure?sa(V.sure):'—')}${V.d.net!=null?satir('Son deneme', n1(V.d.net)+' net'+(V.d.trend!=null?' ('+(V.d.trend>=0?'+':'')+n1(V.d.trend)+')':'')):''}</table>
 <h3>Sınava hazırlık — genel durum</h3>
@@ -6369,7 +6373,7 @@ function vHedef(st){
   <div class="card"><h2>Referans netler — hedef netler<small>Bölüm seçtiğinde otomatik dolar. Öğrenciye göre elle de düzeltebilirsin.</small></h2><div class="body">
     <table><thead><tr><th>Ders</th><th class="num">Soru sayısı</th><th class="num">Hedef net</th></tr></thead><tbody>
       ${list.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
-        <td class="num" style="width:130px"><input type="number" step="0.25" min="0" max="${q}" id="r_${k}" value="${st.refNets[k]??''}" placeholder="—"></td></tr>`).join('')}
+        <td class="num" style="width:130px"><input type="number" step="0.25" min="0" max="${q}" id="r_${k}" value="${esc(st.refNets[k]??'')}" placeholder="—"></td></tr>`).join('')}
     </tbody></table>
     <div style="margin-top:14px"><button class="btn" onclick="saveRef()">Referans netleri kaydet</button></div>
     <div class="hint">Bu değerleri ÖSYM/YÖK Atlas verisinden ya da hedef sıralamaya karşılık gelen net dağılımından elle gireceksin. Durum sekmesindeki tüm karşılaştırma bu satırlara dayanır.</div>
