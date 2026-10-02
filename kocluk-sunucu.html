@@ -835,6 +835,7 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 </div>
 
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
+<script src="hata.js?v=20261002"></script>
 <script src="dogrulama.js?v=20260927d"></script>
 <script src="sunucu.js?v=20260916b"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
@@ -3653,6 +3654,7 @@ function render(){
     v.innerHTML=kaynakUyarisi()
       +((typeof MESAJ!=='undefined')?MESAJ.kartYonetici():'')
       +mfaKarti()
+      +hataKarti()
       +vYonetici()
       +((typeof odAcikKart==='function')?odAcikKart():'')
       +((typeof odYonetimKart==='function')?odYonetimKart():'');
@@ -7272,7 +7274,8 @@ async function keKarar(id, durum){
   }catch(e){ KE_MESAJ='HATA|'+(e.message||e); }
   render();
 }
-/* Yönetim sekmesi rozeti: bekleyen uyumsuz konu + açık özel ders şikayeti.
+/* Yönetim sekmesi rozeti: bekleyen uyumsuz konu + açık özel ders şikayeti
+   + çözülmemiş istemci hatası.
    Mesaj rozetiyle aynı biçimi kullanır (mesaj.js enjekte ediyor), rengi
    farklıdır ki hangisi olduğu ayırt edilsin. */
 function yonRozet(){
@@ -7280,11 +7283,13 @@ function yonRozet(){
   var ke = (KE_BEKLEYEN||[]).length;
   var sk = ((typeof OD_Y!=='undefined' && OD_Y.liste) || [])
              .filter(function(x){ return x.durum==='acik'; }).length;
-  var n = ke + sk;
+  var hk = HATA.sayi;
+  var n = ke + sk + hk;
   if(!n) return '';
   var t = [];
   if(ke) t.push(ke + ' uyumsuz konu');
   if(sk) t.push(sk + ' açık şikayet');
+  if(hk) t.push(hk + ' hata');
   return '<span class="msj-rozet" style="background:var(--bad)" title="' +
          t.join(' · ') + '">' + (n>99?'99+':n) + '</span>';
 }
@@ -7791,6 +7796,73 @@ function mfaKarti(){
   } else ic='<p class="hint">Yükleniyor…</p>';
   return `<div class="card"><h2>İki adımlı giriş<small>Yönetici hesabı · doğrulama uygulaması</small></h2><div class="body">${ic}${
     MFA.hata?`<div class="hint" style="color:var(--bad)">${esc(MFA.hata)}</div>`:''}</div></div>`;
+}
+
+/* ---------- istemci hataları (yönetici) ----------
+   hata.js kullanıcının tarayıcısında yakalanan hatayı hata_kayitlari'na
+   yazar; aynı hata tek satırda toplanır, sayac artar. Tabloyu RLS yalnız
+   yöneticiye okutur. Rozetteki sayı (sayi) girişte hataSay ile dolar. */
+let HATA={liste:undefined, yuk:false, hata:'', acik:null, cozulenGoster:false, sayi:0};
+async function hataOku(){
+  HATA.yuk=true; HATA.hata=''; render();
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/hata_kayitlari?select=id,sayfa,mesaj,kaynak,yigin,tarayici,sayac,ilk,son,cozuldu&order=cozuldu.asc,son.desc&limit=60'));
+    HATA.liste=Array.isArray(r)?r:[];
+  }catch(e){ HATA.hata=e.message||String(e); HATA.liste=[]; }
+  await hataSay();
+  HATA.yuk=false; render();
+}
+async function hataSay(){
+  try{ const r=await sbGuvenli(()=>sbCagri('/rest/v1/hata_kayitlari?select=id&cozuldu=eq.false'));
+       HATA.sayi=Array.isArray(r)?r.length:0; }
+  catch(e){ /* tablo kurulmadıysa rozet eski sayıda kalır */ }
+}
+async function hataCozuldu(id){
+  try{ await sbGuvenli(()=>sbCagri('/rest/v1/rpc/hata_cozuldu',{method:'POST',body:{p_id:id}})); await hataOku(); }
+  catch(e){ HATA.hata=e.message||String(e); render(); }
+}
+/* "Chrome · Android" gibi kısa ipucu; tam metin Ayrıntı'da. Sıra önemli:
+   Edge ve Opera da "Chrome", Chrome da "Safari" yazar. */
+function tarayiciKisa(ua){
+  ua=String(ua||'');
+  const t=/Edg/.test(ua)?'Edge':/OPR|OPiOS|Opera/.test(ua)?'Opera':/Firefox|FxiOS/.test(ua)?'Firefox'
+         :/Chrome|CriOS/.test(ua)?'Chrome':/Safari/.test(ua)?'Safari':'';
+  const s=/Android/.test(ua)?'Android':/iPad/.test(ua)?'iPad':/iPhone|iPod/.test(ua)?'iPhone'
+         :/Windows/.test(ua)?'Windows':/Mac/.test(ua)?'Mac':'';
+  return [t,s].filter(Boolean).join(' · ');
+}
+function hataKarti(){
+  if(!(LISANS&&LISANS.yonetici)) return '';
+  if(HATA.liste===undefined && !HATA.yuk){ HATA.yuk=true; setTimeout(hataOku,10); }
+  const L=HATA.liste||[], acik=L.filter(h=>!h.cozuldu), cozulen=L.filter(h=>h.cozuldu);
+  const satir=h=>{
+    const id=+h.id, ac=HATA.acik===id;
+    const yer=[h.sayfa,h.kaynak].filter(Boolean).map(esc).join(' · ');
+    const ne=[h.son&&'son '+tarihSaat(h.son), tarayiciKisa(h.tarayici)].filter(Boolean).join(' · ');
+    return `<div class="od-talep${h.cozuldu?' silik':''}" style="overflow-wrap:anywhere">
+      <div class="konu" style="margin-top:0;font-weight:600">${esc(h.mesaj||'Mesajsız hata')}</div>
+      ${yer?`<div class="hint" style="margin-top:2px;font-family:var(--mono)">${yer}</div>`:''}
+      <div class="alt">
+        <span class="pill">${+h.sayac||1} kez</span>
+        <span class="hint" style="margin:0">${esc(ne)}</span>
+        <button class="btn ghost mini" style="margin-left:auto" aria-expanded="${ac}" onclick="HATA.acik=HATA.acik===${id}?null:${id};render()">Ayrıntı</button>
+        ${h.cozuldu?'':`<button class="btn mini" onclick="hataCozuldu(${id})">Çözüldü</button>`}
+      </div>
+      ${ac?`<div class="hint">İlk görülme ${esc(tarihSaat(h.ilk))}${h.tarayici?' · '+esc(h.tarayici):''}</div>
+      ${h.yigin?`<pre tabindex="0" style="margin:8px 0 0;padding:10px 12px;max-height:240px;overflow:auto;background:var(--paper);border:1px solid var(--line-soft);border-radius:5px;font-family:var(--mono);font-size:11.5px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap">${esc(h.yigin)}</pre>`
+        :'<div class="hint">Yığın kaydı yok.</div>'}`:''}
+    </div>`;
+  };
+  return `<div class="card"><h2>Hatalar<small>Kullanıcıların tarayıcısında yakalanan hatalar · aynı hata tek satırda</small></h2><div class="body">
+    ${HATA.hata?`<div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>${esc(HATA.hata)}</span></div>`:''}
+    ${HATA.liste===undefined?'<div class="hint">Yükleniyor…</div>':`
+    ${acik.length?acik.map(satir).join(''):HATA.hata?'':'<div class="empty">Çözülmemiş hata yok.</div>'}
+    ${HATA.cozulenGoster?cozulen.map(satir).join(''):''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      ${cozulen.length?`<button class="btn ghost mini" aria-expanded="${HATA.cozulenGoster}" onclick="HATA.cozulenGoster=!HATA.cozulenGoster;render()">${HATA.cozulenGoster?'Çözülenleri gizle':'Çözülenleri göster ('+cozulen.length+')'}</button>`:''}
+      <button class="btn ghost mini" onclick="hataOku()"${HATA.yuk?' disabled':''}>${HATA.yuk?'Yükleniyor…':'Yenile'}</button>
+    </div>`}
+  </div></div>`;
 }
 function vYonetici(){
   const bugun=today();
@@ -8608,7 +8680,7 @@ async function sunucudanYukle(){
   await konuEslesmeYukle();   /* onaylı karne-konu eşlemeleri */
   /* Yönetici rozeti girişte dolsun; yoksa sayı ancak Yönetim sekmesine
      girildikten sonra görünür ve rozetin anlamı kalmaz. */
-  if(LISANS && LISANS.yonetici){ try{ await keBekleyenOku(); await odYonetimYukle(); }catch(x){} }
+  if(LISANS && LISANS.yonetici){ try{ await keBekleyenOku(); await odYonetimYukle(); await hataSay(); }catch(x){} }
   await denemeOku();
   referansOku();
   const izin=await cihazKaydet();
@@ -9153,8 +9225,9 @@ function railAgaci(liste){
         const _rz=((typeof MESAJ!=='undefined' &&
                    ((_yon && t[0]==='yonetim') || (!_yon && t[0]==='hesap')))
                   ? MESAJ.rozet() : '')
-                  /* Yöneticide Yönetim sekmesi ayrıca uyumsuz konuyu ve açık
-                     özel ders şikayetini de sayar — sekmeye girmeden görülsün. */
+                  /* Yöneticide Yönetim sekmesi ayrıca uyumsuz konuyu, açık özel
+                     ders şikayetini ve çözülmemiş hatayı da sayar — sekmeye
+                     girmeden görülsün. */
                   + ((_yon && t[0]==='yonetim') ? yonRozet() : '');
         return '<button class="rtab genel '+(genelAktif&&TAB===t[0]?'on':'')+'" onclick="kocGenel(\''+t[0]+'\')">'+t[1]+_rz+'</button>';
       }).join('')
