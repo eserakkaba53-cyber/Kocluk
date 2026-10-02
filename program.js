@@ -17,16 +17,26 @@ window.PROG = (function(){
 'use strict';
 
 /* ═══ SABİTLER ═══ */
-var GUN=7, DILIM=48, DILIM_DK=30, MAX_BLOK_DK=90;
+/* ★ 3 Eki 2026 — IZGARA 15 DAKİKALIK. 30 dakikalık dilimde 20 dakikalık iş
+   30, 45 dakikalık iş 60 dakika yer kaplıyordu; her blokta kalan bu artık
+   haftada saatlerce ölü zamana dönüşüyordu. Bütün ölçüler DILIM_DK'dan
+   türer: onu 30 yapmak eski ızgarayı aynen geri getirir. Kayıttaki birim
+   bundan bağımsızdır, bkz. KAYIT BİÇİMİ. */
+var GUN=7, DILIM_DK=15, MAX_BLOK_DK=90;
+var DILIM=24*60/DILIM_DK;      /* günde 96 dilim */
+var SAAT_DILIM=60/DILIM_DK;    /* saatte 4 dilim */
 /* ARALIKSIZ ÇALIŞMA TAVANI — pedagojik mola kuralı.
    Dikkat süresi 45-90 dakikadan sonra belirgin düşer; ara vermeden 3 saat
    çalışma planlamak kâğıt üstünde verimli görünür, gerçekte son saati boşa
    gider. Aynı günde arka arkaya gelen bloklar toplam 90 dakikayı aşamaz;
    aştığı yerde en az bir 30 dakikalık boşluk (mola) bırakılır. */
-var ARDISIK_EN_FAZLA = 3;   /* dilim = 90 dk */
+var ARDISIK_EN_FAZLA = MAX_BLOK_DK/DILIM_DK;   /* 6 dilim = 90 dk */
+var MOLA_DILIM = Math.ceil(30/DILIM_DK);       /* 2 dilim = 30 dk; daha kısa boşluk mola sayılmaz */
+/* Tamamen kapalı bant ancak 2 saatten uzunsa katlanır — ekranda da kâğıtta da. */
+var KATLA_EN_AZ = 120/DILIM_DK;
 var GUNLER=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
 var GUN_KISA=['PZT','SAL','ÇAR','PER','CUM','CMT','PAZ'];
-var SATIR_PX=30;   /* bir yarım saatlik satırın yüksekliği (ciz sonrası ölçülür) */
+var SATIR_PX=15;   /* bir 15 dakikalık satırın yüksekliği (ciz sonrası ölçülür) */
 
 /* ═══ DERS RENKLERİ (13 Eyl 2026'da yenilendi) ═══════════════════════
    Her satır: [etiket, konu tenti, soru tenti, başlık yazısı,
@@ -103,7 +113,7 @@ var SEBEPLER=[['OKUL','Okul'],['UYKU','Uyku'],['YEMEK','Yemek'],
 var C={};
 var kapali=new Set(), sebep={}, bloklar=[], bekleyenler=[];
 var bosaltildi=false;   // "Tabloyu boşalt" sonrası bekleyen listesi farklı anlatılır
-/* Katlama VARSAYILAN OLARAK AÇIK: tablo ilk açılışta katlı gelsin, 48 satırlık
+/* Katlama VARSAYILAN OLARAK AÇIK: tablo ilk açılışta katlı gelsin, 96 satırlık
    duvarla karşılaşılmasın. Ama tercih HATIRLANIYOR — kullanıcı "24 saati göster"
    deyip sayfayı yenilediğinde yeniden katlanmış bulmasın. Kayıt tarayıcıda
    durur (hesapta değil): bu bir görünüm tercihi, cihaza özel olması doğru. */
@@ -135,9 +145,15 @@ function tavanYaz(dk){
 /* ═══ YARDIMCI ═══ */
 function ah(g,d){ return g+'-'+d; }
 function saatYaz(d){
-  var h=Math.floor(d/2);
-  return (h<10?'0':'')+h+':'+(d%2?'30':'00');
+  var h=Math.floor(d/SAAT_DILIM), m=(d%SAAT_DILIM)*DILIM_DK;
+  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
 }
+/* Saat:dakika → dilim. Varsayılanlar ve şablonlar SAATLE yazılır: ham dilim
+   numarası (eskiden "16..31") dilim boyu değişince sessizce başka saate
+   kayardı — 08:00'de başlayan okul 04:00'te başlardı. */
+function dilimOf(saat,dakika){ return (saat*60+(dakika||0))/DILIM_DK; }
+/* n dilim kaç saat: "7,5 saat" — Türkçede ondalık ayracı virgül. */
+function saatSay(n){ return String(n*DILIM_DK/60).replace('.',','); }
 function sa(dk){
   var h=Math.floor(dk/60), m=Math.round(dk%60);
   return h?(h+' sa'+(m?' '+m+' dk':'')):(m+' dk');
@@ -189,16 +205,17 @@ function ogrenciAraclari(){ return !kocMu() || !!C.kendiKocu; }
 function kapat(g,d,neden){ kapali.add(ah(g,d)); if(neden) sebep[ah(g,d)]=neden; }
 function varsayilan(){
   kapali=new Set(); sebep={};
+  var d;
   for(var g=0;g<GUN;g++){
     /* PAZAR — varsayılan olarak tamamen kapalı (dinlenme günü).
        Tabloda görünür ama iş yerleştirilmez; öğrenci isterse açar.
        Haftada bir tam gün boş bırakmak plan değil, sürdürülebilirlik
        meselesi: yedi gün program verilen öğrenci üçüncü haftada bırakır. */
-    if(g===6){ for(var dp=0;dp<DILIM;dp++) kapat(g,dp,'IZIN'); continue; }
-    for(var d=0;d<14;d++) kapat(g,d,'UYKU');               /* 00:00–07:00 */
-    if(g<5) for(var d2=16;d2<32;d2++) kapat(g,d2,'OKUL');  /* 08:00–16:00 */
-    kapat(g,38,'YEMEK'); kapat(g,39,'YEMEK');              /* 19:00–20:00 */
-    kapat(g,47,'UYKU');
+    if(g===6){ for(d=0;d<DILIM;d++) kapat(g,d,'IZIN'); continue; }
+    for(d=0;d<dilimOf(7);d++) kapat(g,d,'UYKU');                    /* 00:00–07:00 */
+    if(g<5) for(d=dilimOf(8);d<dilimOf(16);d++) kapat(g,d,'OKUL');  /* 08:00–16:00 */
+    for(d=dilimOf(19);d<dilimOf(20);d++) kapat(g,d,'YEMEK');        /* 19:00–20:00 */
+    for(d=dilimOf(23,30);d<DILIM;d++) kapat(g,d,'UYKU');            /* 23:30–24:00 */
   }
 }
 
@@ -232,8 +249,8 @@ function blokListesi(){
          Eşit dakikaya bölmek 200 dk'yı 90/90/20 yapıyordu; son parça 20 dk
          ama tabloda 30 dk'lık dilim kaplıyordu. Her parçadaki bu kayıp
          haftada saatlerce ölü zamana dönüşür. Artık önce gereken DİLİM
-         sayısı bulunur (ceil(200/30)=7), dilim olarak bölünür (3+2+2),
-         dakika bu dilimlere yayılır: 90/60/50. */
+         sayısı bulunur (ceil(200/15)=14), dilim olarak bölünür (5+5+4),
+         dakika bu dilimlere yayılır: 75/75/50. */
       var MAXSLOT=Math.floor(MAX_BLOK_DK/DILIM_DK);
       var toplamSlot=Math.ceil(p.dk/DILIM_DK);
       var adet=Math.max(1,Math.ceil(toplamSlot/MAXSLOT));
@@ -319,13 +336,24 @@ function gunHedefleri(toplamYuk){
 
 /* Bu blok buraya konursa arasız çalışma 90 dakikayı aşar mı?
    dolu: o an işgal edilmiş dilimler (yerleştirme sırasında kurulan küme).
-   Bloğun önündeki ve arkasındaki bitişik dolu dilimleri sayar; toplam
-   ARDISIK_EN_FAZLA'yı geçiyorsa bu konum mola kuralını çiğner. */
+   Bloğun önüne ve arkasına doğru yürür, yoldaki dolu dilimleri sayar;
+   toplam ARDISIK_EN_FAZLA'yı geçiyorsa bu konum mola kuralını çiğner.
+   ★ 3 Eki 2026 — MOLA EN AZ 30 DAKİKA. 15 dakikalık ızgarada tek boş dilim
+   mola sayılsaydı "90 dk + 15 dk ara + 90 dk" geçerli olurdu; 15 dakikalık
+   ara dikkati toparlamaya yetmez. MOLA_DILIM'den kısa boşluk yürüyüşü
+   BİTİRMEZ (çalışmaya da eklenmez), en az MOLA_DILIM'lik boşluk bitirir.
+   Yalnız yerleştirilmiş bloklar çalışma sayılır; kapalı saat boşluk gibi
+   işlem görür (eskiden de böyleydi). 30 dakikalık ızgarada MOLA_DILIM=1
+   ve kural eskisiyle birebir aynı. */
 function molaUygun(b,gun,dilim,dolu){
-  var i, once=0, sonra=0;
-  for(i=dilim-1; i>=0 && dolu.has(ah(gun,i)); i--) once++;
-  for(i=dilim+b.uzunluk; i<DILIM && dolu.has(ah(gun,i)); i++) sonra++;
-  return (once + b.uzunluk + sonra) <= ARDISIK_EN_FAZLA;
+  function yuru(i,adim){
+    var is=0, bos=0;
+    for(; i>=0 && i<DILIM && bos<MOLA_DILIM; i+=adim){
+      if(dolu.has(ah(gun,i))){ is++; bos=0; } else bos++;
+    }
+    return is;
+  }
+  return yuru(dilim-1,-1) + b.uzunluk + yuru(dilim+b.uzunluk,1) <= ARDISIK_EN_FAZLA;
 }
 /* Aynı denetimin yerleşmiş bloklardan kurulan küme ile yapılan sürümü —
    elle sürükleme ve dengeleme için. */
@@ -434,9 +462,11 @@ function dagitCekirdek(){
           .filter(function(s){ return siraUygun(b,g,s) && molaUygun(b,g,s,dolu); });
         if(!adaylar.length) continue;
 
-        /* aynı dersi arka arkaya koyma (yalnız ilk turda) */
+        /* aynı dersi arka arkaya koyma (yalnız ilk turda) — araya en az bir
+           saat girsin. "+2" dilim yazılıydı; ızgara incelince ara yarım
+           saate düşerdi, o yüzden SAAT_DILIM. */
         if(gecis===0 && gunSonDers[g]===b.sub && adaylar.length>1){
-          var uzak=adaylar.filter(function(s){ return s>=gunSonYer[g]+b.uzunluk+2; });
+          var uzak=adaylar.filter(function(s){ return s>=gunSonYer[g]+b.uzunluk+SAAT_DILIM; });
           if(uzak.length) adaylar=uzak;
         }
 
@@ -719,22 +749,54 @@ function parcalariTazele(){
   });
 }
 
-/* "3-20" ya da sebepliyse "3-20|OKUL" */
+/* ═══ KAYIT BİÇİMİ ═══════════════════════════════════════  3 Eki 2026
+   Izgara 15 dakikaya inince kayıttaki dilim numaralarının anlamı değişti.
+   Birim artık alanın ADINDA; DILIM_DK'dan bağımsız, sunucu sözleşmesi:
+     kapali   "g-d", "g-d|SEBEP"   d: 30 dk'lık (0..47)   ESKİ, yalnız okunur
+              "g:d", "g:d|SEBEP"   d: 15 dk'lık (0..95)   YENİ, yazılan bu
+     bloklar  dilim / uzunluk      30 dk'lık              ESKİ, yalnız okunur
+              dilim15 / uzunluk15  15 dk'lık              YENİ, yazılan bu
+   NEDEN ESKİ ALANA YAZILMADI: önbellekte kalmış eski sayfa (30 dakikalık
+   motor) yayından sonra bir süre daha açık kalır. "dilim:40" (10:00)
+   yazsaydık eski sayfa onu 30'luk okuyup bloğu 20:00'ye koyardı. Yeni
+   alanları eski kod TANIMIYOR: uzunluk'u olmayan bloğu süzüp atıyor, "g:d"
+   de onun tablosunda hiçbir hücreye denk gelmiyor. Yanlış okumak yerine
+   görmezden geliyor — bozulan bir program değil, bir süre eksik görünen
+   bir program.
+   Bellekte her şey DILIM_DK biriminde: "g-d" anahtarı, dilim/uzunluk.
+   Çeviri yalnız burada, kayda girerken ve çıkarken yapılır. */
+var ESKI_DK=30, YENI_DK=15;
+/* Kayıttaki [bas, bas+uz) aralığını (birimDk dakikalık dilimlerle) ÖRTEN
+   iç dilimler: [ilk, adet]. 15 dakikalık ızgarada eski dilim ikiye
+   bölünür: "0-14" (07:00–07:30) → 28 ve 29. */
+function icAralik(bas,uz,birimDk){
+  var ilk=Math.floor(bas*birimDk/DILIM_DK);
+  return [ilk, Math.ceil((bas+uz)*birimDk/DILIM_DK)-ilk];
+}
+/* "3:20" ya da sebepliyse "3:20|OKUL". Küme değil ızgara gezilerek
+   yazılır: sıralı (gün, saat), tekrarsız ve sunucunun kabul ettiği
+   aralığın dışına hiçbir şey çıkamaz. */
 function disaKapali(){
-  var l=[];
-  kapali.forEach(function(a){ l.push(sebep[a] ? a+'|'+sebep[a] : a); });
-  return l.sort();
+  var l=[], k=DILIM_DK/YENI_DK;
+  for(var g=0;g<GUN;g++) for(var d=0;d<DILIM;d++){
+    var a=ah(g,d); if(!kapali.has(a)) continue;
+    for(var i=0;i<k;i++){ var s=g+':'+(d*k+i); l.push(sebep[a] ? s+'|'+sebep[a] : s); }
+  }
+  return l;
 }
 /* Yerleşmiş bloklar VE yerleşemeyenler birlikte kaydedilir.
    Neden: bekleyenler kaydedilmezse sayfa yenilendiğinde "bu iş sığmadı"
    bilgisi tamamen kayboluyordu — panel de bunu göremeyip yeşil "Bütün
    ödevler haftaya sığdı" yazıyordu. Ağır bir haftada 50+ saatlik iş
    sessizce yok olup koça "her şey yolunda" deniyordu. Yerleşemeyen blok
-   gun:null ile işaretlenir; okurken bekleyenler dizisine geri ayrılır. */
+   gun:null ile işaretlenir; okurken bekleyenler dizisine geri ayrılır.
+   Konum ve boy 15 dakikalık birimle dilim15/uzunluk15 adıyla yazılır;
+   eski dilim/uzunluk HİÇ yazılmaz (bkz. KAYIT BİÇİMİ). */
 function blokDisa(b, yerlesmis){
+  var k=DILIM_DK/YENI_DK;
   return {id:b.id, odevId:b.odevId, sub:b.sub, konu:b.konu, tur:b.tur,
-          dk:b.dk, gun:yerlesmis?b.gun:null, dilim:yerlesmis?b.dilim:null,
-          uzunluk:b.uzunluk, parca:b.parca||'', pi:b.pi, rutin:!!b.rutin, dev:b.dev||0,
+          dk:b.dk, gun:yerlesmis?b.gun:null, dilim15:yerlesmis?b.dilim*k:null,
+          uzunluk15:b.uzunluk*k, parca:b.parca||'', pi:b.pi, rutin:!!b.rutin, dev:b.dev||0,
           kilit:yerlesmis?!!b.kilit:false};
 }
 function disaBloklar(){
@@ -751,11 +813,21 @@ function iceriAl(p){
      öğrencinin kararını sessizce iptal ediyordu. Ayrım: alan HİÇ yoksa
      (undefined/null) varsayılan uygulanır, boş DİZİ ise aynen korunur. */
   if(Array.isArray(p.kapali)){
+    /* Eski ("g-d") ve yeni ("g:d") girdi AYNI dizide karışık gelebilir:
+       önbellekteki eski sayfa kendi girdisini ekler, yenileri olduğu gibi
+       geri yazar. Her girdi kendi birimiyle okunur. Bozuk girdi atlanır —
+       eskiden kümeye olduğu gibi girip kayıtta çöp olarak dolaşıyordu. */
     p.kapali.forEach(function(x){
-      var s=String(x), i=s.indexOf('|');
-      var a = i<0 ? s : s.slice(0,i);
-      kapali.add(a);
-      if(i>=0) sebep[a]=s.slice(i+1);
+      var m=/^([0-6])([-:])(\d{1,2})(?:\|([A-Z]{1,10}))?$/.exec(typeof x==='string' ? x : '');
+      if(!m) return;
+      var birim = m[2]==='-' ? ESKI_DK : YENI_DK;
+      if(+m[3]*birim >= 24*60) return;                 /* gün dışı */
+      var r=icAralik(+m[3],1,birim);
+      for(var i=0;i<r[1];i++){
+        var a=ah(+m[1],r[0]+i);
+        kapali.add(a);
+        if(m[4]) sebep[a]=m[4];
+      }
     });
   }else{
     varsayilan();
@@ -769,16 +841,22 @@ function iceriAl(p){
      yeniden yuklemede sessizce yerlesmis gorunup panel yine "hepsi sigdi"
      diyordu. typeof denetimi sart. */
   function sayiMi(x){ return typeof x==='number' && isFinite(x); }
-  var saglam = gelen.filter(function(b){
-    return b && typeof b==='object' &&
-           sayiMi(b.dk) && b.dk>0 &&
-           sayiMi(b.uzunluk) && b.uzunluk>0 && b.uzunluk<=DILIM;
-  });
   bloklar=[]; bekleyenler=[];
-  saglam.forEach(function(b){
-    var yerlesik = sayiMi(b.gun) && b.gun>=0 && b.gun<GUN &&
-                   sayiMi(b.dilim) && b.dilim>=0 && b.dilim+b.uzunluk<=DILIM;
-    if(yerlesik) bloklar.push(b); else bekleyenler.push(b);
+  gelen.forEach(function(b){
+    if(!b || typeof b!=='object' || !sayiMi(b.dk) || !(b.dk>0)) return;
+    /* Birimi alanın adı söyler: uzunluk15 varsa yeni blok, yoksa eski.
+       KOPYA alınır, gelen nesneye dokunulmaz: panel aynı nesneyi bir
+       sonraki mont'ta yeniden verir; yerinde çevrilmiş blok o zaman
+       "eski" sanılıp ikinci kez büyütülürdü. */
+    var yeni=sayiMi(b.uzunluk15), uz=yeni?b.uzunluk15:b.uzunluk, bas=yeni?b.dilim15:b.dilim;
+    if(!sayiMi(uz)) return;
+    var r=icAralik(sayiMi(bas)?bas:0, uz, yeni?YENI_DK:ESKI_DK);
+    var x={}; for(var k in b) if(k!=='dilim15' && k!=='uzunluk15') x[k]=b[k];
+    x.uzunluk=r[1]; x.dilim=sayiMi(bas)?r[0]:null;
+    if(!(x.uzunluk>0 && x.uzunluk<=DILIM)) return;
+    var yerlesik = sayiMi(x.gun) && x.gun>=0 && x.gun<GUN &&
+                   sayiMi(x.dilim) && x.dilim>=0 && x.dilim+x.uzunluk<=DILIM;
+    if(yerlesik) bloklar.push(x); else bekleyenler.push(x);
   });
 }
 
@@ -831,26 +909,34 @@ function ciz(){
     if(katlaAcik && katlanabilir[d] && !acikKatlar.has(d)){
       var son=d;
       while(son+1<DILIM && katlanabilir[son+1] && !acikKatlar.has(son+1)) son++;
-      if(son-d+1>=4){
+      if(son-d+1>=KATLA_EN_AZ){
         h+='<tr class="pg-katli"><td colspan="'+(GUN+1)+'" data-kat="'+d+'-'+son+'">▾ '+
            saatYaz(d)+' – '+saatYaz(son+1)+' · tüm günlerde kapalı ('+
-           ((son-d+1)/2)+' saat) — açmak için tıkla</td></tr>';
+           saatSay(son-d+1)+' saat) — açmak için tıkla</td></tr>';
         d=son+1; continue;
       }
     }
-    var tam=(d%2===0);
-    h+='<tr><td class="sa'+(tam?' tam':'')+'">'+(tam?saatYaz(d):'')+'</td>';
+    /* ÇİZGİ ÜÇ KADEME: tam saat koyu, buçuk normal, çeyrek silik (noktalı).
+       96 satırın hepsi aynı çizgiyle çizilince gün bir bakışta okunmuyor;
+       göz saati çizginin ağırlığından bulur, satır saymaz. Etiket tam
+       saatte; buçukta küçük, soluk ":30"; çeyrekte hiç yok. */
+    var tam=(d%SAAT_DILIM===0), yarim=!tam && (d*DILIM_DK)%30===0;
+    var cizgi=tam?' tamsaat':yarim?' yarimsaat':'';
+    h+='<tr><td class="sa'+(tam?' tam':yarim?' yarim':'')+'">'+(tam?saatYaz(d):yarim?':30':'')+'</td>';
     for(var g=0;g<GUN;g++){
       var a=ah(g,d);
-      if(kapli[a]){ h+='<td class="pg-h'+(tam?' tamsaat':'')+'" data-g="'+g+'" data-d="'+d+'"></td>'; continue; }
+      if(kapli[a]){ h+='<td class="pg-h'+cizgi+'" data-g="'+g+'" data-d="'+d+'"></td>'; continue; }
       var b=blokAt[a];
       var kap=kapali.has(a)?' kapali':'';
       /* sebep etiketi yalnız bloğun İLK satırında yazılır, tekrar etmesin */
       var sb=(kapali.has(a) && sebep[a] && !kapali.has(ah(g,d-1))) ? sebep[a] : '';
-      h+='<td class="pg-h'+kap+(tam?' tamsaat':'')+'" data-g="'+g+'" data-d="'+d+
+      h+='<td class="pg-h'+kap+cizgi+'" data-g="'+g+'" data-d="'+d+
          '" data-sebep="'+esc(sb)+'">';
       if(b){
-        var c=renkTakim(b.sub), yuk=b.uzunluk*SATIR_PX-3, kisa=b.uzunluk<=2;
+        /* Boy sınıfı DAKİKAYLA: kisa ≤60, mini ≤30, minik ≤15 dk. Dilim
+           sayısıyla yazılınca (eskiden "≤2 dilim") ızgara incelince
+           45 dakikalık blok, 42 px'e düz blok düzenini sığdırmaya çalışırdı. */
+        var c=renkTakim(b.sub), yuk=b.uzunluk*SATIR_PX-3, boyDk=b.uzunluk*DILIM_DK;
         /* İKİ SATIR: konu adı, altında "ders · tür" (solda) ve süre (sağda).
            Eskiden üç satırdı ve en üstteki satır "⚠ DEVREDEN · DERS · TÜR"
            idi — gözün ilk okuduğu yer en az işe yarayan bilgiydi, üstelik
@@ -861,8 +947,8 @@ function ciz(){
            bilgi süredir. */
         var tur=(b.tur==='soru'?'Soru':b.tur==='konu'?'Konu':'')+(b.parca?' '+b.parca:'');
         var meta=adOf(b.sub)+(tur?' · '+tur:'');
-        h+='<div class="pg-blok '+(b.tur==='soru'?'soru':'konu')+(kisa?' kisa':'')+
-           (b.uzunluk<=1?' mini':'')+
+        h+='<div class="pg-blok '+(b.tur==='soru'?'soru':'konu')+(boyDk<=60?' kisa':'')+
+           (boyDk<=30?' mini':'')+(boyDk<=15?' minik':'')+
            (b.dev?' devreden':'')+
            (b.kilit?' kilitli':'')+(cak[b.id]?' cakisik':'')+
            (blokDuzenler()?'':' salt')+'" data-b="'+esc(b.id)+'" data-u="'+b.uzunluk+
@@ -1077,7 +1163,8 @@ function cizAlt(){
      '<span><i style="background:'+renkTakim('tyt_mat')[2]+';box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)"></i>Soru çözümü (açık ton)</span>'+
      '<span><i style="background:var(--turuncu,#D97706);border-radius:50%"></i>Devreden iş</span>'+
      (blokDuzenler()?'<span><i style="background:var(--ink-3)"></i>🔒 elle taşındı, dağıtımda korunur</span>':'')+
-     '<span style="color:var(--ink-3)">☕ Aralıksız çalışma en fazla 90 dk — sonrasına mola bırakılır</span>'+
+     '<span style="color:var(--ink-3)">☕ Aralıksız çalışma en fazla '+MAX_BLOK_DK+' dk — sonrasına en az '+
+       (MOLA_DILIM*DILIM_DK)+' dk mola bırakılır</span>'+
      '</div>';
   el.innerHTML=h;
 }
@@ -1360,11 +1447,13 @@ function yazdir(){
   var satirlar=Array.prototype.slice.call(kopya.querySelectorAll('tbody tr'));
 
   /* ORTADAKİ UZUN KAPALI BANTLARI KATLA.
-     Okul saatleri gibi 4+ satırlık kapalı bir bant ızgarayı boşuna
-     uzatıyor, ölçek düşüyor ve bütün yazı küçülüyor. Satırın hangi saate
-     denk geldiğini indeksten hesaplıyoruz (satır = yarım saatlik dilim);
-     kırpmadan ÖNCE yapılmalı, sonra indeksler kayar. */
-  function saatYaz2(i){ var s=Math.floor(i/2); return (s<10?'0':'')+s+(i%2?':30':':00'); }
+     Okul saatleri gibi 2 saatten uzun kapalı bir bant ızgarayı boşuna
+     uzatıyor, ölçek düşüyor ve bütün yazı küçülüyor. Bandın saati
+     hücrenin data-d'sinden okunur. Eskiden satır indeksinden hesaplanıyordu
+     (satır = yarım saat); ekranda katlanmış bir bant varken indeks kayıyor,
+     bant yanlış saatle yazılıyordu (09:00–13:00 yerine 02:30–04:30).
+     Kırpmadan ÖNCE yapılmalı, sonra satır listesi değişir. */
+  function dilimi(tr){ return +tr.querySelector('td.pg-h').getAttribute('data-d'); }
   (function katlaOrta(){
     var i=0;
     while(i<satirlar.length){
@@ -1380,11 +1469,11 @@ function yazdir(){
         if(!hepsiKapali) break;
         j++;
       }
-      if(j-i>=4){
-        var ozet=document.createElement('tr');
+      if(j-i>=KATLA_EN_AZ){
+        var ozet=document.createElement('tr'), d1=dilimi(satirlar[i]);
         ozet.className='pg-katli';
         ozet.innerHTML='<td colspan="'+(GUN+1)+'">'+
-          esc(saatYaz2(i)+' – '+saatYaz2(j)+' kapalı ('+Math.round((j-i)/2)+' saat)')+'</td>';
+          esc(saatYaz(d1)+' – '+saatYaz(d1+j-i)+' kapalı ('+saatSay(j-i)+' saat)')+'</td>';
         satirlar[i].parentNode.insertBefore(ozet, satirlar[i]);
         for(var q=i;q<j;q++) satirlar[q].parentNode.removeChild(satirlar[q]);
         satirlar.splice(i, j-i, ozet);
@@ -1420,7 +1509,7 @@ function yazdir(){
     });
   }
   if(ilk>=0){
-    var bsl=Math.max(0, ilk-2), bts=Math.min(satirlar.length-1, son+2);
+    var bsl=Math.max(0, ilk-SAAT_DILIM), bts=Math.min(satirlar.length-1, son+SAAT_DILIM);  /* bir saat */
     satirlar.forEach(function(tr,i){
       if(i<bsl || i>bts){ kirpildi=true; tr.parentNode.removeChild(tr); }
     });
@@ -1497,9 +1586,11 @@ function yazdir(){
 function sablon(tip){
   var g,d,varMi=true;
   function her(fn){
-    if(tip==='OKUL'){ for(g=0;g<5;g++) for(d=16;d<32;d++) fn(g,d); }
-    else if(tip==='UYKU'){ for(g=0;g<GUN;g++){ for(d=0;d<14;d++) fn(g,d); fn(g,47); } }
-    else if(tip==='KURS'){ for(d=18;d<26;d++) fn(5,d); }
+    if(tip==='OKUL'){ for(g=0;g<5;g++) for(d=dilimOf(8);d<dilimOf(16);d++) fn(g,d); }  /* Pzt–Cum 08:00–16:00 */
+    else if(tip==='UYKU'){ for(g=0;g<GUN;g++){
+      for(d=0;d<dilimOf(7);d++) fn(g,d);                                             /* 00:00–07:00 */
+      for(d=dilimOf(23,30);d<DILIM;d++) fn(g,d); } }                                 /* 23:30–24:00 */
+    else if(tip==='KURS'){ for(d=dilimOf(9);d<dilimOf(13);d++) fn(5,d); }             /* Cmt 09:00–13:00 */
   }
   her(function(g,d){ if(!kapali.has(ah(g,d))) varMi=false; });
   her(function(g,d){
@@ -1517,7 +1608,11 @@ function stil(){
   var s=document.createElement('style');
   s.id='pg-stil';
   s.textContent=[
-'.pg{--pg-cizgi:var(--line-soft,#E2E9EC)}',
+/* Izgara çizgisinin üç kademesi (bkz. ciz): tam saat --pg-saat düz,
+   buçuk --pg-yarim düz, çeyrek --pg-yarim NOKTALI. Noktalı çizgi aynı
+   rengin yarısı kadar mürekkep bırakır; dört temanın her birine ayrı bir
+   "silik renk" yazmak gerekmiyor. */
+'.pg{--pg-cizgi:var(--line-soft,#E2E9EC);--pg-saat:var(--line,#CBD6DB);--pg-yarim:var(--pg-cizgi)}',
 '.pg-ozet{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--pg-cizgi);border-bottom:1px solid var(--pg-cizgi)}',
 '.pg-ozet>div{background:var(--panel,#fff);padding:12px 15px}',
 '.pg-ozet .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:650}',
@@ -1555,21 +1650,38 @@ function stil(){
 'table.pg-iz th.sa{width:64px;left:0;z-index:6}',
 /* Saat sütunu okunur olmalı — 10px punto ile hangi satırda olduğunu
    görmek için tabloya yaklaşmak gerekiyordu. */
-'table.pg-iz td.sa{position:sticky;left:0;z-index:4;background:var(--panel);font-family:var(--mono);font-size:12.5px;color:var(--ink-3);text-align:right;padding:0 8px 0 0;line-height:1;border-right:1px solid var(--line);white-space:nowrap;letter-spacing:-.02em;overflow:hidden}',
-'table.pg-iz td.sa.tam{color:var(--ink);font-weight:700;font-size:13.5px}',
-'td.pg-h{height:30px;border-bottom:1px solid var(--pg-cizgi);border-right:1px solid var(--pg-cizgi);position:relative;background:var(--panel);padding:0}',
+/* Saat sütununda çizgi yalnız TAM SAATTE — 96 satırın hepsinde çizgi
+   olunca sütun merdivene dönüyor. Panelin genel "td{border-bottom}"
+   kuralı burada silinir: ızgaranın çizgisi artık satırın ÜSTÜNDE; sütunun
+   çizgisi altta kalsaydı saat çizgisiyle etiket bir satır kayık dururdu. */
+'table.pg-iz td.sa{position:sticky;left:0;z-index:4;background:var(--panel);font-family:var(--mono);font-size:12.5px;color:var(--ink-3);text-align:right;padding:0 8px 0 0;line-height:1;border-right:1px solid var(--line);white-space:nowrap;letter-spacing:-.02em;overflow:hidden;border-bottom:0;border-top:1px solid transparent}',
+'table.pg-iz td.sa.tam{color:var(--ink);font-weight:700;font-size:13.5px;border-top-color:var(--pg-saat)}',
+'table.pg-iz td.sa.yarim{font-size:9.5px;opacity:.6}',
+/* 15 dk = 15 px: aynı saat aralığı eskisiyle (30 dk = 30 px) aynı boyda,
+   tablo uzamaz. Çizgi satırın ÜSTÜNDE, çünkü "tamsaat" saatin BAŞLADIĞI
+   satır; alt çizgiyle yapmak bir önceki satırı işaretlemeyi gerektirirdi.
+   13,5 px'lik saat etiketi (line-height:1) bu satıra sığıyor; büyürse
+   satırlar eşit kalmaz, oysa blokBoyunuOlc ilk satırı ölçüp hepsine uygular. */
+'td.pg-h{height:15px;border-top:1px dotted var(--pg-yarim);border-bottom:0;border-right:1px solid var(--pg-cizgi);position:relative;background:var(--panel);padding:0}',
+'td.pg-h.yarimsaat{border-top-style:solid}',
+'td.pg-h.tamsaat{border-top:1px solid var(--pg-saat)}',
 /* Kapalı saat: DOLU GRİ. Eskiden --paper/--panel arası 45° çizgiydi;
    o iki renk varsayılan temada #E9EDEF ve #FFFFFF, yani 1.18:1 — parlaklığı
    yüksek ya da ucuz ekranda kapalı saat hiç seçilmiyordu.
    Sabit gri, tema değişkeni DEĞİL: bu tek renk dört temanın panelinden de
    en az 3:1 ayrışıyor (3.25 · 4.74 · 3.04 · 3.07); tek bir değişkenle
    dördünde birden bunu tutturmak mümkün değil. */
-'td.pg-h.kapali{background:#889095}',
+/* Gri zeminde temanın çizgi renkleri sırayı ters çevirir: açık olan buçuk
+   çizgisi koyu olan saat çizgisinden daha çok seçilir. Kapalı hücre kendi
+   çizgi tonlarını taşır, kademe korunur. */
+'td.pg-h.kapali{background:#889095;--pg-saat:rgba(255,255,255,.55);--pg-yarim:rgba(255,255,255,.25)}',
 'td.pg-h.hedef{background:var(--accent-soft)!important;box-shadow:inset 0 0 0 2px var(--accent)}',
 'td.pg-h.gecersiz{background:var(--bad-bg)!important}',
 /* Sebep etiketi (OKUL/UYKU/KURS) artık gri zeminin üstünde: --ink-3 ve
-   .7 saydamlıkla 1.2:1'e düşüyordu, okunmuyordu. Sabit koyu, 5.5:1. */
-'td.pg-h.kapali::after{content:attr(data-sebep);position:absolute;left:5px;top:2px;font-size:8px;font-weight:800;letter-spacing:.06em;color:#10181C;opacity:.9;text-transform:uppercase;pointer-events:none}',
+   .7 saydamlıkla 1.2:1'e düşüyordu, okunmuyordu. Sabit koyu, 5.5:1.
+   line-height:1 — 15 px'lik satırda etiketin boyu panelin satır aralığına
+   bırakılmaz, alttaki satıra taşmaz. */
+'td.pg-h.kapali::after{content:attr(data-sebep);position:absolute;left:5px;top:2px;font-size:8px;line-height:1;font-weight:800;letter-spacing:.06em;color:#10181C;opacity:.9;text-transform:uppercase;pointer-events:none}',
 '.pg-boya td.pg-h{cursor:crosshair;touch-action:none}',
 'tr.pg-katli td{height:26px;background:var(--paper);text-align:center;font-size:11px;color:var(--ink-3);cursor:pointer;border-bottom:1px solid var(--line);font-weight:600}',
 
@@ -1595,12 +1707,15 @@ function stil(){
 '.pg-blok.soru .bm{color:var(--ms)}',
 '.pg-blok .bm .ds{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}',
 '.pg-blok .bm .sr{margin-left:auto;padding-left:5px;white-space:nowrap;flex:none;font-family:var(--mono);opacity:.9}',
-/* Kısa blokta (≤1 saat) her şey 27 px'e sığmalı: etiket + konu + alt satır.
-   Yazılar küçülür, konu tek satıra kırpılır. */
+/* Kısa blokta (45-60 dk, 42-57 px) her şey sığmalı: etiket + konu + alt
+   satır. Yazılar küçülür, konu tek satıra kırpılır. */
 '.pg-blok.kisa{padding:3px 7px;gap:1px}',
 '.pg-blok.kisa .bk{-webkit-line-clamp:1;font-size:10.5px;line-height:1.1;margin-top:11px}',
 '.pg-blok.kisa .bm{font-size:8.5px}',
-'.pg-blok.kisa .pg-cip{top:3px;left:7px}',
+/* 45 dakikalık kısa blok 42 px: etiket eski boyunda (12,9 px) kalınca alt
+   kenarı konu adının üstüne değiyordu. Etiket dikeyde inceltildi; 60
+   dakikalık blokta da aynı etiket, iki boy arasında fark görünmesin. */
+'.pg-blok.kisa .pg-cip{top:2px;left:7px;line-height:1.25;padding:0 5px}',
 /* YARIM SAATLİK BLOK (27 px) KENDİ DÜZENİNİ İSTER.
    Dikey diziliş orada çalışmıyor: etiket üstte 13 px yer kaplayınca
    konu adına yer kalmıyor ve esnek kutu onu sıfıra eziyordu — ölçüldü,
@@ -1618,10 +1733,18 @@ function stil(){
 '.pg-blok.mini .bm .sr{margin-left:0;padding-left:0}',
 '.pg-blok.mini.devreden .pg-dev{position:static;flex:none;box-shadow:none}',
 '.pg-blok.mini .pg-kil{position:static;flex:none;right:auto;top:auto}',
+/* ÇEYREK SAATLİK BLOK (12 px) tek satırlık düzene de sığmıyor: yalnız
+   etiket ve kırpılmış konu adı kalır. Süre ve ders adı ipucunda (title)
+   duruyor; 12 px'e üçüncü bir parça koymak üçünü de okunmaz yapardı.
+   Bu kurallar .mini'den SONRA gelmeli. */
+'.pg-blok.minik{padding:0 5px;gap:4px;border-radius:5px}',
+'.pg-blok.minik .pg-cip{font-size:6.5px;padding:0 3px;line-height:1.35}',
+'.pg-blok.minik .bk{font-size:9px;line-height:1}',
+'.pg-blok.minik .bm{display:none}',
 /* Telefonda sütun ~99 px'e iniyor ve etiket + süre bütün genişliği yiyip
    konu adını 9 px'e düşürüyor (ölçüldü; dizüstünde 148 px, masaüstünde
    211 px sütunda böyle bir sorun yok). Dar ekranda süre düşer: tek satırlık
-   blok zaten yarım saatlik, süre ipucunda da duruyor — konu adı ise
+   blok en fazla yarım saatlik, süre ipucunda da duruyor — konu adı ise
    kartın varlık sebebi. "screen" şart, yoksa dikey kâğıtta da tetiklenir. */
 '@media screen and (max-width:760px){.pg-blok.mini .bm{display:none}}',
 '.pg-blok.kilitli{box-shadow:inset 0 0 0 2px rgba(0,0,0,.22)}',
