@@ -84,7 +84,8 @@ window.OGRENCI_VIDEOLAR = [
      window.SAYILAR = { ogretmen:'+20', ogrenci:'+70' };
      window.SAYILAR = { ogretmen:'',    ogrenci:''    };   // canlı sayım
    ============================================================ */
-window.SAYILAR = { ogretmen:'+40', ogrenci:'+70' };
+/* 3 Eki 2026: elle yazılmış +40 / +70 kaldırıldı, gerçek sayılar görünsün. */
+window.SAYILAR = { ogretmen:'', ogrenci:'' };
 
 window.BIYOSER_WP = '905325874992';   // ülke kodu, başında + ve boşluk yok
 

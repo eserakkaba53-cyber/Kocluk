@@ -914,7 +914,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <!-- Sunucu ayarları: ayrı dosyada, güncellemelerden etkilenmez -->
 <script src="hata.js?v=20261002"></script>
 <script src="dogrulama.js?v=20260927d"></script>
-<script src="sunucu.js?v=20260916b"></script>
+<script src="sunucu.js?v=20261003a"></script>
 <!-- ?v= sürüm etiketi: program.js değiştiğinde bunu da artır, yoksa
      kullanıcının tarayıcısı önbellekteki ESKİ dosyayı kullanmaya devam eder. -->
 <script src="program.js?v=20260917a"></script>
@@ -8492,8 +8492,9 @@ async function sayaclariOku(){
   try{
     const d=await sbGuvenli(()=>sbCagri('/rest/v1/rpc/kullanim_sayilari',{method:'POST',body:{}}));
     if(d) SAYAC={
-      ogretmen: d.ogretmen>=5  ? '+'+(Math.floor(d.ogretmen/5)*5)  : '',
-      ogrenci:  d.ogrenci>=10  ? '+'+(Math.floor(d.ogrenci/10)*10) : '' };
+      /* gerçek sayı, yuvarlamadan (3 Eki 2026) */
+      ogretmen: d.ogretmen>0 ? Number(d.ogretmen).toLocaleString('tr-TR') : '',
+      ogrenci:  d.ogrenci>0  ? Number(d.ogrenci).toLocaleString('tr-TR')  : '' };
   }catch(e){ SAYAC=null; }
   render();
 }

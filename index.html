@@ -524,8 +524,8 @@ footer a:hover{color:var(--turuncu)}
       <p class="ph">Hedef bölümünü söyle; o bölüme son giren öğrencinin netleri referans alınır, <b>ne zaman · ne kadar · hangi konu</b> çalışacağın çıkar. Otomatik karne analizi, konu haritası, hedefe uzaklık ve “yetişir mi” hesabı tek panelde.</p>
       <a class="gez" href="kocluk-sunucu.html#demo"><span class="ok">▶</span> Önce sistemi gez</a>
       <div class="rozetler">
-        <div style="animation-delay:1.15s"><b id="sayOgretmen" data-say="40" data-onek="+">+40</b><span>öğretmen</span></div>
-        <div style="animation-delay:1.27s"><b id="sayOgrenci" data-say="70" data-onek="+">+70</b><span>öğrenci</span></div>
+        <div style="animation-delay:1.15s"><b id="sayOgretmen" data-say="46" data-onek="">46</b><span>öğretmen</span></div>
+        <div style="animation-delay:1.27s"><b id="sayOgrenci" data-say="122" data-onek="">122</b><span>öğrenci</span></div>
         <div style="animation-delay:1.39s"><b data-say="628">628</b><span>konu haritası</span></div>
         <div style="animation-delay:1.51s"><b style="font-size:20px;font-family:var(--sans)">MEB + Özel</b><span>karne analizi</span></div>
       </div>
@@ -974,7 +974,8 @@ footer a:hover{color:var(--turuncu)}
 /* Kullanım sayıları. Kaynak sırası:
    1) sunucu.js içindeki SAYILAR (elle yazılmışsa o geçerli)
    2) sunucudan canlı sayım (her zaman gerçek, kendiliğinden güncellenir)
-   Hero'daki +40 / +70 rozetlerini besler. */
+   Hero'daki öğretmen / öğrenci rozetlerini besler. Sayfadaki 46 / 122
+   yalnız ilk boyama içindir (3 Eki 2026 sayımı); canlı sayı gelince değişir. */
 (function(){
   var o1 = document.getElementById('sayOgretmen');
   var o2 = document.getElementById('sayOgrenci');
@@ -1006,8 +1007,9 @@ footer a:hover{color:var(--turuncu)}
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d) throw 0;
-      yaz(o1, d.ogretmen >= 5  ? ('+' + (Math.floor(d.ogretmen/5)*5))  : '');
-      yaz(o2, d.ogrenci  >= 10 ? ('+' + (Math.floor(d.ogrenci/10)*10)) : '');
+      /* gerçek sayı, yuvarlamadan (3 Eki 2026) */
+      yaz(o1, d.ogretmen > 0 ? String(d.ogretmen) : '');
+      yaz(o2, d.ogrenci  > 0 ? String(d.ogrenci)  : '');
     })
     .catch(function(){});
 })();
