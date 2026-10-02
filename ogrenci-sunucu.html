@@ -825,6 +825,9 @@ body,.card,.hdr,.topbar,.snav,.stat{transition:background-color .25s,color .25s,
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
+<!-- Karne PDF'ini yükleyip sayfa seçerek okuma — koç ve öğrenci paneli ORTAK.
+     pdf.js yalnız dosya seçilince yüklenir. Sürüm etiketi değişince burayı da artır. -->
+<script src="karne-pdf.js?v=20261002"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
 <!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
@@ -3369,7 +3372,7 @@ function karneDoldur(){
   return yazilan;
 }
 
-function karneOku(){
+function karneOku(tekSayfa){
   const el=document.getElementById('kMetin');
   const t=(el?el.value:'').trim();
   KARNE_HATA=''; KARNE_UYARI='';
@@ -3380,10 +3383,12 @@ function karneOku(){
      sanan öğrenci başkasının netini kaydediyordu. Adı bulunamazsa okumuyoruz. */
   let metin=t;
   const sayfa=karneSayfalari(t);
-  const kacKisi=sayfa?sayfa.length:karneOgrenciSayisi(t);
+  /* ★ 2 Eki 2026 — PDF'ten seçilen TEK sayfada (tekSayfa=true) sayaca
+     bakılmaz; gerekçe koç panelindeki applyKarne'de, düzeltme aynı. */
+  const kacKisi=sayfa?sayfa.length:(tekSayfa===true?1:karneOgrenciSayisi(t));
   if(!sayfa && kacKisi>1){
     KARNE_SONUC=null;
-    KARNE_HATA='Yapıştırdığın metinde '+kacKisi+' öğrencinin karnesi var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır.';
+    KARNE_HATA='Yapıştırdığın metinde '+kacKisi+' öğrencinin karnesi var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır. Daha kolayı: "PDF yükle" ile dosyayı seçip sayfa numaranı yaz.';
     render(); return;
   }
   if(sayfa){
@@ -3393,13 +3398,20 @@ function karneOku(){
       KARNE_SONUC=null;
       KARNE_HATA='Yapıştırdığın metinde '+sayfa.length+' öğrencinin karnesi var'+
         (esl.length>1?' ve adın birden çok sayfada geçiyor.':', kendi sayfan bulunamadı.')+
-        ' PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır.';
+        ' PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır. Daha kolayı: "PDF yükle" ile dosyayı seçip sayfa numaranı yaz.';
       render(); return;
     }
     metin=esl[0];
   }
   let r=null;
   try{ r=parseKarne(metin, D); }catch(e){ r=null; }
+  /* ★ 3 Eki 2026 — İMKÂNSIZ DEĞER YAZILMAZ (koç panelindeki applyKarne ile
+     aynı): doğru + yanlış dersin soru sayısını aşıyorsa o ders yazılmaz. */
+  const atlanan=[];
+  if(r) for(const k in r.out){
+    const q=subQ(k);
+    if(q && r.out[k].d+r.out[k].y>q){ atlanan.push(subName(k)); delete r.out[k]; }
+  }
   if(!r || !Object.keys(r.out).length){
     KARNE_SONUC=null;
     KARNE_HATA='Karne okunamadı. PDF’i açıp Ctrl+A → Ctrl+C ile TAMAMINI kopyalayıp buraya yapıştır. Ekran görüntüsü veya fotoğraf okunamaz.';
@@ -3408,6 +3420,8 @@ function karneOku(){
   KARNE_SONUC=r.out;
   // GEOMETRİ UYARISI: matematik okundu ama geometri ayrı gelmediyse (alanında geometri varken)
   const alan=new Set(subs(D).map(x=>x[0])); const gu=[];
+  if(atlanan.length)
+    gu.push('Şu derslerde okunan doğru ve yanlış toplamı soru sayısını aşıyor, bu yüzden yazılmadı: '+atlanan.join(', ')+'. Netlerini elle gir.');
   if(alan.has('tyt_geo') && r.out.tyt_mat && !r.out.tyt_geo)
     gu.push('TYT Geometri ayrı gelmemiş; TYT Matematik netin geometriyi de içeriyor olabilir. Grafikte geometri boş görünürse şaşırma — istersen geometri netini elle ayır.');
   if(alan.has('ayt_geo') && r.out.ayt_mat && !r.out.ayt_geo)
@@ -3591,6 +3605,12 @@ function vDeneme(){
       aşağıya <b>yapıştır</b>. Netlerin kendiliğinden dolar; kaydetmeden önce kontrol edersin.
     </div>
     <textarea id="kMetin" rows="4" style="width:100%" placeholder="Karne metnini buraya yapıştır..."></textarea>
+    <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn ghost" onclick="document.getElementById('kPdf').click()">PDF yükle</button>
+      <input type="file" id="kPdf" accept="application/pdf" hidden onchange="karnePdf.sec(this,{metinId:'kMetin',kutuId:'kPdfKutu',ad:D.ad,oku:karneOku,ogrenci:true})">
+      <span class="hint" style="margin:0">Sınıfın bütün karnelerinin olduğu PDF'i de yükleyebilirsin. PDF bilgisayarından çıkmaz, tarayıcıda okunur.</span>
+    </div>
+    <div id="kPdfKutu"></div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn" onclick="karneOku()">Karneyi oku</button>
       ${KARNE_SONUC?`<button class="btn ghost" onclick="karneTemizle()">Temizle</button>`:''}

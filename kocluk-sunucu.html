@@ -844,6 +844,9 @@ body,.card,.hdr,.rail,.stat{transition:background-color .25s,color .25s,border-c
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
 <script src="deneme.js?v=20260906a"></script>
+<!-- Karne PDF'ini yükleyip sayfa seçerek okuma — koç ve öğrenci paneli ORTAK.
+     pdf.js yalnız dosya seçilince yüklenir. Sürüm etiketi değişince burayı da artır. -->
+<script src="karne-pdf.js?v=20261002"></script>
 <!-- Yöneticiyle mesajlaşma — koç ve öğrenci paneli ORTAK kullanır. -->
 <script src="mesaj.js?v=20260917a"></script>
 <!-- kayıt sonrası e-posta onayı ekranı (altı kayıt yolu ortak) -->
@@ -1630,7 +1633,7 @@ function konuEsle(sk,ad){
   });
   return best||[ad,'Karne konusu (listede yok)'];
 }
-function applyKarne(){
+function applyKarne(tekSayfa){
   const st=cur(), txt=document.getElementById('kzText').value;
   if(!txt.trim()){alert('Karne metnini yapıştır.');return;}
   const box=document.getElementById('kzOut');
@@ -1642,16 +1645,23 @@ function applyKarne(){
      hiç kaydetmemekten kötüdür. */
   const sayfa=karneSayfalari(txt);
   let metin=txt;
-  const kacKisi=sayfa?sayfa.length:karneOgrenciSayisi(txt);
+  /* ★ 2 Eki 2026 — PDF'TEN SEÇİLEN SAYFA. karne-pdf.js, kullanıcının
+     seçtiği TEK PDF sayfasını yazıp tekSayfa=true ile çağırır; sayfa sınırı
+     kesin olduğu için sayaca bakılmaz. Sayaç ders adlarını sayıyor; Aktör
+     gibi karnelerde her ders adı bir sayfada iki kez geçiyor (özet tablo +
+     konu analizi). Ölçüldü: iki Aktör TYT sınıf PDF'inde 85 öğrenci
+     sayfasının 85'i tek başına "2 öğrenci" sayılıyor, okunmuyordu. Sayfa
+     yine de bölünürse aşağıdaki ad eşleşmesi aynen uygulanır. */
+  const kacKisi=sayfa?sayfa.length:(tekSayfa===true?1:karneOgrenciSayisi(txt));
   if(!sayfa && kacKisi>1){
-    box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${kacKisi} öğrencinin karnesi</b> var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF'te yalnız ${esc(st.name)} adlı öğrencinin sayfasını seçip kopyala, sonra yapıştır.</span></div>`;
+    box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${kacKisi} öğrencinin karnesi</b> var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF'te yalnız ${esc(st.name)} adlı öğrencinin sayfasını seçip kopyala, sonra yapıştır. Daha kolayı: <b>PDF yükle</b> ile dosyayı seçip sayfa numarasını yaz.</span></div>`;
     return;
   }
   if(sayfa){
     const ara=norm(st.name||'');
     const esl=ara?sayfa.filter(p=>norm(p).includes(ara)):[];
     if(esl.length!==1){
-      box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${sayfa.length} öğrencinin karnesi</b> var${esl.length>1?` ve ${esc(st.name)} adı birden çok sayfada geçiyor`:`, seçili öğrencinin (${esc(st.name)}) sayfası bulunamadı`}. PDF'te yalnız o öğrencinin sayfasını seçip kopyala, sonra yapıştır.</span></div>`;
+      box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${sayfa.length} öğrencinin karnesi</b> var${esl.length>1?` ve ${esc(st.name)} adı birden çok sayfada geçiyor`:`, seçili öğrencinin (${esc(st.name)}) sayfası bulunamadı`}. PDF'te yalnız o öğrencinin sayfasını seçip kopyala, sonra yapıştır. Daha kolayı: <b>PDF yükle</b> ile dosyayı seçip sayfa numarasını yaz.</span></div>`;
       return;
     }
     metin=esl[0];
@@ -1699,6 +1709,20 @@ function applyKarne(){
       PENDING_AN.push({sub:esub||sk,konu,unite,hamAd:k.ad,
                        ss:k.ss||0,d:k.d||0,y:k.y,b:k.b});
     });
+  }
+
+  /* ★ 3 Eki 2026 — İMKÂNSIZ DEĞER YAZILMAZ. Doğru + yanlış dersin soru
+     sayısını aşamaz. Özet tablosu okunamayıp konu tablolarından toplanan bazı
+     karnelerde (ölçüldü: iki yayında Felsefe) aşıyordu; o ders forma
+     yazılmaz, koç netini elle girer. */
+  for(const k in out){
+    const q=subQ(k);
+    if(q && out[k].d+out[k].y>q){
+      uyari.push(`${subName(k)}: okunan ${out[k].d} doğru ve ${out[k].y} yanlış ${q} soruyu aşıyor; bu ders forma yazılmadı, netini elle gir.`);
+      const on=subName(k)+':';
+      for(let i=log.length-1;i>=0;i--) if(log[i].indexOf(on)===0) log.splice(i,1);
+      delete out[k];
+    }
   }
 
   // 2) YEDEK: ne özet tablo ne konu tablosu okunduysa serbest konu ayrıştırıcısı
@@ -4774,6 +4798,12 @@ function vDeneme(st){
       Denemek için: PDF'i aç, bir kelimenin üstüne çift tıkla — <b>seçiliyorsa</b> okunur, seçilmiyorsa görüntüdür.<br>
       Yayınevinin öğrenci panelinden indirilen PDF genelde seçilebilir olur; WhatsApp'tan gelen ekran görüntüsü olmaz.</span></div>
     <textarea id="kzText" rows="7" placeholder="Karne metnini buraya yapıştır..." style="resize:vertical"></textarea>
+    <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn ghost" onclick="document.getElementById('kzPdf').click()">PDF yükle</button>
+      <input type="file" id="kzPdf" accept="application/pdf" hidden onchange="karnePdf.sec(this,{metinId:'kzText',kutuId:'kzPdfKutu',ad:(cur()||{}).name,oku:applyKarne})">
+      <span class="hint" style="margin:0">Sınıfın bütün karnelerinin olduğu PDF'i de yükleyebilirsin. PDF bilgisayarından çıkmaz, tarayıcıda okunur.</span>
+    </div>
+    <div id="kzPdfKutu"></div>
     <div style="margin-top:10px"><button class="btn" onclick="applyKarne()">Karneyi oku ve formu doldur</button>
       <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('kzText').value='';document.getElementById('kzOut').innerHTML=''">Temizle</button>
       <button class="btn ghost" style="margin-left:8px" onclick="karneTalep()">Karne okunmadı — destek iste</button></div>
