@@ -73,6 +73,22 @@
 }
 </script>
 
+<!-- Hero ve vitrin: başlık yazı tipi (yalnız h1) ve Motion -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@96,700&display=swap">
+<script>
+/* Hero ve vitrin hareketi: "hareketi azalt" kapalıysa html.hero-anim konur;
+   hero başlangıç durumları gizli başlar, vitrin sabitlenen yatay şeride geçer.
+   Motion 2,5 sn içinde başlamazsa sınıf kalkar; içerik hareketsiz ve tam
+   görünür, vitrin kendi yatay satırında kayar. JS yoksa sınıf hiç konmaz. */
+(function(h){
+  if (!window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  h.classList.add('hero-anim');
+  window.__heroGuvenlik = setTimeout(function(){ h.classList.remove('hero-anim'); }, 2500);
+})(document.documentElement);
+</script>
+<script src="vendor/motion-hero.min.js" defer></script>
 <script src="hata.js?v=20261002"></script>
 <script src="dogrulama.js?v=20260927d"></script>
 <script src="sunucu.js"></script>
@@ -133,88 +149,85 @@ img{max-width:100%;height:auto}
 .nbtn:hover{transform:translateY(-2px)}
 .nbtn.dolu:hover{box-shadow:0 8px 22px rgba(232,135,58,.55)}
 
-/* ═══════════ HERO ═══════════ */
-.hero{position:relative;overflow:hidden;color:#fff;padding:64px 0 96px;
-  background:linear-gradient(165deg,#0A3555 0%,var(--gece-2) 45%,var(--lacivert) 100%)}
-.hero .kap{position:relative;z-index:3;display:grid;grid-template-columns:1.06fr .94fr;gap:40px;align-items:center}
+/* ═══════════ HERO ═══════════
+   Hareket Motion ile (hero sonundaki betik).
+   Başlangıç durumları yalnız html.hero-anim varken gizli; sınıfı <head>
+   koyar, hareketi azalt açıksa hiç konmaz, JS yoksa içerik düz görünür. */
+.hero{position:relative;overflow:hidden;color:#EAF2F7;padding:64px 0 124px;background:#03182B}
+.hz-fon{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.hz-nokta{position:absolute;inset:0;
+  background-image:radial-gradient(rgba(143,211,206,.2) 1px,transparent 1.6px);background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(ellipse 70% 75% at 58% 42%,#000 5%,transparent 72%);
+          mask-image:radial-gradient(ellipse 70% 75% at 58% 42%,#000 5%,transparent 72%)}
+/* ışık konisi: sol üst köşeden sağ alta, çok düşük karşıtlık */
+.hz-isik{position:absolute;inset:0;
+  background:conic-gradient(from 100deg at -10% -25%,transparent 0deg,rgba(47,167,158,.08) 16deg,rgba(245,166,97,.14) 34deg,rgba(47,167,158,.06) 52deg,transparent 68deg);
+  -webkit-mask-image:radial-gradient(farthest-side at -10% -25%,#000,transparent);
+          mask-image:radial-gradient(farthest-side at -10% -25%,#000,transparent)}
+.hz-ust{position:relative;z-index:2;display:grid;grid-template-columns:1.1fr .9fr;gap:52px;align-items:center}
 
-/* — canlı arka plan katmanları — */
+/* — hero metin — */
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;letter-spacing:.13em;
+  text-transform:uppercase;color:#8FD3CE;font-weight:700}
+.eyebrow b{font:800 11px/1 var(--mono);letter-spacing:.04em;color:#03182B;background:#F5A661;padding:5px 7px;border-radius:5px}
+.hero h1{font-family:"Bricolage Grotesque",var(--sans);font-weight:700;font-size:clamp(38px,4.6vw,60px);
+  line-height:1.03;letter-spacing:-.022em;margin:20px 0;color:#EAF2F7}
+.hero h1 .satir{display:block}
+.hero h1 .k{display:inline-block}
+/* "kolay": turuncu degrade, üstünden arada bir parıltı geçer (shiny-text) */
+.hero h1 em{font-style:normal;color:transparent;-webkit-background-clip:text;background-clip:text;
+  background-image:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.75) 50%,transparent 65%),linear-gradient(96deg,#E8873A,#FFC58A);
+  background-size:220% 100%,100% 100%;background-repeat:no-repeat;background-position:160% 0,0 0;
+  animation:parilti 7s ease-in-out 2.6s infinite}
+@keyframes parilti{0%{background-position:160% 0,0 0}26%,100%{background-position:-60% 0,0 0}}
+.hero .ph{font-size:17px;color:#A9C0CF;line-height:1.62;margin:0 0 28px;max-width:34em}
+.hero .ph b{color:#EAF2F7;font-weight:650}
+
+/* — düğmeler: birincilde kenarda dolaşan kıvılcım (shimmer-button) — */
+.hz-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.gez{position:relative;z-index:0;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;gap:11px;
+  background:#E8873A;color:#fff;text-decoration:none;font-weight:800;font-size:17.5px;padding:16px 30px;border-radius:13px;
+  box-shadow:0 12px 32px rgba(232,135,58,.36);transition:transform .25s var(--yay),box-shadow .25s var(--yay)}
+.gez::before{content:"";position:absolute;inset:1.5px;z-index:-1;border-radius:11.5px;background:linear-gradient(100deg,#E8873A,#F29D52)}
+.gez .kivilcim{position:absolute;inset:0;z-index:-2;container-type:size;filter:blur(2px)}
+.gez .kivilcim>span{position:absolute;top:0;left:0;height:100cqh;aspect-ratio:1;animation:kivilcimKay 3s ease-in-out infinite alternate}
+.gez .kivilcim>span::before{content:"";position:absolute;inset:-100%;
+  background:conic-gradient(from 225deg,transparent 0,#FFF3E6 90deg,transparent 90deg);animation:kivilcimDon 6s linear infinite}
+@keyframes kivilcimKay{to{transform:translateX(calc(100cqw - 100%))}}
+@keyframes kivilcimDon{0%{transform:rotate(0)}15%,35%{transform:rotate(90deg)}65%,85%{transform:rotate(270deg)}100%{transform:rotate(360deg)}}
+.gez:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(232,135,58,.5)}
+.gez .ok{display:inline-block;transition:transform .28s var(--yay)}
+.gez:hover .ok{transform:translateX(4px)}
+.dene{display:inline-flex;align-items:center;color:#EAF2F7;text-decoration:none;font-weight:700;font-size:16px;
+  padding:15px 22px;border-radius:13px;border:1.5px solid rgba(255,255,255,.22);transition:border-color .25s,background .25s}
+.dene:hover{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.05)}
+.gez:focus-visible,.dene:focus-visible{outline:2px solid #F5A661;outline-offset:3px}
+
+.rozetler{display:flex;flex-wrap:wrap;margin-top:34px}
+.rozetler>div{display:flex;flex-direction:column;justify-content:flex-end;padding:0 22px;border-left:1px solid rgba(255,255,255,.12)}
+.rozetler>div:first-child{padding-left:0;border-left:0}
+.rozetler b{display:block;font-size:27px;color:#EAF2F7;font-family:var(--mono);font-weight:800;
+  font-variant-numeric:tabular-nums;line-height:1.15}
+.rozetler span{font-size:12.5px;color:#A9C0CF}
+
+/* — canlı arka plan katmanları (meslektaş daveti bölümü kullanır) — */
 .fon{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
 .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;will-change:transform}
 .blob.b1{width:520px;height:520px;top:-190px;right:-90px;background:radial-gradient(circle,#1B7FB8,transparent 68%);animation:suz1 22s ease-in-out infinite}
 .blob.b2{width:440px;height:440px;bottom:-200px;left:-110px;background:radial-gradient(circle,var(--accent-2),transparent 66%);animation:suz2 27s ease-in-out infinite}
-.blob.b3{width:340px;height:340px;top:38%;left:44%;background:radial-gradient(circle,var(--turuncu),transparent 64%);opacity:.22;animation:suz3 19s ease-in-out infinite}
 @keyframes suz1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-60px,50px) scale(1.14)}}
 @keyframes suz2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(70px,-45px) scale(1.1)}}
-@keyframes suz3{0%,100%{transform:translate(0,0)}33%{transform:translate(50px,-40px)}66%{transform:translate(-40px,30px)}}
 
-.izgaraFon{position:absolute;inset:-40% -10% -10%;opacity:.17;
-  background-image:linear-gradient(rgba(143,211,206,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(143,211,206,.5) 1px,transparent 1px);
-  background-size:56px 56px;
-  -webkit-mask-image:radial-gradient(760px 430px at 66% 36%,#000 0%,transparent 76%);
-  mask-image:radial-gradient(760px 430px at 66% 36%,#000 0%,transparent 76%);
-  animation:kaydir 34s linear infinite}
-@keyframes kaydir{to{background-position:56px 56px,56px 56px}}
-
-/* — hero grafiği: net seyri kendi kendini çizer — */
-.grafik{position:absolute;right:-30px;top:50%;transform:translateY(-50%);width:min(700px,64%);opacity:.5;z-index:2;pointer-events:none}
-.grafik .cizgi{fill:none;stroke:url(#gGrad);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:470;stroke-dashoffset:470;animation:ciz 3.2s var(--yay) .5s forwards}
-@keyframes ciz{to{stroke-dashoffset:0}}
-.grafik .alan{fill:url(#aGrad);opacity:0;animation:belir 1.6s ease 2.4s forwards}
-@keyframes belir{to{opacity:1}}
-.grafik .hedefCizgi{stroke:var(--turuncu);stroke-width:1.4;stroke-dasharray:7 7;opacity:0;animation:belir .9s ease 3s forwards}
-.grafik .hedefYazi{fill:var(--turuncu-2);font-size:11px;font-family:var(--mono);opacity:0;animation:belir .9s ease 3.2s forwards}
-.grafik .nk{fill:#fff;opacity:0;transform-box:fill-box;transform-origin:center;animation:nokta .5s var(--yay) forwards}
-@keyframes nokta{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
-.grafik .halka{fill:none;stroke:var(--turuncu);stroke-width:2;opacity:0;transform-box:fill-box;transform-origin:center;
-  animation:nabizHalka 2.6s ease-out 3.6s infinite}
-@keyframes nabizHalka{0%{opacity:.85;transform:scale(.6)}70%,100%{opacity:0;transform:scale(2.6)}}
-
-/* — hero metin — */
-.eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;letter-spacing:.14em;
-  text-transform:uppercase;color:#8FD3CE;font-weight:700;
-  background:rgba(47,167,158,.12);border:1px solid rgba(47,167,158,.3);padding:7px 15px;border-radius:30px}
-.eyebrow i{width:8px;height:8px;border-radius:50%;background:var(--accent-2);animation:nabiz 2.1s ease-in-out infinite}
-@keyframes nabiz{0%,100%{box-shadow:0 0 0 0 rgba(47,167,158,.75)}70%{box-shadow:0 0 0 11px rgba(47,167,158,0)}}
-.hero h1{font-size:clamp(29px,4.3vw,43px);line-height:1.15;letter-spacing:-.015em;margin:20px 0 16px;font-weight:780;color:#fff}
-.hero h1 .satir{display:block;overflow:hidden;padding-bottom:2px}
-.hero h1 .satir>span{display:block;transform:translateY(108%);animation:kalk .95s var(--yay) forwards}
-@keyframes kalk{to{transform:translateY(0)}}
-.hero h1 em{font-style:normal;white-space:nowrap;
-  background:linear-gradient(96deg,var(--turuncu),#FFCB8E);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero .ph{font-size:17px;color:#C6DAE6;line-height:1.62;margin:0 0 26px;max-width:35em;
-  opacity:0;animation:yukari .8s var(--yay) .75s forwards}
-@keyframes yukari{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.hero .ph b{color:#fff}
-
-.gez{display:inline-flex;align-items:center;gap:12px;background:linear-gradient(100deg,var(--turuncu),#F09A4E);
-  color:#fff;text-decoration:none;font-weight:800;font-size:19px;padding:17px 40px;border-radius:13px;
-  box-shadow:0 12px 34px rgba(232,135,58,.45);border:0;position:relative;overflow:hidden;
-  opacity:0;animation:yukari .8s var(--yay) .95s forwards;
-  transition:transform .25s var(--yay),box-shadow .25s var(--yay)}
-.gez::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;
-  background:linear-gradient(100deg,transparent,rgba(255,255,255,.42),transparent);
-  transform:skewX(-18deg);animation:parla 4.6s ease-in-out 2s infinite}
-@keyframes parla{0%{left:-70%}55%,100%{left:135%}}
-.gez:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 18px 44px rgba(232,135,58,.6)}
-.gez .ok{display:inline-block;transition:transform .28s var(--yay)}
-.gez:hover .ok{transform:translateX(5px)}
-.gezcap{font-size:13px;color:#9FC0D2;margin:12px 0 0}
-
-.rozetler{display:flex;gap:30px;margin-top:32px;flex-wrap:wrap}
-.rozetler>div{opacity:0;animation:yukari .7s var(--yay) forwards}
-.rozetler b{display:block;font-size:27px;color:#fff;font-family:var(--mono);font-weight:800;
-  font-variant-numeric:tabular-nums;line-height:1.15}
-.rozetler span{font-size:12.5px;color:#9FC0D2}
-
-/* ═══════════ GİRİŞ KARTI ═══════════ */
-.kartSar{position:relative;opacity:0;animation:kartGel 1s var(--yay) .35s forwards}
-@keyframes kartGel{from{opacity:0;transform:translateY(34px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-.kartSar::before{content:"";position:absolute;inset:-3px;border-radius:23px;
-  background:linear-gradient(130deg,var(--accent-2),transparent 45%,var(--turuncu));
-  opacity:.55;filter:blur(14px);animation:isilti 6s ease-in-out infinite}
-@keyframes isilti{0%,100%{opacity:.35}50%{opacity:.8}}
+/* ═══════════ GİRİŞ KARTI ═══════════
+   Kenarında bir ışık dolaşır (border-beam): ışık kartın ARKASINDA, 1,5 px'lik
+   halkada görünür. offset-path rect() desteklemeyen tarayıcıda hiç çizilmez. */
+.kartSar{position:relative;padding:1.5px;border-radius:21.5px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.4)}
+.kartSar .giriskart{z-index:1}
+.isin{position:absolute;inset:0;z-index:0;pointer-events:none}
+.isin::after{content:"";position:absolute;width:120px;aspect-ratio:1;offset-path:rect(0 auto auto 0 round 21.5px);
+  background:linear-gradient(to left,#F5A661,#2FA79E 40%,transparent);animation:isin 9s linear infinite}
+@keyframes isin{from{offset-distance:0%}to{offset-distance:100%}}
+@supports not (offset-path:rect(0 auto auto 0)){.isin{display:none}}
 .giriskart{position:relative;background:#fff;border-radius:20px;box-shadow:0 30px 70px rgba(0,0,0,.34);padding:24px;color:var(--ink)}
 .giriskart h3{margin:2px 0 4px;font-size:18px}
 .giriskart .ac{font-size:12.5px;color:var(--ink-3);margin-bottom:18px}
@@ -233,6 +246,27 @@ img{max-width:100%;height:auto}
 .rbtn.gh:hover{background:var(--accent-soft);transform:translateY(-2px)}
 .rol .fiy{font-size:11.5px;color:var(--ink-3);margin-top:9px}
 .giriskart .altnot{text-align:center;font-size:13px;margin-top:6px;color:var(--ink-3)}
+
+/* — Motion başlangıç durumları: yalnız html.hero-anim varken — */
+.hero-anim .hero .eyebrow,.hero-anim .hero h1 .k,.hero-anim .hero .ph,.hero-anim .hz-cta,
+.hero-anim .rozetler>div,.hero-anim .kartSar{opacity:0}
+.hero-anim .hero h1 .k{filter:blur(8px);transform:translateY(12px)}
+
+@media(max-width:900px){
+  .hz-ust{grid-template-columns:1fr;gap:40px}
+}
+@media(max-width:600px){
+  .hero{padding:38px 0 100px}
+  .hero h1{font-size:clamp(32px,10vw,38px)}
+  .hero .ph{font-size:16px}
+  .hz-cta{flex-direction:column;align-items:stretch}
+  .gez,.dene{justify-content:center}
+  .gez{font-size:17px;padding:15px 24px}
+  .rozetler{display:grid;grid-template-columns:1fr 1fr;gap:18px 0;margin-top:28px}
+  .rozetler>div{padding:0 0 0 16px}
+  .rozetler>div:nth-child(odd){padding-left:0;border-left:0}
+  .rozetler b{font-size:23px}
+}
 
 /* ═══════════ HERO ALT DALGA ═══════════ */
 .dalga{position:absolute;bottom:-1px;left:0;width:100%;line-height:0;z-index:3;pointer-events:none}
@@ -273,7 +307,6 @@ h2{font-size:clamp(23px,3vw,30px);margin:0 0 10px;letter-spacing:-.01em}
 .pencere{margin:0;background:#fff;border:1px solid var(--line-soft);border-radius:16px;overflow:hidden;
   box-shadow:0 14px 40px rgba(3,24,43,.09);
   transition:transform .45s var(--yay),box-shadow .45s var(--yay)}
-.pencere:hover{transform:translateY(-8px) scale(1.012);box-shadow:0 28px 64px rgba(3,24,43,.19)}
 .pencere .cubuk{display:flex;align-items:center;gap:7px;padding:11px 14px;background:#F0F4F6;border-bottom:1px solid var(--line-soft)}
 .pencere .cubuk i{width:10px;height:10px;border-radius:50%;flex:none;display:block}
 .pencere .cubuk i:nth-child(1){background:#F0685C}
@@ -283,7 +316,6 @@ h2{font-size:clamp(23px,3vw,30px);margin:0 0 10px;letter-spacing:-.01em}
   font-size:10.5px;color:var(--ink-3);display:flex;align-items:center;padding:0 11px;font-family:var(--mono);overflow:hidden;white-space:nowrap}
 .pencere .vitrinGorsel{overflow:hidden;border-bottom:1px solid var(--line-soft)}
 .pencere img{width:100%;display:block;transition:transform .8s var(--yay)}
-.pencere:hover img{transform:scale(1.045)}
 .pencere figcaption{padding:15px 17px}
 .pencere figcaption b{font-size:15px}
 .pencere figcaption div{color:var(--ink-3);font-size:13px;margin-top:3px}
@@ -397,19 +429,12 @@ footer a:hover{color:var(--turuncu)}
 
 /* ═══════════ DUYARLI ═══════════ */
 @media(max-width:900px){
-  .hero .kap{grid-template-columns:1fr;gap:34px}
   .nav .baglar{display:none}
-  .grafik{width:100%;right:-14%;opacity:.2}
-  .grafik .hedefYazi,.grafik .hedefCizgi{display:none}
   .vitrin-grid{grid-template-columns:1fr}
   .paketgrid{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:600px){
   section{padding:48px 0}
-  .hero{padding:44px 0 76px}
-  .rozetler{gap:20px}
-  .rozetler b{font-size:23px}
-  .gez{font-size:17px;padding:15px 28px;width:100%;justify-content:center}
   .nbtn{padding:8px 12px;font-size:12.5px}
   .nav .marka span{display:none}
   .guven .kap{gap:14px;font-size:12.5px}
@@ -421,54 +446,77 @@ footer a:hover{color:var(--turuncu)}
   html{scroll-behavior:auto}
   *,*::before,*::after{animation:none !important;transition:none !important}
   [data-gor]{opacity:1 !important;transform:none !important}
-  .hero h1 .satir>span{transform:none !important}
-  .hero .ph,.gez,.rozetler>div,.kartSar{opacity:1 !important}
-  .grafik .cizgi{stroke-dashoffset:0 !important}
-  .grafik .alan,.grafik .hedefCizgi,.grafik .hedefYazi,.grafik .nk{opacity:1 !important}
-  .grafik .halka{display:none}
+  .gez .kivilcim,.isin{display:none}
   .adimlar.gor::after,.adimlar::after{transform:scaleY(1) !important}
 }
 
-/* ═══════════ VİTRİN KARUSELİ ═══════════ */
-.vit-kutu{position:relative;max-width:860px;margin:0 auto}
-.vit-sahne{position:relative;aspect-ratio:15/8;background:#0B2D45;border-bottom:1px solid var(--line-soft);overflow:hidden}
-.vit-slayt{position:absolute;inset:0;opacity:0;transform:translateX(24px);pointer-events:none;
-  transition:opacity .45s var(--yay),transform .45s var(--yay)}
-.vit-slayt.aktif{opacity:1;transform:none;pointer-events:auto}
-.vit-slayt.geri{transform:translateX(-24px)}
-.vit-slayt picture{display:block;width:100%;height:100%}
-.vit-slayt img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
-.vit-ozl{text-align:left;height:100%;display:flex;flex-direction:column;justify-content:center;gap:10px;
-  padding:26px 34px;color:#fff;background:radial-gradient(900px 420px at 80% -10%,#12507a 0%,#0B2D45 55%,#03182B 100%)}
-.vit-ozl .oi{font-size:34px;line-height:1}
-.vit-ozl .ob{font-size:clamp(18px,2.6vw,26px);font-weight:780;letter-spacing:-.01em;line-height:1.2}
-.vit-ozl .ob .yeni{display:inline-block;background:var(--turuncu);color:#fff;font-size:11px;font-weight:800;
-  letter-spacing:.08em;border-radius:20px;padding:3px 10px;vertical-align:4px;margin-left:8px;
-  animation:nabiz 2.1s ease-in-out infinite}
-.vit-ozl .om{font-size:clamp(12.5px,1.6vw,14.5px);color:#C6DAE6;line-height:1.6;position:relative;padding-left:20px}
-.vit-ozl .om::before{content:"✓";position:absolute;left:0;color:#8FD3CE;font-weight:800}
-.vit-ok{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:44px;height:44px;border-radius:50%;
-  border:0;cursor:pointer;font-size:22px;line-height:1;color:var(--lacivert);background:#fff;
-  box-shadow:0 8px 24px rgba(3,24,43,.28);display:flex;align-items:center;justify-content:center;
-  transition:transform .2s var(--yay),box-shadow .2s,background .2s}
-.vit-ok:hover{transform:translateY(-50%) scale(1.12);background:var(--turuncu);color:#fff}
-.vit-ok.sol{left:-18px}.vit-ok.sag{right:-18px}
-@media(max-width:920px){.vit-ok.sol{left:8px}.vit-ok.sag{right:8px}}
-.vit-nokta{display:flex;gap:8px;justify-content:center;margin-top:16px}
-.vit-nokta button{width:9px;height:9px;border-radius:20px;border:0;padding:0;cursor:pointer;
-  background:var(--line);transition:width .3s var(--yay),background .25s}
-.vit-nokta button.aktif{width:26px;background:var(--turuncu)}
-.vit-kutu figcaption{min-height:64px}
-@media (prefers-reduced-motion: reduce){
-  .vit-slayt{transition:none}
-  .vit-ozl .ob .yeni{animation:none}
+/* ═══════════ VİTRİN — yatay kaydırmalı galeri ═══════════
+   Varsayılan (hareketi azalt, JS ya da Motion yok, alçak ekran): kartlar
+   kendi yatay satırında; parmakla, tekerle ya da klavyeyle kayar, snap ile
+   oturur. html.hero-anim + en az 521 px yükseklik: bölüm menünün (54 px)
+   altında sabitlenir, dikey kaydırma şeridi ilk karttan sonuncusuna yatay
+   taşır (bölüm sonundaki betik), kartlar ekran ortasına uzaklıklarına göre
+   Y ekseninde döner. Kaydırma (--ry) ve fare (--hx --hy --hry) tek
+   transform'da birleşir; fare değişkenleri @property ile yumuşak geçer,
+   kaydırma değişkeni geçişsiz (kaydırmanın gerisinde kalmasın). */
+@property --hx{syntax:'<length>';inherits:false;initial-value:0px}
+@property --hy{syntax:'<length>';inherits:false;initial-value:0px}
+@property --hry{syntax:'<angle>';inherits:false;initial-value:0deg}
+@property --nx{syntax:'<length>';inherits:false;initial-value:0px}
+.vitrin{--kart:min(560px,80vw);--ara:24px;--kenar:max(22px,(100% - 1060px) / 2 + 22px)}
+.vt-ray{overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:var(--kenar);
+  scrollbar-width:thin}
+.vt-serit{display:flex;align-items:stretch;gap:var(--ara);width:max-content;padding:8px var(--kenar) 28px;text-align:left}
+/* TİTREME DÜZELTMESİ (3 Eki 2026): fareyi DIŞ kutu (.vt-kart) algılar ve
+   yerinden oynamaz; kayan ve dönen İÇ kutudur (.vt-ic). Eskiden ikisi aynı
+   öğeydi: kart kayıp dönünce farenin altından çekiliyor, hover düşüp geri
+   geliyordu. Ayrıca şerit preserve-3d iken dönen kartın yarısı şeridin
+   "arkasına" düşüyor, fare o yarıda kartı hiç görmüyordu; artık her kart
+   kendi perspective() işleviyle düz çizilir. --ry dış kutuya yazılır, içe kalıtılır.
+   margin:0 ŞART: dış kutu bir <figure>, tarayıcının varsayılan 40 px yan
+   boşluğu kartlar arasını 24 px yerine 104 px yapıyordu. */
+.vt-kart{position:relative;flex:none;width:var(--kart);margin:0;display:flex;flex-direction:column;scroll-snap-align:start;
+  transform:translate3d(var(--nx),0,0);transition:--nx .45s var(--yay)}
+.vt-ic{flex:1;display:flex;flex-direction:column;
+  transform:perspective(1400px) translate3d(var(--hx),var(--hy),0) rotateY(calc(var(--ry,0deg) + var(--hry)));
+  transition:--hx .45s var(--yay),--hy .45s var(--yay),--hry .45s var(--yay),box-shadow .45s var(--yay)}
+.vt-kart:focus-visible{outline:none}
+.vt-kart:focus-visible .vt-ic{outline:3px solid var(--turuncu);outline-offset:4px}
+.vt-kart figcaption{flex:1}
+.vt-kart .ekran{position:relative;aspect-ratio:15/8;overflow:hidden;background:var(--gece-2);border-bottom:1px solid var(--line-soft)}
+.vt-kart .ekran picture{display:block;height:100%}
+.vt-kart .ekran img{width:100%;height:100%;object-fit:cover;object-position:top;transition:transform .45s var(--yay)}
+.vt-kart .yeni{position:absolute;top:12px;right:12px;background:var(--turuncu);color:#fff;font-size:11.5px;font-weight:800;
+  letter-spacing:.08em;border-radius:20px;padding:4px 12px;box-shadow:0 6px 18px rgba(232,135,58,.45)}
+.vt-cubuk{display:none}
+
+/* fare: kart yana kayarak döner, resim ters yöne kayar; sonrakiler sağa,
+   öncekiler biraz sola açılır. Klavye odağında aynısı. */
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  .vt-kart:hover .vt-ic,.vt-kart:focus-within .vt-ic{--hx:18px;--hy:-8px;--hry:-12deg;box-shadow:0 34px 70px rgba(3,24,43,.26)}
+  .vt-kart:hover~.vt-kart,.vt-kart:focus-within~.vt-kart{--nx:36px}
+  .vt-kart:has(~.vt-kart:hover),.vt-kart:has(~.vt-kart:focus-within){--nx:-12px}
+  .vt-kart:hover img,.vt-kart:focus-within img{transform:translateX(-12px) scale(1.06)}
 }
 
-
-.vit-slayt{position:absolute}
-.vit-yeni{position:absolute;top:14px;right:14px;background:var(--turuncu);color:#fff;font-size:12px;
-  font-weight:800;letter-spacing:.08em;border-radius:20px;padding:5px 14px;
-  box-shadow:0 6px 18px rgba(232,135,58,.5);animation:nabiz 2.1s ease-in-out infinite}
+@media (min-height:521px){
+  .hero-anim .vitrin{--yuk:calc(100vh - 54px);--kart:min(560px,44vw,max(260px,(var(--yuk) - 330px) * 1.875));
+    height:calc(var(--yuk) + var(--vt-uzun,8 * (var(--kart) + var(--ara))));padding:0;background:var(--paper)}
+  @supports (height:100svh){ .hero-anim .vitrin{--yuk:calc(100svh - 54px)} }
+  /* overflow:clip — hidden olsaydı klavye odağı bu kutuyu yana kaydırabilirdi */
+  .hero-anim .vt-sabit{position:sticky;top:54px;height:var(--yuk);overflow:hidden;overflow:clip;
+    display:flex;flex-direction:column;justify-content:center;background:linear-gradient(180deg,var(--paper) 0%,#EAF0F2 100%)}
+  .hero-anim .vt-sabit .bolumBasi{margin-bottom:22px}
+  .hero-anim .vt-ray{overflow:visible;scroll-snap-type:none}
+  .hero-anim .vt-serit{padding:10px calc((100% - var(--kart)) / 2) 14px;will-change:transform}
+  .hero-anim .vt-cubuk{display:block;width:min(420px,60vw);height:3px;margin:18px auto 0;border-radius:3px;background:var(--line);overflow:hidden}
+  .hero-anim .vt-cubuk i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--turuncu));transform:scaleX(0);transform-origin:left}
+}
+@media(max-width:600px){
+  .vitrin{--kart:84vw;--ara:14px}
+  .hero-anim .vitrin{--kart:84vw}
+  .vt-kart .yeni{top:8px;right:8px;font-size:10px;padding:3px 9px}
+}
 </style>
 </head>
 
@@ -483,51 +531,22 @@ footer a:hover{color:var(--turuncu)}
 </div></div>
 
 <div class="hero" id="ust">
-  <div class="fon" aria-hidden="true">
-    <div class="izgaraFon"></div>
-    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-  </div>
+  <div class="hz-fon" aria-hidden="true"><div class="hz-nokta"></div><div class="hz-isik"></div></div>
 
-  <svg class="grafik" viewBox="0 0 420 210" aria-hidden="true" focusable="false">
-    <defs>
-      <linearGradient id="gGrad" x1="0" y1="1" x2="1" y2="0">
-        <stop offset="0%" stop-color="#8FD3CE"/><stop offset="60%" stop-color="#7FD0E8"/><stop offset="100%" stop-color="#F5A661"/>
-      </linearGradient>
-      <linearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#2FA79E" stop-opacity=".34"/><stop offset="100%" stop-color="#2FA79E" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    <polygon class="alan" points="10,170 60,150 110,157 160,126 210,132 260,100 310,88 355,58 400,42 400,210 10,210"/>
-    <line class="hedefCizgi" x1="10" y1="30" x2="410" y2="30"/>
-    <text class="hedefYazi" x="10" y="24">hedef net</text>
-    <polyline class="cizgi" points="10,170 60,150 110,157 160,126 210,132 260,100 310,88 355,58 400,42"/>
-    <circle class="nk" cx="10"  cy="170" r="3.6" style="animation-delay:.8s"/>
-    <circle class="nk" cx="60"  cy="150" r="3.6" style="animation-delay:1.1s"/>
-    <circle class="nk" cx="110" cy="157" r="3.6" style="animation-delay:1.4s"/>
-    <circle class="nk" cx="160" cy="126" r="3.6" style="animation-delay:1.7s"/>
-    <circle class="nk" cx="210" cy="132" r="3.6" style="animation-delay:2s"/>
-    <circle class="nk" cx="260" cy="100" r="3.6" style="animation-delay:2.3s"/>
-    <circle class="nk" cx="310" cy="88"  r="3.6" style="animation-delay:2.6s"/>
-    <circle class="nk" cx="355" cy="58"  r="3.6" style="animation-delay:2.9s"/>
-    <circle class="nk" cx="400" cy="42"  r="5"   style="animation-delay:3.2s;fill:#F5A661"/>
-    <circle class="halka" cx="400" cy="42" r="7"/>
-  </svg>
-
-  <div class="kap">
+  <div class="kap hz-ust">
     <div>
-      <div class="eyebrow"><i></i>YKS 2027 · Yapay zekâ destekli koçluk</div>
-      <h1>
-        <span class="satir"><span style="animation-delay:.15s">Eğitim koçluğu hiç</span></span>
-        <span class="satir"><span style="animation-delay:.28s">bu kadar <em>kolay</em></span></span>
-        <span class="satir"><span style="animation-delay:.41s">olmamıştı.</span></span>
-      </h1>
+      <div class="eyebrow"><b>YKS 2027</b> · Yapay zekâ destekli koçluk</div>
+      <h1><span class="satir"><span class="k">Eğitim</span> <span class="k">koçluğu</span> <span class="k">hiç</span></span> <span class="satir"><span class="k">bu</span> <span class="k">kadar</span> <span class="k"><em>kolay</em></span></span> <span class="satir"><span class="k">olmamıştı.</span></span></h1>
       <p class="ph">Hedef bölümünü söyle; o bölüme son giren öğrencinin netleri referans alınır, <b>ne zaman · ne kadar · hangi konu</b> çalışacağın çıkar. Otomatik karne analizi, konu haritası, hedefe uzaklık ve “yetişir mi” hesabı tek panelde.</p>
-      <a class="gez" href="kocluk-sunucu.html#demo"><span class="ok">▶</span> Önce sistemi gez</a>
+      <div class="hz-cta">
+        <a class="gez" href="kocluk-sunucu.html#demo"><span class="kivilcim" aria-hidden="true"><span></span></span><span class="ok">▶</span> Önce sistemi gez</a>
+        <a class="dene" href="kocluk-sunucu.html#kayit">7 gün ücretsiz dene</a>
+      </div>
       <div class="rozetler">
-        <div style="animation-delay:1.15s"><b id="sayOgretmen" data-say="46" data-onek="">46</b><span>öğretmen</span></div>
-        <div style="animation-delay:1.27s"><b id="sayOgrenci" data-say="122" data-onek="">122</b><span>öğrenci</span></div>
-        <div style="animation-delay:1.39s"><b data-say="628">628</b><span>konu haritası</span></div>
-        <div style="animation-delay:1.51s"><b style="font-size:20px;font-family:var(--sans)">MEB + Özel</b><span>karne analizi</span></div>
+        <div><b id="sayOgretmen" data-say="46" data-onek="">46</b><span>öğretmen</span></div>
+        <div><b id="sayOgrenci" data-say="122" data-onek="">122</b><span>öğrenci</span></div>
+        <div><b data-say="628">628</b><span>konu haritası</span></div>
+        <div><b style="font-size:20px;font-family:var(--sans)">MEB + Özel</b><span>karne analizi</span></div>
       </div>
     </div>
 
@@ -543,6 +562,7 @@ footer a:hover{color:var(--turuncu)}
           <div class="fiy">Koçsuz Öğrenci Paketi · 99 TL / yıl</div></div>
         <div class="altnot">Koçun seni davet ettiyse, sana gönderdiği bağlantıdan gir.</div>
       </div>
+      <span class="isin" aria-hidden="true"></span>
     </div>
   </div>
 
@@ -551,80 +571,149 @@ footer a:hover{color:var(--turuncu)}
       <path fill="#ffffff" d="M0,40 C150,72 300,8 600,40 C900,72 1050,8 1200,40 L1200,76 L0,76 Z M1200,40 C1350,72 1500,8 1800,40 C2100,72 2250,8 2400,40 L2400,76 L1200,76 Z"/>
     </svg>
   </div>
+
+  <script>
+  /* Hero hareketi: Motion 14 (vendor/motion-hero.min.js, defer).
+     Açılış: üst yazı, başlık kelime kelime, metin, düğmeler, sayılar, kart.
+     Kaydırınca ışık konisi söner. html.hero-anim yoksa (hareketi azalt,
+     Motion geç kaldı) hiçbir şey yapmaz. */
+  document.addEventListener('DOMContentLoaded', function(){
+    var M = window.Motion, h = document.documentElement;
+    if (!M || !h.classList.contains('hero-anim')) return;
+    clearTimeout(window.__heroGuvenlik);
+    var hero = document.getElementById('ust');
+    function q(s){ return hero.querySelector(s); }
+    var yay = [.22,.68,.32,1], kademe = M.stagger;
+
+    M.animate(q('.eyebrow'), {opacity:[0,1], y:[8,0]}, {duration:.5, ease:yay});
+    M.animate(hero.querySelectorAll('h1 .k'), {opacity:[0,1], filter:['blur(8px)','blur(0px)'], y:[12,0]},
+      {duration:.7, ease:yay, delay:kademe(.06, {startDelay:.12})});
+    M.animate([q('.ph'), q('.hz-cta')], {opacity:[0,1], y:[14,0]},
+      {duration:.6, ease:yay, delay:kademe(.1, {startDelay:.5})});
+    M.animate(hero.querySelectorAll('.rozetler > div'), {opacity:[0,1], y:[10,0]},
+      {duration:.5, ease:yay, delay:kademe(.07, {startDelay:.75})});
+    M.animate(q('.kartSar'), {opacity:[0,1], x:[28,0]}, {duration:.8, ease:yay, delay:.3});
+
+    var isik = q('.hz-isik');
+    M.scroll(function(p){ isik.style.opacity = (1 - p).toFixed(3); },
+      {target: hero, offset: ['start start', 'end start']});
+  });
+  </script>
 </div>
 
 <div class="guven"><div class="kap">
   <span><b>✓</b> 7 gün ücretsiz deneme</span><span><b>✓</b> Kurulum yok, tarayıcıdan çalışır</span><span><b>✓</b> Hedef netler gerçek yerleşme verisiyle</span><span><b>✓</b> MEB ve özel yayın denemeleri</span>
 </div></div>
 
-<section class="vitrin" id="vitrin"><div class="kap" style="text-align:center">
-  <div class="bolumBasi" data-gor>
-    <div class="rozet">Gerçek panel · öne çıkanlar</div>
-    <h2>Sistemi içeriden gör</h2>
-    <p class="alt" style="max-width:36em;margin:0 auto 26px">Oklarla gez: gerçek panel ekranları ve sistemin en önemli özellikleri — yeni <b>Özel Ders</b> dahil.</p>
+<section class="vitrin" id="vitrin"><div class="vt-sabit">
+  <div class="kap" style="text-align:center">
+    <div class="bolumBasi" data-gor>
+      <div class="rozet">Gerçek panel · öne çıkanlar</div>
+      <h2>Sistemi içeriden gör</h2>
+      <p class="alt" style="max-width:36em;margin:0 auto 26px">Kaydırdıkça gerçek panel ekranları akar: sistemin en önemli özellikleri, yeni <b>Özel&nbsp;Ders</b> dahil.</p>
+    </div>
   </div>
-  <div class="vit-kutu" data-gor="buyu">
-    <button class="vit-ok sol" type="button" aria-label="Önceki" onclick="vitGit(-1)">‹</button>
-    <figure class="pencere" style="margin:0">
-      <div class="cubuk"><i></i><i></i><i></i><div class="adres" id="vitAdres">biyoser.com.tr</div></div>
-      <div class="vit-sahne" id="vitSahne">
-<div class="vit-slayt"><picture><source srcset="g/ekran-01-koc-kokpiti.webp" type="image/webp"><img src="g/ekran-01-koc-kokpiti.jpg" alt="Koç Kokpiti" width="1120" height="700" decoding="async"></picture></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-02-gelisim-ve-hedef.webp" type="image/webp"><img src="g/ekran-02-gelisim-ve-hedef.jpg" alt="Gelişim ve hedef" loading="lazy" width="1120" height="700" decoding="async"></picture></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-03-yetisir-mi-hesabi.webp" type="image/webp"><img src="g/ekran-03-yetisir-mi-hesabi.jpg" alt="“Yetişir mi” hesabı" loading="lazy" width="1120" height="700" decoding="async"></picture></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-04-hedef-referans-net.webp" type="image/webp"><img src="g/ekran-04-hedef-referans-net.jpg" alt="Hedef → referans net" loading="lazy" width="1120" height="700" decoding="async"></picture></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-05-ozel-ders-ogrenci-ekrani.webp" type="image/webp"><img src="g/ekran-05-ozel-ders-ogrenci-ekrani.jpg" alt="Özel Ders — öğrenci ekranı" loading="lazy" width="1500" height="800" decoding="async"></picture><span class="vit-yeni">YENİ</span></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-06-ozel-ders-ogretmen-ekrani.webp" type="image/webp"><img src="g/ekran-06-ozel-ders-ogretmen-ekrani.jpg" alt="Özel Ders — öğretmen ekranı" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-07-deneme-karnesi-okuma.webp" type="image/webp"><img src="g/ekran-07-deneme-karnesi-okuma.jpg" alt="Deneme karnesi okuma" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-08-otomatik-haftalik-plan.webp" type="image/webp"><img src="g/ekran-08-otomatik-haftalik-plan.jpg" alt="Otomatik haftalık plan" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
-<div class="vit-slayt"><picture><source srcset="g/ekran-09-veli-raporu.webp" type="image/webp"><img src="g/ekran-09-veli-raporu.jpg" alt="Veli raporu" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
-      </div>
-      <figcaption style="text-align:left"><b id="vitBaslik">—</b><div id="vitAcik" style="color:var(--ink-3);font-size:13px;margin-top:3px"></div></figcaption>
-    </figure>
-    <button class="vit-ok sag" type="button" aria-label="Sonraki" onclick="vitGit(1)">›</button>
+  <div class="vt-ray" role="region" aria-label="Panel ekranları">
+    <div class="vt-serit">
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · kokpit</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-01-koc-kokpiti.webp" type="image/webp"><img src="g/ekran-01-koc-kokpiti.jpg" alt="Koç Kokpiti" width="1120" height="700" decoding="async"></picture></div>
+        <figcaption><b>Koç Kokpiti</b><div>Tüm öğrenciler tek ekranda — kim acil, kim yolunda, risk sırasına göre.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · gelişim</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-02-gelisim-ve-hedef.webp" type="image/webp"><img src="g/ekran-02-gelisim-ve-hedef.jpg" alt="Gelişim ve hedef" width="1120" height="700" decoding="async"></picture></div>
+        <figcaption><b>Gelişim ve hedef</b><div>Net seyri ve hedefe uzaklık; deneme deneme, ders ders.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · yetişir mi</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-03-yetisir-mi-hesabi.webp" type="image/webp"><img src="g/ekran-03-yetisir-mi-hesabi.jpg" alt="“Yetişir mi” hesabı" loading="lazy" width="1120" height="700" decoding="async"></picture></div>
+        <figcaption><b>“Yetişir mi” hesabı</b><div>Kalan konu, gereken süre ve üç senaryolu yetişme analizi.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · hedef</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-04-hedef-referans-net.webp" type="image/webp"><img src="g/ekran-04-hedef-referans-net.jpg" alt="Hedef → referans net" loading="lazy" width="1120" height="700" decoding="async"></picture></div>
+        <figcaption><b>Hedef → referans net</b><div>Bölümü seç, son yerleşenin netleri hedef olarak otomatik gelsin.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/ogrenci · özel ders</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-05-ozel-ders-ogrenci-ekrani.webp" type="image/webp"><img src="g/ekran-05-ozel-ders-ogrenci-ekrani.jpg" alt="Özel Ders — öğrenci ekranı" loading="lazy" width="1500" height="800" decoding="async"></picture><span class="yeni">YENİ</span></div>
+        <figcaption><b>Özel Ders — YENİ · komisyonsuz</b><div>Branşını seç, talebini yayınla; kabul eden öğretmen WhatsApp'tan ulaşsın. 40 dk = 1.000 TL (tavsiye), Biyoser pay almaz.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · özel ders</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-06-ozel-ders-ogretmen-ekrani.webp" type="image/webp"><img src="g/ekran-06-ozel-ders-ogretmen-ekrani.jpg" alt="Özel Ders — öğretmen ekranı" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
+        <figcaption><b>Özel Ders — öğretmen ekranı</b><div>Branşındaki açık talepler; ilk kabul eden alır, öğrencinin numarası yalnız ona açılır.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · karne</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-07-deneme-karnesi-okuma.webp" type="image/webp"><img src="g/ekran-07-deneme-karnesi-okuma.jpg" alt="Deneme karnesi okuma" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
+        <figcaption><b>Deneme karnesi okuma</b><div>PDF'i yapıştır — netler ve yanlış konular kendiliğinden; tekrar eden eksikler işaretlenir.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · plan</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-08-otomatik-haftalik-plan.webp" type="image/webp"><img src="g/ekran-08-otomatik-haftalik-plan.jpg" alt="Otomatik haftalık plan" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
+        <figcaption><b>Otomatik haftalık plan</b><div>Sınava kadar yetiştiren program: rutinler dahil, beğenmediğin konuyu ✕ ile çıkar.</div></figcaption>
+      </div></figure>
+      <figure class="vt-kart" tabindex="0"><div class="pencere vt-ic">
+        <div class="cubuk"><i></i><i></i><i></i><div class="adres">biyoser.com.tr/kocluk · veli</div></div>
+        <div class="ekran"><picture><source srcset="g/ekran-09-veli-raporu.webp" type="image/webp"><img src="g/ekran-09-veli-raporu.jpg" alt="Veli raporu" loading="lazy" width="1500" height="800" decoding="async"></picture></div>
+        <figcaption><b>Veli raporu</b><div>Haftalık özet tek tuşla WhatsApp'a hazır — gönderme kararı koçta.</div></figcaption>
+      </div></figure>
+    </div>
   </div>
-  <div class="vit-nokta" id="vitNokta" role="tablist"></div>
+  <div class="vt-cubuk" aria-hidden="true"><i></i></div>
 </div></section>
 
 <script>
-/* Vitrin karuseli: oklarla ve noktalarla gezilir; 8 sn'de bir kendiliğinden
-   ilerler, kullanıcı dokununca bekler. Hareketi-azalt açıksa otomatik kapalı. */
-(function(){
-  var B=[["biyoser.com.tr/kocluk · kokpit","Koç Kokpiti","Tüm öğrenciler tek ekranda — kim acil, kim yolunda, risk sırasına göre."],["biyoser.com.tr/kocluk · gelişim","Gelişim ve hedef","Net seyri ve hedefe uzaklık; deneme deneme, ders ders."],["biyoser.com.tr/kocluk · yetişir mi","“Yetişir mi” hesabı","Kalan konu, gereken süre ve üç senaryolu yetişme analizi."],["biyoser.com.tr/kocluk · hedef","Hedef → referans net","Bölümü seç, son yerleşenin netleri hedef olarak otomatik gelsin."],["biyoser.com.tr/ogrenci · özel ders","Özel Ders — YENİ · komisyonsuz","Branşını seç, talebini yayınla; kabul eden öğretmen WhatsApp'tan ulaşsın. 40 dk = 1.000 TL (tavsiye), Biyoser pay almaz."],["biyoser.com.tr/kocluk · özel ders","Özel Ders — öğretmen ekranı","Branşındaki açık talepler; ilk kabul eden alır, öğrencinin numarası yalnız ona açılır."],["biyoser.com.tr/kocluk · karne","Deneme karnesi okuma","PDF'i yapıştır — netler ve yanlış konular kendiliğinden; tekrar eden eksikler işaretlenir."],["biyoser.com.tr/kocluk · plan","Otomatik haftalık plan","Sınava kadar yetiştiren program: rutinler dahil, beğenmediğin konuyu ✕ ile çıkar."],["biyoser.com.tr/kocluk · veli","Veli raporu","Haftalık özet tek tuşla WhatsApp'a hazır — gönderme kararı koçta."]];
-  var sahne=document.getElementById('vitSahne'); if(!sahne) return;
-  var S=[].slice.call(sahne.children), N=document.getElementById('vitNokta');
-  var i=0, zam=null;
-  var azalt=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  N.innerHTML=S.map(function(_,k){return '<button type="button" aria-label="'+(k+1)+'. slayt" onclick="vitSec('+k+')"></button>';}).join('');
-  function ciz(yon){
-    S.forEach(function(el,k){
-      el.classList.remove('aktif','geri');
-      if(k===i) el.classList.add('aktif');
-      else if(yon<0) el.classList.add('geri');
-    });
-    [].slice.call(N.children).forEach(function(el,k){el.classList.toggle('aktif',k===i);});
-    var b=B[i]||['','',''];
-    document.getElementById('vitAdres').textContent=b[0];
-    document.getElementById('vitBaslik').textContent=b[1];
-    document.getElementById('vitAcik').textContent=b[2];
+/* Vitrin galerisi: Motion scroll (vendor/motion-hero.min.js, defer).
+   html.hero-anim varsa ve ekran en az 521 px yüksekse bölüm menünün altında
+   sabitlenir; dikey kaydırma şeridi ilk karttan sonuncusuna yatay taşır,
+   alttaki çubuk ilerlemeyi gösterir. Her kart ekran ortasına uzaklığına göre
+   Y ekseninde döner: ortadaki düz, sağdan gelen -14°, solda kalan +8°
+   (telefonda -8° / +5°). Kaydırma uzunluğu = şeridin taşan genişliği,
+   boyut değişince yeniden ölçülür. Sınıf yoksa (hareketi azalt, Motion yok)
+   betik hiçbir şey yapmaz; kartlar kendi yatay satırında kayar. */
+document.addEventListener('DOMContentLoaded', function(){
+  var M = window.Motion, bolum = document.getElementById('vitrin');
+  if (!M || !bolum || !document.documentElement.classList.contains('hero-anim')) return;
+  var MENU = 54;   /* sabit menünün küçülmüş yüksekliği; CSS'teki top:54px ile aynı */
+  var mq = matchMedia('(min-height: 521px)');
+  var ray = bolum.querySelector('.vt-ray'), serit = bolum.querySelector('.vt-serit');
+  var cubuk = bolum.querySelector('.vt-cubuk i'), kartlar = [].slice.call(serit.children);
+  var uzun = 0, gen = 0, merkez = [], sag = 14, sol = 8, p = 0;
+
+  function olc(){
+    gen = ray.clientWidth;
+    uzun = Math.max(0, serit.offsetWidth - gen);
+    merkez = kartlar.map(function(k){ return k.offsetLeft + k.offsetWidth / 2; });
+    sag = gen <= 600 ? 8 : 14; sol = gen <= 600 ? 5 : 8;
+    bolum.style.setProperty('--vt-uzun', uzun + 'px');
   }
-  function oto(){
-    if(azalt) return;
-    clearTimeout(zam);
-    zam=setTimeout(function(){ i=(i+1)%S.length; ciz(1); oto(); },8000);
+  function ciz(){
+    if (!mq.matches){ serit.style.transform = ''; kartlar.forEach(function(k){ k.style.removeProperty('--ry'); }); return; }
+    var x = -p * uzun;
+    serit.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)';
+    cubuk.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    for (var i = 0; i < kartlar.length; i++){
+      var d = (merkez[i] + x - gen / 2) / (gen / 2);
+      kartlar[i].style.setProperty('--ry', (d > 0 ? -sag * Math.min(d, 1) : sol * Math.min(-d, 1)).toFixed(2) + 'deg');
+    }
   }
-  window.vitGit=function(y){ i=(i+y+S.length)%S.length; ciz(y); oto(); };
-  window.vitSec=function(k){ var y=k>=i?1:-1; i=k; ciz(y); oto(); };
-  var kutu=document.querySelector('.vit-kutu');
-  if(kutu){ kutu.addEventListener('mouseenter',function(){clearTimeout(zam);});
-            kutu.addEventListener('mouseleave',oto); }
-  document.addEventListener('keydown',function(e){
-    var r=kutu&&kutu.getBoundingClientRect();
-    if(!r||r.bottom<0||r.top>innerHeight) return;
-    if(e.key==='ArrowLeft') vitGit(-1);
-    if(e.key==='ArrowRight') vitGit(1);
+  olc(); ciz();
+  /* ilerleme: bölüm üstü menünün altına değdiğinde 0, uzun kadar sonra 1 */
+  M.scroll(function(_, info){
+    p = Math.min(1, Math.max(0, (info.y.current - info.y.targetOffset + MENU) / (uzun || 1)));
+    ciz();
+  }, {target: bolum, offset: ['start start', 'end end']});
+  addEventListener('resize', function(){ olc(); ciz(); });
+  /* klavye: odaklanan kart ekranın ortasına gelsin */
+  bolum.addEventListener('focusin', function(e){
+    var i = kartlar.indexOf(e.target.closest && e.target.closest('.vt-kart'));
+    if (i < 0 || !mq.matches) return;
+    scrollTo({top: bolum.getBoundingClientRect().top + pageYOffset - MENU + uzun * i / (kartlar.length - 1)});
   });
-  ciz(1); oto();
-})();
+});
 </script>
 
 <section id="paketler"><div class="kap">
