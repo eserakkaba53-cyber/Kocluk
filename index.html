@@ -499,7 +499,10 @@ footer a:hover{color:var(--turuncu)}
   .vt-kart:hover img,.vt-kart:focus-within img{transform:translateX(-12px) scale(1.06)}
 }
 
-@media (min-height:521px){
+/* SABİTLEME YALNIZ YATAY EKRANDA (3 Eki 2026). Dik ekranda (telefon ya da
+   masaüstü görünümü açık telefon) sabitlenen bölüm bütün yüksekliği kaplıyor,
+   içerik ortada küçük kalıyordu; kullanıcı "mobilde ekran çok boş" dedi. */
+@media (min-height:521px) and (orientation:landscape){
   .hero-anim .vitrin{--yuk:calc(100vh - 54px);--kart:min(560px,44vw,max(260px,(var(--yuk) - 330px) * 1.875));
     height:calc(var(--yuk) + var(--vt-uzun,8 * (var(--kart) + var(--ara))));padding:0;background:var(--paper)}
   @supports (height:100svh){ .hero-anim .vitrin{--yuk:calc(100svh - 54px)} }
@@ -509,8 +512,19 @@ footer a:hover{color:var(--turuncu)}
   .hero-anim .vt-sabit .bolumBasi{margin-bottom:22px}
   .hero-anim .vt-ray{overflow:visible;scroll-snap-type:none}
   .hero-anim .vt-serit{padding:10px calc((100% - var(--kart)) / 2) 14px;will-change:transform}
-  .hero-anim .vt-cubuk{display:block;width:min(420px,60vw);height:3px;margin:18px auto 0;border-radius:3px;background:var(--line);overflow:hidden}
-  .hero-anim .vt-cubuk i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--turuncu));transform:scaleX(0);transform-origin:left}
+}
+.hero-anim .vt-cubuk{display:block;width:min(420px,60vw);height:3px;margin:18px auto 0;border-radius:3px;background:var(--line);overflow:hidden}
+.hero-anim .vt-cubuk i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--turuncu));transform:scaleX(0);transform-origin:left}
+/* Dik ekran: bölüm kendi yüksekliğinde, kartlar parmakla yatay kayar ve
+   ortaya oturur; açıyı ve çubuğu şeridin kendi kaydırması belirler (betik). */
+@media (orientation:portrait), (max-height:520px){
+  .hero-anim .vt-serit{padding-left:calc((100% - var(--kart)) / 2);padding-right:calc((100% - var(--kart)) / 2)}
+  .hero-anim .vt-kart{scroll-snap-align:center}
+}
+/* dokunmatikte tarayıcının yatay kaydırma çubuğu gizli: ilerlemeyi alttaki çubuk gösteriyor */
+@media (orientation:portrait) and (pointer:coarse){
+  .hero-anim .vt-ray{scrollbar-width:none}
+  .hero-anim .vt-ray::-webkit-scrollbar{display:none}
 }
 @media(max-width:600px){
   .vitrin{--kart:84vw;--ara:14px}
@@ -673,12 +687,14 @@ footer a:hover{color:var(--turuncu)}
    Y ekseninde döner: ortadaki düz, sağdan gelen -14°, solda kalan +8°
    (telefonda -8° / +5°). Kaydırma uzunluğu = şeridin taşan genişliği,
    boyut değişince yeniden ölçülür. Sınıf yoksa (hareketi azalt, Motion yok)
-   betik hiçbir şey yapmaz; kartlar kendi yatay satırında kayar. */
+   betik hiçbir şey yapmaz; kartlar kendi yatay satırında kayar.
+   Dik ekranda (telefon) sabitleme yok: kartlar parmakla kayar, açı ve çubuk
+   şeridin kendi kaydırmasından hesaplanır (kaydirCiz). */
 document.addEventListener('DOMContentLoaded', function(){
   var M = window.Motion, bolum = document.getElementById('vitrin');
   if (!M || !bolum || !document.documentElement.classList.contains('hero-anim')) return;
   var MENU = 54;   /* sabit menünün küçülmüş yüksekliği; CSS'teki top:54px ile aynı */
-  var mq = matchMedia('(min-height: 521px)');
+  var mq = matchMedia('(min-height: 521px) and (orientation: landscape)');
   var ray = bolum.querySelector('.vt-ray'), serit = bolum.querySelector('.vt-serit');
   var cubuk = bolum.querySelector('.vt-cubuk i'), kartlar = [].slice.call(serit.children);
   var uzun = 0, gen = 0, merkez = [], sag = 14, sol = 8, p = 0;
@@ -691,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function(){
     bolum.style.setProperty('--vt-uzun', uzun + 'px');
   }
   function ciz(){
-    if (!mq.matches){ serit.style.transform = ''; kartlar.forEach(function(k){ k.style.removeProperty('--ry'); }); return; }
+    if (!mq.matches){ serit.style.transform = ''; kaydirCiz(); return; }
     var x = -p * uzun;
     serit.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)';
     cubuk.style.transform = 'scaleX(' + p.toFixed(4) + ')';
@@ -700,6 +716,17 @@ document.addEventListener('DOMContentLoaded', function(){
       kartlar[i].style.setProperty('--ry', (d > 0 ? -sag * Math.min(d, 1) : sol * Math.min(-d, 1)).toFixed(2) + 'deg');
     }
   }
+  /* Dik ekran: ortaya gelen kart düz, kenardakiler açılı; çubuk kaydırılan oran. */
+  function kaydirCiz(){
+    var orta = ray.scrollLeft + gen / 2, tasma = ray.scrollWidth - gen;
+    cubuk.style.transform = 'scaleX(' + (tasma > 0 ? ray.scrollLeft / tasma : 0).toFixed(4) + ')';
+    for (var i = 0; i < kartlar.length; i++){
+      var d = (merkez[i] - orta) / (gen / 2);
+      kartlar[i].style.setProperty('--ry', (d > 0 ? -sag * Math.min(d, 1) : sol * Math.min(-d, 1)).toFixed(2) + 'deg');
+    }
+  }
+  /* kaydırma olayı zaten kare başına bir kez gelir; ek kısma gerekmez */
+  ray.addEventListener('scroll', function(){ if (!mq.matches) kaydirCiz(); }, {passive: true});
   olc(); ciz();
   /* ilerleme: bölüm üstü menünün altına değdiğinde 0, uzun kadar sonra 1 */
   M.scroll(function(_, info){
