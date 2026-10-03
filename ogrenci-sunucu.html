@@ -4057,7 +4057,8 @@ function setHedef(alan,v){ D.hedef=D.hedef||{}; D.hedef[alan]=v; save(); }
 function setHedefNet(k,v){ D.hedef=D.hedef||{}; D.hedef.refNets=D.hedef.refNets||{};
   if(v==='') delete D.hedef.refNets[k]; else D.hedef.refNets[k]=+v; save(); }
 function hedefNet(k){ const o=(D.hedef&&D.hedef.refNets)||{}; return o[k]!==undefined?o[k]:(D.refNets||{})[k]; }
-function hedefPuan(){ const h=D.hedef&&D.hedef.score; return h!==undefined&&h!==''?h:D.score; }
+/* D.hedef sunucudan null gelir; "null!==undefined" doğru olduğu için koçun hedef puanı hiç görünmüyordu (3 Eki 2026). */
+function hedefPuan(){ const h=D.hedef&&D.hedef.score; return h!=null&&h!==''?h:D.score; }
 function hedefBolum(){ const h=D.hedef&&D.hedef.dept; return h||D.dept||''; }
 function vHedef(){
   const list=subs(D), a=son3Ort();
