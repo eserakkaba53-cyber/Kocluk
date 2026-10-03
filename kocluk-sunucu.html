@@ -2519,6 +2519,13 @@ async function atlasDepodan(){
   try{ const s=localStorage.getItem(ATLASKEY); if(s) return JSON.parse(s); }catch(e){}
   return null;
 }
+/* Veri tarayıcıda saklıysa Hedef sekmesi açılınca kendiliğinden gelir. Eskiden yalnız
+   düğmeyle okunuyordu; "Tek seferlik işlem" yazısına rağmen düğme her açılışta çıkıyordu (3 Eki 2026). */
+let ATLAS_DEPO_BAKILDI=false;
+function atlasDepodanAc(){
+  if(ATLAS||ATLAS_DEPO_BAKILDI) return; ATLAS_DEPO_BAKILDI=true;
+  atlasDepodan().then(d=>{ if(d&&d.length&&!ATLAS){ ATLAS=d; render(); } });
+}
 async function atlasSakla(js){
   try{ if(window.storage){await window.storage.set(ATLASKEY,js); return true;} }catch(e){}
   try{ localStorage.setItem(ATLASKEY,js); return true; }catch(e){ return false; }
@@ -6429,6 +6436,7 @@ function vHesap(st){
 
 function vHedef(st){
   const list=subs(st);
+  atlasDepodanAc();
   return `
   ${ornekUyari(st)}
 

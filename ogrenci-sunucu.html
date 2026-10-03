@@ -3987,6 +3987,12 @@ async function atlasDepodan(){
   try{ const s=localStorage.getItem(AKEY); if(s) return JSON.parse(s); }catch(e){}
   return null;
 }
+/* Liste tarayıcıda saklıysa sekme açılınca kendiliğinden gelir; koç panelindekiyle aynı (3 Eki 2026). */
+let ATLAS_DEPO_BAKILDI=false;
+function atlasDepodanAc(){
+  if(ATLAS||ATLAS_DEPO_BAKILDI) return; ATLAS_DEPO_BAKILDI=true;
+  atlasDepodan().then(d=>{ if(d&&d.length&&!ATLAS){ ATLAS=d; render(); } });
+}
 async function atlasSakla(js){
   try{ if(window.storage){await window.storage.set(AKEY,js); return true;} }catch(e){}
   try{ localStorage.setItem(AKEY,js); return true; }catch(e){ return false; }
@@ -4062,6 +4068,7 @@ function hedefPuan(){ const h=D.hedef&&D.hedef.score; return h!=null&&h!==''?h:D
 function hedefBolum(){ const h=D.hedef&&D.hedef.dept; return h||D.dept||''; }
 function vHedef(){
   const list=subs(D), a=son3Ort();
+  atlasDepodanAc();
   const hk=haftaKalan(), hs=+D.haftalikSaat||0;
   let topDk=0;
   list.forEach(([k])=>{ topDk += kalanSure(k)||0; });
