@@ -3980,6 +3980,8 @@ const AKEY='ogrenci_atlas_v1';
 const LESS={1:'ayt_biy',2:'ayt_cog1',3:'ayt_cog2',4:'ayt_din',5:'ayt_fel',6:'ayt_fiz',7:'ayt_kim',
   8:'ayt_mat',9:'ayt_tar1',10:'ayt_tar2',11:'ayt_edb',13:'tyt_mat',15:'tyt_tur',16:'ydt'};
 const FEN={tyt_fiz:7,tyt_kim:7,tyt_biy:6}, SOS={tyt_tar:5,tyt_cog:5,tyt_fel:5,tyt_din:5};
+/* YÖK'teki matematik neti 40 soruluk testin (geometri dahil); koç panelindeki MAT ile aynı (3 Eki 2026). */
+const MAT={13:{tyt_mat:30,tyt_geo:10}, 8:{ayt_mat:30,ayt_geo:10}};
 async function atlasDepodan(){
   try{ if(window.storage){const r=await window.storage.get(AKEY); if(r&&r.value) return JSON.parse(r.value);} }catch(e){}
   try{ const s=localStorage.getItem(AKEY); if(s) return JSON.parse(s); }catch(e){}
@@ -4041,6 +4043,7 @@ function atlasSec(kod){
   for(const id in n){ const v=n[id];
     if(id==='12'){ for(const k in FEN) if(gecerli.has(k)){D.hedef.refNets[k]=Math.round(v*FEN[k]/20*100)/100;yaz++;} }
     else if(id==='14'){ for(const k in SOS) if(gecerli.has(k)){D.hedef.refNets[k]=Math.round(v*SOS[k]/20*100)/100;yaz++;} }
+    else if(MAT[id]){ for(const k in MAT[id]) if(gecerli.has(k)){D.hedef.refNets[k]=Math.round(v*MAT[id][k]/40*100)/100;yaz++;} }
     else { const k=LESS[id]; if(k&&gecerli.has(k)){D.hedef.refNets[k]=v;yaz++;} } }
   ATLASSON=[]; ATLASARA=''; save(); render();
   alert(`${r[2]} seçildi.\n\nTaban puan: ${r[8]??'—'}\nBaşarı sırası: ${r[9]!=null?r[9].toLocaleString('tr-TR'):'—'}\nKontenjan: ${r[6]??'—'}\nVeri yılı: ${r[5]}\n\n${yaz} ders için hedef net dolduruldu.\n\nRapor gönderdiğinde öğretmenine iletilecek.`);

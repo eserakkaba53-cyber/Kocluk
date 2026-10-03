@@ -2510,6 +2510,9 @@ const LESS={1:'ayt_biy',2:'ayt_cog1',3:'ayt_cog2',4:'ayt_din',5:'ayt_fel',6:'ayt
   8:'ayt_mat',9:'ayt_tar1',10:'ayt_tar2',11:'ayt_edb',13:'tyt_mat',15:'tyt_tur',16:'ydt'};
 const FEN={tyt_fiz:7,tyt_kim:7,tyt_biy:6};          // TYT Fen 20 soru, orantılı dağıtılır
 const SOS={tyt_tar:5,tyt_cog:5,tyt_fel:5,tyt_din:5}; // TYT Sosyal 20 soru
+/* YÖK'teki matematik neti 40 soruluk testin (geometri dahil). Panelde matematik 30, geometri 10
+   soru; net tek satıra yazılınca TYT Matematik hedefi 30'u aşıyor, geometri boş kalıyordu (3 Eki 2026). */
+const MAT={13:{tyt_mat:30,tyt_geo:10}, 8:{ayt_mat:30,ayt_geo:10}};
 const ATLASKEY='kocluk_atlas_v1';
 async function atlasDepodan(){
   try{ if(window.storage){const r=await window.storage.get(ATLASKEY); if(r&&r.value) return JSON.parse(r.value);} }catch(e){}
@@ -2609,6 +2612,7 @@ function atlasSec(kod){
     const v=n[id];
     if(id==='12'){ for(const k in FEN) if(gecerli.has(k)){st.refNets[k]=Math.round(v*FEN[k]/20*100)/100;yaz++;} }
     else if(id==='14'){ for(const k in SOS) if(gecerli.has(k)){st.refNets[k]=Math.round(v*SOS[k]/20*100)/100;yaz++;} }
+    else if(MAT[id]){ for(const k in MAT[id]) if(gecerli.has(k)){st.refNets[k]=Math.round(v*MAT[id][k]/40*100)/100;yaz++;} }
     else { const k=LESS[id]; if(k&&gecerli.has(k)){st.refNets[k]=v;yaz++;} }
   }
   ATLASSON=[]; ATLASARA=''; save(); render();
