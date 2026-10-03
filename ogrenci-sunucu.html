@@ -3923,8 +3923,10 @@ function ogrHaftaRate(wk){
   const done=t.filter(x=>x.s===1).length, part=t.filter(x=>x.s===2).length;
   return Math.round((done+part*0.5)/t.length*100);
 }
+/* Kart "koç kokpitindeki satırın aynısı" olmalı: koçun ortUyum'u gibi ödev verilen BÜTÜN haftaların
+   ortalaması. Eskiden son 4 haftaydı; öğrenci kendini koçtan farklı renkte görüyordu (3 Eki 2026). */
 function ogrOrtUyum(){
-  const ks=[...new Set((D.tasks||[]).map(t=>weekKey(t.date)))].sort().reverse().slice(0,4);
+  const ks=[...new Set((D.tasks||[]).map(t=>weekKey(t.date)))];
   const rs=ks.map(ogrHaftaRate).filter(x=>x!=null);
   return rs.length?Math.round(rs.reduce((a,b)=>a+b,0)/rs.length):null;
 }
@@ -3932,10 +3934,12 @@ function ogrDevreden(){
   const wk=weekKey(today());
   return (D.tasks||[]).filter(t=>!t.rutin && t.konu && t.s!==1 && weekKey(t.date)<wk).length;
 }
+/* Koçtaki sonDeneme ile aynı: son deneme, aynı türden bir önceki denemeyle karşılaştırılır; branş sayılmaz. */
 function ogrTrend(){
-  const t=[...(D.exams||[])].filter(e=>(e.tur||'tyt')==='tyt').sort((a,b)=>b.date.localeCompare(a.date));
-  if(t.length<2) return null;
-  return toplamNet(t[0]) - toplamNet(t[1]);
+  const ex=[...(D.exams||[])].filter(e=>e.tur!=='brans').sort((a,b)=>b.date.localeCompare(a.date));
+  if(!ex.length) return null;
+  const tur=ex[0].tur||'tyt', once=ex.slice(1).find(e=>(e.tur||'tyt')===tur);
+  return once ? toplamNet(ex[0]) - toplamNet(once) : null;
 }
 function ogrRisk(){
   const uyum=ogrOrtUyum(), dev=ogrDevreden(), trend=ogrTrend();

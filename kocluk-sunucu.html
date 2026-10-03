@@ -4063,12 +4063,15 @@ function ortUyum(st){
   let s=0,n=0; ks.forEach(k=>{const r=weekStats(st,k).rate; if(r!==null){s+=r;n++;}});
   return n?Math.round(s/n):null;
 }
+/* Eğilim son denemeyi AYNI TÜRDEN bir önceki denemeyle karşılaştırır (TYT–TYT, AYT–AYT); branş
+   denemesi sayılmaz. Eskiden türe bakılmıyordu: TYT'den sonra girilen bir AYT "Deneme neti düşüşte"
+   alarmı veriyordu. Öğrencinin "Durumun" kartındaki ogrTrend ile aynı kural (3 Eki 2026). */
 function sonDeneme(st){
-  const ex=[...(st.exams||[])].sort((a,b)=>b.date.localeCompare(a.date));
+  const ex=[...(st.exams||[])].filter(e=>e.tur!=='brans').sort((a,b)=>b.date.localeCompare(a.date));
   if(!ex.length) return {net:null,trend:null};
+  const tur=ex[0].tur||'tyt', once=ex.slice(1).find(e=>(e.tur||'tyt')===tur);
   const net=totalNet(ex[0]);
-  const trend=ex[1]!=null?(net-totalNet(ex[1])):null;
-  return {net,trend};
+  return {net, trend: once ? net-totalNet(once) : null};
 }
 // Risk skoru: geçmiş (uyum+devreden+deneme) + gelecek ("yetişir mi") sinyali
 function riskHesap(st){
@@ -4102,11 +4105,14 @@ function uyumRenk(u){ return u==null?'var(--ink-3)':u>=80?'var(--ok)':u>=60?'var
 const KOK_AD={r:'Acil',y:'İzle',g:'Yolunda'};
 // Öğrenci aç: kokpitten çık, öğrenciyi seç, sekmeye git
 function kokpitAc(id,tab){ KOKPIT=false; DB.sel=id; TAB=tab||'hafta'; if(!ornekMi(id)) save(); render(); }
-/* Son 3 denemenin TYT ve AYT toplam net ortalaması */
+/* Son 3 denemenin TYT ve AYT toplam net ortalaması. Branş denemesi sayılmaz; öğrencinin
+   "Durumun" kartıyla aynı hesap (3 Eki 2026). Eskiden avgNets branşı da pencereye alıyordu. */
 function son3Ort(st){
-  const a=avgNets(st,3).nets||{};
+  const ex=[...(st.exams||[])].filter(e=>e.tur!=='brans').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  const s={},c={};
+  ex.forEach(e=>{ for(const k in e.n){ const v=net(e.n[k].d||0,e.n[k].y||0); s[k]=(s[k]||0)+v; c[k]=(c[k]||0)+1; } });
   let tyt=0,ayt=0,tv=false,av=false;
-  for(const s in a){ if(s.indexOf('tyt_')===0){tyt+=a[s];tv=true;} else if(s.indexOf('ayt_')===0){ayt+=a[s];av=true;} }
+  for(const k in s){ const v=s[k]/c[k]; if(k.indexOf('tyt_')===0){tyt+=v;tv=true;} else if(k.indexOf('ayt_')===0){ayt+=v;av=true;} }
   return { tyt: tv?tyt:null, ayt: av?ayt:null };
 }
 function vKokpit(){
