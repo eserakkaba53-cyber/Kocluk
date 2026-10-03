@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Bağlantı testi | Biyoser</title>
+<style>
+  :root{--zemin:#03182B;--kart:#ffffff;--yazi:#122430;--soluk:#5b6f7c;--cizgi:#d5dfe4;--ok:#1f7a55;--bad:#a73a2c;--vurgu:#E8873A}
+  *{box-sizing:border-box}
+  body{margin:0;background:#eef3f5;color:var(--yazi);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  header{background:var(--zemin);color:#fff;padding:22px 20px}
+  header h1{margin:0;font-size:22px}
+  header p{margin:6px 0 0;color:#b9cedd;font-size:14px}
+  main{max-width:720px;margin:0 auto;padding:20px 16px 40px}
+  .kart{background:var(--kart);border:1px solid var(--cizgi);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .satir{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--cizgi)}
+  .satir:first-child{border-top:0;padding-top:0}
+  .isaret{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:#9aa9b2}
+  .isaret.ok{background:var(--ok)}
+  .isaret.bad{background:var(--bad)}
+  .ad{font-weight:700}
+  .adres{font-family:Consolas,"SF Mono",monospace;font-size:12.5px;color:var(--soluk);word-break:break-all}
+  .durum{font-size:14px;color:var(--soluk)}
+  .ozet{font-size:18px;font-weight:700}
+  .ozet.ok{color:var(--ok)}
+  .ozet.bad{color:var(--bad)}
+  button{font:inherit;font-weight:700;background:var(--vurgu);color:#1a1206;border:0;border-radius:10px;padding:12px 18px;cursor:pointer}
+  .not{font-size:14px;color:var(--soluk);margin-top:10px}
+  code{font-family:Consolas,monospace;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Bağlantı testi</h1>
+  <p>Girişin ihtiyaç duyduğu adreslere bu ağdan ulaşılıp ulaşılamadığını sınar. Hiçbir bilgi kaydedilmez.</p>
+</header>
+<main>
+  <div class="kart">
+    <div id="ozet" class="ozet">Test sürüyor…</div>
+    <div class="not" id="ozetNot">Birkaç saniye sürer. Bitince bu ekranın fotoğrafını çekip gönderin.</div>
+  </div>
+  <div class="kart" id="liste"></div>
+  <div class="kart">
+    <button type="button" onclick="calistir()">Testi yeniden çalıştır</button>
+    <div class="not" id="zaman"></div>
+  </div>
+</main>
+<script src="sunucu.js"></script>
+<script>
+/* Okul (FATİH) ağında site açılıyor ama giriş olmuyordu (3 Eki 2026).
+   Giriş üç ayrı adrese gider: site, Supabase (hesap ve veri) ve Cloudflare
+   Turnstile (bot doğrulaması). Hangisinin filtrede kaldığını bu sayfa gösterir.
+   Yalnız okuma yapar: sağlık uç noktası ve herkese açık sayaç. */
+var A = window.SUNUCU_AYAR || {};
+var SURE = 10000;
+
+function zamanAsimi(ms){ return new Promise(function(_, red){ setTimeout(function(){ red(new Error('zaman aşımı')); }, ms); }); }
+function getir(url, secenek){
+  var c = new AbortController();
+  var t = setTimeout(function(){ c.abort(); }, SURE);
+  secenek = secenek || {}; secenek.signal = c.signal; secenek.cache = 'no-store';
+  return fetch(url, secenek).finally(function(){ clearTimeout(t); });
+}
+async function jsonMu(r){
+  var tur = r.headers.get('content-type') || '';
+  if (tur.indexOf('json') < 0) throw new Error('beklenmeyen yanıt (' + r.status + ', ' + (tur || 'tür yok') + '): araya bir filtre sayfası girmiş olabilir');
+  return r.json();
+}
+
+var TESTLER = [
+  { ad: 'Site', adres: location.host, calis: async function(){
+      var r = await getir('/favicon-48.png?t=' + Date.now());
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return 'ulaşıldı';
+  }},
+  { ad: 'Giriş sunucusu (hesaplar)', adres: (A.url || '') + '/auth/v1/health', calis: async function(){
+      var r = await getir(A.url + '/auth/v1/health', { headers: { apikey: A.key } });
+      var j = await jsonMu(r);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return 'ulaşıldı' + (j && j.version ? ' (sürüm ' + j.version + ')' : '');
+  }},
+  { ad: 'Veri sunucusu (panel verileri)', adres: (A.url || '') + '/rest/v1/rpc/kullanim_sayilari', calis: async function(){
+      var r = await getir(A.url + '/rest/v1/rpc/kullanim_sayilari', {
+        method: 'POST',
+        headers: { apikey: A.key, Authorization: 'Bearer ' + A.key, 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      var j = await jsonMu(r);
+      if (!r.ok || typeof j.ogretmen !== 'number') throw new Error('HTTP ' + r.status);
+      return 'ulaşıldı';
+  }},
+  { ad: 'Bot doğrulaması (Cloudflare Turnstile)', adres: 'challenges.cloudflare.com', calis: function(){
+      return Promise.race([
+        new Promise(function(ok, red){
+          if (window.turnstile) return ok('ulaşıldı');
+          var s = document.createElement('script');
+          s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&t=' + Date.now();
+          s.onload = function(){ window.turnstile ? ok('ulaşıldı') : red(new Error('betik yüklendi ama çalışmadı')); };
+          s.onerror = function(){ red(new Error('betik yüklenemedi')); };
+          document.head.appendChild(s);
+        }),
+        zamanAsimi(SURE)
+      ]);
+  }},
+  { ad: 'PDF okuyucu (karne yükleme)', adres: 'cdnjs.cloudflare.com', calis: async function(){
+      var r = await getir('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', { method: 'HEAD' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return 'ulaşıldı';
+  }}
+];
+
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+async function calistir(){
+  var liste = document.getElementById('liste'), ozet = document.getElementById('ozet'), not = document.getElementById('ozetNot');
+  ozet.className = 'ozet'; ozet.textContent = 'Test sürüyor…';
+  not.textContent = 'Birkaç saniye sürer. Bitince bu ekranın fotoğrafını çekip gönderin.';
+  liste.innerHTML = TESTLER.map(function(t, i){
+    return '<div class="satir"><div class="isaret" id="i' + i + '">…</div><div><div class="ad">' + esc(t.ad) +
+      '</div><div class="adres">' + esc(t.adres) + '</div><div class="durum" id="d' + i + '">sınanıyor</div></div></div>';
+  }).join('');
+  var sonuclar = await Promise.all(TESTLER.map(function(t, i){
+    return Promise.resolve().then(t.calis).then(function(m){
+      document.getElementById('i' + i).className = 'isaret ok'; document.getElementById('i' + i).textContent = '✓';
+      document.getElementById('d' + i).textContent = m; return true;
+    }, function(e){
+      document.getElementById('i' + i).className = 'isaret bad'; document.getElementById('i' + i).textContent = '✕';
+      document.getElementById('d' + i).textContent = 'ulaşılamadı: ' + (e && e.name === 'AbortError' ? 'zaman aşımı' : (e && e.message) || e);
+      return false;
+    });
+  }));
+  var engelli = TESTLER.filter(function(_, i){ return !sonuclar[i]; }).map(function(t){ return t.ad; });
+  if (!engelli.length){
+    ozet.className = 'ozet ok'; ozet.textContent = 'Bütün adreslere ulaşıldı.';
+    not.textContent = 'Bu ağda giriş için engel görünmüyor. Giriş yine olmuyorsa çıkan hata yazısının fotoğrafını gönderin.';
+  } else {
+    ozet.className = 'ozet bad'; ozet.textContent = 'Ulaşılamayan: ' + engelli.join(', ');
+    not.textContent = 'Bu ekranın fotoğrafını çekip gönderin; hangi adresin filtrede kaldığı buradan anlaşılıyor.';
+  }
+  document.getElementById('zaman').textContent = 'Test zamanı: ' + new Date().toLocaleString('tr-TR') + ' · ' + navigator.userAgent;
+}
+calistir();
+</script>
+</body>
+</html>
