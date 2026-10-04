@@ -4174,7 +4174,7 @@ function vHedef(){
         <input type="text" value="${esc(hedefBolum())}" placeholder="ör. Hacettepe Üniversitesi Tıp" onchange="setHedef('dept',this.value);render()"></div>
     </div>
     <div class="fr">
-      <div><label class="f">Hedef puan</label><input type="text" value="${esc(hedefPuan()||'')}" placeholder="ör. 480" onchange="setHedef('score',this.value);render()"></div>
+      <div><label class="f">Hedef puan</label><input type="text" value="${esc(hedefPuan()||'')}" placeholder="ör. 480" onchange="setHedefPuanKontrollu(this.value)"></div>
       <div><label class="f">Hedef sıralama</label><input type="text" value="${esc((D.hedef&&D.hedef.rank)||D.rank||'')}" placeholder="ör. 12.000" onchange="setHedef('rank',this.value);render()"></div>
     </div>
     <div class="fr">
@@ -4615,11 +4615,9 @@ function vKilavuz(){
       Hangi gün ne çalışacağın bellidir; konu çalışması ve soru çözümü ayrı bloklar olarak görünür.</p>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Saatleri aç / kapat</b> — okulda, dershanede ya da meşgul olduğun saatleri kapat</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn">Kapattığın saatlere ödev konmaz${solo?'':'; öğretmenin bunu görür ve programı ona göre günceller'}</span></div>
-    ${solo?`<div class="topic"><span class="dot t2"></span><span class="tn"><b>Blokları sürükleyerek</b> istediğin güne ve saate taşıyabilirsin</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yeniden dağıt</b> — programı baştan kurar; elle taşıdığın bloklar yerinde kalır</span></div>`
-    :`<div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
-      <b>Blokları sen taşıyamazsın</b> — programı öğretmenin düzenler.
-      Senin işin müsait olmadığın saatleri kapatmak; o da ona göre günceller.</span></div>`}
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Blokları sürükleyerek</b> istediğin güne ve saate taşıyabilirsin</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yeniden dağıt</b> — programı baştan kurar; elle taşıdığın bloklar yerinde kalır</span></div>
+    ${solo?'':`<div class="hint" style="margin-top:10px">Öğretmenin de programı düzenleyebilir; ikiniz aynı haftayı değiştirirseniz son kaydedilen program geçerli olur.</div>`}
     <div class="flag ok" style="margin-top:10px"><span class="ic">i</span><span>
       Aralıksız çalışma <b>90 dakikayı geçmez</b>; sistem araya mola bırakır. Dikkat süresi o kadar sürüyor.</span></div>
     <div class="hint" style="margin-top:10px">Blok adına tıklarsan o konunun videoları açılır.

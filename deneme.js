@@ -54,8 +54,9 @@ window.SINAVANALIZ = (function(){
       Object.keys(konuBazli).forEach(function(k){
         var t = konuBazli[k], x = agg[k];
         if(!x) x = agg[k] = {sub:t.sub, unite:t.unite, konu:t.konu,
-                             ss:0, y:0, b:0, denler:{}, kac:0};
+                             ss:0, y:0, b:0, oy:0, ob:0, denler:{}, kac:0};
         x.ss += t.ss; x.y += t.y; x.b += t.b;
+        if(t.ss){ x.oy += t.y; x.ob += t.b; }   // oran için: soru sayısı girilmemiş eski denemenin yanlışı oranı düşürmesin
         var did = e.id || ('_'+x.kac);
         if(!x.denler[did]){ x.denler[did] = 1; x.kac++; }
         if(!x.unite && t.unite) x.unite = t.unite;
@@ -66,7 +67,7 @@ window.SINAVANALIZ = (function(){
       var r = agg[k];
       /* Doğru = toplam soru − yanlış − boş. Karne bazen tutarsız gelir,
          negatife düşmesin diye 0'a kırpılır. */
-      var dogru = r.ss ? Math.max(0, r.ss - r.y - r.b) : null;
+      var dogru = r.ss ? Math.max(0, r.ss - r.oy - r.ob) : null;
       var oran  = r.ss ? dogru / r.ss : null;
       return { sub:r.sub, unite:r.unite, konu:r.konu,
                soru:r.ss, dogru:dogru, y:r.y, b:r.b,

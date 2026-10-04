@@ -1112,7 +1112,7 @@ function cizAlt(){
   if(cak.length){
     h+='<div class="pg-flag bad"><span class="ic">!</span><span>'+
       '<b>'+cak.length+' blok kapalı saate denk geliyor.</b> '+
-      ((kocMu() && !C.kendiKocu) ? 'Öğrenci bu saatleri kapatmış. "Yeniden dağıt" ile programı güncelle.'
+      ((kocMu() && !C.kendiKocu) ? 'Bu saatler kapatılmış. "Yeniden dağıt" ile programı güncelle.'
                : blokDuzenler() ? 'Kapattığın saatlere denk gelen çalışma var. "Yeniden dağıt" ile programı güncelle.'
                : 'Kapattığın saatlerde koçunun verdiği çalışma var. Koçun görecek ve programı güncelleyecek.')+
       '</span></div>';
@@ -1656,7 +1656,7 @@ function stil(){
    çizgisi altta kalsaydı saat çizgisiyle etiket bir satır kayık dururdu. */
 'table.pg-iz td.sa{position:sticky;left:0;z-index:4;background:var(--panel);font-family:var(--mono);font-size:12.5px;color:var(--ink-3);text-align:right;padding:0 8px 0 0;line-height:1;border-right:1px solid var(--line);white-space:nowrap;letter-spacing:-.02em;overflow:hidden;border-bottom:0;border-top:1px solid transparent}',
 'table.pg-iz td.sa.tam{color:var(--ink);font-weight:700;font-size:13.5px;border-top-color:var(--pg-saat)}',
-'table.pg-iz td.sa.yarim{font-size:9.5px;opacity:.6}',
+'table.pg-iz td.sa.yarim{font-size:9.5px;color:color-mix(in srgb,var(--ink-3) 60%,var(--panel))}',
 /* 15 dk = 15 px: aynı saat aralığı eskisiyle (30 dk = 30 px) aynı boyda,
    tablo uzamaz. Çizgi satırın ÜSTÜNDE, çünkü "tamsaat" saatin BAŞLADIĞI
    satır; alt çizgiyle yapmak bir önceki satırı işaretlemeyi gerektirirdi.
