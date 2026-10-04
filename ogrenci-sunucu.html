@@ -3436,9 +3436,7 @@ function denemeKaydet(){
     name:document.getElementById('sN').value.trim(),n});
   KARNE_SONUC=null; KARNE_HATA='';
   save(); render();
-  alert(sbKurulu()
-    ? 'Deneme kaydedildi. Öğretmenin panelinde anında görünür.'
-    : 'Deneme kaydedildi. Rapor gönderdiğinde öğretmenine iletilecek.');
+  alert('Deneme kaydedildi. '+iletimNotu());
 }
 function denemeSil(id){D.exams=D.exams.filter(e=>e.id!==id);save();render();}
 let KARNE_SONUC=null;      // son okunan karne
@@ -4056,7 +4054,7 @@ function atlasSec(kod){
     else if(MAT[id]){ for(const k in MAT[id]) if(gecerli.has(k)){D.hedef.refNets[k]=Math.round(v*MAT[id][k]/40*100)/100;yaz++;} }
     else { const k=LESS[id]; if(k&&gecerli.has(k)){D.hedef.refNets[k]=v;yaz++;} } }
   ATLASSON=[]; ATLASARA=''; save(); render();
-  alert(`${r[2]} seçildi.\n\nTaban puan: ${r[8]??'—'}\nBaşarı sırası: ${r[9]!=null?r[9].toLocaleString('tr-TR'):'—'}\nKontenjan: ${r[6]??'—'}\nVeri yılı: ${r[5]}\n\n${yaz} ders için hedef net dolduruldu.\n\nRapor gönderdiğinde öğretmenine iletilecek.`);
+  alert(`${r[2]} seçildi.\n\nTaban puan: ${r[8]??'—'}\nBaşarı sırası: ${r[9]!=null?r[9].toLocaleString('tr-TR'):'—'}\nKontenjan: ${r[6]??'—'}\nVeri yılı: ${r[5]}\n\n${yaz} ders için hedef net dolduruldu.\n\n${iletimNotu()}`);
 }
 
 /* ---------- hedefe uzaklık ---------- */
@@ -4220,6 +4218,9 @@ function setDip(v){
   save(); render();
 }
 function setYerlesti(b){ D.yerlesti=b; save(); render(); }
+/* Kaydın öğretmene ne zaman ulaştığı: sunucu modunda kayıt hemen yazılır ama koç paneli veriyi yalnız
+   açılışta okur; paket modunda rapor gönderilince gider (4 Eki 2026). */
+function iletimNotu(){ return sbKurulu() ? 'Öğretmenin paneli yenileyince görür.' : 'Rapor gönderdiğinde öğretmenine iletilecek.'; }
 function pnAyarla(k,v){ if(v===''||v===null) delete PN[k]; else PN[k]=+v; render(); }
 /* hedef puan değişikliği — seçili bölümün taban puanıyla tutarlılık kontrolü */
 function tabanPuanı(){
@@ -4265,7 +4266,7 @@ function vPuan(){
     if(!kat) return '';
     const nv=PN[k];
     return `<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
-      <td class="num" style="width:104px"><input type="number" step="0.25" min="${-q/4}" max="${q}" value="${nv??''}" placeholder="0"
+      <td class="num" style="width:104px"><input type="number" id="pn_${k}" step="0.25" min="${-q/4}" max="${q}" value="${nv??''}" placeholder="0"
         oninput="pnAyarla('${k}',this.value)"></td>
       <td class="num" style="color:var(--ink-3)">${kat.toFixed(2)}</td>
       <td class="num" style="font-weight:600">${n1((nv||0)*kat)}</td></tr>`;
@@ -4311,14 +4312,14 @@ function vPuan(){
       <div><label class="f">Seçili bölümün tabanı</label>
         <input type="text" value="${isFinite(taban)?n1(taban):'—'}" readonly style="background:var(--line-soft)"></div>
     </div>
-    <div class="hint">Bu değişiklik rapor gönderdiğinde öğretmenine iletilir.</div>
+    <div class="hint">Bu değişiklik kaydedilir. ${iletimNotu()}</div>
   </div></div>`;
 }
 function hedefNetKaydet(){
   D.hedef=D.hedef||{}; D.hedef.refNets=D.hedef.refNets||{};
   let c=0; subs(D).forEach(([k])=>{ if(PN[k]!==undefined){D.hedef.refNets[k]=+PN[k];c++;} });
   save(); render();
-  alert(c+' ders için hedef net kaydedildi.\nHedefe uzaklık sekmesindeki karşılaştırma güncellendi.\nRapor gönderdiğinde öğretmenine iletilecek.');
+  alert(c+' ders için hedef net kaydedildi.\nHedefe uzaklık sekmesindeki karşılaştırma güncellendi.\n'+iletimNotu());
 }
 
 /* ---------- rapor ---------- */
