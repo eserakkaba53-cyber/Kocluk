@@ -6239,6 +6239,8 @@ function vOgrenciBilgi(st){
     <div class="fr">
       <div><label class="f">Sınıf</label><input type="text" id="hG" value="${esc(st.grade)}"></div>
       <div><label class="f">Alan</label><select id="hT">${['SAY','EA','SOZ','DIL'].map(t=>`<option value="${t}" ${st.track===t?'selected':''}>${trLabel(t)}</option>`).join('')}</select></div>
+    </div>
+    <div class="fr">
       <div><label class="f">E-posta</label><input type="email" id="hE" value="${esc(st.eposta||'')}" placeholder="şifre sıfırlama bu adrese gider"></div>
     </div>
     <button class="btn ghost" onclick="saveMeta()">Güncelle</button>
@@ -8326,18 +8328,18 @@ function onayKarti(st){
         aksi hâlde bu öğrencide değişiklik yapamazsın.</span></div>`}
     <div class="fr" style="margin-top:12px">
       <div><label class="f">18 yaşını doldurdu mu</label>
-        <select onchange="cur().resit=(this.value==='1'); if(cur().resit){cur().veliAd='';cur().veliTel='';} if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); save();render()">
+        <select onchange="cur().resit=(this.value==='1'); if(cur().resit){cur().veliAd='';cur().veliTel='';} if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); if(onayTam(cur()))save();render()">
           <option value="0" ${st.resit?'':'selected'}>Hayır</option>
           <option value="1" ${st.resit?'selected':''}>Evet</option></select></div>
       ${st.resit?'':`
       <div><label class="f">Veli adı soyadı</label>
-        <input type="text" value="${esc(st.veliAd||'')}" onchange="cur().veliAd=this.value; if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); save();render()"></div>
+        <input type="text" value="${esc(st.veliAd||'')}" onchange="cur().veliAd=this.value; if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); if(onayTam(cur()))save();render()"></div>
       <div><label class="f">Veli telefonu</label>
-        <input type="text" value="${esc(st.veliTel||'')}" onchange="cur().veliTel=this.value; if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); save();render()"></div>`}
+        <input type="text" value="${esc(st.veliTel||'')}" onchange="cur().veliTel=this.value; if(!cur().veliOnay)cur().veliOnay=new Date().toISOString(); if(onayTam(cur()))save();render()"></div>`}
     </div>
     <div class="fr"><div style="flex:1"><label class="f">Onay notu</label>
       <input type="text" value="${esc(st.veliOnayNotu||'')}" placeholder="ör. 13.08.2026 tarihli imzalı form elimde"
-        onchange="cur().veliOnayNotu=this.value; save();render()"></div></div>
+        onchange="cur().veliOnayNotu=this.value; if(onayTam(cur()))save();render()"></div></div>
     <div class="hint">Onay tarihi: ${st.veliOnay?esc(String(st.veliOnay).slice(0,10)):'—'}
       ${tam?'':' · Alanları doldurunca tarih kendiliğinden yazılır.'}</div>
   </div></div>`;
