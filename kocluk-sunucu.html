@@ -6881,10 +6881,10 @@ function refWa(){
   baglantiAc('https://wa.me/?text='+encodeURIComponent(mesaj),'WhatsApp — davet');
 }
 function refKopyala(){
-  const ta=document.createElement('textarea'); ta.value=refLinki();
-  document.body.appendChild(ta); ta.select();
-  try{ document.execCommand('copy'); alert('Davet bağlantın kopyalandı.'); }catch(e){}
-  document.body.removeChild(ta);
+  const link=refLinki();
+  (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject())
+    .then(()=>alert('Davet bağlantın kopyalandı.'))
+    .catch(()=>prompt('Bağlantıyı buradan kopyala:',link));
 }
 function vDavet(){
   const R=REFERANS;
@@ -6911,8 +6911,8 @@ function vDavet(){
     </div></div>`;
   const uc  = R.ucretli||0;
   const yil = R.kazanilan_yil||0;
-  const adim  = uc % 2;            /* 0 ya da 1 — sonraki yıla kaç davet girdi */
-  const kalan = 2 - adim;          /* 1 ya da 2 — kaç davet kaldı */
+  const kalan = Math.max(1, 2*(yil+1) - uc);   /* sunucu: floor(ucretli/2) > kazanılan yıl olunca ödül */
+  const adim  = Math.max(0, 2 - kalan);
   return `
   ${durumSerit}
 
@@ -8778,8 +8778,8 @@ async function bekleyenReferans(){
     if(r&&r.ok) REFDURUM='OK|Seni davet eden: '+(r.davet_eden_ad||'—')+'. Pakete geçtiğinde onun sayacı ilerler.';
     /* "Zaten tanımlı": kod daha önce uygulanmış (başka tarayıcıda ya da eski
        jetondaki damgayla). Hata değil, sessiz geç. */
-    else if(r&&r.hata&&!/Zaten bir referans/i.test(r.hata)) REFDURUM='HATA|Referans kodu uygulanamadı: '+r.hata+' ("Meslektaşını davet et" sekmesinden tekrar deneyebilirsin.)';
-  }catch(e){ REFDURUM='HATA|Referans kodu şimdilik uygulanamadı. "Meslektaşını davet et" sekmesinden tekrar deneyebilirsin.'; }
+    else if(r&&r.hata&&!/Zaten bir referans/i.test(r.hata)) REFDURUM='HATA|Referans kodu uygulanamadı: '+r.hata;
+  }catch(e){ REFDURUM='HATA|Referans kodu şimdilik uygulanamadı; sayfayı yenilediğinde yeniden denenecek.'; return; }
   try{ localStorage.removeItem('bekleyen_referans'); }catch(e){}
   if(jwtMeta().bekleyen_referans) sbCagri('/auth/v1/user',{method:'PUT',body:{data:{bekleyen_referans:null}}}).catch(()=>{});
 }
@@ -9103,7 +9103,7 @@ function girisEkrani(){
           <input type="text" id="gTel" placeholder="05xx xxx xx xx" value="${esc(KAYIT.tel||'')}" oninput="KAYIT.tel=this.value;odKayitBekle()"></div></div>
           <div style="margin-bottom:12px"><label class="f">Branşların <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(özel ders talepleri buna göre gelir; sonra değiştirilebilir)</span></label>
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:4px">
-            ${OD_BRANSLAR.map(b=>`<span class="od-brozet tik ${(KAYIT.branslar||[]).indexOf(b)>=0?'sec':''}" onclick="odKayitBrans('${b.replace(/'/g,"\\'")}')">${(KAYIT.branslar||[]).indexOf(b)>=0?'✓ ':''}${b.toUpperCase()}</span>`).join('')}
+            ${(typeof OD_BRANSLAR!=='undefined'?OD_BRANSLAR:[]).map(b=>`<span class="od-brozet tik ${(KAYIT.branslar||[]).indexOf(b)>=0?'sec':''}" onclick="odKayitBrans('${b.replace(/'/g,"\\'")}')">${(KAYIT.branslar||[]).indexOf(b)>=0?'✓ ':''}${b.toUpperCase()}</span>`).join('')}
           </div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
           <input type="email" id="gMail" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="ornek@eposta.com" value="${esc(KAYIT.mail||'')}" oninput="KAYIT.mail=this.value"></div></div>
