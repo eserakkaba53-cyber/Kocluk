@@ -2505,7 +2505,7 @@ function rutinKart(st, wk){
    atlas.json aynı klasörden yüklenir. Kayıt biçimi:
    [kod, üniversite, bölüm, puanTürü, burs, yıl, kontenjan, yerleşen,
     tabanPuan, başarıSırası, ortOBP, {dersId:ortNet}] */
-let ATLAS=null, ATLASDURUM='', ATLASARA='', ATLASSON=[];
+let ATLAS=null, ATLASDURUM='', ATLASARA='', ATLASSON=[], ATLASNOT='';
 const LESS={1:'ayt_biy',2:'ayt_cog1',3:'ayt_cog2',4:'ayt_din',5:'ayt_fel',6:'ayt_fiz',7:'ayt_kim',
   8:'ayt_mat',9:'ayt_tar1',10:'ayt_tar2',11:'ayt_edb',13:'tyt_mat',15:'tyt_tur',16:'ydt'};
 const FEN={tyt_fiz:7,tyt_kim:7,tyt_biy:6};          // TYT Fen 20 soru, orantılı dağıtılır
@@ -2588,20 +2588,22 @@ async function atlasSil(){
   ATLAS=null; ATLASSON=[]; ATLASARA=''; ATLASDURUM=''; render();
 }
 function atlasAra(q){
-  ATLASARA=q;
+  ATLASARA=q; ATLASNOT='';
   if(!ATLAS||q.trim().length<3){ATLASSON=[];render();return;}
-  const st=cur(), pt=({SAY:'SAY',EA:'EA',SOZ:'SÖZ',DIL:'DİL'})[st.track];
-  const kel=norm(q).split(' ').filter(Boolean);
-  const bul=[];
+  const pt=({SAY:'SAY',EA:'EA',SOZ:'SÖZ',DIL:'DİL'})[(cur()||{}).track];
+  const kel=norm(q).split(' ').filter(Boolean), bul=[], baska={};
   for(const r of ATLAS){
-    if(pt && r[3]!==pt) continue;
-    const metin=norm(r[1]+' '+r[2]+' '+r[4]);
-    if(!kel.every(k=>metin.includes(k))) continue;
+    const m=norm(r[1]+' '+r[2]+' '+r[4]);
+    if(!kel.every(k=>m.includes(k))) continue;
+    if(pt&&r[3]!==pt){ baska[r[3]]=(baska[r[3]]||0)+1; continue; }
     bul.push(r);
-    if(bul.length>=400) break;
   }
   bul.sort((a,b)=>(b[8]||0)-(a[8]||0));
-  ATLASSON=bul.slice(0,40); render();
+  ATLASSON=bul.slice(0,40);
+  const b=Object.entries(baska).map(([t,n])=>t+' '+n).join(', ');
+  ATLASNOT=(bul.length>40?bul.length+' eşleşmeden taban puanı en yüksek 40 tanesi gösteriliyor; aradığın yoksa üniversitenin adını da yaz. ':'')
+    +(b?'Alan '+pt+' olduğu için başka puan türündeki eşleşmeler listelenmedi ('+b+'). Alanı Öğrenci bilgileri sekmesindeki Öğrenci kaydı kartından değiştirebilirsin.':'');
+  render();
 }
 function atlasSec(kod){
   const st=cur(), r=ATLAS.find(x=>x[0]===kod); if(!r) return;
@@ -6479,6 +6481,7 @@ function vHedef(st){
           <td class="num">${r[6]??'—'}</td><td class="num" style="color:var(--ink-3)">${r[5]}</td>
           <td><button class="btn mini" onclick="atlasSec(${r[0]})">seç</button></td></tr>`).join('')}
         </tbody></table></div>`:(ATLASARA.trim().length>=3?'<div class="empty">Eşleşen program yok. Farklı kelime dene.</div>':'<div class="hint">En az 3 harf yaz. Üniversite ve bölümü birlikte yazabilirsin.</div>')}
+      ${ATLASNOT?`<div class="hint" style="margin-top:8px;color:var(--warn)">${esc(ATLASNOT)}</div>`:''}
       <div class="hint" style="margin-top:10px">Seçtiğinde taban puan, başarı sırası, kontenjan, yerleşen sayısı, ortalama OBP ve <b>ders bazlı hedef netler</b> otomatik dolar.
         &nbsp;·&nbsp; ${ATLAS.length.toLocaleString('tr-TR')} program yüklü
         &nbsp;·&nbsp; <a href="#" onclick="atlasSil();return false" style="color:var(--accent)">veritabanını güncelle</a></div>`}

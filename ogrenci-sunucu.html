@@ -3977,7 +3977,7 @@ function ogrOzetSatir(){
   </div></div>`;
 }
 /* ---------- YÖK bölüm veritabanı ---------- */
-let ATLAS=null, ATLASDURUM='', ATLASARA='', ATLASSON=[];
+let ATLAS=null, ATLASDURUM='', ATLASARA='', ATLASSON=[], ATLASNOT='';
 const AKEY='ogrenci_atlas_v1';
 const LESS={1:'ayt_biy',2:'ayt_cog1',3:'ayt_cog2',4:'ayt_din',5:'ayt_fel',6:'ayt_fiz',7:'ayt_kim',
   8:'ayt_mat',9:'ayt_tar1',10:'ayt_tar2',11:'ayt_edb',13:'tyt_mat',15:'tyt_tur',16:'ydt'};
@@ -4024,18 +4024,22 @@ async function atlasYukle(){
   ATLAS=null; ATLASDURUM='YOK'; render(); return false;
 }
 function atlasAra(q){
-  ATLASARA=q;
+  ATLASARA=q; ATLASNOT='';
   if(!ATLAS||q.trim().length<3){ATLASSON=[];render();return;}
   const pt=({SAY:'SAY',EA:'EA',SOZ:'SÖZ',DIL:'DİL'})[D.track];
-  const kel=norm(q).split(' ').filter(Boolean), bul=[];
+  const kel=norm(q).split(' ').filter(Boolean), bul=[], baska={};
   for(const r of ATLAS){
-    if(pt&&r[3]!==pt) continue;
     const m=norm(r[1]+' '+r[2]+' '+r[4]);
     if(!kel.every(k=>m.includes(k))) continue;
-    bul.push(r); if(bul.length>=400) break;
+    if(pt&&r[3]!==pt){ baska[r[3]]=(baska[r[3]]||0)+1; continue; }
+    bul.push(r);
   }
   bul.sort((a,b)=>(b[8]||0)-(a[8]||0));
-  ATLASSON=bul.slice(0,30); render();
+  ATLASSON=bul.slice(0,30);
+  const b=Object.entries(baska).map(([t,n])=>t+' '+n).join(', ');
+  ATLASNOT=(bul.length>30?bul.length+' eşleşmeden taban puanı en yüksek 30 tanesi gösteriliyor; aradığın yoksa üniversitenin adını da yaz. ':'')
+    +(b?'Alan '+pt+' olduğu için başka puan türündeki eşleşmeler listelenmedi ('+b+').':'');
+  render();
 }
 function atlasSec(kod){
   const r=ATLAS.find(x=>x[0]===kod); if(!r) return;
@@ -4165,6 +4169,7 @@ function vHedef(){
             <div style="font-family:var(--mono);font-size:11px;color:var(--ink-2)">taban ${r[8]!=null?n1(r[8]):'—'} · sıra ${r[9]!=null?r[9].toLocaleString('tr-TR'):'—'} · ${r[5]}</div></div>
           <button class="btn mini" onclick="atlasSec(${r[0]})">seç</button></div>`).join('')}
       </div>`:(ATLASARA.trim().length>=3?'<div class="empty">Eşleşme yok.</div>':'<div class="hint" style="margin-top:8px">En az 3 harf yaz. Sadece kendi alanının bölümleri listelenir.</div>')}
+      ${ATLASNOT?`<div class="hint" style="margin-top:8px;color:var(--warn)">${esc(ATLASNOT)}</div>`:''}
       <div class="hint" style="margin-top:10px">Seçtiğinde hedef puan, sıralama ve <b>ders ders hedef netler</b> otomatik dolar.</div>`}
   </div></div>
 
