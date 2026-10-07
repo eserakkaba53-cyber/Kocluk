@@ -1,5 +1,12 @@
 <html lang="tr">
 <meta charset="utf-8">
+<script>/* Eski tarayıcı yoklaması (7 Eki 2026): ?. ve ?? ayrıştırılamıyorsa panel hiç çalışmaz; boş ekran yerine yönlendirme göster. ES5 kalmalı. */
+(function(){try{new Function("var a={};return a?.b??1");}catch(e){window.ESKI_TARAYICI=true;
+  document.addEventListener("DOMContentLoaded",function(){document.body.innerHTML='<div style="font:16px/1.55 sans-serif;max-width:520px;margin:48px auto;padding:20px;color:#222">'+
+  '<h2 style="margin:0 0 12px">Tarayıcın bu paneli açamıyor</h2>'+
+  '<p>Kullandığın tarayıcı çok eski olduğu için Biyoser paneli bu ekranda çalışmaz.</p>'+
+  '<p>Panele güncel <b>Google Chrome</b> ile gir. Chrome yüklüyse bu sayfanın adresini kopyalayıp Chrome\'da aç; değilse Play Store\'dan Chrome\'u yükle ya da güncelle.</p></div>';});}})();
+</script>
 <meta name="viewport" id="vpMeta" content="width=1280">
 <script>
 /* ═══ GÖRÜNÜM MODU — KÜÇÜK EKRANDA VARSAYILAN MOBİL (3 Eki 2026) ═══
