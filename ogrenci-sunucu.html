@@ -3438,9 +3438,7 @@ function denemeKaydet(){
   save(); render();
   alert('Deneme kaydedildi. '+iletimNotu());
 }
-function denemeSil(id){if(!confirm('Bu deneme silinsin mi?
-
-Öğretmeninin girdiği bir denemeyse onun panelinden de silinir.'))return; D.exams=D.exams.filter(e=>e.id!==id);save();render();}
+function denemeSil(id){if(!confirm('Bu deneme silinsin mi?\n\nÖğretmeninin girdiği bir denemeyse onun panelinden de silinir.'))return; D.exams=D.exams.filter(e=>e.id!==id);save();render();}
 let KARNE_SONUC=null;      // son okunan karne
 let KARNE_HATA='';
 let KARNE_UYARI='';        // geometri ayrı gelmedi uyarısı
