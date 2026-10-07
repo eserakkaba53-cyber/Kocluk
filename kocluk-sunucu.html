@@ -2782,11 +2782,17 @@ function sbOturumKur(r){
   SB.mail= (r.user && r.user.email) || '';
   sbSakla();
 }
+/* Okumalar artık aynı anda gidiyor: süresi dolmuş jetonla gelen birkaç 401 tek tazelemeyi beklesin (7 Eki 2026). */
+var SB_TAZELE=null;
 async function sbTazele(){
-  if(!SB.ref) throw new Error('Oturum yok');
-  var r = await sbCagri('/auth/v1/token?grant_type=refresh_token', { method:'POST',
-    body:{ refresh_token: SB.ref } });
-  sbOturumKur(r);
+  if(SB_TAZELE) return SB_TAZELE;
+  SB_TAZELE=(async function(){
+    if(!SB.ref) throw new Error('Oturum yok');
+    var r = await sbCagri('/auth/v1/token?grant_type=refresh_token', { method:'POST',
+      body:{ refresh_token: SB.ref } });
+    sbOturumKur(r);
+  })();
+  try{ return await SB_TAZELE; } finally{ SB_TAZELE=null; }
 }
 function sbCikis(){
   SB.tok=''; SB.ref=''; SB.uid=''; SB.mail=''; sbSakla();
@@ -2845,19 +2851,19 @@ function uuidMi(s){ return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-
 
 /* ---------- SUNUCUDAN OKU ---------- */
 async function sunucudanOku(){
-  var koc = await sbSorgu('koclar', '?id=eq.'+SB.uid+'&select=*');
+  /* Okumalar birbirinden bağımsız: art arda değil aynı anda (giriş süresi, 7 Eki 2026). */
+  var r0 = await Promise.all([sbSorgu('koclar', '?id=eq.'+SB.uid+'&select=*'),
+    sbSorgu('ogrenciler', '?koc_id=eq.'+SB.uid+'&arsivlendi=eq.false&select=*&order=olusturuldu')]);
+  var koc = r0[0], ogr = r0[1];
   var k = (koc && koc[0]) || null;
-
-  var ogr = await sbSorgu('ogrenciler', '?koc_id=eq.'+SB.uid+'&arsivlendi=eq.false&select=*&order=olusturuldu');
   var idler = ogr.map(function(o){ return o.id; });
 
   var odev=[], den=[], konu=[], notl=[];
   if(idler.length){
     var f = '?ogrenci_id=in.('+idler.join(',')+')&select=*';
-    odev = await sbSorgu('odevler',   f+'&order=tarih');
-    den  = await sbSorgu('denemeler', f+'&order=tarih');
-    konu = await sbSorgu('konular',   f);
-    notl = await sbSorgu('notlar',    f+'&order=eklendi.desc');
+    var r1 = await Promise.all([sbSorgu('odevler', f+'&order=tarih'), sbSorgu('denemeler', f+'&order=tarih'),
+      sbSorgu('konular', f), sbSorgu('notlar', f+'&order=eklendi.desc')]);
+    odev = r1[0]; den = r1[1]; konu = r1[2]; notl = r1[3];
   }
 
   var yeni = {
@@ -8831,17 +8837,16 @@ async function sunucudanYukle(){
     }
   }
   await bekleyenReferans();
-  await lisansOku();
-  await konuEslesmeYukle();   /* onaylı karne-konu eşlemeleri */
+  /* Lisans, eşlemeler, deneme bilgisi, cihaz kaydı ve öğrenci verisi birbirini beklemez; aynı anda
+     istenir. Eskiden ~15 istek art arda bekleniyor, giriş düğmesi uzun süre "Bekle..." kalıyordu. */
+  const ilk = await Promise.all([lisansOku(), konuEslesmeYukle(), denemeOku(), cihazKaydet(), sunucudanOku()]);
+  const izin = ilk[3], d = ilk[4];
   /* Yönetici rozeti girişte dolsun; yoksa sayı ancak Yönetim sekmesine
      girildikten sonra görünür ve rozetin anlamı kalmaz. */
-  if(LISANS && LISANS.yonetici){ try{ await keBekleyenOku(); await odYonetimYukle(); await hataSay(); }catch(x){} }
-  await denemeOku();
   referansOku();
-  const izin=await cihazKaydet();
   if(!izin){ GIRISHATA=CIHAZHATA; sbCikis(); render(); return; }
-  await cihazlariOku();
-  const d=await sunucudanOku();
+  await Promise.all([cihazlariOku(),
+    (LISANS && LISANS.yonetici) ? Promise.all([keBekleyenOku(), odYonetimYukle(), hataSay()]).catch(function(){}) : null]);
   DB=Object.assign({students:[],sel:null},d); SUNUCUDAN_OKUNDU=true;
   if(!DB.rutin||!DB.rutin.length) DB.rutin=RUTIN_VAR;
   try{ localStorage.setItem(KEY,JSON.stringify(DB)); }catch(e){}

@@ -1009,11 +1009,17 @@ function sbOturumKur(r){
   SB.mail= (r.user && r.user.email) || '';
   sbSakla();
 }
+/* Okumalar artık aynı anda gidiyor: süresi dolmuş jetonla gelen birkaç 401 tek tazelemeyi beklesin (7 Eki 2026). */
+var SB_TAZELE=null;
 async function sbTazele(){
-  if(!SB.ref) throw new Error('Oturum yok');
-  var r = await sbCagri('/auth/v1/token?grant_type=refresh_token', { method:'POST',
-    body:{ refresh_token: SB.ref } });
-  sbOturumKur(r);
+  if(SB_TAZELE) return SB_TAZELE;
+  SB_TAZELE=(async function(){
+    if(!SB.ref) throw new Error('Oturum yok');
+    var r = await sbCagri('/auth/v1/token?grant_type=refresh_token', { method:'POST',
+      body:{ refresh_token: SB.ref } });
+    sbOturumKur(r);
+  })();
+  try{ return await SB_TAZELE; } finally{ SB_TAZELE=null; }
 }
 function sbCikis(){
   SB.tok=''; SB.ref=''; SB.uid=''; SB.mail=''; sbSakla();
@@ -1100,18 +1106,19 @@ async function ogrSunucudanOku(){
   if(k.lisans===false) { OGRID=k.id; KOCID=k.koc_id; }
   OGRID=k.id; KOCID=k.koc_id;
 
-  var o = (await sbSorgu('ogrenciler','?id=eq.'+OGRID+'&select=*'))[0];
+  /* Okumalar yalnız OGRID'e bağlı: art arda değil aynı anda (giriş süresi, 7 Eki 2026). */
+  var f='?ogrenci_id=eq.'+OGRID+'&select=*';
+  var r0 = await Promise.all([sbSorgu('ogrenciler','?id=eq.'+OGRID+'&select=*'),
+    sbGuvenli(function(){ return sbCagri('/rest/v1/rpc/kocum_bilgi',{method:'POST',body:{}}); }).catch(function(){ return null; }),
+    sbSorgu('odevler',f+'&order=tarih'), sbSorgu('denemeler',f+'&order=tarih'), sbSorgu('konular',f)]);
+  var o = r0[0][0];
   /* ★ 17 Eyl 2026 — Koç bilgisi dar bir RPC'den: tablo politikası öğrenciye koçun
      BÜTÜN satırını (yönetici notu, paket, lisans tarihleri) açıyordu. RPC henüz
      kurulmadıysa eski okuma sürer. */
-  var koc = null;
-  try{ koc = await sbGuvenli(function(){ return sbCagri('/rest/v1/rpc/kocum_bilgi',{method:'POST',body:{}}); }); }catch(e){ koc = null; }
+  var koc = r0[1];
   if(typeof koc==='string'){ try{ koc=JSON.parse(koc); }catch(e){ koc=null; } }
   if(!koc || typeof koc!=='object') koc = (await sbSorgu('koclar','?id=eq.'+KOCID+'&select=ad,telefon,site_url,ayarlar'))[0] || {};
-  var f='?ogrenci_id=eq.'+OGRID+'&select=*';
-  var odev = await sbSorgu('odevler',f+'&order=tarih');
-  var den  = await sbSorgu('denemeler',f+'&order=tarih');
-  var kon  = await sbSorgu('konular',f);
+  var odev = r0[2], den = r0[3], kon = r0[4];
 
   var D2 = {
     id:o.id, ad:o.ad, track:o.alan||'SAY', grade:o.sinif||'',
