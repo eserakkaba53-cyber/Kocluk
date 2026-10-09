@@ -239,9 +239,12 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .ozet-ic{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .ozet-lej{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2)}
 .ozet-lej i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.ozet-hafta{display:flex;gap:10px;flex-wrap:wrap;flex:1;justify-content:space-around}
+.ozet-hafta{display:grid;grid-template-columns:1fr 1fr;justify-items:center;gap:10px 8px;flex:1}
+.ref-iki{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.ref-iki h3{margin:0 0 6px;font-size:12px;letter-spacing:.06em;color:var(--ink-3)}
+@media(max-width:980px){.ref-iki{grid-template-columns:1fr}}
 .ozet-hafta small{display:block;color:var(--ink-2);font-size:10.5px}
-.ozet-ders{flex:1;min-width:220px;display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-2)}
+.ozet-ders{flex:1 1 100%;min-width:220px;display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-2)}
 .ozet-ders .od-b{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .ozet-ders .od-s{display:grid;grid-template-columns:minmax(70px,auto) 1fr 40px;gap:8px;align-items:center}
 .ozet-ders .od-c{height:8px;border-radius:4px;background:var(--line-soft);overflow:hidden}
@@ -5557,7 +5560,7 @@ function hizliKart(st){
       <td style="color:var(--ink-3);font-size:12px">${esc(b.unite)}</td>
       <td><b>${esc(b.konu)}</b>${b.durum?` <span class="pill s${b.durum===1?2:3}" style="font-size:10.5px">${DURUMAD[b.durum]}</span>`:''}
         ${b.oncelik?`<div style="margin-top:4px">${oncelikRozet(b.oncelik,b.kilit)}</div>`:''}
-        ${b.kapsam!=null?`<div style="font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-top:3px">bittiğinde hedefin %${b.kapsam} kadarı · ${b.agirlik.toFixed(1)} soru/yıl</div>`:''}</td>
+</td>
       <td class="num" style="color:var(--ink-2);font-weight:600">${sa(sureOf(k,b.konu))}</td>
       <td style="width:96px"><button class="btn mini" onclick="hizliAta('${k}',${JSON.stringify(b.konu).replace(/"/g,'&quot;')},${JSON.stringify(b.unite).replace(/"/g,'&quot;')})">ödev ver</button></td>
     </tr>`;
@@ -5578,25 +5581,12 @@ function hizliKart(st){
           ${AGIRLIK?'':'disabled title="Ağırlık dosyası yüklü değil"'}>Hedefe göre öncelik</button>
         <button class="${ODEV_SIRA==='mufredat'?'on':''}" style="flex:1" onclick="setOdevSira('mufredat')">Müfredat sırası</button>
       </div>
-      <div class="hint" style="margin-top:6px">${ODEV_SIRA==='hedef'
-        ? (AGIRLIK
-            ? 'Konular, öğrencinin <b>hedef netine katkısına</b> göre sıralanır. ÖSYM\'de çok soru getiren ve ön koşul olan konular öne geçer.'
-            : '<b>Ağırlık dosyası bulunamadı</b> (agirlik-2027.json). Şimdilik müfredat sırası kullanılıyor.')
-        : 'Konular, <b>konu listesindeki sırayla</b> gelir — 9. sınıftan 12. sınıfa doğru, ünite ünite. Klasik ilerleyiş.'}</div>
+      ${(ODEV_SIRA==='hedef'&&!AGIRLIK)?'<div class="hint" style="margin-top:6px"><b>Ağırlık dosyası bulunamadı</b> (agirlik-2027.json). Şimdilik müfredat sırası kullanılıyor.</div>':''}
     </div>
   </div>
   <div class="body" style="padding:0;overflow:auto">
     <table><thead><tr><th>Ders</th><th>Ünite</th><th>Sıradaki konu</th><th class="num">Süre</th><th></th></tr></thead>
     <tbody>${satir}</tbody></table>
-  </div>
-  <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint">${(AGIRLIK&&ODEV_SIRA==='hedef')?`<b>Sıralama neye göre:</b> Her konunun ÖSYM'de yılda ortalama kaç soru getirdiği (2018-2025 gerçek dağılım) ile öğrencinin o dersteki hedef neti karşılaştırılır.
-      <span style="color:#B3261E;font-weight:700">ÇEKİRDEK</span> hedefi karşılayan en verimli konular,
-      <span style="color:#D68A2E;font-weight:700">GÜVENLİK PAYI</span> baraj kayarsa koruyan ek konular,
-      <span style="color:#5A7794;font-weight:700">GENİŞLEME</span> kalanlardır.
-      <b>🔒 ÖN KOŞUL</b> işaretli konular, tek başına az soru getirse de başka konuların temeli olduğu için atlanamaz (üslü sayılar → köklü → logaritma gibi).
-      Hiçbir konu listeden çıkarılmaz; yalnızca sıra değişir. Hedef bölüm seçilmemişse müfredat sırası kullanılır.`
-      :`<b>Müfredat sırası:</b> Konular, konu listesindeki sırayla — üniteden üniteye — gelir. Her derste <b>bitmemiş ve henüz ödev verilmemiş</b> ilk konu gösterilir. "Eksik" ya da "İşleniyor" işaretli konular da bitmemiş sayılır.${AGIRLIK?` <b>İstersen yukarıdan “Hedefe göre öncelik”e geçebilirsin:</b> konular müfredat sırasına göre değil, öğrencinin hedef netine katkısına göre dizilir. Tercihin tarayıcında saklanır, her açılışta yeniden seçmen gerekmez.`:''}`}</div>
   </div></div>`;
 }
 
@@ -6633,10 +6623,11 @@ function vHedef(st){
   </div></div>
 
   <div class="card"><h2>Referans netler — hedef netler<small>Bölüm seçtiğinde otomatik dolar. Öğrenciye göre elle de düzeltebilirsin.</small></h2><div class="body">
+    <div class="ref-iki">${['tyt','ayt'].map(tur=>{ const L=list.filter(([k])=>(tur==='tyt')===k.startsWith('tyt_')); return L.length?`<div><h3>${tur==='tyt'?'TYT':L.some(([k])=>k==='ydt')?'YDT':'AYT'}</h3>
     <table><thead><tr><th>Ders</th><th class="num">Soru sayısı</th><th class="num">Hedef net</th></tr></thead><tbody>
-      ${list.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
-        <td class="num" style="width:130px"><input type="number" step="0.25" min="0" max="${q}" id="r_${k}" value="${esc(st.refNets[k]??'')}" placeholder="—"></td></tr>`).join('')}
-    </tbody></table>
+      ${L.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
+        <td class="num" style="width:110px"><input type="number" step="0.25" min="0" max="${q}" id="r_${k}" value="${esc(st.refNets[k]??'')}" placeholder="—"></td></tr>`).join('')}
+    </tbody></table></div>`:''; }).join('')}</div>
     <div style="margin-top:14px"><button class="btn" onclick="saveRef()">Referans netleri kaydet</button></div>
     <div class="hint">Bu değerleri ÖSYM/YÖK Atlas verisinden ya da hedef sıralamaya karşılık gelen net dağılımından elle gireceksin. Durum sekmesindeki tüm karşılaştırma bu satırlara dayanır.</div>
   </div></div>
