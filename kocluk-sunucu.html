@@ -239,7 +239,14 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .ozet-ic{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .ozet-lej{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2)}
 .ozet-lej i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.ozet-hafta{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.ozet-hafta{display:flex;gap:10px;flex-wrap:wrap;flex:1;justify-content:space-around}
+.ozet-hafta small{display:block;color:var(--ink-2);font-size:10.5px}
+.ozet-ders{flex:1;min-width:220px;display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-2)}
+.ozet-ders .od-b{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.ozet-ders .od-s{display:grid;grid-template-columns:minmax(70px,auto) 1fr 40px;gap:8px;align-items:center}
+.ozet-ders .od-c{height:8px;border-radius:4px;background:var(--line-soft);overflow:hidden}
+.ozet-ders .od-c b{display:block;height:100%;border-radius:4px}
+.ozet-ders em{font-style:normal;font-family:var(--mono);text-align:right;font-weight:600}
 .ozet-hafta div{text-align:center;font-size:11px;color:var(--ink-3);font-family:var(--mono)}
 .ozet-ac{margin-top:12px;font-size:12.5px;color:var(--accent);font-weight:600}
 /* Veli raporu iki sütun: sütunlar eşit boyda, koçun notu sağ sütunun boşluğunu doldurur. */
@@ -963,7 +970,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261009p"></script>
+<script src="aciklama.js?v=20261009q"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -5301,9 +5308,11 @@ function vOdev(st){
       ekle: 'hizliAta', koc: true
     })}
 
+  <div class="grid2">
   ${tavsiyeHaftalikKart(st)}
 
   ${hizliKart(st)}
+  </div>
 
   <div class="grid2">
   <div class="card"><h2>Ödev ver<small>Ders → ünite → konu seç. Parantez içindeki süre yalnız konu çalışmasıdır; soru çözümü "Bu haftanın toplamı" satırına ayrıca eklenir.</small></h2><div class="body">
@@ -5540,16 +5549,16 @@ function hizliKart(st){
     const s=siradakiKonular(st,k,3);
     const done=(KONU[k]||[]).reduce((a,[,ks])=>a+ks.filter(t=>(st.topics[k]||{})[t]===2).length,0);
     const tot=(KONU[k]||[]).reduce((a,[,ks])=>a+ks.length,0);
-    if(!s.length) return `<tr><td>${nm}</td><td colspan="5" style="color:var(--ok)">Bu derste atanacak konu kalmadı (${done}/${tot} bitti)</td></tr>`;
+    if(!s.length) return `<tr><td>${nm}</td><td colspan="4" style="color:var(--ok)">Bu derste atanacak konu kalmadı (${done}/${tot} bitti)</td></tr>`;
     const b=s[0];
-    return `<tr>
+    const sonra=s.slice(1).map(x=>x.konu+' ('+sa(sureOf(k,x.konu))+')').join(' · ');
+    return `<tr${sonra?` title="Ondan sonra: ${esc(sonra)}"`:''}>
       <td>${nm}<div style="font-size:11px;color:var(--ink-3);font-family:var(--mono)">${done}/${tot} bitti</div></td>
       <td style="color:var(--ink-3);font-size:12px">${esc(b.unite)}</td>
       <td><b>${esc(b.konu)}</b>${b.durum?` <span class="pill s${b.durum===1?2:3}" style="font-size:10.5px">${DURUMAD[b.durum]}</span>`:''}
         ${b.oncelik?`<div style="margin-top:4px">${oncelikRozet(b.oncelik,b.kilit)}</div>`:''}
         ${b.kapsam!=null?`<div style="font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-top:3px">bittiğinde hedefin %${b.kapsam} kadarı · ${b.agirlik.toFixed(1)} soru/yıl</div>`:''}</td>
       <td class="num" style="color:var(--ink-2);font-weight:600">${sa(sureOf(k,b.konu))}</td>
-      <td style="color:var(--ink-3);font-size:11.5px">${s.slice(1).map(x=>esc(x.konu)+' ('+sa(sureOf(k,x.konu))+')').join(' · ')||'—'}</td>
       <td style="width:96px"><button class="btn mini" onclick="hizliAta('${k}',${JSON.stringify(b.konu).replace(/"/g,'&quot;')},${JSON.stringify(b.unite).replace(/"/g,'&quot;')})">ödev ver</button></td>
     </tr>`;
   }).join('');
@@ -5577,7 +5586,7 @@ function hizliKart(st){
     </div>
   </div>
   <div class="body" style="padding:0;overflow:auto">
-    <table><thead><tr><th>Ders</th><th>Ünite</th><th>Sıradaki konu</th><th class="num">Süre</th><th>Ondan sonrakiler</th><th></th></tr></thead>
+    <table><thead><tr><th>Ders</th><th>Ünite</th><th>Sıradaki konu</th><th class="num">Süre</th><th></th></tr></thead>
     <tbody>${satir}</tbody></table>
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
@@ -5609,11 +5618,18 @@ function halka(dilim, boy, orta, alt){
 }
 function odevOzetler(st,wks){
   if(!st.tasks.length) return '';
+  const renk=u=>u===null?'var(--line)':u>=70?'var(--ok)':u>=50?'var(--warn)':'var(--bad)';
   const sy={y:0,k:0,n:0,b:0};
   st.tasks.forEach(t=>{ if(t.s===1)sy.y++; else if(t.s===2)sy.k++; else if(t.s===3)sy.n++; else sy.b++; });
   const biten=sy.y+sy.k+sy.n, uyum=biten?Math.round((sy.y+sy.k*0.5)/biten*100):null;
   const konuSay=new Set(st.tasks.map(t=>t.sub+'||'+(t.konu||'—'))).size;
-  const renk=u=>u===null?'var(--line)':u>=70?'var(--ok)':u>=50?'var(--warn)':'var(--bad)';
+  const ders={};   // ders bazında: biten ödevlerden uyum, en çok ödev alan altı ders
+  st.tasks.forEach(t=>{ const d=ders[t.sub]=ders[t.sub]||{n:0,b:0,p:0}; d.n++;
+    if(t.s===1||t.s===2||t.s===3){ d.b++; d.p+=t.s===1?1:t.s===2?.5:0; } });
+  const dersSat=Object.entries(ders).sort((a,b)=>b[1].n-a[1].n).slice(0,6).map(([k,d])=>{
+    const u=d.b?Math.round(d.p/d.b*100):null;
+    return `<div class="od-s"><span>${subName(k)} <span style="color:var(--ink-3)">· ${d.n}</span></span>
+      <span class="od-c"><b style="width:${u||0}%;background:${renk(u)}"></b></span><em>${u===null?'—':'%'+u}</em></div>`; }).join('');
   const son=wks.slice(0,6).map(w=>({w,s:weekStats(st,w)}));
   const ort=son.filter(x=>x.s.rate!==null);
   const ortU=ort.length?Math.round(ort.reduce((a,x)=>a+x.s.rate,0)/ort.length):null;
@@ -5627,14 +5643,15 @@ function odevOzetler(st,wks){
         <span><i style="background:var(--warn)"></i>Kısmen · ${sy.k}</span>
         <span><i style="background:var(--bad)"></i>Yapılmadı · ${sy.n}</span>
         <span><i style="background:var(--line)"></i>Bekliyor · ${sy.b}</span>
-      </div></div>
+      </div>
+      <div class="ozet-ders"><div class="od-b">Ders bazında uyum</div>${dersSat}</div></div>
       <div class="ozet-ac">${ODEVACIK==='dokum'?'Ayrıntıyı kapat ▴':'Konu konu ayrıntı ▾'}</div>
     </div></div>
   <div class="card ozet-kutu ${ODEVACIK==='hafta'?'acik':''}" onclick="odevAc('hafta')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')odevAc('hafta')">
     <h2>Geçmiş haftalar<small>son ${son.length} haftanın uyumu · toplam ${wks.length} hafta</small></h2>
     <div class="body"><div class="ozet-ic">
       ${halka([{d:ortU||0,r:renk(ortU)},{d:100-(ortU||0),r:'var(--line-soft)'}],120,ortU===null?'—':'%'+ortU,'ortalama')}
-      <div class="ozet-hafta">${son.map(x=>`<div>${halka([{d:x.s.rate||0,r:renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],58,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}</div>`).join('')}</div>
+      <div class="ozet-hafta">${son.map(x=>`<div>${halka([{d:x.s.rate||0,r:renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],64,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}<small>${x.s.done}/${x.s.total} ödev</small></div>`).join('')}</div>
     </div>
       <div class="ozet-ac">${ODEVACIK==='hafta'?'Tabloları kapat ▴':'Hafta hafta ayrıntı ▾'}</div>
     </div></div>
