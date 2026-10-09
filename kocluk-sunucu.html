@@ -217,10 +217,16 @@ input,select,textarea{font-family:inherit;font-size:inherit}
    Dört kartın hiçbiri geniş içerik taşımıyor; alt alta dizilince sayfa
    boşuna uzuyordu. align-items:start şart — yoksa kartlar satır
    yüksekliğine gerilir ve içi boş kalır. */
-.ogr-iki{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.ogr-iki{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:18px;align-items:stretch}
 .ogr-iki>.card{margin-bottom:0}
 @media(max-width:900px){ .ogr-iki{grid-template-columns:1fr} }
 @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+.grid2>.card:only-child{grid-column:1/-1}
+/* Veli raporu iki sütun: sütunlar eşit boyda, koçun notu sağ sütunun boşluğunu doldurur. */
+.veli-iki{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
+.veli-sut{border:1px solid var(--line-soft);border-radius:8px;padding:2px 16px 16px;display:flex;flex-direction:column;min-width:0}
+.veli-sut textarea{flex:1;min-height:150px}
+@media(max-width:980px){.veli-iki{grid-template-columns:1fr}}
 
 /* ---- imza: hedef farkı çubuğu ---- */
 .gap-row{display:grid;grid-template-columns:150px 1fr 200px;gap:14px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
@@ -927,7 +933,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="program.js?v=20261003a"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
-<script src="deneme.js?v=20260906a"></script>
+<script src="deneme.js?v=20261009a"></script>
 <!-- Karne PDF'ini yükleyip sayfa seçerek okuma — koç ve öğrenci paneli ORTAK.
      pdf.js yalnız dosya seçilince yüklenir. Sürüm etiketi değişince burayı da artır. -->
 <script src="karne-pdf.js?v=20261002"></script>
@@ -937,7 +943,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261009m"></script>
+<script src="aciklama.js?v=20261009n"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -3888,6 +3894,7 @@ function vDurum(st){
     </div></div>
   </div>
 
+  <div class="grid2">
   ${soruKarti(st)}
 
   <div class="card"><h2>Son haftalar — ödev uyumu<small>Verilen ödevin ne kadarının yapıldığı. Uyum iki hafta üst üste %50'nin altındaysa plan çok ağır demektir.</small></h2><div class="body">
@@ -3896,6 +3903,7 @@ function vDurum(st){
         <td class="num" style="font-weight:600;color:${w.rate>=70?'var(--ok)':w.rate>=50?'var(--warn)':'var(--bad)'}">${w.rate}%</td></tr>`).join('')}
     </tbody></table>`:'<div class="empty">Ödev girildiğinde haftalık uyum burada birikir.</div>'}
   </div></div>
+  </div>
 
   ${wt.length?`<div class="card"><h2>Eksik işaretli konular (${wt.length})</h2><div class="body">
     <div class="topic-grid">${wt.map(w=>`<div class="topic"><span class="dot t3"></span><span class="tn">${esc(w.t)}</span><span style="font-size:11px;color:var(--ink-3)">${subName(w.s)}</span></div>`).join('')}</div>
@@ -4378,15 +4386,15 @@ function vVeli(st){
   const not=veliNotTaslak(st,V);
 
   return `
-  <div style="max-width:760px;margin:0 auto">
+  <div>
   <div class="card" style="border-width:2px;border-color:var(--accent)">
     <div style="background:var(--accent);color:#fff;padding:14px 20px;border-radius:5px 5px 0 0">
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">BİYOSER Koçluk · Haftalık Veli Bilgilendirmesi</div>
       <div style="font-size:19px;font-weight:700;margin-top:3px">${esc(st.name)} — ${esc(st.grade)}. Sınıf ${trLabel(st.track)}</div>
       <div style="font-size:12.5px;opacity:.9;font-family:var(--mono)">${st.dept?'Hedef: '+esc(st.dept)+' · ':''}Hafta ${haftaGoster(V.wk)}</div>
     </div>
-    <div class="body">
-      <div class="stats uc" style="margin:-4px -4px 4px">
+    <div class="body"><div class="veli-iki"><div class="veli-sut">
+      <div class="stats uc" style="margin:10px 0 4px">
         <div class="stat"><div class="k">Ödev uyumu</div><div class="v" style="color:${uyumRenk(uyum)}">${uyum==null?'—':'%'+uyum}</div><div class="n">bu hafta</div></div>
         <div class="stat"><div class="k">Çözülen soru</div><div class="v">${V.cozulen||0}</div><div class="n">bu hafta</div></div>
         <div class="stat"><div class="k">Çalışma süresi</div><div class="v" style="font-size:21px">${V.sure?sa(V.sure):'—'}</div><div class="n">kayda geçen</div></div>
@@ -4403,6 +4411,7 @@ function vVeli(st){
       ${yapilanHtml}
       <div class="sec-h" style="margin-top:16px"><h3>Dikkat edilmesi gereken</h3></div>
       ${eksikHtml}
+      </div><div class="veli-sut">
       <div class="sec-h" style="margin-top:16px"><h3>Koçun notu <span style="font-weight:400;color:var(--ink-3);font-size:12px">(otomatik taslak — düzenleyebilirsin)</span></h3></div>
       <textarea id="veliNot" rows="6" style="line-height:1.6">${esc(not)}</textarea>
       <div class="sec-h" style="margin-top:16px"><h3>Önümüzdeki hafta planı</h3></div>
@@ -4414,7 +4423,7 @@ function vVeli(st){
         <button class="btn ghost" onclick="veliYazdir()">PDF / Yazdır</button>
       </div>
       <div class="hint" style="margin-top:10px">Bu özet panelin verisinden <b>otomatik üretildi</b>. Göndermeden önce sen okuyup onaylıyorsun; sistem kendiliğinden mesaj atmaz. Telefonu Öğrenci bilgileri sekmesine gir.</div>
-    </div>
+    </div></div></div>
   </div></div>`;
 }
 function veliMetin(st){
@@ -4914,6 +4923,7 @@ function vDeneme(st){
   return `
   ${ornekUyari(st)}
 
+  <div class="grid2">
   <div class="card"><h2>Karneden okut<small>Netleri karnenin net tablosundan, yanlış ve boş konuları konu analizi tablosundan okur.</small></h2><div class="body kz-govde">
     <div class="hint" style="margin:0 0 10px"><span class="yalniz-masa">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. </span><span class="yalniz-tel">Telefonda en kolayı: karne PDF'ini <b>“PDF yükle”</b> ile seç, sayfa numarasını yaz. </span>Sistem ders netlerini karnenin <b>net tablosundan</b>, yanlış ve boş bıraktığı konuları <b>konu analizi tablosundan</b> okur. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
     <div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>
@@ -4934,6 +4944,21 @@ function vDeneme(st){
       Karneyi bize gönder, o yayınevinin düzeni sisteme tanıtılsın — bir sonraki güncellemede okunur hale gelir.</div>
     <div id="kzOut" style="margin-top:14px"></div>
   </div></div>
+
+  <div class="card"><h2>Yeni deneme gir</h2><div class="body">
+    <div class="fr">
+      <div><label class="f">Tarih</label><input type="date" id="exD" value="${today()}"></div>
+      <div style="flex:2"><label class="f">Deneme adı</label><input type="text" id="exN" placeholder="ör. 3D Yayınları TYT-4"></div>
+    </div>
+    <table><thead><tr><th>Ders</th><th class="num">Soru</th><th class="num">Doğru</th><th class="num">Yanlış</th></tr></thead><tbody>
+      ${list.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
+        <td class="num" style="width:110px"><input type="number" min="0" max="${q}" id="d_${k}" placeholder="—"></td>
+        <td class="num" style="width:110px"><input type="number" min="0" max="${q}" id="y_${k}" placeholder="—"></td></tr>`).join('')}
+    </tbody></table>
+    <div style="margin-top:14px"><button class="btn" onclick="saveExam()">Denemeyi kaydet</button>
+    <span class="hint" style="margin-left:12px">Boş bıraktığın ders o denemeye girmez. Net otomatik hesaplanır (D − Y/4).</span></div>
+  </div></div>
+  </div>
 
   ${aex?`<div class="card"><h2>Yanlış ve boş konular — ${esc(aex.name||aex.date)} · ${aex.date}</h2><div class="body">
     <div class="fr">
@@ -4988,19 +5013,7 @@ function vDeneme(st){
       <tr><td colspan="5" style="background:var(--line-soft);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:650">AYT — ${trLabel(st.track)}</td></tr>
       ${bl.AYT.map(sat).join('')}</tbody></table></div></div>`;})()}
 
-  <div class="card"><h2>Yeni deneme gir</h2><div class="body">
-    <div class="fr">
-      <div><label class="f">Tarih</label><input type="date" id="exD" value="${today()}"></div>
-      <div style="flex:2"><label class="f">Deneme adı</label><input type="text" id="exN" placeholder="ör. 3D Yayınları TYT-4"></div>
-    </div>
-    <table><thead><tr><th>Ders</th><th class="num">Soru</th><th class="num">Doğru</th><th class="num">Yanlış</th></tr></thead><tbody>
-      ${list.map(([k,nm,q])=>`<tr><td>${nm}</td><td class="num" style="color:var(--ink-3)">${q}</td>
-        <td class="num" style="width:110px"><input type="number" min="0" max="${q}" id="d_${k}" placeholder="—"></td>
-        <td class="num" style="width:110px"><input type="number" min="0" max="${q}" id="y_${k}" placeholder="—"></td></tr>`).join('')}
-    </tbody></table>
-    <div style="margin-top:14px"><button class="btn" onclick="saveExam()">Denemeyi kaydet</button>
-    <span class="hint" style="margin-left:12px">Boş bıraktığın ders o denemeye girmez. Net otomatik hesaplanır (D − Y/4).</span></div>
-  </div></div>
+
 
   <div class="card"><h2>Geçmiş denemeler (${ex.length})</h2><div class="body" style="padding:0;overflow:auto">
     ${ex.length?`<table><thead><tr><th>Tarih</th><th>Deneme</th>
@@ -5264,7 +5277,7 @@ function vOdev(st){
     (typeof SINAVANALIZ==='undefined') ? '' : SINAVANALIZ.riskKart(st.exams||[], {
       dersAdi: subName,
       durumOf: (sub,konu)=>((st.topics||{})[sub]||{})[konu]||0,
-      ekle: 'hizliAta'
+      ekle: 'hizliAta', koc: true
     })}
 
   ${tavsiyeHaftalikKart(st)}
@@ -5720,6 +5733,7 @@ function vKonu(st){
     Her konunun süresini aşağıdan kendine göre düzeltebilirsin — düzeltmeler tüm öğrenciler için geçerlidir.</div>
   </div></div>
 
+  <div class="grid2">
   <div class="card k-sakin"><h2>Yetişir mi — yalnız konu çalışması<small>Soru çözümü hariç, sadece konuları bitirmeye yeter mi. Haftada ${gerekliKonu?n1(gerekliKonu):'—'} saat gerekiyor.</small></h2>
   <div class="stats uc">
     <div class="stat"><div class="k">Öncelikli</div><div class="v" style="font-size:19px;color:${K_ONC.c}">${K_ONC.v}</div><div class="n">${K_ONC.n}</div></div>
@@ -5734,11 +5748,12 @@ function vKonu(st){
     <div class="stat"><div class="k">Genişleme</div><div class="v" style="font-size:19px;color:${T_GEN.c}">${T_GEN.v}</div><div class="n">%30 payla · ${T_GEN.n}</div></div>
   </div>
   <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint"><b>Hangisine bakmalı:</b> "konuları ne zaman bitiririz" sorusu üstteki karta,
-    "sınava hazır olur mu" sorusu bu karta bakar. Üstteki "Yetişir" ama bu "Yetişmez" ise öğrenci konuları
+    <div class="hint"><b>Hangisine bakmalı:</b> "konuları ne zaman bitiririz" sorusu soldaki karta,
+    "sınava hazır olur mu" sorusu sağdaki karta bakar. Soldaki "Yetişir" ama sağdaki "Yetişmez" ise öğrenci konuları
     bitirir fakat yeterince soru çözemez — netler konu bilgisinden geri kalır.
     <br>Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise plan çok gergin; küçük bir aksama yetişmemeye döner.</div>
   </div></div>
+  </div>
 
   <div class="card"><h2>Konu ilerlemesi — genel<small>Bir derse tıklayınca aşağıda o dersin konuları açılır.</small></h2><div class="body" style="padding:0">
     <table><thead><tr><th>Ders</th><th class="num">Toplam</th><th class="num">Bitti</th><th class="num">İşleniyor</th><th class="num">Eksik</th><th class="num">Tamamlanma</th><th class="num">Kalan süre</th></tr></thead><tbody>

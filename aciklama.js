@@ -27,6 +27,10 @@
       nasil:'Blokları sürükleyip taşı, taşınan blok kilitlenir. "Yeniden dağıt" kilitlileri yerinde bırakıp gerisini baştan yerleştirir. Gri hücreler kapalı saatlerdir.' },
 
     // ---- Ödevler ----
+    { h2:/^Bitirdi ama tutmamış/, bas:'Bitirdi ama tutmamış',
+      ne:"Öğrencinin işleniyor ya da bitti işaretlediği ama denemelerde doğru oranı %50'nin altında kalan konular.",
+      ise:'Bitti sanılan ama denemede tutmayan konuları ödev vermeden önce görürsün.',
+      nasil:'Oran, denemelere girilen yanlış ve boş konulardan hesaplanır. Satırdaki "Ödeve ekle" konuyu bugünün tarihiyle ödev olarak verir.' },
     { h2:/^Tavsiye edilen haftalık ödev/, bas:'Tavsiye edilen haftalık ödev',
       ne:'Kalan konuları sınava kadar bitirecek tempoya göre panelin kurduğu haftalık plan.',
       ise:'Bu hafta hangi konuların verilmesi gerektiğini hesaplamakla uğraşmazsın.',

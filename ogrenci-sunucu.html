@@ -491,6 +491,7 @@ body{font-size:clamp(13px,3.4vw,14px)}
 
 /* ders ders grafik ızgarası */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid2>.card:only-child{grid-column:1/-1}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}}
 .grid-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .grid-mini .card{margin-bottom:0}
@@ -914,7 +915,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
 <script src="program.js?v=20261003a"></script>
 <!-- Deneme konu analizi — koç ve öğrenci paneli ORTAK kullanır.
      Sürüm etiketi değişince burayı da artır. -->
-<script src="deneme.js?v=20260906a"></script>
+<script src="deneme.js?v=20261009a"></script>
 <!-- Karne PDF'ini yükleyip sayfa seçerek okuma — koç ve öğrenci paneli ORTAK.
      pdf.js yalnız dosya seçilince yüklenir. Sürüm etiketi değişince burayı da artır. -->
 <script src="karne-pdf.js?v=20261002"></script>
@@ -924,7 +925,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='ogrenci';</script>
-<script src="aciklama.js?v=20261009m"></script>
+<script src="aciklama.js?v=20261009n"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -2154,17 +2155,17 @@ function ucSenaryoKart(gerekli, hs, gerekliKonu){
   </div>`;
   const K1=yetSenaryo(gerekliKonu,hs,1), K2=yetSenaryo(gerekliKonu,hs,1.15), K3=yetSenaryo(gerekliKonu,hs,1.30);
   const T1=yetSenaryo(gerekli,hs,1),     T2=yetSenaryo(gerekli,hs,1.15),     T3=yetSenaryo(gerekli,hs,1.30);
-  return `<div class="card k-sakin"><h2>Yetişir mi — yalnız konu çalışması<small>Soru çözümü hariç, sadece konuları bitirmeye yeter mi. Haftada ${gerekliKonu?n1(gerekliKonu):'—'} saat gerekiyor.</small></h2>
+  return `<div class="grid2"><div class="card k-sakin"><h2>Yetişir mi — yalnız konu çalışması<small>Soru çözümü hariç, sadece konuları bitirmeye yeter mi. Haftada ${gerekliKonu?n1(gerekliKonu):'—'} saat gerekiyor.</small></h2>
   ${sat('konu',K1,K2,K3)}</div>
 
   <div class="card"><h2>Yetişir mi — konu + soru çözümü<small>Gerçek hazırlık: konuları bitirmek VE hedeflenen soruları çözmek. Haftada ${gerekli?n1(gerekli):'—'} saat gerekiyor. Öncelikli: tam denk. Güvenlik payı: %15 — hastalık, aksama, tekrar. Genişleme: %30 — fazladan tekrar için yer.</small></h2>
   ${sat('tam',T1,T2,T3)}
   <div class="body" style="border-top:1px solid var(--line-soft)">
-    <div class="hint"><b>Hangisine bakmalısın:</b> "konuları ne zaman bitiririm" sorusu üstteki karta,
-    "sınava hazır olur muyum" sorusu bu karta bakar. Üstteki "Yetişir" ama bu "Yetişmez" ise konuları
+    <div class="hint"><b>Hangisine bakmalısın:</b> "konuları ne zaman bitiririm" sorusu soldaki karta,
+    "sınava hazır olur muyum" sorusu sağdaki karta bakar. Soldaki "Yetişir" ama sağdaki "Yetişmez" ise konuları
     bitirirsin fakat yeterince soru çözemezsin — netlerin bildiğinin gerisinde kalır.
     <br>Öncelikli "Yetişir" ama güvenlik payı "Yetişmez" ise planın çok gergin; küçük bir aksama yetişmemeye döner.</div>
-  </div></div>`;
+  </div></div></div>`;
 }
 
 /* ---------- görünüm ---------- */

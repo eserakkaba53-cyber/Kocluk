@@ -208,9 +208,12 @@ window.SINAVANALIZ = (function(){
 
     return '<div class="card" style="border:1.5px solid #D7263D">' +
       '<h2><span class="sa-isik"></span>' +
-      esc(opts.baslik || 'Bitirdin ama tutmamış — ' + r.length + ' konu') +
-      '<small>Bu konuları işleniyor ya da bitti işaretledin, ama denemelerde doğru oranın ' +
-      '%' + Math.round(ZAYIF_ESIK*100) + '’nin altında. Haftalık ödeve ekleyip tekrar et.</small></h2>' +
+      esc(opts.baslik || (opts.koc ? 'Bitirdi ama tutmamış — ' : 'Bitirdin ama tutmamış — ') + r.length + ' konu') +
+      (opts.koc   // koç panelinde öğrenciden üçüncü kişiyle söz edilir
+        ? '<small>Öğrenci bu konuları işleniyor ya da bitti işaretlemiş, ama denemelerde doğru oranı ' +
+          '%' + Math.round(ZAYIF_ESIK*100) + '’nin altında. Haftalık ödeve ekleyip tekrar ettir.</small></h2>'
+        : '<small>Bu konuları işleniyor ya da bitti işaretledin, ama denemelerde doğru oranın ' +
+          '%' + Math.round(ZAYIF_ESIK*100) + '’nin altında. Haftalık ödeve ekleyip tekrar et.</small></h2>') +
       '<div class="body" style="padding:0;max-height:300px;overflow:auto"><table><tbody>' +
       satir + '</tbody></table></div></div>';
   }
