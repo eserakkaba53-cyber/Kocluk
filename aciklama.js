@@ -1,4 +1,4 @@
-/* ================= SAĞ AÇIKLAMA SÜTUNU (9 Eki 2026, önizleme) =================
+/* ================= SAĞ AÇIKLAMA SÜTUNU (9 Eki 2026) =================
    Koç ve öğrenci panelinde sağda, sol rayla aynı renkte bir sütun. Ekrandaki her
    kartın hizasında üç kısa bilgi durur: kartın ne olduğu, ne işe yaradığı ve nasıl
    kullanıldığı. Kart, başlığıyla (h2) ya da içindeki bir öğeyle (sec) tanınır;
@@ -142,9 +142,15 @@
     var r = ray(); if (!r) return;
     var view = document.getElementById('view');
     var kartlar = view ? view.querySelectorAll('.card') : [];
+    // Giriş ve kayıt ekranında sütun görünmez (şifre kutusu olan ekran).
+    var giris = !!(view && view.querySelector('input[type=password]'));
+    r.style.display = giris ? 'none' : '';
+    if (giris) return;
     // Renk sol menüden okunur: koçta .rail, öğrencide .snav; temalar değişse de iki sütun aynı kalır.
     var sol = document.querySelector('.app > aside:not(.ac-ray)');
     if (sol) r.style.background = getComputedStyle(sol).backgroundColor;
+    // Genişlik de sol menüyle aynı (koçta 246 px, dar ekranda 200 px); kapalıyken ince şerit.
+    r.style.width = (KAPALI || !sol || !sol.offsetWidth) ? '' : sol.offsetWidth + 'px';
     r.classList.toggle('kapali', KAPALI);
     if (KAPALI) {
       r.innerHTML = '<div class="ac-dikey">Açıklamaları göster</div>';
@@ -172,7 +178,7 @@
       NOTLAR.push({ d: d, ust: Math.round(kr.top - ust), alt: Math.round(kr.bottom - ust), h: d.offsetHeight });
       adet++;
     }
-    if (!adet && kartlar.length) { liste.innerHTML = '<div class="ac-bos">Bu sekmenin açıklamaları henüz eklenmedi.</div>'; return; }
+    if (!adet && kartlar.length) { liste.innerHTML = '<div class="ac-bos">Bu sekmenin açıklamaları yakında eklenecek.</div>'; return; }
     konumla();
   }
 
