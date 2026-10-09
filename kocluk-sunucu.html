@@ -236,7 +236,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .ozet-kutu{cursor:pointer;transition:border-color .15s}
 .ozet-kutu:hover{border-color:var(--accent)}
 .ozet-kutu.acik{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.ozet-ic{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.ozet-ic{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center}
 .ozet-lej{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2)}
 .ozet-lej i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .ozet-hafta{display:grid;grid-template-columns:1fr 1fr;justify-items:center;gap:10px 8px;flex:1}
@@ -244,7 +244,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .ref-iki h3{margin:0 0 6px;font-size:12px;letter-spacing:.06em;color:var(--ink-3)}
 @media(max-width:980px){.ref-iki{grid-template-columns:1fr}}
 .ozet-hafta small{display:block;color:var(--ink-2);font-size:10.5px}
-.ozet-ders{flex:1 1 100%;min-width:220px;display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-2)}
+.ozet-ders{flex:1 1 100%;max-width:440px;min-width:220px;display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-2)}
 .ozet-ders .od-b{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .ozet-ders .od-s{display:grid;grid-template-columns:minmax(70px,auto) 1fr 40px;gap:8px;align-items:center}
 .ozet-ders .od-c{height:8px;border-radius:4px;background:var(--line-soft);overflow:hidden}
@@ -5603,7 +5603,7 @@ function halka(dilim, boy, orta, alt){
     bas+=u; return s;}).join(''):'';
   return `<svg width="${boy}" height="${boy}" viewBox="0 0 ${boy} ${boy}" role="img" aria-label="${esc(orta)} ${esc(alt||'')}">
     <circle r="${R}" cx="${boy/2}" cy="${boy/2}" fill="none" stroke="var(--line-soft)" stroke-width="12"/>${yay}
-    <text x="50%" y="${alt?'47%':'53%'}" text-anchor="middle" font-size="${boy>90?20:13}" font-weight="700" fill="var(--ink)" font-family="var(--mono)">${esc(orta)}</text>
+    <text x="50%" y="${alt?'47%':'53%'}" text-anchor="middle" font-size="${boy>=100?20:boy>80?16:13}" font-weight="700" fill="var(--ink)" font-family="var(--mono)">${esc(orta)}</text>
     ${alt?`<text x="50%" y="64%" text-anchor="middle" font-size="10" fill="var(--ink-3)">${esc(alt)}</text>`:''}</svg>`;
 }
 function odevOzetler(st,wks){
@@ -5641,7 +5641,7 @@ function odevOzetler(st,wks){
     <h2>Geçmiş haftalar<small>son ${son.length} haftanın uyumu · toplam ${wks.length} hafta</small></h2>
     <div class="body"><div class="ozet-ic">
       ${halka([{d:ortU||0,r:renk(ortU)},{d:100-(ortU||0),r:'var(--line-soft)'}],120,ortU===null?'—':'%'+ortU,'ortalama')}
-      <div class="ozet-hafta">${son.map(x=>`<div>${halka([{d:x.s.rate||0,r:renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],64,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}<small>${x.s.done}/${x.s.total} ödev</small></div>`).join('')}</div>
+      <div class="ozet-hafta">${son.map(x=>`<div>${halka([{d:x.s.rate||0,r:renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],92,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}<small>${x.s.done}/${x.s.total} ödev</small></div>`).join('')}</div>
     </div>
       <div class="ozet-ac">${ODEVACIK==='hafta'?'Tabloları kapat ▴':'Hafta hafta ayrıntı ▾'}</div>
     </div></div>
