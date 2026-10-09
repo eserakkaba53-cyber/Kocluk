@@ -937,7 +937,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261009j"></script>
+<script src="aciklama.js?v=20261009m"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -5177,7 +5177,7 @@ function tavsiyeHaftalikKart(st){
   const r=tavsiyeHesap(st);
   const sar=(ic)=>`<div class="card" style="border:1px solid var(--accent)"><h2>Tavsiye edilen haftalık ödev<small>Ön koşul + çekirdek + güvenlik payı konuları; öğrenciyi sınava kadar yetiştiren otomatik plan.</small></h2><div class="body">${ic}</div></div>`;
   if(r.durum==='agirlik') return sar(`<div class="flag warn"><span class="ic">i</span><span>Ağırlık dosyası (agirlik-2027.json) yüklenemedi; plan hesaplanamıyor.</span></div>`);
-  if(r.durum==='tarih')   return sar(`<div class="flag warn"><span class="ic">i</span><span>Bu öğrenci için <b>sınav tarihi</b> girilmemiş. Öğrenci bilgileri sekmesinden gir; plan buna göre hesaplanır.</span></div>`);
+  if(r.durum==='tarih')   return sar(`<div class="flag warn"><span class="ic">i</span><span><b>Sınav tarihi</b> girilmemiş (bütün öğrenciler için ortak). Hedef sekmesinden gir; plan buna göre hesaplanır.</span></div>`);
   if(r.durum==='gecti')   return sar(`<div class="flag bad"><span class="ic">!</span><span>Sınav tarihi geçmiş görünüyor; haftalık plan üretilemedi.</span></div>`);
   if(!r.secim.length)     return sar(`<div class="flag ok"><span class="ic">✓</span><span>Kapsamdaki (ön koşul + çekirdek + güvenlik payı) tüm konular ya bitmiş ya da zaten ödev olarak verilmiş. Yeni tavsiye yok.</span></div>`);
 
@@ -5698,7 +5698,7 @@ function vKonu(st){
       <div class="n">${_topKonu?'%'+_bitOran+' tamamlandı':'konu listesi boş'}</div></div>
     <div class="stat"><div class="k">Haftalık beyan</div>
       <div class="v" style="${hs?'':'color:var(--ink-3)'}">${hs||'—'}</div>
-      <div class="n">${hs?'saat/hafta · öğrencinin beyanı':'Öğrenci bilgileri sekmesinden gir'}</div></div>
+      <div class="n">${hs?'saat/hafta · öğrencinin beyanı':'Hedef sekmesinden gir'}</div></div>
     <div class="stat"><div class="k">Sınava kalan</div><div class="v">${hk===null?'—':hk}</div><div class="n">${hk===null?'sınav tarihi yok':'hafta'}</div></div>
   </div>
   <div class="stats" style="border-top:1px solid var(--line-soft)">
@@ -7164,7 +7164,7 @@ function vKocKilavuz(){
     <div class="topic"><span class="dot t3"></span><span class="tn"><b>Eksik</b> — çalışıldı ama oturmadı</span></div>
     <div class="flag ok" style="margin-top:12px"><span class="ic">i</span><span>
       İşaretler değiştikçe <b>kalan süre ve konu önceliği kendiliğinden güncellenir</b>.
-      Konu adına tıklarsan anlatım videoları açılır.</span></div>
+      Konunun yanındaki ▶ düğmesi anlatım videolarını açar; konu adına tıklamak durumunu değiştirir.</span></div>
     <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span>
       <b>Öğrenci ödev aldıktan sonra konu işaretlemesi bu haftanın ödevini bozmaz</b> —
       verilmiş ödev yerinde kalır, yalnız <b>bundan sonraki</b> plan değişir.
@@ -7174,10 +7174,9 @@ function vKocKilavuz(){
 
   <div class="card"><h2>Hedef sekmesi</h2><div class="body">
     <p style="margin:0 0 12px">YÖK verisinden hedef bölümü seçersin; taban puan, başarı sırası ve
-      <b>ders ders hedef netler</b> kendiliğinden dolar. Burada ayrıca üç şey görürsün:</p>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kalan süre</b> — iki ayrı sayı: yalnız konu çalışması, ve konu + soru çözümü</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yetişir mi</b> — üç tamponla: Öncelikli (tam denk), Güvenlik payı (%15), Genişleme (%30)</span></div>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Haftalık çalışma saati (beyan)</b> ve sınav tarihi</span></div>
+      <b>ders ders hedef netler</b> kendiliğinden dolar. Haftalık çalışma saatini (beyan) ve sınav tarihini de burada girersin; ikisi Konular sekmesindeki iki kutuyu besler:</p>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kalan süre</b> (Konular sekmesi) — iki ayrı sayı: yalnız konu çalışması, ve konu + soru çözümü</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yetişir mi</b> (Konular sekmesi) — üç tamponla: Öncelikli (tam denk), Güvenlik payı (%15), Genişleme (%30)</span></div>
     <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
       <b>Haftalık çalışma saati boşsa "Yetişir mi" kutuları "—" kalır</b> ve altlarında
       "Hedef sekmesini doldur" yazar. Kutu bu sekmededir — doldur ya da öğrenciden istemesini iste.</span></div>

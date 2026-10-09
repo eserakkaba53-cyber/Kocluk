@@ -23,6 +23,11 @@ window.MESAJ = (function(){
     hata: ''
   };
 
+  /* Tarayıcının ağ hatası İngilizce gelir ("Failed to fetch"); kullanıcıya Türkçe göster. */
+  function hataMetni(e){
+    var m = (e && e.message) || String(e);
+    return /failed to fetch|networkerror|load failed/i.test(m) ? 'Sunucuya bağlanılamadı. İnternetini kontrol edip Yenile düğmesine bas.' : m;
+  }
   function esc(s){
     return String(s==null?'':s).replace(/[&<>"]/g,function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
@@ -66,7 +71,7 @@ window.MESAJ = (function(){
     try{
       D.benim = await cagir('mesajlarim') || [];
       D.sayac = 0;                       // açınca yöneticinin cevapları okundu sayılır
-    }catch(e){ D.hata = e.message||String(e);
+    }catch(e){ D.hata = hataMetni(e);
       /* ★ 16 Eyl 2026 — benim null kalınca kartKullanici her çizimde yeniden
          yüklemeyi kuruyor ve hata sürerken sonsuz istek + çizim döngüsü
          oluşuyordu. Boş liste ile dur; hata kartta görünür, kullanıcı
@@ -90,7 +95,7 @@ window.MESAJ = (function(){
       if(el) el.value=''; D.taslak='';
       D.benim = await cagir('mesajlarim') || [];
       D.hata='';
-    }catch(e){ D.hata = e.message||String(e); }
+    }catch(e){ D.hata = hataMetni(e); }
     ciz();
   }
 
@@ -148,7 +153,7 @@ window.MESAJ = (function(){
     if(D.yukleniyor) return;
     D.yukleniyor = true; D.hata='';
     try{ D.konusmalar = await cagir('mesaj_konusmalar') || []; }
-    catch(e){ D.hata = e.message||String(e); D.konusmalar = []; }
+    catch(e){ D.hata = hataMetni(e); D.konusmalar = []; }
     D.yukleniyor = false; ciz();
   }
   /* uid'i olan HERKESE açılır — daha önce hiç yazmamış olsa bile.
@@ -166,7 +171,7 @@ window.MESAJ = (function(){
       D.acikVeri = r;
       await sayaciTazele();              // okundu işaretlendi, rozet düşsün
       D.konusmalar = await cagir('mesaj_konusmalar') || [];
-    }catch(e){ D.hata = e.message||String(e);
+    }catch(e){ D.hata = hataMetni(e);
       /* Açılamadıysa kart "Yükleniyor…"da takılı kalmasın. */
       if(!D.acikVeri){ D.acik=null; } }
     ciz();
@@ -185,7 +190,7 @@ window.MESAJ = (function(){
       if(k && k.ok) D.acikVeri = k;
       D.konusmalar = await cagir('mesaj_konusmalar') || [];
       D.hata='';
-    }catch(e){ D.hata = e.message||String(e); }
+    }catch(e){ D.hata = hataMetni(e); }
     ciz();
   }
   async function sil(uid, ad){
@@ -204,7 +209,7 @@ window.MESAJ = (function(){
       D.konusmalar = await cagir('mesaj_konusmalar') || [];
       await sayaciTazele();
       D.hata='';
-    }catch(e){ D.hata = e.message||String(e); }
+    }catch(e){ D.hata = hataMetni(e); }
     ciz();
   }
 

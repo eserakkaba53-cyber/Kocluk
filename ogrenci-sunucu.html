@@ -924,7 +924,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='ogrenci';</script>
-<script src="aciklama.js?v=20261009j"></script>
+<script src="aciklama.js?v=20261009m"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -2739,7 +2739,7 @@ function ekstraKart(){
   const ks = EUNITE ? (un.find(u=>u[0]===EUNITE)||['',[]])[1] : un.flatMap(u=>u[1]);
   const liste=ekstraListe();
   return `<div class="card"><h2>Kendi çalışmam</h2><div class="body">
-    <div class="hint" style="margin:0 0 10px">Öğretmenin vermediği ama senin çalıştığın konuları buraya ekle. ${ekstraSunucuda()?'Öğretmenin anında görür.':'Rapor gönderdiğinde ona da iletilir.'}</div>
+    <div class="hint" style="margin:0 0 10px">Öğretmenin vermediği ama senin çalıştığın konuları buraya ekle. ${ekstraSunucuda()?'Öğretmenin paneli yenileyince görür.':'Rapor gönderdiğinde ona da iletilir.'}</div>
     <div class="fr">
       <div><label class="f">Ders</label><select onchange="EDERS=this.value;EUNITE='';render()">
         ${subs(D).map(([k,nm])=>`<option value="${k}" ${k===sk?'selected':''}>${nm}</option>`).join('')}</select></div>
@@ -4538,7 +4538,7 @@ function vKilavuz(){
     <div class="flag ok"><span class="ic">✓</span><span><b>Bilgilerin sunucuda saklanıyor.</b>
       Telefondan, tabletten, bilgisayardan — <b>hangi cihazdan girersen gir aynı şeyleri görürsün</b>.
       Tarayıcı geçmişini silsen bile kaybolmaz.</span></div>
-    <div class="flag ok"><span class="ic">✓</span><span><b>İşaretlediğin her şey ${solo?'kendiliğinden kaydedilir':'öğretmenine anında ulaşır'}.</b>
+    <div class="flag ok"><span class="ic">✓</span><span><b>İşaretlediğin her şey ${solo?'kendiliğinden kaydedilir.':'kaydedilir. '+iletimNotu()}</b>
       ${solo?'Ayrıca bir yere bir şey göndermene gerek yok.':'Ayrıca rapor göndermene gerek yok.'}</span></div>
     <div class="flag warn"><span class="ic">!</span><span><b>Sayfayı kapatmadan önce kaydın bitmesini bekle.</b>
       Bir sorun olursa ekranı kaplayan bir pencere açılır ve
