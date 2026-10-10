@@ -555,6 +555,101 @@ body{font-size:clamp(13px,3.4vw,14px)}
 @media(max-width:760px){
   .kokpit-tablo{display:block;overflow-x:auto}
 }
+/* ===== KOKPİT ÜÇ GÖRÜNÜM ===== */
+.kok-duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:stretch;margin-bottom:18px}
+.kok-duo>.card{margin-bottom:0;display:flex;flex-direction:column}
+.kok-sarma{container-type:inline-size}
+@container (max-width:980px){.kok-duo{grid-template-columns:minmax(0,1fr)}}
+.risk-d{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:1px;flex:none}
+.risk-d.r{background:var(--bad)} .risk-d.y{background:var(--warn)} .risk-d.g{background:var(--ok)}
+.kok-sec{border-left:4px solid var(--accent)}
+.kok-sec.bos{border-left-color:var(--line)}
+.kok-sec .body{display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px}
+.ks-kim{min-width:220px;flex:1 1 260px}
+.ks-kim>b{font-size:16px;margin-left:4px}
+.ks-meta{color:var(--ink-3);font-size:12.5px;margin-left:6px}
+.ks-neden{color:var(--ink-2);font-size:12.5px;margin-top:4px}
+.ks-ogeler{display:flex;flex-wrap:wrap;gap:8px 22px;flex:2 1 420px}
+.ks-oge{display:grid;gap:1px}
+.ks-oge span{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.ks-oge b{font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.ks-oge b.kot{color:var(--bad)} .ks-oge b.iyi{color:var(--ok)} .ks-oge b.sus{color:var(--ink-3);font-weight:500}
+.ks-dug{display:flex;gap:6px;flex:none}
+.kq-n{display:inline-block;width:9px;height:9px;border-radius:2px}
+.kq-n.tr{background:var(--ok)} .kq-n.br{background:var(--warn)} .kq-n.tl{background:var(--accent)} .kq-n.bl{background:var(--bad)}
+.kh-ust{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 16px;padding-bottom:8px}
+.kh-lej{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink-2)}
+.kh-lej i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
+.kh-sira{min-width:260px}
+.kh-not{margin:0 18px 8px;padding:6px 10px;border-radius:6px;background:var(--warn-bg);color:var(--warn);font-size:12.5px;font-weight:600}
+.kh-kay{overflow-x:auto;padding:0 12px 12px}
+table.kh{border-collapse:separate;border-spacing:3px;width:100%;min-width:720px}
+table.kh th,table.kh td{border:0;padding:0;background:none}
+table.kh thead th{font:500 11px var(--mono);color:var(--ink-3);text-align:center;padding:4px 0}
+table.kh thead th.kh-dip{background:var(--warn-bg);color:var(--warn);border-radius:4px;font-weight:700}
+table.kh td{height:30px;min-width:46px;text-align:center;font:500 12px var(--mono);border-radius:4px}
+table.kh .kh-ad{text-align:left;white-space:nowrap;border-radius:5px}
+table.kh thead .kh-ad{font:700 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;padding-left:4px}
+.kh-btn{all:unset;display:flex;align-items:center;font:600 13px var(--sans);text-transform:none;letter-spacing:normal;color:var(--ink);padding:3px 12px 3px 6px;cursor:pointer;border-radius:5px}
+.kh-btn:focus-visible{outline:2px solid var(--accent)}
+table.kh tbody tr{cursor:pointer}
+table.kh tbody tr:hover .kh-ad{background:var(--paper)}
+table.kh tr.sec .kh-ad{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+table.kh tr.sec td:not(.kh-tyt){box-shadow:inset 0 0 0 2px var(--accent)}
+.kh-ok{background:var(--ok-bg);color:var(--ok)} .kh-orta{background:var(--warn-bg);color:var(--warn)}
+.kh-kot{background:var(--bad-bg);color:var(--bad);font-weight:700} .kh-yok{background:var(--paper);color:var(--ink-3)}
+table.kh td.kh-dipc{outline:1.5px dashed var(--warn);outline-offset:-2px}
+table.kh .kh-tyt{text-align:left;padding-left:10px;min-width:130px}
+.kh-sp{display:inline-flex;align-items:center;gap:6px}
+.kh-sp polyline{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.kh-sp circle.up{fill:var(--ok)} .kh-sp circle.down{fill:var(--bad)} .kh-sp circle.eq{fill:var(--ink-3)}
+.kh-sp b{font:600 11.5px var(--mono)} .kh-sp b.up{color:var(--ok)} .kh-sp b.down{color:var(--bad)} .kh-sp b.eq{color:var(--ink-3)}
+.kh-az{font-size:11px;color:var(--ink-3)}
+.kd-kay{overflow-x:auto;padding:6px 10px 2px}
+.kd-svg{display:block;width:100%;min-width:460px;height:auto}
+.kd-svg .kq-tr{fill:var(--ok-bg)} .kd-svg .kq-br{fill:var(--warn-bg)} .kd-svg .kq-tl{fill:var(--accent-soft)} .kd-svg .kq-bl{fill:var(--bad-bg)}
+.kd-svg .ax{stroke:var(--ink-3);stroke-width:1} .kd-svg .mid{stroke:var(--ink-2);stroke-width:1.2;stroke-dasharray:5 4}
+.kd-svg .tk{fill:var(--ink-3);font:10.5px var(--mono)} .kd-svg .at{fill:var(--ink-2);font:600 11.5px var(--sans)}
+.kd-svg .qt{font:700 12px var(--sans)} .kd-svg .qa{fill:var(--ink-2);font:11px var(--sans)}
+.kd-svg .qt.tr{fill:var(--ok)} .kd-svg .qt.br{fill:var(--warn)} .kd-svg .qt.tl{fill:var(--accent)} .kd-svg .qt.bl{fill:var(--bad)}
+.kd{cursor:pointer;outline:none}
+.kd circle.n{stroke:var(--panel);stroke-width:2}
+.kd.r circle.n{fill:var(--bad)} .kd.y circle.n{fill:var(--warn)} .kd.g circle.n{fill:var(--ok)}
+.kd text{fill:var(--ink);font:600 11.5px var(--sans);paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+.kd:hover circle.n,.kd:focus-visible circle.n{stroke:var(--ink);stroke-width:2.5}
+.kd .halo{fill:none;stroke:var(--accent);stroke-width:2.5}
+.kd.sec text{font-size:13px;font-weight:700}
+.kd-svg.secli .kd{opacity:.45} .kd-svg.secli .kd.sec{opacity:1}
+.kd-yok{padding:8px 18px 12px;font-size:12px;color:var(--ink-3);margin-top:auto;border-top:1px solid var(--line-soft)}
+.kp-liste{padding:4px 0 8px}
+.kp-sat{display:grid;grid-template-columns:150px minmax(0,1fr) 86px;gap:12px;align-items:center;padding:6px 16px;border-left:3px solid transparent;cursor:pointer}
+.kp-sat>*{min-width:0}
+.kp-sat:not(.kp-eksen):hover{background:var(--paper)}
+.kp-sat.sec{background:var(--accent-soft);border-left-color:var(--accent)}
+.kp-sat:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.kp-eksen{cursor:default;padding-block:4px 0}
+.kp-kim{line-height:1.25}
+.kp-kim b{font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kp-kim small{font-size:11px;color:var(--ink-3)}
+.kp-kim small .kot{color:var(--bad);font-weight:700}
+.kp-son{font-size:12.5px;font-weight:700;text-align:right;white-space:nowrap}
+.kp-sat.gec .kp-son{color:var(--bad)} .kp-sat.ok .kp-son{color:var(--ok)}
+.kp-serit{position:relative;height:26px}
+.kp-sonra{position:absolute;left:72%;right:0;top:5px;height:16px;background:var(--bad-bg);border-radius:0 4px 4px 0}
+.kp-yol{position:absolute;left:0;right:0;top:10px;height:6px;border-radius:3px;background:var(--line-soft)}
+.kp-bar{position:absolute;left:0;top:10px;height:6px;border-radius:3px;background:var(--ok)}
+.kp-sat.gec .kp-bar{background:var(--bad)}
+.kp-sinav{position:absolute;left:72%;top:2px;height:22px;width:2px;margin-left:-1px;background:var(--ink)}
+.kp-bugun{position:absolute;left:0;top:4px;height:18px;width:2px;background:var(--ink-3)}
+.kp-nok{position:absolute;top:13px;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;background:var(--ok);border:2px solid var(--panel)}
+.kp-sat.gec .kp-nok{background:var(--bad)}
+.kp-sat.sec .kp-nok{box-shadow:0 0 0 2px var(--accent)}
+.kp-eksen .kp-serit{height:16px}
+.kp-eksen .t{position:absolute;top:0;font-size:11px;color:var(--ink-3);white-space:nowrap}
+.kp-eksen .t.e{transform:translateX(-100%)}
+.kp-eksen .t.ex{color:var(--ink);font-weight:700;transform:translateX(-100%);padding-right:5px}
+.kok-tablo-ac>summary{cursor:pointer;font-weight:650;font-size:13.5px;color:var(--ink-2);padding:6px 2px 12px}
+@media(max-width:640px){.kp-sat{grid-template-columns:minmax(0,1fr) auto;padding:8px 12px}.kp-serit{grid-column:1/-1;grid-row:2}}
 
 /* ===== KONU ANLATIMI VİDEO ÇEKMECESİ ===== */
 .vidbtn{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex:none;cursor:pointer;padding:0;font-size:10px;line-height:1}
@@ -980,7 +1075,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261010a"></script>
+<script src="aciklama.js?v=20261010b"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -4181,6 +4276,162 @@ function son3Ort(st){
   for(const k in s){ const v=s[k]/c[k]; if(k.indexOf('tyt_')===0){tyt+=v;tv=true;} else if(k.indexOf('ayt_')===0){ayt+=v;av=true;} }
   return { tyt: tv?tyt:null, ayt: av?ayt:null };
 }
+/* ===== KOKPİT ÜÇ GÖRÜNÜM (10 Eki 2026): haftalar ısı haritası, teşhis kadranı, sınav pisti.
+   Bir öğrenci seçilince üç görünümde birden işaretlenir ve üstteki çubukta özeti çıkar.
+   Seçim yalnız ekran durumudur, hiçbir şey kaydedilmez. KOKSEC undefined = ilk açılış (en riskli
+   öğrenci seçilir), null = koç seçimi kaldırdı. ===== */
+let KOKSEC, KOKSIRA='risk';
+function kokSec(id){ KOKSEC=(KOKSEC===id)?null:id; render(); }
+/* Isı haritasının 8 haftası: öğrencilerin en son ödevli haftası (bugünü geçmez) ve geriye doğru.
+   Örnek öğrencilerin verisi geçmişte donmuş olduğu için bugünden saymak tabloyu boş bırakırdı. */
+function kokHaftalar(list){
+  const bu=weekKey(today()); let son='';
+  list.forEach(s=>(s.tasks||[]).forEach(t=>{ const k=weekKey(t.date); if(k>son&&k<=bu) son=k; }));
+  if(!son) son=bu;
+  const t0=new Date(son+'T12:00').getTime()+86400000, out=[];
+  for(let i=7;i>=0;i--) out.push(weekKey(yerelGun(t0-i*7*86400000)));
+  return out;
+}
+function kokTyt(st){ return [...(st.exams||[])].filter(e=>(e.tur||'tyt')==='tyt').sort((a,b)=>a.date.localeCompare(b.date)).map(totalNet); }
+const kokOrt=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+function kokVeri(st,wks,r){
+  const oran=wks.map(w=>weekStats(st,w).rate);
+  const u3=kokOrt(oran.slice(-3).filter(x=>x!==null));
+  const t=kokTyt(st), k=Math.min(3,Math.floor(t.length/2));
+  const nd=k?kokOrt(t.slice(-k))-kokOrt(t.slice(-2*k,-k)):null;   // son k TYT'nin ortalaması, önceki k'ya göre
+  let pist=null, pistYok='';
+  if(+st.grade && +st.grade<12) pistYok=st.grade+'. sınıf, bu yıl yok';
+  else {
+    let h=null; try{ h=tavsiyeHesap(st); }catch(e){}
+    const beyan=+st.haftalikSaat||0;
+    if(!h||h.durum!=='ok') pistYok='plan hesaplanamadı';
+    else if(!beyan) pistYok='haftalık saat girilmemiş';
+    else { const proj=h.kapsamDk/(beyan*60);
+      pist={proj, hk:h.hk, gec:Math.round(proj-h.hk), ger:Math.round(h.haftalikDk/60), beyan}; }
+  }
+  return {st, r, oran, u3, t, nd, pist, pistYok};
+}
+const KOK_KOSE={tr:['Çalışıyor, net geliyor','Yolunda, dokunma'], br:['Çalışıyor ama net gelmiyor','Yöntem sorunu: soru tekniği, konu tekrarı'],
+                tl:['Az çalışıyor ama net geliyor','Rehavet riski'], bl:['Çalışmıyor, net de düşüyor','Acil görüşme']};
+function kokKose(v){ return (v.u3===null||v.nd===null)?null:(v.nd>=0?'t':'b')+(v.u3>=70?'r':'l'); }
+function kokPistYazi(p,kisa){
+  if(p.gec>0) return '+'+p.gec+(kisa?' hf geç':' hafta geç');
+  if(p.gec<0) return (-p.gec)+(kisa?' hf önce':' hafta önce biter');
+  return kisa?'tam yetişir':'sınav haftasında biter';
+}
+const kokIsaret=x=>(x>0?'+':x<0?'−':'')+String(Math.round(Math.abs(x)*10)/10).replace('.',',');
+
+function kokSecili(v){
+  if(!v) return `<div class="card kok-sec bos"><h2>Seçili öğrenci</h2><div class="body">Bir öğrenci seç: ısı haritasında satıra, kadranda noktaya ya da pistte şeride tıkla.</div></div>`;
+  const s=v.st, r=v.r, k=kokKose(v);
+  const oge=(l,d,c)=>`<div class="ks-oge"><span>${l}</span><b class="${c||''}">${d}</b></div>`;
+  const u=v.u3===null?null:Math.round(v.u3);
+  return `<div class="card kok-sec"><h2>Seçili öğrenci</h2><div class="body">
+    <div class="ks-kim"><span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span> <b>${esc(s.name)}</b>
+      <span class="ks-meta">${esc(String(s.grade))}${+s.grade?'. sınıf':''} · ${trLabel(s.track)}${s.dept?' · '+esc(s.dept):''}</span>
+      <div class="ks-neden">${esc(r.sebep.slice(0,3).join(' · ')||'Plan tutuyor.')}</div></div>
+    <div class="ks-ogeler">
+      ${oge('Son 3 hafta uyum', u===null?'ödev yok':'%'+u, u===null?'sus':u<60?'kot':u>=80?'iyi':'')}
+      ${oge('TYT net değişimi', v.nd===null?'deneme az':kokIsaret(v.nd), v.nd===null?'sus':v.nd<0?'kot':'iyi')}
+      ${oge('Kadran', k?`<i class="kq-n ${k}"></i>${KOK_KOSE[k][0]}`:'yeterli veri yok', k?'':'sus')}
+      ${oge('Sınav pisti', v.pist?kokPistYazi(v.pist):v.pistYok, v.pist?(v.pist.gec>0?'kot':'iyi'):'sus')}
+      ${oge('Devreden', r.dev+' ödev', r.dev>=6?'kot':'')}
+    </div>
+    <div class="ks-dug"><button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Öğrenciyi aç</button>
+      <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli raporu</button>
+      <button class="btn ghost mini" title="Seçimi kaldır" aria-label="Seçimi kaldır" onclick="kokSec('${s.id}')">×</button></div>
+  </div></div>`;
+}
+
+function kokIsi(V,wks){
+  const sira={r:0,y:1,g:2}, son=v=>{ const x=v.oran[v.oran.length-1]; return x===null?999:x; };
+  const rows=[...V].sort(KOKSIRA==='isim'?(a,b)=>a.st.name.localeCompare(b.st.name,'tr')
+    : KOKSIRA==='son'?(a,b)=>son(a)-son(b)
+    : (a,b)=>sira[a.r.sev]-sira[b.r.sev]||((a.u3===null?999:a.u3)-(b.u3===null?999:b.u3)));
+  // Genel düşüş: haftanın ortalaması bütün haftaların ortalamasından 12 puan aşağıdaysa (en az 3 öğrenci verisiyle).
+  const hOrt=wks.map((w,i)=>{ const a=V.map(v=>v.oran[i]).filter(x=>x!==null); return a.length>=3?kokOrt(a):null; });
+  const gOrt=kokOrt(hOrt.filter(x=>x!==null));
+  // Son sütun dışarıda: içinde bulunulan hafta henüz bitmediği için ödevlerin çoğu bekliyor görünür.
+  const dip=hOrt.map((x,i)=>i<wks.length-1&&x!==null&&gOrt!==null&&x<=gOrt-12);
+  const hc=x=>x===null?'kh-yok':x>=80?'kh-ok':x>=60?'kh-orta':'kh-kot';
+  const spark=t=>{
+    const v=t.slice(-5); if(v.length<2) return '<span class="kh-az">deneme az</span>';
+    const w=76,h=22,p=3,mn=Math.min(...v)-1,mx=Math.max(...v)+1;
+    const pt=v.map((x,i)=>[p+i*(w-2*p)/(v.length-1), p+(mx-x)/(mx-mn)*(h-2*p)]);
+    const d=v[v.length-1]-v[v.length-2], c=d>0.5?'up':d<-0.5?'down':'eq', e=pt[pt.length-1];
+    return `<span class="kh-sp"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pt.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ')}"/><circle class="${c}" cx="${e[0].toFixed(1)}" cy="${e[1].toFixed(1)}" r="3"/></svg><b class="${c}">${c==='up'?'▲ ':c==='down'?'▼ ':'→ '}${c==='eq'?'':kokIsaret(d)}</b></span>`;
+  };
+  const dipNot=dip.some(Boolean)
+    ? `<div class="kh-not">${wks.filter((w,i)=>dip[i]).map(w=>haftaGoster(w).slice(5)).join(', ')} haftasında öğrencilerin çoğu birlikte düştü. Sorun öğrencilerde değil programda olabilir.</div>` : '';
+  return `<div class="card kok-isi"><h2>Haftalar ısı haritası<small>Kim, ne zamandan beri kayıyor? Hücredeki sayı o haftanın ödev uyumu.</small></h2>
+    <div class="body kh-ust">
+      <div class="kh-lej"><span><i class="kh-ok"></i>%80 ve üstü</span><span><i class="kh-orta"></i>%60-79</span><span><i class="kh-kot"></i>%60 altı</span><span><i class="kh-yok"></i>ödev yok</span></div>
+      <div class="seg kh-sira">${[['risk','Risk'],['isim','İsim'],['son','Son hafta']].map(([k,a])=>`<button class="${KOKSIRA===k?'on':''}" onclick="KOKSIRA='${k}';render()">${a}</button>`).join('')}</div>
+    </div>
+    ${dipNot}
+    <div class="kh-kay"><table class="kh"><thead><tr><th class="kh-ad">Öğrenci</th>${wks.map((w,i)=>`<th class="${dip[i]?'kh-dip':''}">${haftaGoster(w).slice(5)}</th>`).join('')}<th class="kh-ad kh-tyt">Son 5 TYT</th></tr></thead><tbody>
+    ${rows.map(v=>`<tr class="${v.st.id===KOKSEC?'sec':''}" onclick="kokSec('${v.st.id}')"><th class="kh-ad"><button class="kh-btn"><span class="risk-d ${v.r.sev}"></span>${esc(v.st.name)}</button></th>${v.oran.map((x,i)=>`<td class="${hc(x)}${dip[i]?' kh-dipc':''}">${x===null?'·':x}</td>`).join('')}<td class="kh-tyt">${spark(v.t)}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+function kokKadran(V){
+  const P=V.filter(v=>kokKose(v)).sort((a,b)=>(a.st.id===KOKSEC)-(b.st.id===KOKSEC));   // seçili en üstte çizilsin
+  const yok=V.filter(v=>!kokKose(v));
+  const D=Math.max(6, Math.ceil(Math.max(0,...P.map(v=>Math.abs(v.nd)))/2)*2);
+  const U0=Math.min(30, Math.floor(Math.min(100,...P.map(v=>v.u3))/10)*10);
+  const L=46,R=600,T=12,B=330,VW=620,VH=372;
+  const X=u=>L+(u-U0)*(R-L)/(100-U0), Y=d=>T+(D-d)*(B-T)/(2*D);
+  const g=[];
+  g.push(`<rect class="kq-tl" x="${L}" y="${T}" width="${X(70)-L}" height="${Y(0)-T}"/><rect class="kq-tr" x="${X(70)}" y="${T}" width="${R-X(70)}" height="${Y(0)-T}"/>`);
+  g.push(`<rect class="kq-bl" x="${L}" y="${Y(0)}" width="${X(70)-L}" height="${B-Y(0)}"/><rect class="kq-br" x="${X(70)}" y="${Y(0)}" width="${R-X(70)}" height="${B-Y(0)}"/>`);
+  for(let u=U0;u<=100;u+=10) g.push(`<line class="ax" x1="${X(u)}" x2="${X(u)}" y1="${B}" y2="${B+5}"/><text class="tk" x="${X(u)}" y="${B+18}" text-anchor="middle">${u}</text>`);
+  [-D,-D/2,0,D/2,D].forEach(d=>g.push(`<line class="ax" x1="${L-5}" x2="${L}" y1="${Y(d)}" y2="${Y(d)}"/><text class="tk" x="${L-8}" y="${Y(d)+4}" text-anchor="end">${d?kokIsaret(d):'0'}</text>`));
+  g.push(`<line class="ax" x1="${L}" x2="${R}" y1="${B}" y2="${B}"/><line class="ax" x1="${L}" x2="${L}" y1="${T}" y2="${B}"/>`);
+  g.push(`<line class="mid" x1="${X(70)}" x2="${X(70)}" y1="${T}" y2="${B}"/><line class="mid" x1="${L}" x2="${R}" y1="${Y(0)}" y2="${Y(0)}"/>`);
+  g.push(`<text class="at" x="${(L+R)/2}" y="${B+36}" text-anchor="middle">Ödev uyumu, son 3 hafta (%)</text>`);
+  g.push(`<text class="at" transform="translate(12 ${(T+B)/2}) rotate(-90)" text-anchor="middle">TYT net değişimi</text>`);
+  const ql=(k,x,y,an)=>g.push(`<text class="qt ${k}" x="${x}" y="${y}" text-anchor="${an}">${KOK_KOSE[k][0]}</text><text class="qa" x="${x}" y="${y+15}" text-anchor="${an}">${KOK_KOSE[k][1]}</text>`);
+  ql('tl',L+10,T+18,'start'); ql('tr',R-8,T+18,'end'); ql('bl',L+10,B-24,'start'); ql('br',R-8,B-24,'end');
+  P.forEach(v=>{
+    const s=v.st, cx=X(v.u3), cy=Y(v.nd), sec=s.id===KOKSEC, sol=cx>X(88);
+    const ad=esc(String(s.name).split(' ')[0]);
+    g.push(`<g class="kd ${v.r.sev}${sec?' sec':''}" tabindex="0" role="button" aria-label="${esc(s.name)}" onclick="kokSec('${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();kokSec('${s.id}')}">
+      <title>${esc(s.name)}: uyum %${Math.round(v.u3)}, TYT net değişimi ${kokIsaret(v.nd)}</title>
+      ${sec?`<circle class="halo" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="14"/>`:''}<circle class="n" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${sec?8:6}"/>
+      <text x="${(sol?cx-11:cx+11).toFixed(1)}" y="${(cy+4).toFixed(1)}" text-anchor="${sol?'end':'start'}">${ad}</text></g>`);
+  });
+  const yokYazi=yok.length?`<div class="kd-yok">Kadranda yok: ${yok.map(v=>esc(v.st.name)+' ('+(v.u3===null?'son 3 haftada ödev yok':'en az 2 TYT denemesi gerekir')+')').join(', ')}.</div>`:'';
+  return `<div class="card kok-kadran"><h2>Teşhis kadranı<small>Neden kayıyor: çalışmıyor mu, yöntem mi yanlış?</small></h2>
+    ${P.length?`<div class="kd-kay"><svg class="kd-svg${KOKSEC&&P.some(v=>v.st.id===KOKSEC)?' secli':''}" viewBox="0 0 ${VW} ${VH}" role="group" aria-label="Teşhis kadranı">${g.join('')}</svg></div>`
+      :'<div class="body"><div class="empty">Kadran için en az 2 TYT denemesi ve son 3 haftada ödev gerekir.</div></div>'}
+    ${yokYazi}</div>`;
+}
+
+function kokPist(V){
+  const P=V.filter(v=>v.pist).sort((a,b)=>b.pist.gec-a.pist.gec||b.pist.proj-a.pist.proj);
+  const goster=P.slice(0,10), sv=P.find(v=>v.st.id===KOKSEC);
+  if(sv&&!goster.includes(sv)) goster.push(sv);
+  const yok=V.filter(v=>!v.pist);
+  const ex=72;   // sınav çizgisinin şeritteki yeri (%)
+  const hk=P.length?P[0].pist.hk:null;
+  let tarih=''; try{ tarih=new Date(genelSinav()+'T12:00').toLocaleDateString('tr-TR',{day:'numeric',month:'long'}); }catch(e){}
+  const eks=hk?Math.round(hk*(100-ex)/ex):0;
+  const satir=goster.map(v=>{
+    const s=v.st, p=v.pist, pos=Math.min(p.proj/p.hk*ex,100), gec=p.gec>0;
+    return `<div class="kp-sat ${gec?'gec':'ok'}${s.id===KOKSEC?' sec':''}" tabindex="0" role="button" onclick="kokSec('${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();kokSec('${s.id}')}">
+      <div class="kp-kim"><b>${esc(s.name)}</b><small>Gereken ${p.ger} · beyan <span class="${p.beyan<p.ger?'kot':''}">${p.beyan}</span> sa/hf</small></div>
+      <div class="kp-serit"><span class="kp-sonra"></span><span class="kp-yol"></span><span class="kp-bar" style="width:${pos}%"></span><span class="kp-bugun"></span><span class="kp-sinav"></span><span class="kp-nok" style="left:${pos}%"></span></div>
+      <div class="kp-son">${kokPistYazi(p,true)}</div></div>`;
+  }).join('');
+  const notlar=[];
+  if(P.length>goster.length) notlar.push(`${P.length-goster.length} öğrenci daha var, hepsi listedekilerden önde.`);
+  if(yok.length) notlar.push(`Pistte yok: ${yok.map(v=>esc(v.st.name)+' ('+v.pistYok+')').join(', ')}.`);
+  return `<div class="card kok-pist"><h2>Sınav pisti<small>Bu tempoyla kim yetişir? Nokta, konuların bugünkü tempoyla bittiği hafta.</small></h2>
+    ${goster.length?`<div class="kp-liste"><div class="kp-sat kp-eksen" aria-hidden="true"><div class="kp-kim"></div><div class="kp-serit"><span class="t" style="left:0">Bugün</span><span class="t ex" style="left:${ex}%">Sınav${tarih?' · '+tarih:''}</span><span class="t e" style="left:100%">+${eks} hf</span></div><div class="kp-son"></div></div>${satir}</div>`
+      :'<div class="body"><div class="empty">Pist için öğrencinin haftalık çalışma saati ve sınav tarihi gerekir.</div></div>'}
+    ${notlar.length?`<div class="kd-yok">${notlar.join(' ')}</div>`:''}</div>`;
+}
+
 function vKokpit(){
   const list=ogrListesi();
   if(!list.length) return '<div class="card"><div class="empty">Henüz öğrenci yok. Menüden öğrenci ekleyince kokpit dolar.</div></div>';
@@ -4190,6 +4441,9 @@ function vKokpit(){
   const acil=rows.filter(x=>x.r.sev==='r').length;
   const izle=rows.filter(x=>x.r.sev==='y').length;
   const iyi =rows.filter(x=>x.r.sev==='g').length;
+  const wks=kokHaftalar(list);
+  const V=rows.map(({s,r})=>kokVeri(s,wks,r));
+  if(KOKSEC===undefined || (KOKSEC && !V.some(v=>v.st.id===KOKSEC))) KOKSEC=(rows[0]&&rows[0].s.id)||null;
 
   const oncelik = rows.filter(x=>x.r.sev!=='g').map(({s,r})=>`
     <div class="kok-row">
@@ -4225,11 +4479,18 @@ function vKokpit(){
     <div class="stat"><div class="k">İzlenecek</div><div class="v" style="color:var(--warn)">${izle}</div><div class="n">yakın takip</div></div>
     <div class="stat"><div class="k">Yolunda</div><div class="v" style="color:var(--ok)">${iyi}</div><div class="n">plan tutuyor</div></div>
   </div></div>
+  <div class="kok-sarma">
+  ${kokSecili(V.find(v=>v.st.id===KOKSEC))}
+  ${kokIsi(V,wks)}
+  <div class="kok-duo">${kokKadran(V)}${kokPist(V)}</div>
+  </div>
+  <details class="kok-tablo-ac"><summary>Tablo görünümü: TYT ve AYT ortalamaları, gerekçeler</summary>
   <div class="card"><h2>Tüm öğrenciler<small>Renk = risk durumu. Risk; ödev uyumu, biriken devreden ödev, deneme trendi ve "yetişir mi" hesabından üretilir.</small></h2>
     <div class="body" style="padding:0 0 6px">
       <div style="padding:12px 18px 4px"><span class="chip on">Tümü (${list.length})</span> <span class="chip">Acil ${acil}</span> <span class="chip">İzlenecek ${izle}</span> <span class="chip">Yolunda ${iyi}</span></div>
       <div class="kokpit-tablo"><table><thead><tr><th>Öğrenci</th><th class="num">Son 3 TYT ort.</th><th class="num">Son 3 AYT ort.</th><th>Ödev uyumu</th><th class="num">Devreden</th><th>Durum · gerekçe</th><th></th></tr></thead><tbody>${tablo}</tbody></table></div>
     </div></div>
+  </details>
   <div class="hint">Risk eşikleri — Acil: uyum %60 altı <b>veya</b> 6+ devreden <b>veya</b> deneme düşüşü <b>veya</b> "yetişmiyor". İzle: uyum %60–79 <b>veya</b> 4–5 devreden <b>veya</b> hafif deneme gerilemesi. Kokpit hiçbir şey kaydetmez; yalnızca gösterir.</div>`;
 }
 
