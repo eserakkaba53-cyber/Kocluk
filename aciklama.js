@@ -50,7 +50,7 @@
     { h2:/^Konu bazında ödev dökümü/, bas:'Konu bazında ödev dökümü',
       ne:'Her konunun kaç kez ödev verildiği ve o konudaki uyum.',
       ise:'Aynı konuyu tekrar tekrar verip vermediğini ve hangi konuda takıldığını görürsün.',
-      nasil:'Halka bütün ödevlerin durumunu, sağdaki çubuklar en çok ödev alan derslerin uyumunu gösterir. Kutuya tıklayınca konu konu tablo altta açılır; uyumu düşük kalan konuyu yeniden vermeden önce öğrenciyle konuş.' },
+      nasil:'Sağdaki halka bütün ödevlerin durumunu, soldaki çubuklar en çok ödev alan derslerin uyumunu gösterir. Kutuya tıklayınca konu konu tablo altta açılır; uyumu düşük kalan konuyu yeniden vermeden önce öğrenciyle konuş.' },
     { h2:/^Geçmiş haftalar/, bas:'Geçmiş haftalar',
       ne:'Son altı haftanın ödev uyumu: büyük halka ortalamayı, küçük halkalar her haftayı ve o hafta yapılan ödev sayısını gösterir.',
       ise:'Öğrencinin düzeninin haftadan haftaya nasıl değiştiğini tek bakışta görürsün.',

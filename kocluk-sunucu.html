@@ -237,16 +237,23 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 .ozet-kutu:hover{border-color:var(--accent)}
 .ozet-kutu.acik{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 .ozet-ic{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center}
-.ozet-lej{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2)}
+/* İki parçalı özet: solda ayrıntı (ders çubukları ya da hafta halkaları), sağda büyük halka. */
+.ozet-iki{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:center}
+.ozet-sag{display:flex;flex-direction:column;align-items:center;gap:12px;padding-right:6px}
+.ozet-kutu{container-type:inline-size}
+@container (max-width:540px){.ozet-iki{grid-template-columns:1fr}.ozet-sag{padding-right:0}}
+.ozet-lej{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--ink-2)}
 .ozet-lej i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.ozet-hafta{display:grid;grid-template-columns:1fr 1fr;justify-items:center;gap:10px 8px;flex:1}
+.ozet-hafta{display:grid;grid-template-columns:1fr 1fr;justify-items:center;gap:12px 8px}
 .ref-iki{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .ref-iki h3{margin:0 0 6px;font-size:12px;letter-spacing:.06em;color:var(--ink-3)}
 @media(max-width:980px){.ref-iki{grid-template-columns:1fr}}
 .ozet-hafta small{display:block;color:var(--ink-2);font-size:10.5px}
-.ozet-ders{flex:1 1 100%;max-width:440px;min-width:220px;display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-2)}
+.ozet-ders{min-width:0;display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:var(--ink-2)}
 .ozet-ders .od-b{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
-.ozet-ders .od-s{display:grid;grid-template-columns:minmax(70px,auto) 1fr 40px;gap:8px;align-items:center}
+.ozet-ders .od-s{display:grid;grid-template-columns:28px minmax(96px,auto) 1fr 42px;gap:10px;align-items:center}
+.ozet-ders .od-i{width:28px;height:28px;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.ozet-ders .od-i svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .ozet-ders .od-c{height:8px;border-radius:4px;background:var(--line-soft);overflow:hidden}
 .ozet-ders .od-c b{display:block;height:100%;border-radius:4px}
 .ozet-ders em{font-style:normal;font-family:var(--mono);text-align:right;font-weight:600}
@@ -973,7 +980,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261009q"></script>
+<script src="aciklama.js?v=20261010a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -5595,6 +5602,21 @@ function hizliKart(st){
    yan yana durur; kutuya tıklayınca ayrıntı tablosu altta tam genişlikte açılır (9 Eki 2026). */
 let ODEVACIK='';
 function odevAc(k){ ODEVACIK=(ODEVACIK===k)?'':k; render(); }
+/* Ders ikonları (ödev özetindeki çubuklar için): anahtarın son parçasına göre, bilinmeyen ders kitap alır. */
+const DERS_IKON={
+  kitap:'<path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/>',
+  mat:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18.5h.01M12 18.5h.01M16 18.5h.01"/>',
+  geo:'<path d="M3 3v18h18z"/><path d="M7 11v6h6z"/>',
+  fiz:'<circle cx="12" cy="12" r="1.5"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>',
+  kim:'<path d="M9 2h6M10 2v6L4 19a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-6-11V2"/><path d="M7 15h10"/>',
+  biy:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.4 5.1-6"/>',
+  tar:'<path d="M6 2h12M6 22h12M7 2c0 6 10 6 10 10S7 16 7 22M17 2c0 6-10 6-10 10s10 4 10 10"/>',
+  cog:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
+  fel:'<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/>',
+  din:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  ydt:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
+};
+function dersIkon(k){ const p=DERS_IKON[String(k).split('_').pop()]||DERS_IKON.kitap; return `<span class="od-i" aria-hidden="true"><svg viewBox="0 0 24 24">${p}</svg></span>`; }
 /* Halka grafik: dilimler [{d:değer, r:renk}], ortada büyük yazı ve küçük alt yazı. */
 function halka(dilim, boy, orta, alt){
   const top=dilim.reduce((s,x)=>s+x.d,0), R=boy/2-7, C=2*Math.PI*R; let bas=0;
@@ -5603,8 +5625,8 @@ function halka(dilim, boy, orta, alt){
     bas+=u; return s;}).join(''):'';
   return `<svg width="${boy}" height="${boy}" viewBox="0 0 ${boy} ${boy}" role="img" aria-label="${esc(orta)} ${esc(alt||'')}">
     <circle r="${R}" cx="${boy/2}" cy="${boy/2}" fill="none" stroke="var(--line-soft)" stroke-width="12"/>${yay}
-    <text x="50%" y="${alt?'47%':'53%'}" text-anchor="middle" font-size="${boy>=100?20:boy>80?16:13}" font-weight="700" fill="var(--ink)" font-family="var(--mono)">${esc(orta)}</text>
-    ${alt?`<text x="50%" y="64%" text-anchor="middle" font-size="10" fill="var(--ink-3)">${esc(alt)}</text>`:''}</svg>`;
+    <text x="50%" y="${alt?'47%':'53%'}" text-anchor="middle" font-size="${boy>=140?26:boy>=100?20:boy>80?16:13}" font-weight="700" fill="var(--ink)" font-family="var(--mono)">${esc(orta)}</text>
+    ${alt?`<text x="50%" y="64%" text-anchor="middle" font-size="${boy>=140?12:10}" fill="var(--ink-3)">${esc(alt)}</text>`:''}</svg>`;
 }
 function odevOzetler(st,wks){
   if(!st.tasks.length) return '';
@@ -5618,7 +5640,7 @@ function odevOzetler(st,wks){
     if(t.s===1||t.s===2||t.s===3){ d.b++; d.p+=t.s===1?1:t.s===2?.5:0; } });
   const dersSat=Object.entries(ders).sort((a,b)=>b[1].n-a[1].n).slice(0,6).map(([k,d])=>{
     const u=d.b?Math.round(d.p/d.b*100):null;
-    return `<div class="od-s"><span>${subName(k)} <span style="color:var(--ink-3)">· ${d.n}</span></span>
+    return `<div class="od-s">${dersIkon(k)}<span>${subName(k)} <span style="color:var(--ink-3)">· ${d.n}</span></span>
       <span class="od-c"><b style="width:${u||0}%;background:${renk(u)}"></b></span><em>${u===null?'—':'%'+u}</em></div>`; }).join('');
   const son=wks.slice(0,6).map(w=>({w,s:weekStats(st,w)}));
   const ort=son.filter(x=>x.s.rate!==null);
@@ -5626,23 +5648,25 @@ function odevOzetler(st,wks){
   return `<div class="grid2">
   <div class="card ozet-kutu ${ODEVACIK==='dokum'?'acik':''}" onclick="odevAc('dokum')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')odevAc('dokum')">
     <h2>Konu bazında ödev dökümü<small>${konuSay} konu · ${st.tasks.length} ödev</small></h2>
-    <div class="body"><div class="ozet-ic">
-      ${halka([{d:sy.y,r:'var(--ok)'},{d:sy.k,r:'var(--warn)'},{d:sy.n,r:'var(--bad)'},{d:sy.b,r:'var(--line)'}],120,uyum===null?'—':'%'+uyum,'uyum')}
+    <div class="body"><div class="ozet-iki">
+      <div class="ozet-ders"><div class="od-b">Ders bazında uyum</div>${dersSat}</div>
+      <div class="ozet-sag">
+      ${halka([{d:sy.y,r:'var(--ok)'},{d:sy.k,r:'var(--warn)'},{d:sy.n,r:'var(--bad)'},{d:sy.b,r:'var(--line)'}],150,uyum===null?'—':'%'+uyum,'uyum')}
       <div class="ozet-lej">
         <span><i style="background:var(--ok)"></i>Yapıldı · ${sy.y}</span>
         <span><i style="background:var(--warn)"></i>Kısmen · ${sy.k}</span>
         <span><i style="background:var(--bad)"></i>Yapılmadı · ${sy.n}</span>
         <span><i style="background:var(--line)"></i>Bekliyor · ${sy.b}</span>
-      </div>
-      <div class="ozet-ders"><div class="od-b">Ders bazında uyum</div>${dersSat}</div></div>
+      </div></div></div>
       <div class="ozet-ac">${ODEVACIK==='dokum'?'Ayrıntıyı kapat ▴':'Konu konu ayrıntı ▾'}</div>
     </div></div>
   <div class="card ozet-kutu ${ODEVACIK==='hafta'?'acik':''}" onclick="odevAc('hafta')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')odevAc('hafta')">
     <h2>Geçmiş haftalar<small>son ${son.length} haftanın uyumu · toplam ${wks.length} hafta</small></h2>
-    <div class="body"><div class="ozet-ic">
-      ${halka([{d:ortU||0,r:renk(ortU)},{d:100-(ortU||0),r:'var(--line-soft)'}],120,ortU===null?'—':'%'+ortU,'ortalama')}
-      <div class="ozet-hafta">${son.map(x=>`<div>${halka([{d:x.s.rate||0,r:renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],92,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}<small>${x.s.done}/${x.s.total} ödev</small></div>`).join('')}</div>
-    </div>
+    <div class="body"><div class="ozet-iki">
+      <div class="ozet-hafta">${son.map(x=>`<div>${halka([{d:x.s.rate||0,r:renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],80,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}<small>${x.s.done}/${x.s.total} ödev</small></div>`).join('')}</div>
+      <div class="ozet-sag">
+      ${halka([{d:ortU||0,r:renk(ortU)},{d:100-(ortU||0),r:'var(--line-soft)'}],150,ortU===null?'—':'%'+ortU,'ortalama')}
+      </div></div>
       <div class="ozet-ac">${ODEVACIK==='hafta'?'Tabloları kapat ▴':'Hafta hafta ayrıntı ▾'}</div>
     </div></div>
   </div>`;
