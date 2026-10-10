@@ -540,12 +540,14 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 #view.gecis>*:nth-child(n+7){animation-delay:.3s}
 /* Kutu çerçevesi sol ve sağ sütunla aynı renkte; içinde uyarı olan kutunun çerçevesi
    uyarının rengiyle yavaşça yanıp söner (10 Eki 2026). */
-.card{border-color:#03182B;border-width:4px !important;overflow:clip}
+.card{border-color:#03182B;border-width:3px !important;overflow:clip}
 @keyframes cerceveUyari{50%{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-bg)}}
 @keyframes cerceveTehlike{50%{border-color:var(--bad);box-shadow:0 0 0 2px var(--bad-bg)}}
 .card:has(.flag.warn){animation:cerceveUyari 2.4s ease-in-out infinite}
-.card:has(.flag.bad){animation:cerceveTehlike 1.8s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.card:has(.flag.warn){animation:none;border-color:var(--warn)}.card:has(.flag.bad){animation:none;border-color:var(--bad)}}
+/* Devreden ödevler kutusu da Bitirdin ama tutmamış gibi kırmızı yanıp söner. */
+.card.yanip-kirmizi{border-color:#03182B}
+.card:has(.flag.bad),.card.yanip-kirmizi{animation:cerceveTehlike 1.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.card:has(.flag.warn){animation:none;border-color:var(--warn)}.card:has(.flag.bad),.card.yanip-kirmizi{animation:none;border-color:var(--bad)}}
 
 /* ---- istatistik değerleri hafifçe belirir ---- */
 @keyframes degerBelir{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -3071,7 +3073,7 @@ function vOdev(){
       '</div></div>';
   })()+`
 
-  ${devreden.length?`<div class="card k-dikkat"><h2>Geçen haftalardan kalanlar<small>${devreden.length} ödev · bunlar önce bitmeli</small></h2><div class="body">
+  ${devreden.length?`<div class="card k-dikkat yanip-kirmizi"><h2>Geçen haftalardan kalanlar<small>${devreden.length} ödev · bunlar önce bitmeli</small></h2><div class="body">
     <div class="flag warn" style="margin-bottom:6px"><span class="ic">!</span><span><b>Yaptım</b> işaretleyene kadar her hafta burada kalacaklar. Panik yok — sırayla bitir.</span></div>
     ${devreden.map(t=>odevSatiri(t,true)).join('')}
   </div></div>`:''}
