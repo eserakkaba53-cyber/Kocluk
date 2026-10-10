@@ -885,12 +885,14 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
   .snav .sgic .tab,.snav .sgic .tab:hover{padding-left:38px;font-size:14.5px}
   .sgic .tab::before{display:block}
 
-  /* Karne kartı: telefonda ilk iş "PDF yükle"; yapıştırma kutusu altında */
-  .karne-govde{display:flex;flex-direction:column}
-  .karne-govde>.karne-yonerge{order:-2}
-  .karne-govde>.karne-pdf,.karne-govde>#kPdfKutu{order:-1}
-  .karne-govde>.karne-pdf{margin:0 0 10px !important}
 }
+/* "Nasıl yüklenir?" penceresi: düğmenin hemen yanında, sayfanın üstünde açılır (kart kırpmasın diye fixed). */
+.kn-pencere{position:fixed;z-index:300;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(10,20,30,.25);padding:12px 14px 10px}
+.kn-ust{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:14px}
+.kn-kapat{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:6px;width:30px;height:30px;font-size:17px;line-height:1;cursor:pointer}
+.kn-pencere video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;margin-bottom:8px}
+.kn-adim{margin:0;padding-left:20px;font-size:13px;line-height:1.55;color:var(--ink-2)}
+.kn-adim li+li{margin-top:3px}
 @keyframes menuGel{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){
   html.menu-acik .snav{animation:none !important}
@@ -935,7 +937,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='ogrenci';</script>
-<script src="aciklama.js?v=20261010d"></script>
+<script src="aciklama.js?v=20261010e"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -3479,6 +3481,33 @@ function karneDoldur(){
   return yazilan;
 }
 
+/* "Nasıl yüklenir?" penceresi: karne yüklemenin adımları ve kısa video. Düğmenin sağında açılır,
+   sağda yer yoksa altına iner; dışarı tıklayınca, Esc ya da sayfa kayınca kapanır (10 Eki 2026). */
+function karneNasil(btn){
+  const eski=document.getElementById('karneNasil');
+  if(eski){ eski.remove(); return; }
+  const p=document.createElement('div');
+  p.id='karneNasil'; p.className='kn-pencere'; p.setAttribute('role','dialog'); p.setAttribute('aria-label','Karne nasıl yüklenir');
+  p.innerHTML='<div class="kn-ust"><b>Karne nasıl yüklenir?</b><button type="button" class="kn-kapat" aria-label="Kapat">×</button></div>'+
+    '<video src="g/karne-nasil.mp4?v=1" autoplay muted loop playsinline controls></video>'+
+    '<ol class="kn-adim"><li>Deneme karnesinin PDF\'ini aç.</li>'+
+    '<li><b>Ctrl+A</b> ile tümünü seç, <b>Ctrl+C</b> ile kopyala. Telefonda metne uzun bas, tümünü seçip kopyala.</li>'+
+    '<li>Kopyaladığını karne kutusuna yapıştır.</li>'+
+    '<li><b>Karneyi oku</b> düğmesine bas; netler forma dolar, kaydetmeden önce kontrol et.</li></ol>';
+  document.body.appendChild(p);
+  const v=p.querySelector('video'); v.addEventListener('error',()=>v.remove());   // video henüz yoksa yalnız adımlar kalır
+  const r=btn.getBoundingClientRect(), w=Math.min(440, innerWidth-24);
+  p.style.width=w+'px';
+  let x=r.right+10, y=r.top;
+  if(x+w>innerWidth-12){ x=Math.max(12, Math.min(r.left, innerWidth-w-12)); y=r.bottom+8; }
+  p.style.left=x+'px';
+  p.style.top=Math.max(12, Math.min(y, innerHeight-p.offsetHeight-12))+'px';
+  const kapat=()=>{ p.remove(); document.removeEventListener('pointerdown',dis); document.removeEventListener('keydown',tus); window.removeEventListener('scroll',kapat); };
+  const dis=e=>{ if(!p.contains(e.target) && !btn.contains(e.target)) kapat(); };
+  const tus=e=>{ if(e.key==='Escape') kapat(); };
+  p.querySelector('.kn-kapat').onclick=kapat;
+  setTimeout(()=>{ document.addEventListener('pointerdown',dis); document.addEventListener('keydown',tus); window.addEventListener('scroll',kapat,{passive:true}); },0);
+}
 function karneOku(tekSayfa){
   const el=document.getElementById('kMetin');
   const t=(el?el.value:'').trim();
@@ -3495,7 +3524,7 @@ function karneOku(tekSayfa){
   const kacKisi=sayfa?sayfa.length:(tekSayfa===true?1:karneOgrenciSayisi(t));
   if(!sayfa && kacKisi>1){
     KARNE_SONUC=null;
-    KARNE_HATA='Yapıştırdığın metinde '+kacKisi+' öğrencinin karnesi var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır. Daha kolayı: "PDF yükle" ile dosyayı seçip sayfa numaranı yaz.';
+    KARNE_HATA='Yapıştırdığın metinde '+kacKisi+' öğrencinin karnesi var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır.';
     render(); return;
   }
   if(sayfa){
@@ -3505,7 +3534,7 @@ function karneOku(tekSayfa){
       KARNE_SONUC=null;
       KARNE_HATA='Yapıştırdığın metinde '+sayfa.length+' öğrencinin karnesi var'+
         (esl.length>1?' ve adın birden çok sayfada geçiyor.':', kendi sayfan bulunamadı.')+
-        ' PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır. Daha kolayı: "PDF yükle" ile dosyayı seçip sayfa numaranı yaz.';
+        ' PDF’te yalnız kendi sayfanı seçip kopyala, sonra yapıştır.';
       render(); return;
     }
     metin=esl[0];
@@ -3521,10 +3550,10 @@ function karneOku(tekSayfa){
   }
   if(!r || !Object.keys(r.out).length){
     KARNE_SONUC=null;
-    /* Telefonda Ctrl+A/Ctrl+C yok — orada PDF yükle yolunu söyle.
+    /* Telefonda Ctrl+A/Ctrl+C yok — orada uzun basıp seçme yolunu söyle.
        Ölçü CSS'teki .yalniz-tel ile aynı (≤760 px). */
     KARNE_HATA=(window.matchMedia && matchMedia('(max-width:760px)').matches)
-      ? 'Karne okunamadı. Telefonda en kolayı: karne PDF’ini “PDF yükle” ile seç, birden çok sayfa varsa sayfa numarasını yaz. Ekran görüntüsü veya fotoğraf okunamaz.'
+      ? 'Karne okunamadı. Telefonda karne PDF’ini aç, metne uzun basıp tümünü seç, kopyala ve buraya yapıştır. Ekran görüntüsü veya fotoğraf okunamaz.'
       : 'Karne okunamadı. PDF’i açıp Ctrl+A → Ctrl+C ile TAMAMINI kopyalayıp buraya yapıştır. Ekran görüntüsü veya fotoğraf okunamaz.';
     render(); return;
   }
@@ -3713,17 +3742,11 @@ function vDeneme(){
   <div class="card"><h2>Karneni yapıştır<small>Elle yazmak yerine karnenin kendisini okut.</small></h2><div class="body karne-govde">
     <div class="hint karne-yonerge" style="margin-bottom:8px">
       <span class="yalniz-masa">Deneme karnenin <b>PDF</b>’ini bilgisayarda aç → <b>Ctrl+A</b> (tümünü seç) → <b>Ctrl+C</b> (kopyala) →
-      aşağıya <b>yapıştır</b>.</span>${/* Telefonda Ctrl+A/Ctrl+C yok; PDF yükle tek dokunuş */''}<span class="yalniz-tel">Telefonda en kolayı:
-      karne PDF’ini <b>PDF yükle</b> ile seç, birden çok sayfa varsa sayfa numarasını yaz.</span>
+      aşağıya <b>yapıştır</b>.</span><span class="yalniz-tel">Telefonda karne PDF’ini aç, metne uzun basıp tümünü seç, kopyala ve aşağıya yapıştır.</span>
       Netlerin kendiliğinden dolar; kaydetmeden önce kontrol edersin.
     </div>
     <textarea id="kMetin" rows="4" style="width:100%" placeholder="Karne metnini buraya yapıştır..."></textarea>
-    <div class="karne-pdf" style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="btn ghost" onclick="document.getElementById('kPdf').click()">PDF yükle</button>
-      <input type="file" id="kPdf" accept="application/pdf" hidden onchange="karnePdf.sec(this,{metinId:'kMetin',kutuId:'kPdfKutu',ad:D.ad,oku:karneOku,ogrenci:true})">
-      <span class="hint" style="margin:0">Sınıfın bütün karnelerinin olduğu PDF'i de yükleyebilirsin. PDF bilgisayarından çıkmaz, tarayıcıda okunur.</span>
-    </div>
-    <div id="kPdfKutu"></div>
+    <div style="margin-top:8px"><button class="btn ghost" onclick="karneNasil(this)">Nasıl yüklenir?</button></div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn" onclick="karneOku()">Karneyi oku</button>
       ${KARNE_SONUC?`<button class="btn ghost" onclick="karneTemizle()">Temizle</button>`:''}
@@ -4688,8 +4711,7 @@ function vKilavuz(){
 
   <div class="card"><h2>Denememi gir sekmesi</h2><div class="body">
     <p style="margin:0 0 12px"><span class="yalniz-masa"><b>En kolay yol: karneni yapıştır.</b> Deneme karnenin
-      <b>PDF</b>'ini bilgisayarda aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → kutuya yapıştır.</span><span class="yalniz-tel"><b>Telefonda en kolay yol: PDF yükle.</b>
-      Karne PDF'ini <b>PDF yükle</b> ile seç, birden çok sayfa varsa sayfa numarasını yaz.</span>
+      <b>PDF</b>'ini bilgisayarda aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → kutuya yapıştır.</span><span class="yalniz-tel"><b>Telefonda:</b> karne PDF'ini aç, metne uzun basıp tümünü seç, kopyala ve kutuya yapıştır.</span>
       Netlerin kendiliğinden dolar.</p>
     <div class="flag warn"><span class="ic">!</span><span><b>Karne, metni seçilebilen bir PDF olmalı.</b>
       Ekran görüntüsü ya da fotoğraf okunamaz. Denemek için PDF'te bir kelimeye çift tıkla —

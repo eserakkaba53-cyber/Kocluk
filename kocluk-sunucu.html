@@ -1018,14 +1018,13 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 }
 @media print{ .alt-cubuk,html.menu-acik .rail{display:none !important} }
 
-/* Karne kartı, telefon: "PDF yükle" ilk eylem, elle yapıştırma hemen altında.
-   Masaüstünde sıra ve metin aynı kalır. (Satır içi margin-top'u ezmek için !important.) */
-@media(max-width:760px){
-  .kz-govde{display:flex;flex-direction:column}
-  .kz-govde>.hint:first-child{order:-3}
-  .kz-govde>.kz-pdf{order:-2;margin:0 0 12px !important}
-  .kz-govde>#kzPdfKutu{order:-1}
-}
+/* "Nasıl yüklenir?" penceresi: düğmenin hemen yanında, sayfanın üstünde açılır (kart kırpmasın diye fixed). */
+.kn-pencere{position:fixed;z-index:300;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(10,20,30,.25);padding:12px 14px 10px}
+.kn-ust{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:14px}
+.kn-kapat{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:6px;width:30px;height:30px;font-size:17px;line-height:1;cursor:pointer}
+.kn-pencere video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;margin-bottom:8px}
+.kn-adim{margin:0;padding-left:20px;font-size:13px;line-height:1.55;color:var(--ink-2)}
+.kn-adim li+li{margin-top:3px}
 /* KVKK kutusu işaretlenmeden "Hesabı oluştur"a basılınca kutunun içindeki uyarı */
 .kvkk-uyari{color:var(--bad);font-weight:650;font-size:13px;margin-top:8px}
 </style>
@@ -1085,7 +1084,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261010d"></script>
+<script src="aciklama.js?v=20261010e"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -1889,14 +1888,14 @@ function applyKarne(tekSayfa){
      yine de bölünürse aşağıdaki ad eşleşmesi aynen uygulanır. */
   const kacKisi=sayfa?sayfa.length:(tekSayfa===true?1:karneOgrenciSayisi(txt));
   if(!sayfa && kacKisi>1){
-    box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${kacKisi} öğrencinin karnesi</b> var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF'te yalnız ${esc(st.name)} adlı öğrencinin sayfasını seçip kopyala, sonra yapıştır. Daha kolayı: <b>PDF yükle</b> ile dosyayı seçip sayfa numarasını yaz.</span></div>`;
+    box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${kacKisi} öğrencinin karnesi</b> var ama sayfalara ayrılamadı, bu yüzden okunmadı. PDF'te yalnız ${esc(st.name)} adlı öğrencinin sayfasını seçip kopyala, sonra yapıştır.</span></div>`;
     return;
   }
   if(sayfa){
     const ara=norm(st.name||'');
     const esl=ara?sayfa.filter(p=>norm(p).includes(ara)):[];
     if(esl.length!==1){
-      box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${sayfa.length} öğrencinin karnesi</b> var${esl.length>1?` ve ${esc(st.name)} adı birden çok sayfada geçiyor`:`, seçili öğrencinin (${esc(st.name)}) sayfası bulunamadı`}. PDF'te yalnız o öğrencinin sayfasını seçip kopyala, sonra yapıştır. Daha kolayı: <b>PDF yükle</b> ile dosyayı seçip sayfa numarasını yaz.</span></div>`;
+      box.innerHTML=`<div class="flag bad"><span class="ic">!</span><span>Yapıştırılan metinde <b>${sayfa.length} öğrencinin karnesi</b> var${esl.length>1?` ve ${esc(st.name)} adı birden çok sayfada geçiyor`:`, seçili öğrencinin (${esc(st.name)}) sayfası bulunamadı`}. PDF'te yalnız o öğrencinin sayfasını seçip kopyala, sonra yapıştır.</span></div>`;
       return;
     }
     metin=esl[0];
@@ -5232,18 +5231,13 @@ function vDeneme(st){
 
   <div class="grid2">
   <div class="card"><h2>Karneden okut<small>Netleri karnenin net tablosundan, yanlış ve boş konuları konu analizi tablosundan okur.</small></h2><div class="body kz-govde">
-    <div class="hint" style="margin:0 0 10px"><span class="yalniz-masa">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. </span><span class="yalniz-tel">Telefonda en kolayı: karne PDF'ini <b>“PDF yükle”</b> ile seç, sayfa numarasını yaz. </span>Sistem ders netlerini karnenin <b>net tablosundan</b>, yanlış ve boş bıraktığı konuları <b>konu analizi tablosundan</b> okur. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
+    <div class="hint" style="margin:0 0 10px"><span class="yalniz-masa">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. </span><span class="yalniz-tel">Telefonda karne PDF'ini aç, metne uzun basıp tümünü seç, kopyala ve aşağıya yapıştır. </span>Sistem ders netlerini karnenin <b>net tablosundan</b>, yanlış ve boş bıraktığı konuları <b>konu analizi tablosundan</b> okur. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
     <div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>
       <b>Karne, metni seçilebilen bir PDF olmalı.</b> Fotoğraf ya da taranmış görüntüden okuma yapılamaz.
       Denemek için: PDF'i aç, bir kelimenin üstüne çift tıkla — <b>seçiliyorsa</b> okunur, seçilmiyorsa görüntüdür.<br>
       Yayınevinin öğrenci panelinden indirilen PDF genelde seçilebilir olur; WhatsApp'tan gelen ekran görüntüsü olmaz.</span></div>
     <textarea id="kzText" rows="7" placeholder="Karne metnini buraya yapıştır..." style="resize:vertical"></textarea>
-    <div class="kz-pdf" style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="btn ghost" onclick="document.getElementById('kzPdf').click()">PDF yükle</button>
-      <input type="file" id="kzPdf" accept="application/pdf" hidden onchange="karnePdf.sec(this,{metinId:'kzText',kutuId:'kzPdfKutu',ad:(cur()||{}).name,oku:applyKarne})">
-      <span class="hint" style="margin:0">Sınıfın bütün karnelerinin olduğu PDF'i de yükleyebilirsin. PDF bilgisayarından çıkmaz, tarayıcıda okunur.</span>
-    </div>
-    <div id="kzPdfKutu"></div>
+    <div style="margin-top:8px"><button class="btn ghost" onclick="karneNasil(this)">Nasıl yüklenir?</button></div>
     <div style="margin-top:10px"><button class="btn" onclick="applyKarne()">Karneyi oku ve formu doldur</button>
       <button class="btn ghost" style="margin-left:8px" onclick="document.getElementById('kzText').value='';document.getElementById('kzOut').innerHTML=''">Temizle</button>
       <button class="btn ghost" style="margin-left:8px" onclick="karneTalep()">Karne okunmadı — destek iste</button></div>
@@ -7238,6 +7232,33 @@ function baglantiAc(url,etiket){
   SONLINK={url,etiket}; render(); return false;
 }
 
+/* "Nasıl yüklenir?" penceresi: karne yüklemenin adımları ve kısa video. Düğmenin sağında açılır,
+   sağda yer yoksa altına iner; dışarı tıklayınca, Esc ya da sayfa kayınca kapanır (10 Eki 2026). */
+function karneNasil(btn){
+  const eski=document.getElementById('karneNasil');
+  if(eski){ eski.remove(); return; }
+  const p=document.createElement('div');
+  p.id='karneNasil'; p.className='kn-pencere'; p.setAttribute('role','dialog'); p.setAttribute('aria-label','Karne nasıl yüklenir');
+  p.innerHTML='<div class="kn-ust"><b>Karne nasıl yüklenir?</b><button type="button" class="kn-kapat" aria-label="Kapat">×</button></div>'+
+    '<video src="g/karne-nasil.mp4?v=1" autoplay muted loop playsinline controls></video>'+
+    '<ol class="kn-adim"><li>Deneme karnesinin PDF\'ini aç.</li>'+
+    '<li><b>Ctrl+A</b> ile tümünü seç, <b>Ctrl+C</b> ile kopyala. Telefonda metne uzun bas, tümünü seçip kopyala.</li>'+
+    '<li>Kopyaladığını karne kutusuna yapıştır.</li>'+
+    '<li><b>Karneyi oku</b> düğmesine bas; netler forma dolar, kaydetmeden önce kontrol et.</li></ol>';
+  document.body.appendChild(p);
+  const v=p.querySelector('video'); v.addEventListener('error',()=>v.remove());   // video henüz yoksa yalnız adımlar kalır
+  const r=btn.getBoundingClientRect(), w=Math.min(440, innerWidth-24);
+  p.style.width=w+'px';
+  let x=r.right+10, y=r.top;
+  if(x+w>innerWidth-12){ x=Math.max(12, Math.min(r.left, innerWidth-w-12)); y=r.bottom+8; }
+  p.style.left=x+'px';
+  p.style.top=Math.max(12, Math.min(y, innerHeight-p.offsetHeight-12))+'px';
+  const kapat=()=>{ p.remove(); document.removeEventListener('pointerdown',dis); document.removeEventListener('keydown',tus); window.removeEventListener('scroll',kapat); };
+  const dis=e=>{ if(!p.contains(e.target) && !btn.contains(e.target)) kapat(); };
+  const tus=e=>{ if(e.key==='Escape') kapat(); };
+  p.querySelector('.kn-kapat').onclick=kapat;
+  setTimeout(()=>{ document.addEventListener('pointerdown',dis); document.addEventListener('keydown',tus); window.addEventListener('scroll',kapat,{passive:true}); },0);
+}
 function karneTalep(){
   const st=cur();
   const mesaj=`Merhaba, karne okuma desteği rica ediyorum.\n\n`+
@@ -7509,7 +7530,7 @@ function vKocKilavuz(){
 
   <div class="card"><h2>Denemeler sekmesi</h2><div class="body">
     <p style="margin:0 0 10px">İki yol var:</p>
-    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Karneden okut</b> (en kolayı) — karnenin <b>metni seçilebilen PDF</b>'ini <span class="yalniz-masa">aç, Ctrl+A / Ctrl+C yap, kutuya yapıştır</span><span class="yalniz-tel">“PDF yükle” ile seç, sayfa numarasını yaz</span>. Netler ve yanlış/boş konular kendiliğinden çıkar, yayınevi fark etmez.</span></div>
+    <div class="topic"><span class="dot t2"></span><span class="tn"><b>Karneden okut</b> (en kolayı) — karnenin <b>metni seçilebilen PDF</b>'ini <span class="yalniz-masa">aç, Ctrl+A / Ctrl+C yap, kutuya yapıştır</span><span class="yalniz-tel">telefonda metne uzun basıp tümünü seç, kopyala ve kutuya yapıştır</span>. Netler ve yanlış/boş konular kendiliğinden çıkar, yayınevi fark etmez.</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yeni deneme gir</b> — her dersin doğru/yanlış sayısını yaz, net otomatik hesaplanır (D − Y/4).</span></div>
     <div class="flag warn" style="margin-top:10px"><span class="ic">!</span><span>
       <b>Ekran görüntüsü ve fotoğraf okunmaz.</b> PDF'te bir kelimeye çift tıkla; seçilebiliyorsa okunur.</span></div>
