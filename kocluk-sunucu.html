@@ -562,9 +562,9 @@ body{font-size:clamp(13px,3.4vw,14px)}
 @container (max-width:980px){.kok-duo{grid-template-columns:minmax(0,1fr)}}
 .risk-d{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:1px;flex:none}
 .risk-d.r{background:var(--bad)} .risk-d.y{background:var(--warn)} .risk-d.g{background:var(--ok)}
-.kok-sec{border-left:4px solid var(--accent)}
-.kok-sec.bos{border-left-color:var(--line)}
-.kok-sec .body{display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px}
+/* Isı haritasında öğrencinin adına tıklayınca satırın altında açılan bilgi kartı */
+table.kh tr.kh-kart-sat td{height:auto;text-align:left;font:13px/1.5 var(--sans);padding:2px 0 10px;cursor:default}
+.kok-kart{display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px;padding:12px 16px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;background:var(--panel);box-shadow:0 6px 18px rgba(18,36,48,.12)}
 .ks-kim{min-width:220px;flex:1 1 260px}
 .ks-kim>b{font-size:16px;margin-left:4px}
 .ks-meta{color:var(--ink-3);font-size:12.5px;margin-left:6px}
@@ -1075,7 +1075,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261010b"></script>
+<script src="aciklama.js?v=20261010c"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -4280,7 +4280,7 @@ function son3Ort(st){
    Bir öğrenci seçilince üç görünümde birden işaretlenir ve üstteki çubukta özeti çıkar.
    Seçim yalnız ekran durumudur, hiçbir şey kaydedilmez. KOKSEC undefined = ilk açılış (en riskli
    öğrenci seçilir), null = koç seçimi kaldırdı. ===== */
-let KOKSEC, KOKSIRA='risk';
+let KOKSEC=null, KOKSIRA='risk';
 function kokSec(id){ KOKSEC=(KOKSEC===id)?null:id; render(); }
 /* Isı haritasının 8 haftası: öğrencilerin en son ödevli haftası (bugünü geçmez) ve geriye doğru.
    Örnek öğrencilerin verisi geçmişte donmuş olduğu için bugünden saymak tabloyu boş bırakırdı. */
@@ -4322,11 +4322,11 @@ function kokPistYazi(p,kisa){
 const kokIsaret=x=>(x>0?'+':x<0?'−':'')+String(Math.round(Math.abs(x)*10)/10).replace('.',',');
 
 function kokSecili(v){
-  if(!v) return `<div class="card kok-sec bos"><h2>Seçili öğrenci</h2><div class="body">Bir öğrenci seç: ısı haritasında satıra, kadranda noktaya ya da pistte şeride tıkla.</div></div>`;
+  if(!v) return '';
   const s=v.st, r=v.r, k=kokKose(v);
   const oge=(l,d,c)=>`<div class="ks-oge"><span>${l}</span><b class="${c||''}">${d}</b></div>`;
   const u=v.u3===null?null:Math.round(v.u3);
-  return `<div class="card kok-sec"><h2>Seçili öğrenci</h2><div class="body">
+  return `<div class="kok-kart">
     <div class="ks-kim"><span class="risk ${r.sev}"><span class="d"></span>${KOK_AD[r.sev]}</span> <b>${esc(s.name)}</b>
       <span class="ks-meta">${esc(String(s.grade))}${+s.grade?'. sınıf':''} · ${trLabel(s.track)}${s.dept?' · '+esc(s.dept):''}</span>
       <div class="ks-neden">${esc(r.sebep.slice(0,3).join(' · ')||'Plan tutuyor.')}</div></div>
@@ -4339,8 +4339,8 @@ function kokSecili(v){
     </div>
     <div class="ks-dug"><button class="btn mini" onclick="kokpitAc('${s.id}','hafta')">Öğrenciyi aç</button>
       <button class="btn ghost mini" onclick="kokpitAc('${s.id}','veli')">Veli raporu</button>
-      <button class="btn ghost mini" title="Seçimi kaldır" aria-label="Seçimi kaldır" onclick="kokSec('${s.id}')">×</button></div>
-  </div></div>`;
+      <button class="btn ghost mini" title="Kartı kapat" aria-label="Kartı kapat" onclick="kokSec('${s.id}')">×</button></div>
+  </div>`;
 }
 
 function kokIsi(V,wks){
@@ -4370,7 +4370,7 @@ function kokIsi(V,wks){
     </div>
     ${dipNot}
     <div class="kh-kay"><table class="kh"><thead><tr><th class="kh-ad">Öğrenci</th>${wks.map((w,i)=>`<th class="${dip[i]?'kh-dip':''}">${haftaGoster(w).slice(5)}</th>`).join('')}<th class="kh-ad kh-tyt">Son 5 TYT</th></tr></thead><tbody>
-    ${rows.map(v=>`<tr class="${v.st.id===KOKSEC?'sec':''}" onclick="kokSec('${v.st.id}')"><th class="kh-ad"><button class="kh-btn"><span class="risk-d ${v.r.sev}"></span>${esc(v.st.name)}</button></th>${v.oran.map((x,i)=>`<td class="${hc(x)}${dip[i]?' kh-dipc':''}">${x===null?'·':x}</td>`).join('')}<td class="kh-tyt">${spark(v.t)}</td></tr>`).join('')}
+    ${rows.map(v=>`<tr class="${v.st.id===KOKSEC?'sec':''}" onclick="kokSec('${v.st.id}')"><th class="kh-ad"><button class="kh-btn"><span class="risk-d ${v.r.sev}"></span>${esc(v.st.name)}</button></th>${v.oran.map((x,i)=>`<td class="${hc(x)}${dip[i]?' kh-dipc':''}">${x===null?'·':x}</td>`).join('')}<td class="kh-tyt">${spark(v.t)}</td></tr>${v.st.id===KOKSEC?`<tr class="kh-kart-sat"><td colspan="${wks.length+2}">${kokSecili(v)}</td></tr>`:''}`).join('')}
     </tbody></table></div></div>`;
 }
 
@@ -4443,7 +4443,7 @@ function vKokpit(){
   const iyi =rows.filter(x=>x.r.sev==='g').length;
   const wks=kokHaftalar(list);
   const V=rows.map(({s,r})=>kokVeri(s,wks,r));
-  if(KOKSEC===undefined || (KOKSEC && !V.some(v=>v.st.id===KOKSEC))) KOKSEC=(rows[0]&&rows[0].s.id)||null;
+  if(KOKSEC && !V.some(v=>v.st.id===KOKSEC)) KOKSEC=null;   // başlangıçta seçim yok; kart yalnız tıklayınca açılır
 
   const oncelik = rows.filter(x=>x.r.sev!=='g').map(({s,r})=>`
     <div class="kok-row">
@@ -4480,7 +4480,6 @@ function vKokpit(){
     <div class="stat"><div class="k">Yolunda</div><div class="v" style="color:var(--ok)">${iyi}</div><div class="n">plan tutuyor</div></div>
   </div></div>
   <div class="kok-sarma">
-  ${kokSecili(V.find(v=>v.st.id===KOKSEC))}
   ${kokIsi(V,wks)}
   <div class="kok-duo">${kokKadran(V)}${kokPist(V)}</div>
   </div>
