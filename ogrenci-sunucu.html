@@ -540,7 +540,7 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 #view.gecis>*:nth-child(n+7){animation-delay:.3s}
 /* Kutu çerçevesi sol ve sağ sütunla aynı renkte; içinde uyarı olan kutunun çerçevesi
    uyarının rengiyle yavaşça yanıp söner (10 Eki 2026). */
-.card{border-color:#03182B}
+.card{border-color:#03182B;border-width:2px !important}
 @keyframes cerceveUyari{50%{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-bg)}}
 @keyframes cerceveTehlike{50%{border-color:var(--bad);box-shadow:0 0 0 2px var(--bad-bg)}}
 .card:has(.flag.warn){animation:cerceveUyari 2.4s ease-in-out infinite}
