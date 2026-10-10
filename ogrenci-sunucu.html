@@ -3489,11 +3489,11 @@ function karneNasil(btn){
   const p=document.createElement('div');
   p.id='karneNasil'; p.className='kn-pencere'; p.setAttribute('role','dialog'); p.setAttribute('aria-label','Karne nasıl yüklenir');
   p.innerHTML='<div class="kn-ust"><b>Karne nasıl yüklenir?</b><button type="button" class="kn-kapat" aria-label="Kapat">×</button></div>'+
-    '<video src="g/karne-nasil.mp4?v=1" autoplay muted loop playsinline controls></video>'+
+    '<video src="g/karne-nasil.mp4?v=2" autoplay muted loop playsinline controls></video>'+
     '<ol class="kn-adim"><li>Deneme karnesinin PDF\'ini aç.</li>'+
-    '<li><b>Ctrl+A</b> ile tümünü seç, <b>Ctrl+C</b> ile kopyala. Telefonda metne uzun bas, tümünü seçip kopyala.</li>'+
-    '<li>Kopyaladığını karne kutusuna yapıştır.</li>'+
-    '<li><b>Karneyi oku</b> düğmesine bas; netler forma dolar, kaydetmeden önce kontrol et.</li></ol>';
+    '<li>Fareyle karnenin başından sonuna sürükleyip seç, sağ tıklayıp <b>Kopyala</b> de. Ctrl+A ve Ctrl+C de olur; telefonda metne uzun bas.</li>'+
+    '<li>Karne kutusuna sağ tıklayıp <b>Yapıştır</b> de.</li>'+
+    '<li><b>Karneyi oku</b> düğmesine bas, forma dolan netleri kontrol edip <b>Denemeyi kaydet</b>e bas.</li></ol>';
   document.body.appendChild(p);
   const v=p.querySelector('video'); v.addEventListener('error',()=>v.remove());   // video henüz yoksa yalnız adımlar kalır
   const r=btn.getBoundingClientRect(), w=Math.min(440, innerWidth-24);
