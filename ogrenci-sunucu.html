@@ -893,6 +893,12 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
 .kn-pencere video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;margin-bottom:8px}
 .kn-adim{margin:0;padding-left:20px;font-size:13px;line-height:1.55;color:var(--ink-2)}
 .kn-adim li+li{margin-top:3px}
+/* Bu haftanın ödevleri içinde "Geçen haftalardan" grubu: yalnız gösterim, uyum kendi haftasında sayılır. */
+.hd-grup{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding:10px 16px 8px;border-top:1px solid var(--line-soft);background:var(--warn-bg);color:var(--warn-ink);font-size:13px}
+.hd-grup span{font-size:12px;color:var(--ink-3)}
+.hd-satir{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.hd-satir span{font-size:12px;color:var(--ink-3)}
+.hd-satir em{font-style:normal;font-size:12px;color:var(--warn-ink);margin-left:auto}
 @keyframes menuGel{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){
   html.menu-acik .snav{animation:none !important}
@@ -3090,8 +3096,11 @@ function vOdev(){
     })}
 
   <div class="card"><h2>Bu haftanın konu ödevleri</h2><div class="body">
-    ${kon.length?kon.map(t=>odevSatiri(t,false)).join(''):'<div class="empty">Bu hafta bekleyen konu ödevin yok.</div>'}
-  </div></div>
+    ${kon.length?kon.map(t=>odevSatiri(t,false)).join(''):`<div class="empty">Bu hafta ${devreden.length?'yeni konu ödevin yok.':'bekleyen konu ödevin yok.'}</div>`}
+  </div>
+  ${devreden.length?`<div class="hd-grup"><b>Geçen haftalardan · ${devreden.length} ödev</b><span>Bu hafta programına yerleşir; işaretlemeyi yukarıdaki kırmızı kutudan yap.</span></div>
+  <div class="body" style="padding-top:4px">${devreden.map(t=>`<div class="hd-satir"><span>${subName(t.sub)}</span><b>${esc(t.konu||'—')}</b><em>${haftaFarki(t.date)} hafta önce · ${SL[t.s]||'Bekliyor'}</em></div>`).join('')}</div>`:''}
+  </div>
 
   ${/* Plan kurma araclari ODEV LISTESININ ALTINDA (5 Eyl 2026):
        once "ne kadar isim var", sonra "yenisini nasil eklerim". */''}

@@ -1025,6 +1025,9 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 .kn-pencere video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;margin-bottom:8px}
 .kn-adim{margin:0;padding-left:20px;font-size:13px;line-height:1.55;color:var(--ink-2)}
 .kn-adim li+li{margin-top:3px}
+/* Bu haftanın ödevleri içinde "Geçen haftalardan" grubu: yalnız gösterim, uyum kendi haftasında sayılır. */
+.hd-grup{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding:10px 16px 8px;border-top:1px solid var(--line-soft);background:var(--warn-bg);color:var(--warn-ink);font-size:13px}
+.hd-grup span{font-size:12px;color:var(--ink-3)}
 /* KVKK kutusu işaretlenmeden "Hesabı oluştur"a basılınca kutunun içindeki uyarı */
 .kvkk-uyari{color:var(--bad);font-weight:650;font-size:13px;margin-top:8px}
 </style>
@@ -4859,6 +4862,12 @@ function vHafta(st){
         <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td>
         <td><button class="btn ghost mini" style="color:var(--bad);border-color:var(--line)" title="Bu ödevi bu haftadan çıkar" onclick="haftaOdevCikar('${t.id}')">✕</button></td></tr>`;}).join('')}
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
+    ${(d=>d.length?`<div class="hd-grup"><b>Geçen haftalardan · ${d.length} ödev</b><span>Programda bu haftaya yerleşir; uyumu kendi haftasında sayılır.</span></div>
+    <table><tbody>${d.map(t=>{const hf=haftaFarki(t.date);
+      return `<tr><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td><td><b>${konuVidEtiket(t)}</b></td>
+      <td class="num" style="font-weight:650;color:${hf>=3?'var(--bad)':hf>=2?'var(--warn)':'var(--ink-2)'}">${hf} hafta</td>
+      <td class="num" style="color:var(--ink-3)">${(s=>sa(s.konu+s.soru))(odevSure(t))}</td>
+      <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td></tr>`;}).join('')}</tbody></table>`:'')(devredenler(st).filter(t=>weekKey(t.date)<wk))}
   </div></div>
 
   ${progKart(st,wk)}`;
