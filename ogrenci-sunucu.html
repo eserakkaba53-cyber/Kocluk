@@ -896,9 +896,6 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
 /* Bu haftanın ödevleri içinde "Geçen haftalardan" grubu: yalnız gösterim, uyum kendi haftasında sayılır. */
 .hd-grup{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding:10px 16px 8px;border-top:1px solid var(--line-soft);background:var(--warn-bg);color:var(--warn-ink);font-size:13px}
 .hd-grup span{font-size:12px;color:var(--ink-3)}
-.hd-satir{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
-.hd-satir span{font-size:12px;color:var(--ink-3)}
-.hd-satir em{font-style:normal;font-size:12px;color:var(--warn-ink);margin-left:auto}
 @keyframes menuGel{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){
   html.menu-acik .snav{animation:none !important}
@@ -943,7 +940,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .snav .menu-masa{display:block}
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='ogrenci';</script>
-<script src="aciklama.js?v=20261010e"></script>
+<script src="aciklama.js?v=20261011a"></script>
 <script>
 /* ================= DEPOLAMA ================= */
 const KEY='ogrenci_v1_sunucu';   // eski panel 'ogrenci_v1' kullanır
@@ -3081,10 +3078,6 @@ function vOdev(){
       '</div></div>';
   })()+`
 
-  ${devreden.length?`<div class="card k-dikkat yanip-kirmizi"><h2>Geçen haftalardan kalanlar<small>${devreden.length} ödev · bunlar önce bitmeli</small></h2><div class="body">
-    <div class="flag warn" style="margin-bottom:6px"><span class="ic">!</span><span><b>Yaptım</b> işaretleyene kadar her hafta burada kalacaklar. Panik yok — sırayla bitir.</span></div>
-    ${devreden.map(t=>odevSatiri(t,true)).join('')}
-  </div></div>`:''}
 
   ${/* İşlenmiş ama denemede tutmamış konular. Koçsuz öğrencide 'Ödeve ekle'
        soloOdevVer ile kendi ödev listesine yazar; koçu olan öğrencide ödevi
@@ -3095,11 +3088,11 @@ function vOdev(){
       ekle: (typeof soloMu==='function' && soloMu()) ? 'soloOdevVer' : ''
     })}
 
-  <div class="card"><h2>Bu haftanın konu ödevleri</h2><div class="body">
+  <div class="card${devreden.length?' yanip-kirmizi':''}"><h2>Bu haftanın konu ödevleri</h2><div class="body">
     ${kon.length?kon.map(t=>odevSatiri(t,false)).join(''):`<div class="empty">Bu hafta ${devreden.length?'yeni konu ödevin yok.':'bekleyen konu ödevin yok.'}</div>`}
   </div>
-  ${devreden.length?`<div class="hd-grup"><b>Geçen haftalardan · ${devreden.length} ödev</b><span>Bu hafta programına yerleşir; işaretlemeyi yukarıdaki kırmızı kutudan yap.</span></div>
-  <div class="body" style="padding-top:4px">${devreden.map(t=>`<div class="hd-satir"><span>${subName(t.sub)}</span><b>${esc(t.konu||'—')}</b><em>${haftaFarki(t.date)} hafta önce · ${SL[t.s]||'Bekliyor'}</em></div>`).join('')}</div>`:''}
+  ${devreden.length?`<div class="hd-grup"><b>Geçen haftalardan · ${devreden.length} ödev</b><span>"Yaptım" işaretleyene kadar burada kalır; sırayla bitir.</span></div>
+  <div class="body" style="padding-top:4px">${devreden.map(t=>odevSatiri(t,true)).join('')}</div>`:''}
   </div>
 
   ${/* Plan kurma araclari ODEV LISTESININ ALTINDA (5 Eyl 2026):

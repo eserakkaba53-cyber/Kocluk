@@ -1087,7 +1087,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261010e"></script>
+<script src="aciklama.js?v=20261011a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -2475,26 +2475,6 @@ function devredenler(st){
   return (st.tasks||[]).filter(t=>!t.rutin && t.konu && t.s!==1 && weekKey(t.date)<wk)
     .sort((a,b)=>a.date.localeCompare(b.date));
 }
-function devredenKart(st){
-  const d=devredenler(st);
-  if(!d.length) return '';
-  const dk=d.reduce((a,t)=>{const s=odevSure(t);return a+s.konu+s.soru;},0);
-  return `<div class="card yanip-kirmizi"><h2>Devreden ödevler — ${d.length} adet · ~${sa(dk)}</h2>
-    <div class="body" style="padding:0;max-height:300px;overflow:auto">
-    <table><thead><tr><th>Verildi</th><th class="num">Kaç hafta</th><th>Ders</th><th>Konu</th><th class="num">Süre</th><th>Durum</th><th></th></tr></thead><tbody>
-    ${d.map(t=>{const hf=haftaFarki(t.date);
-      return `<tr><td class="num">${t.date.slice(5)}</td>
-      <td class="num" style="font-weight:650;color:${hf>=3?'var(--bad)':hf>=2?'var(--warn)':'var(--ink-2)'}">${hf}</td>
-      <td>${subName(t.sub)}</td><td><b>${konuVidEtiket(t)}</b></td>
-      <td class="num" style="color:var(--ink-2)">${(s=>sa(s.konu+s.soru))(odevSure(t))}</td>
-      <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td>
-      <td><button class="btn danger mini" onclick="delTask('${t.id}')">sil</button></td></tr>`;}).join('')}
-    </tbody></table></div>
-    <div class="body" style="border-top:1px solid var(--line-soft)">
-      <div class="hint">Bu ödevler öğrencinin panelinde de <b>devreden</b> olarak görünür ve "Yapıldı" işaretlenene kadar kaybolmaz. Üç haftayı geçen bir ödev varsa yeni ödev vermeyi bırak — önce onu bitirtin.</div>
-    </div></div>`;
-}
-
 /* ================= ÇÖZÜLEN SORU İSTATİSTİĞİ ================= */
 function soruIstat(st){
   // Örnek öğrencilerde çözülen soru dağılımı önceden hesaplanır (hem TYT hem AYT, orantılı)
@@ -4836,9 +4816,7 @@ function vHafta(st){
 
   ${lisansUyarisi()}
 
-  ${devredenKart(st)}
-
-  <div class="card"><h2>Bu haftanın ödevleri — ${haftaGoster(wk)}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri sayfayı yenileyince buraya gelir.</small></h2><div class="body" style="padding:0">
+  <div class="card${devredenler(st).some(t=>weekKey(t.date)<wk)?' yanip-kirmizi':''}"><h2>Bu haftanın ödevleri — ${haftaGoster(wk)}<small>Yeni ödev vermek için Ödevler sekmesine geç. Öğrencinin işaretlemeleri sayfayı yenileyince buraya gelir.</small></h2><div class="body" style="padding:0">
     ${tasks.length?`<table><thead><tr><th>Gün</th><th>Ders</th><th>Ünite</th><th>Konu</th><th class="num">Soru</th><th class="num">Çözdüğü</th><th class="num">D / Y / B</th><th class="num">Net</th><th class="num">Süre</th><th>Durum</th><th></th></tr></thead><tbody>
       ${tasks.slice().sort((a,b)=>((b.rutin?1:0)-(a.rutin?1:0))||a.date.localeCompare(b.date)).map(t=>{
         const dg=+t.dg||0, yn=+t.yn||0, bs=+t.bs||0, dybVar=(dg+yn+bs)>0;
@@ -4862,12 +4840,16 @@ function vHafta(st){
         <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td>
         <td><button class="btn ghost mini" style="color:var(--bad);border-color:var(--line)" title="Bu ödevi bu haftadan çıkar" onclick="haftaOdevCikar('${t.id}')">✕</button></td></tr>`;}).join('')}
     </tbody></table>`:'<div class="empty">Bu hafta henüz ödev verilmemiş.</div>'}
-    ${(d=>d.length?`<div class="hd-grup"><b>Geçen haftalardan · ${d.length} ödev</b><span>Programda bu haftaya yerleşir; uyumu kendi haftasında sayılır.</span></div>
-    <table><tbody>${d.map(t=>{const hf=haftaFarki(t.date);
+    ${(d=>{ if(!d.length) return '';
+      const dk=d.reduce((a,t)=>{const s=odevSure(t);return a+s.konu+s.soru;},0);
+      return `<div class="hd-grup"><b>Geçen haftalardan · ${d.length} ödev · ~${sa(dk)}</b><span>Programda bu haftaya yerleşir; uyumu kendi haftasında sayılır.</span></div>
+    <div style="max-height:320px;overflow:auto"><table><tbody>${d.map(t=>{const hf=haftaFarki(t.date);
       return `<tr><td class="num">${t.date.slice(5)}</td><td>${subName(t.sub)}</td><td><b>${konuVidEtiket(t)}</b></td>
       <td class="num" style="font-weight:650;color:${hf>=3?'var(--bad)':hf>=2?'var(--warn)':'var(--ink-2)'}">${hf} hafta</td>
       <td class="num" style="color:var(--ink-3)">${(s=>sa(s.konu+s.soru))(odevSure(t))}</td>
-      <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td></tr>`;}).join('')}</tbody></table>`:'')(devredenler(st).filter(t=>weekKey(t.date)<wk))}
+      <td><button class="pill s${t.s}" onclick="cycleTask('${t.id}')">${SL[t.s]}</button></td>
+      <td><button class="btn danger mini" onclick="delTask('${t.id}')">sil</button></td></tr>`;}).join('')}</tbody></table></div>
+    <div class="hint" style="padding:8px 16px 12px;margin:0">Bu ödevler öğrencinin panelinde de görünür ve "Yapıldı" işaretlenene kadar kalır. Üç haftayı geçen ödev varsa yeni ödev vermeden önce onu bitirt.</div>`;})(devredenler(st).filter(t=>weekKey(t.date)<wk))}
   </div></div>
 
   ${progKart(st,wk)}`;
