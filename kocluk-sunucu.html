@@ -4893,9 +4893,19 @@ function progOdevleri(st,wk){
      takvim boş görünür, öğrenci "bu hafta işim az" sanır ve devredenler
      bir hafta daha kayar. Öncelikleri 'onkosul' — yerleştirmede en önce
      onlar gelir, çünkü zaten gecikmişler. */
-  const dev = devredenler(st);
-  const devId = {}; dev.forEach(t=>devId[t.id]=true);
+  /* Bu hafta "Yapıldı" işaretlenen devreden ödev listeden düşerse blokları
+     programda sahipsiz kalır: "Yerleşen" %100'ü aşar, "iş listede değil"
+     uyarısı çıkar, koçta hafta ortası sessiz yeniden dağıtım olur. Program bu
+     haftanın ödevlerini içeriyorsa (güncel) bitmiş devredenin blokları kalır,
+     bu haftanın bitmiş ödevi gibi. Program geçen haftadan kalmışsa eski kural.
+     ponytail: tamamlanma tarihi tutulmadığı için "güncel" sezgisel; bu hafta
+     hiç yeni ödev yoksa eski davranış sürer. */
   const bu  = st.tasks.filter(t=>weekKey(t.date)===wk);
+  const blokta = new Set(((st.program||{}).bloklar||[]).map(b=>b.odevId));
+  const dev = bu.some(t=>blokta.has(t.id))
+    ? st.tasks.filter(t=>!t.rutin && t.konu && weekKey(t.date)<wk && (t.s!==1 || blokta.has(t.id))).sort((a,b)=>a.date.localeCompare(b.date))
+    : devredenler(st);
+  const devId = {}; dev.forEach(t=>devId[t.id]=true);
 
   return dev.concat(bu).map(t=>{
     const s = odevSure(t);

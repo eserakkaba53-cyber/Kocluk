@@ -2315,9 +2315,18 @@ function progOdevleri(wk){
   /* Devredenler de programa girer — koç panelindeki mantığın aynısı.
      Öğrenci geçen haftadan kalan işi takvimde görmeli, yoksa haftası
      boş görünür ve devredenler bir hafta daha kayar. */
-  const dev = D.tasks.filter(t=>!t.rutin && t.konu && t.s!==1 && weekKey(t.date)<wk);
-  const devId = {}; dev.forEach(t=>devId[t.id]=true);
+  /* Bu hafta "Yapıldı" işaretlenen devreden ödev listeden düşerse blokları
+     programda sahipsiz kalır: "Yerleşen" %100'ü aşar, "iş listede değil"
+     uyarısı çıkar, koçta hafta ortası sessiz yeniden dağıtım olur. Program bu
+     haftanın ödevlerini içeriyorsa (güncel) bitmiş devredenin blokları kalır,
+     bu haftanın bitmiş ödevi gibi. Program geçen haftadan kalmışsa eski kural.
+     ponytail: tamamlanma tarihi tutulmadığı için "güncel" sezgisel; bu hafta
+     hiç yeni ödev yoksa eski davranış sürer. */
   const bu  = D.tasks.filter(t=>weekKey(t.date)===wk);
+  const blokta = new Set(((D.program||{}).bloklar||[]).map(b=>b.odevId));
+  const guncel = bu.some(t=>blokta.has(t.id));
+  const dev = D.tasks.filter(t=>!t.rutin && t.konu && weekKey(t.date)<wk && (t.s!==1 || (guncel && blokta.has(t.id))));
+  const devId = {}; dev.forEach(t=>devId[t.id]=true);
   return dev.concat(bu).map(t=>{
     if(t.rutin){
       return {id:t.id, sub:t.sub, konu:t.konu||'Rutin', calisma:0,
