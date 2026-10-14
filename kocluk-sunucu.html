@@ -647,6 +647,8 @@ table.kh .kh-tyt{text-align:left;padding-left:10px;min-width:130px}
 .kp-eksen .kp-serit{height:16px}
 .kp-eksen .t{position:absolute;top:0;font-size:11px;color:var(--ink-3);white-space:nowrap}
 .kp-eksen .t.e{transform:translateX(-100%)}
+.kok-pist{container-type:inline-size}
+@container (max-width:560px){.kp-tarih{display:none}}
 .kp-eksen .t.ex{color:var(--ink);font-weight:700;transform:translateX(-100%);padding-right:5px}
 .kok-tablo-ac>summary{cursor:pointer;font-weight:650;font-size:13.5px;color:var(--ink-2);padding:6px 2px 12px}
 @media(max-width:640px){.kp-sat{grid-template-columns:minmax(0,1fr) auto;padding:8px 12px}.kp-serit{grid-column:1/-1;grid-row:2}}
@@ -4269,9 +4271,8 @@ function son3Ort(st){
   return { tyt: tv?tyt:null, ayt: av?ayt:null };
 }
 /* ===== KOKPİT ÜÇ GÖRÜNÜM (10 Eki 2026): haftalar ısı haritası, teşhis kadranı, sınav pisti.
-   Bir öğrenci seçilince üç görünümde birden işaretlenir ve üstteki çubukta özeti çıkar.
-   Seçim yalnız ekran durumudur, hiçbir şey kaydedilmez. KOKSEC undefined = ilk açılış (en riskli
-   öğrenci seçilir), null = koç seçimi kaldırdı. ===== */
+   Bir öğrenci seçilince üç görünümde birden işaretlenir; ısı haritasında satırının altında bilgi kartı açılır.
+   Seçim yalnız ekran durumudur, hiçbir şey kaydedilmez. Açılışta seçim yok (KOKSEC null). ===== */
 let KOKSEC=null, KOKSIRA='risk';
 function kokSec(id){ KOKSEC=(KOKSEC===id)?null:id; render(); }
 /* Isı haritasının 8 haftası: öğrencilerin en son ödevli haftası (bugünü geçmez) ve geriye doğru.
@@ -4288,7 +4289,10 @@ function kokTyt(st){ return [...(st.exams||[])].filter(e=>(e.tur||'tyt')==='tyt'
 const kokOrt=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
 function kokVeri(st,wks,r){
   const oran=wks.map(w=>weekStats(st,w).rate);
-  const u3=kokOrt(oran.slice(-3).filter(x=>x!==null));
+  // İçinde bulunulan hafta bitmediği için ödevlerin çoğu bekliyor görünür; son 3 hafta uyumu tamamlanmış
+  // haftalardan alınır (14 Eki 2026: hafta ortasında düzenli öğrenciler kadranda "rehavet" köşesine düşüyordu).
+  const tam=(wks[wks.length-1]===weekKey(today()))?oran.slice(0,-1):oran;
+  const u3=kokOrt(tam.slice(-3).filter(x=>x!==null));
   const t=kokTyt(st), k=Math.min(3,Math.floor(t.length/2));
   const nd=k?kokOrt(t.slice(-k))-kokOrt(t.slice(-2*k,-k)):null;   // son k TYT'nin ortalaması, önceki k'ya göre
   let pist=null, pistYok='';
@@ -4419,7 +4423,7 @@ function kokPist(V){
   if(P.length>goster.length) notlar.push(`${P.length-goster.length} öğrenci daha var, hepsi listedekilerden önde.`);
   if(yok.length) notlar.push(`Pistte yok: ${yok.map(v=>esc(v.st.name)+' ('+v.pistYok+')').join(', ')}.`);
   return `<div class="card kok-pist"><h2>Sınav pisti<small>Bu tempoyla kim yetişir? Nokta, konuların bugünkü tempoyla bittiği hafta.</small></h2>
-    ${goster.length?`<div class="kp-liste"><div class="kp-sat kp-eksen" aria-hidden="true"><div class="kp-kim"></div><div class="kp-serit"><span class="t" style="left:0">Bugün</span><span class="t ex" style="left:${ex}%">Sınav${tarih?' · '+tarih:''}</span><span class="t e" style="left:100%">+${eks} hf</span></div><div class="kp-son"></div></div>${satir}</div>`
+    ${goster.length?`<div class="kp-liste"><div class="kp-sat kp-eksen" aria-hidden="true"><div class="kp-kim"></div><div class="kp-serit"><span class="t" style="left:0">Bugün</span><span class="t ex" style="left:${ex}%">Sınav<span class="kp-tarih">${tarih?' · '+tarih:''}</span></span><span class="t e" style="left:100%">+${eks} hf</span></div><div class="kp-son"></div></div>${satir}</div>`
       :'<div class="body"><div class="empty">Pist için öğrencinin haftalık çalışma saati ve sınav tarihi gerekir.</div></div>'}
     ${notlar.length?`<div class="kd-yok">${notlar.join(' ')}</div>`:''}</div>`;
 }
