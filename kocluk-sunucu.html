@@ -1089,7 +1089,7 @@ html[data-kucuk="1"][data-gorunum="mobil"] .rail-bot .masaustu-don{display:block
 <script src="kayit-tamam.js?v=20260927b"></script>
 <!-- sağ açıklama sütunu: kartların ne işe yaradığı (9 Eki 2026) -->
 <script>window.ACIKLAMA_PANEL='koc';</script>
-<script src="aciklama.js?v=20261011a"></script>
+<script src="aciklama.js?v=20261014a"></script>
 <script>
 /* ================= DEPOLAMA =================
    Sıra: Claude ortamı deposu → tarayıcı deposu (kendi PC'nde) → bellek.
@@ -4346,7 +4346,7 @@ function kokIsi(V,wks){
     : (a,b)=>sira[a.r.sev]-sira[b.r.sev]||((a.u3===null?999:a.u3)-(b.u3===null?999:b.u3)));
   // Genel düşüş: haftanın ortalaması bütün haftaların ortalamasından 12 puan aşağıdaysa (en az 3 öğrenci verisiyle).
   const hOrt=wks.map((w,i)=>{ const a=V.map(v=>v.oran[i]).filter(x=>x!==null); return a.length>=3?kokOrt(a):null; });
-  const gOrt=kokOrt(hOrt.filter(x=>x!==null));
+  const gOrt=kokOrt(hOrt.filter((x,i)=>x!==null&&!(i===wks.length-1&&wks[i]===weekKey(today()))));   // bitmemiş hafta ortalamayı düşürmesin
   // Son sütun dışarıda: içinde bulunulan hafta henüz bitmediği için ödevlerin çoğu bekliyor görünür.
   const dip=hOrt.map((x,i)=>i<wks.length-1&&x!==null&&gOrt!==null&&x<=gOrt-12);
   const hc=x=>x===null?'kh-yok':x>=80?'kh-ok':x>=60?'kh-orta':'kh-kot';
