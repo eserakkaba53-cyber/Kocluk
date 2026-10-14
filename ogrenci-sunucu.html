@@ -3933,7 +3933,7 @@ function ogrDersGrafikKarti(sk,nm,renk){
 function ogrDersMiniIzgara(){
   const withData=subs(D).filter(([k])=>D.exams.some(e=>e.n&&netOf(e,k)!==null));
   if(!withData.length) return '';
-  return `<div class="sec-h" style="margin:2px 0 10px"><h3>Ders ders net seyri</h3>
+  return `<div class="sec-h" style="margin:2px 0 10px"><h3 style="white-space:nowrap">Ders ders net seyri</h3>
     <span style="color:var(--ink-3);font-size:12px;font-weight:400">Her dersin deneme deneme neti — hedefinle birlikte.</span></div>
     <div class="grid-mini">${withData.map(([k,nm])=>ogrDersGrafikKarti(k,nm,(k.indexOf('tyt_')===0)?'#2E4A7D':'#E8873A')).join('')}</div>`;
 }

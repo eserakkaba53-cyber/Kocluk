@@ -3962,7 +3962,9 @@ function vDurum(st){
 
   // uyarılar
   const F=[];
-  if(ws.length>=2&&ws[0].rate!==null&&ws[1].rate!==null&&ws[0].rate<50&&ws[1].rate<50)
+  /* Bitmemiş hafta sayılmaz: hafta başında oran doğal olarak düşük, pazartesi yanlış alarm verirdi. */
+  const wsTam=ws.filter(w=>w.wk!==weekKey(today()));
+  if(wsTam.length>=2&&wsTam[0].rate!==null&&wsTam[1].rate!==null&&wsTam[0].rate<50&&wsTam[1].rate<50)
     F.push(['bad','!','Ödev uyumu iki hafta üst üste %50 altında. Planı kısalt, görüşme ayarla.']);
   /* Aynı türden son üç deneme (sonDeneme ile aynı kural): TYT'nin toplamı AYT'ninkiyle kıyaslanmaz. */
   const sonTur=ex.length?(ex[ex.length-1].tur||'tyt'):'', TUR=sonTur.toUpperCase(), ayniTur=ex.filter(e=>(e.tur||'tyt')===sonTur);
@@ -5001,11 +5003,11 @@ let AIISIM=false;
 function aiSorular(st){
   const S=[], a=avgNets(st,3), wk=weekKey(today());
   // 1) ödev uyumu
-  const ws=lastWeeks(st,3).filter(w=>w.rate!==null);
+  const ws=lastWeeks(st,4).filter(w=>w.rate!==null && w.wk!==wk);   // bitmemiş hafta sayılmaz
   if(ws.length>=2 && ws[0].rate<50 && ws[1].rate<50)
     S.push('Ödev uyumu iki hafta üst üste %50 altında. Plan mı ağır, motivasyon mu düştü — hangisi olduğunu ayırt etmem için neye bakmalıyım?');
   else if(ws.length&&ws[0].rate<50)
-    S.push('Bu hafta ödev uyumu %'+ws[0].rate+'. Tek haftalık bir dalgalanma mı, yoksa erken uyarı mı?');
+    S.push('Geçen hafta ödev uyumu %'+ws[0].rate+'. Tek haftalık bir dalgalanma mı, yoksa erken uyarı mı?');
   // 2) tekrar eden konular
   const agg={};
   st.exams.forEach(e=>(e.an||[]).forEach(x=>{const k=x.sub+'||'+x.konu;
