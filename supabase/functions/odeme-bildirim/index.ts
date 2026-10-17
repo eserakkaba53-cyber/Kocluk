@@ -21,7 +21,7 @@
 //    Yanıt: { ok, durum: basarili | basarisiz | bekliyor, paket, lisans_bitis, hata }
 //
 // Günlüğe yalnız ödeme no ve sonuç yazılır; jeton, kart bilgisi, anahtar yazılmaz.
-import { cfSonucImzaAlanlari, CF_SORGULA, imzaDogru, iyzico, type IyzicoYanit } from '../_ortak/iyzico.ts';
+import { cfSonucImzaAlanlari, CF_SORGULA, imzaDogru, iyzico, sinamaIzni, type IyzicoYanit } from '../_ortak/iyzico.ts';
 import { cors, json, kullanici, odemeGuncelle, rpc, sb } from '../_ortak/supabase.ts';
 
 // Testte ODEME_DONUS_ADRESI=http://localhost:8901 verilebilir; canlıda tanımlanmaz.
@@ -51,6 +51,10 @@ async function satirBul(filtre: string): Promise<Satir | null> {
 
 /** "bekliyor" satırın sonucunu iyzico'ya sorar, ödendiyse lisansı açar. */
 async function isle(s: Satir): Promise<Sonuc> {
+  if (!sinamaIzni(s.koc_id)) {   // deneme modunda listede olmayan hesabın lisansı açılmaz
+    console.error(`odeme-bildirim ${s.id} deneme modunda izinsiz hesap`);
+    return { durum: 'basarisiz', paket: s.paket, hata: 'Kartla ödeme henüz açılmadı.' };
+  }
   let y: IyzicoYanit;
   try {
     y = await iyzico(CF_SORGULA, { locale: 'tr', conversationId: s.id, token: s.token });

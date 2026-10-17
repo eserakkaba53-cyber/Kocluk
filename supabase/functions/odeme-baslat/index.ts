@@ -8,7 +8,7 @@
 // auth.uid(), tutarı paket_fiyat belirler. Geçersiz ya da süresi dolmuş JWT'yi
 // PostgREST reddeder; bu yüzden ağ geçidinin JWT denetimi kapatılsa da (yeni
 // anahtarlara geçişte gerekecek) kimse başkası adına ödeme açamaz.
-import { cfBaslatImzaAlanlari, CF_BASLAT, imzaDogru, iyzico, type IyzicoYanit } from '../_ortak/iyzico.ts';
+import { cfBaslatImzaAlanlari, CF_BASLAT, imzaDogru, iyzico, sinamaIzni, type IyzicoYanit } from '../_ortak/iyzico.ts';
 import { cors, json, odemeGuncelle, ortam, rpc, sb } from '../_ortak/supabase.ts';
 
 // iyzico alıcıdan kimlik no, telefon ve adres ister. Biyoser bunları toplamıyor
@@ -65,6 +65,10 @@ async function baslat(req: Request, c: Record<string, string>): Promise<Response
   if (!/^\d+\.\d{2}$/.test(o.tutar)) {   // savunma: tutar SQL'den "449.00" biçiminde gelir
     console.error(`odeme-baslat ${o.odeme_id} tutar bicimi bozuk`);
     return json({ ok: false, hata: 'Ödeme hazırlanamadı.' }, 500, c);
+  }
+  if (!sinamaIzni(o.koc_id)) {
+    await odemeGuncelle(o.odeme_id, { durum: 'basarisiz', hata: 'Kartla ödeme henüz açılmadı (deneme modu).' });
+    return json({ ok: false, hata: 'Kartla ödeme henüz açılmadı. Havale ya da EFT ile ödeyebilirsin.' }, 403, c);
   }
 
   // 2) iyzico ödeme formu (CF-Initialize).

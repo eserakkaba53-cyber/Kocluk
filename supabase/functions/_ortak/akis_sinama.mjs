@@ -15,6 +15,7 @@ const ANON = 'eyJanon', SERVIS = 'eyJservis';
 Object.assign(process.env, {
   SUPABASE_URL: SB, SUPABASE_ANON_KEY: ANON, SUPABASE_SERVICE_ROLE_KEY: SERVIS,
   IYZICO_API_KEY: API, IYZICO_SECRET_KEY: GIZLI, IYZICO_BASE_URL: IYZ + '/',
+  ODEME_SINAMA_HESAPLARI: 'aaaaaaaa-0000-4000-8000-000000000001, aaaaaaaa-0000-4000-8000-000000000002',
 });
 const isleyiciler = [];
 globalThis.Deno = { env: { get: (k) => process.env[k] }, serve: (h) => { isleyiciler.push(h); } };
@@ -307,6 +308,19 @@ let A;
   assert.equal(yer(await bildirim(donus('tok-' + E))).searchParams.get('durum'), 'basarili');
   delete process.env.SUPABASE_SECRET_KEYS; delete process.env.SUPABASE_PUBLISHABLE_KEYS;
   tamam('Yeni anahtarlar: yalnız apikey başlığı, Bearer yok');
+}
+
+// ── deneme modu kilidi ──
+{
+  process.env.ODEME_SINAMA_HESAPLARI = K2;
+  const r = await baslat(baslatIstegi('koc', 'jwt-' + K1));
+  assert.equal(r.status, 403);
+  assert.match((await r.json()).hata, /henüz açılmadı/);
+  process.env.IYZICO_BASE_URL = 'https://api.iyzipay.com/';
+  assert.notEqual((await baslat(baslatIstegi('koc', 'jwt-' + K1))).status, 403, 'canlı anahtarda kilit yok');   // sahte iyzico yalnız sandbox adresinde, 502 beklenir
+  process.env.IYZICO_BASE_URL = IYZ + '/';
+  process.env.ODEME_SINAMA_HESAPLARI = K1 + ',' + K2;
+  tamam('Deneme modu: listede olmayan hesap ödeme başlatamaz, canlıda kilit kalkar');
 }
 
 // ── günlük ──

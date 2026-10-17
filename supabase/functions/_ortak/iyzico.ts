@@ -74,6 +74,17 @@ export async function iyzico(yol: string, istek: Record<string, unknown>): Promi
   return await yanit.json();
 }
 
+/**
+ * Deneme (sandbox) anahtarları canlı veritabanına bağlıyken herkese açık deneme
+ * kartıyla "ödeyip" bedava lisans alınmasın: sandbox'ta yalnız listedeki hesaplar
+ * ödeyebilir. Liste ODEME_SINAMA_HESAPLARI (virgüllü uuid); yoksa deneme@hotmail.com.
+ */
+export function sinamaIzni(koc: string): boolean {
+  if (!(Deno.env.get('IYZICO_BASE_URL') ?? '').includes('sandbox')) return true;
+  const liste = Deno.env.get('ODEME_SINAMA_HESAPLARI') ?? '9f7fe8b4-3b96-4d38-b52b-65ffb064aa2d';
+  return liste.split(',').map((x) => x.trim()).includes(koc);
+}
+
 /** Yanıt imzasında fiyatların sondaki sıfırları atılır: "10.50" -> "10.5", 449.0 -> "449". */
 export const fiyatYazisi = (x: unknown): string => String(Number(x));
 
