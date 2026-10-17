@@ -3041,7 +3041,7 @@ function vOdev(){
     <span class="ic">${_kalan<=2?'!':'i'}</span><span>
     <b>Deneme sürenin ${_kalan>0?_kalan+' günü kaldı.':'son günü.'}</b>
     Süre dolunca panel donar, verilerin silinmez.
-    <a href="#" onclick="ogrPaketTalep();return false" style="color:var(--accent);text-decoration:underline">Koçsuz öğrenci paketi al — 99 TL/yıl</a></span></div>`:''}
+    <a href="#" onclick="${kartOdemeVar()?"TAB='paket';render()":'ogrPaketTalep()'};return false" style="color:var(--accent);text-decoration:underline">Koçsuz öğrenci paketi al — 99 TL/yıl</a></span></div>`:''}
   `+(()=>{
     /* KAHRAMAN ŞERİDİ — "beş şey eşit derecede önemliyse hiçbiri önemli değildir".
        Öğrencinin panele girme sebebi tek soru: şimdi ne kadar işim kaldı?
@@ -5016,12 +5016,7 @@ function vPaket(){
       · Net gelişim grafikleri ve hedefe uzaklık<br>
       · Yıl boyunca güncellemeler
     </div>
-    <button class="btn wide" onclick="ogrPaketTalep()">WhatsApp'tan paket iste</button>
-    <div class="hint" style="margin-top:10px">
-      <b>Nasıl işliyor:</b> WhatsApp'tan yazarsın → paketin kısa sürede tanımlanır →
-      iletilen IBAN'a ödemeni yaparsın → panelin açılır.
-      Kredi kartı istenmez, otomatik yenileme yoktur.
-    </div>
+    ${odemeKutusu()}
   </div></div>
 
   <div class="card"><h2>Öğretmenin var mı?<small>İstersen bir öğretmene bağlanabilirsin.</small></h2><div class="body">
@@ -5304,6 +5299,149 @@ function ogrPaketTalep(){
   window.open((tel?'https://wa.me/'+tel:'https://wa.me/')+'?text='+encodeURIComponent(mesaj),
               '_blank','noopener');
 }
+/* ---------- KARTLA ÖDEME (iyzico) · koçsuz öğrenci, 17 Eki 2026 ----------
+   kocluk-sunucu.html'deki KARTLA ÖDEME bloğunun eşi; birinde düzeltilen öbüründe
+   de düzeltilmeli. İstemci yalnız paket kodunu yollar, tutarı sunucu belirler.
+   Paket 'ogrenci' olduğu için iyzico bu panele döner:
+   ?odeme=<id>&durum=basarili|basarisiz|bekliyor. Koçu olan öğrencinin lisansı
+   koçtan gelir; bu yol ona görünmez (soloMu). */
+/* YAYIN KİLİDİ: false iken "Kartla öde" yalnız sınama hesabına görünür, öteki
+   herkes havale/EFT ve WhatsApp yolunu görür. Sunucu deneme modunda başkasına zaten 403 döner. */
+const KART_ODEME_ACIK=false;   // canlı iyzico anahtarları Supabase Secrets'a girilince true yap (kocluk-sunucu.html'deki eşiyle birlikte)
+function kartOdemeVar(){
+  // Süresiz hesap (bitiş yok) ödeme başlatamaz, sunucu reddeder. Sınama hesabı:
+  // sunucudaki ODEME_SINAMA_HESAPLARI varsayılanıyla aynı.
+  return soloMu() && !!(SONKIM && SONKIM.bitis) &&
+    (KART_ODEME_ACIK || SB.uid==='9f7fe8b4-3b96-4d38-b52b-65ffb064aa2d');
+}
+/* ODEMEBEKLIYOR {id, bitis, not}: sonucu henüz belli olmayan ödeme. Sürerken "Kartla öde"
+   kapalı kalır (çift ödeme olmasın). iyzico ödeme formunun jetonu 30 dk geçerli; daha eski
+   "bekliyor" satır terk edilmiş sayılır, yeni ödemeye izin verilir. */
+let ODEMEONAY=false, ODEMEBEKLE=false, ODEMEHATA='', ODEMEDURUM='', ODEMEBAKILDI=false,
+    ODEMEBEKLIYOR=null, ODEMEBAKIYOR=false;
+const ODEME_TERK=30*60*1000;
+const ODEME_OLMADI='HATA|Ödeme tamamlanmadı. Kartından para çekilmediyse tekrar deneyebilir ya da havaleyle alabilirsin.';
+function odemeSifirla(){   // çıkışta: sonraki hesaba onay ve şerit taşınmasın
+  ODEMEONAY=false; ODEMEHATA=''; ODEMEDURUM=''; ODEMEBAKILDI=false; ODEMEBEKLIYOR=null; ODEMEBAKIYOR=false;
+}
+function odemeOnay(v){
+  ODEMEONAY=v; ODEMEHATA=''; render();
+  const k=document.getElementById('odemeOnayCb'); if(k) k.focus({preventScroll:true});
+}
+function odemeUyar(m){
+  ODEMEHATA=m; render();
+  const k=document.getElementById('odemeOnayCb');
+  if(k){ k.scrollIntoView({block:'center',behavior:'smooth'}); k.focus({preventScroll:true}); }
+}
+async function odemeBaslat(){
+  if(ODEMEBEKLE || ODEMEBEKLIYOR || !kartOdemeVar()) return;   // çift tıklama; sonucu beklenen ödeme varken ikincisi açılmaz
+  if(!ODEMEONAY) return odemeUyar('Ödemeye geçmeden önce ön bilgilendirme formunu ve mesafeli satış sözleşmesini onaylaman gerekiyor.');
+  ODEMEBEKLE=true; ODEMEHATA=''; render();
+  let m='';
+  try{
+    const r=await sbGuvenli(()=>sbCagri('/functions/v1/odeme-baslat',{method:'POST',body:{paket:'ogrenci'}}));
+    if(r && r.ok && /^https:\/\//i.test(r.url||'')){ location.href=r.url; return; }
+    m=r && r.hata;
+  }catch(e){ m=(e.govde && e.govde.hata) || 'Ödeme sayfası açılamadı ('+(e.message||e)+'). Biraz sonra tekrar dene.'; }
+  ODEMEBEKLE=false; odemeUyar(m || 'Ödeme sayfası açılamadı. Biraz sonra tekrar dene.');
+}
+/* Geri tuşuyla önbellekten dönülürse düğme "açılıyor…" hâlinde takılı kalmasın. */
+window.addEventListener('pageshow', e=>{ if(e.persisted && ODEMEBEKLE){ ODEMEBEKLE=false; render(); } });
+async function odemeKontrol(id){
+  try{ return await sbGuvenli(()=>sbCagri('/functions/v1/odeme-bildirim?kontrol='+encodeURIComponent(id))); }
+  catch(e){ console.warn('Ödeme kontrolü yapılamadı:', e); return null; }
+}
+/* Lisans yeniden okunur; süre dolup donmuş panel de böylece açılır. */
+async function odemeTamam(bitis){
+  ODEMEBEKLIYOR=null;
+  try{ await sunucuAc(); }catch(e){ console.warn('Lisans yeniden okunamadı:', e); }
+  const b=String((SONKIM && SONKIM.bitis) || bitis || '').slice(0,10), d=new Date(b+'T00:00');
+  ODEMEDURUM='OK|Ödemen alındı. Paketin açıldı'+(isNaN(d) ? '.'
+    : ', yeni bitiş tarihi: '+d.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}));
+  if(OGRID) TAB='paket';
+  render();
+}
+/* lisansKapisi'nden bir kez çağrılır: o an öğrencinin kimliği ve koçsuz olup olmadığı belli.
+   Kontrol yanıtındaki durum basarili | basarisiz | bekliyor olur (tablodaki "odendi" değil). */
+async function odemeDonus(){
+  if(ODEMEBAKILDI) return; ODEMEBAKILDI=true;
+  const q=new URLSearchParams(location.search), id=q.get('odeme')||'', durum=q.get('durum');
+  if(durum){
+    q.delete('odeme'); q.delete('durum');
+    history.replaceState(null,'',location.pathname+(q+'' ? '?'+q : '')+location.hash);
+  }
+  if(!kartOdemeVar()) return;
+  bekleyenOdemeBak(id);   // sessiz, beklenmez
+  if(!durum) return;
+  if(OGRID) TAB='paket';
+  const k = durum==='basarili' || !id ? null : await odemeKontrol(id);
+  const s = (k && k.durum) || durum;
+  if(s==='basarili') return odemeTamam(k && k.lisans_bitis);
+  // Ödeme numarası olmayan "bekliyor" dönüşünü bekleyenOdemeBak satırdan bulur.
+  if(s==='bekliyor'){ if(id) ODEMEBEKLIYOR={id, bitis:Date.now()+ODEME_TERK}; }
+  else ODEMEDURUM=ODEME_OLMADI;
+  render();
+}
+async function bekleyenOdemeBak(haric){
+  try{
+    // ponytail: en yeni 5 bekleyen yeter; çift tıklama koruması fazlasını üretmez.
+    // Jetonsuz satırda ödeme sayfası hiç açılmadı, sorulmaz.
+    const r=await sbGuvenli(()=>sbCagri('/rest/v1/odemeler?select=id,olusma&durum=eq.bekliyor&token=not.is.null&olusma=gte.'+
+      new Date(Date.now()-864e5).toISOString()+'&order=olusma.desc&limit=5'));
+    for(const o of (Array.isArray(r) ? r : [])){
+      if(String(o.id)===haric) continue;   // dönüş adresindeki ödeme zaten soruldu
+      const k=await odemeKontrol(o.id);
+      if(k && k.durum==='basarili') return odemeTamam(k.lisans_bitis);
+      const bitis=Date.parse(o.olusma)+ODEME_TERK;
+      if(k && k.durum==='bekliyor' && bitis>Date.now() && !ODEMEBEKLIYOR){ ODEMEBEKLIYOR={id:String(o.id), bitis}; render(); }
+    }
+  }catch(e){ console.warn('Bekleyen ödeme kontrolü yapılamadı:', e); }
+}
+/* "Yeniden kontrol et": sonuç gelene ya da 30 dk dolana kadar Kartla öde kapalı kalır. */
+async function odemeYenidenBak(){
+  const b=ODEMEBEKLIYOR; if(!b || ODEMEBAKIYOR) return;
+  ODEMEBAKIYOR=true; render();
+  const k=await odemeKontrol(b.id);
+  ODEMEBAKIYOR=false;
+  if(k && k.durum==='basarili') return odemeTamam(k.lisans_bitis);
+  if((k && k.durum==='basarisiz') || Date.now()>b.bitis){ ODEMEBEKLIYOR=null; ODEMEDURUM=ODEME_OLMADI; }
+  else b.not = k ? 'Son kontrol '+new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+': sonuç henüz gelmedi.'
+                 : 'Şu an kontrol edilemedi. Birazdan yeniden dene.';
+  render();
+}
+/* Paketim sekmesi ve "Deneme süren doldu" ekranı aynı satın alma kutusunu çizer.
+   Kilit kapalıyken eski WhatsApp/havale yolu aynen kalır. */
+function odemeKutusu(){
+  const od = ODEMEDURUM.startsWith('OK|') ? 'ok' : 'warn';
+  const serit = ODEMEDURUM ? `<div class="flag ${od}" role="status" style="margin-bottom:12px"><span class="ic">${od==='ok'?'✓':'!'}</span>
+      <span>${esc(ODEMEDURUM.replace(/^(OK|HATA)\|/,''))}</span></div>` : '';
+  if(!kartOdemeVar()) return serit+`<button class="btn wide" onclick="ogrPaketTalep()">WhatsApp'tan paket iste</button>
+    <div class="hint" style="margin-top:10px">
+      <b>Nasıl işliyor:</b> WhatsApp'tan yazarsın → paketin kısa sürede tanımlanır →
+      iletilen IBAN'a ödemeni yaparsın → panelin açılır.
+      Kredi kartı istenmez, otomatik yenileme yoktur.
+    </div>`;
+  const kapali = ODEMEBEKLE || !!ODEMEBEKLIYOR;
+  return serit+(ODEMEBEKLIYOR?`<div class="flag ok" role="status" style="margin-bottom:10px"><span class="ic">i</span><span>
+      <b>Ödemen kontrol ediliyor.</b> Kartından para çekildiyse paketin birkaç dakika içinde açılır.
+      Ödeme sayfasını yarıda bıraktıysan 30 dakika sonra kartla yeniden deneyebilirsin.
+      ${ODEMEBEKLIYOR.not?'<br>'+esc(ODEMEBEKLIYOR.not):''}</span></div>
+    <button class="btn ghost wide" style="margin-bottom:12px" onclick="odemeYenidenBak()"${ODEMEBAKIYOR?' disabled':''}>${ODEMEBAKIYOR?'Kontrol ediliyor…':'Yeniden kontrol et'}</button>`:'')+`
+    <label style="display:flex;gap:9px;align-items:flex-start;font-size:14px;margin-bottom:12px;
+      background:${ODEMEONAY?'var(--ok-bg)':'var(--warn-bg)'};padding:12px;border-radius:7px">
+      <input type="checkbox" id="odemeOnayCb" ${ODEMEONAY?'checked':''} onchange="odemeOnay(this.checked)" style="width:auto;margin-top:3px">
+      <span><a href="on-bilgilendirme.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:650;text-decoration:underline">Ön bilgilendirme formunu</a>
+        ve <a href="mesafeli-satis-sozlesmesi.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:650;text-decoration:underline">mesafeli satış sözleşmesini</a>
+        okudum, onaylıyorum.</span></label>
+    ${ODEMEHATA?`<div class="flag bad" role="alert" style="margin-bottom:12px"><span class="ic">!</span><span>${esc(ODEMEHATA)}</span></div>`:''}
+    <button class="btn wide" style="${kapali?'opacity:.6':''}" onclick="odemeBaslat()"${kapali?' disabled':''}>${ODEMEBEKLE?'Ödeme sayfası açılıyor…':'Kartla öde · 99 TL'}</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="ogrPaketTalep()">Havale ile almak istiyorum</button>
+    <div class="hint" style="margin-top:10px">
+      <b>Nasıl işliyor:</b> sözleşmeyi onaylayıp “Kartla öde”ye basarsın → iyzico'nun güvenli ödeme
+      sayfasında kartınla ödersin, kart bilgin Biyoser'e hiç gelmez → ödeme onaylanınca paketin bir yıl
+      uzar ve panelin kendiliğinden açılır. Otomatik yenileme yoktur. Havaleyle ödersen IBAN WhatsApp'tan iletilir.
+    </div>`;
+}
 
 async function soloKur(){
   const ad=(document.getElementById('gSoloAd')?.value||'').trim();
@@ -5342,6 +5480,9 @@ async function gKodGir(){
    lisans_gecerli() fonksiyonuna bakıyor; panel iki yerden birinde bakmayı
    unutmuştu. */
 function lisansKapisi(){
+  /* iyzico dönüşü ve bekleyen ödeme: kimlik okundu; panel ya da paket ekranı bu çağrının
+     hemen ardından çizilir, odemeDonus ondan sonra koşar ve sayfa başına bir kez çalışır. */
+  setTimeout(odemeDonus,0);
   if(!(SONKIM && SONKIM.lisans===false)) return false;
   /* render() giriş ekranlarını yalnız oturum yoksa YA DA OGRID boşsa çizer;
      OGRID doluyken !D dalına düşüp "Paketi yükle" ekranını gösteriyordu.
@@ -5547,7 +5688,7 @@ async function sbCikisYap(){
     try{ await ogrSunucuyaYaz(); }
     catch(e){ if(!confirm('Son değişikliğin kaydedilemedi ('+(e.message||e)+').\nYine de çıkılsın mı?')) return; }
   }
-  sbCikis(); OGRID=null; D=null; GMOD='giris'; GHATA=''; render();
+  sbCikis(); odemeSifirla(); OGRID=null; D=null; GMOD='giris'; GHATA=''; render();
 }
 function girisEkrani(){
   const kurulu=sbKurulu(), iyi=GHATA.startsWith('OK|');
@@ -5593,13 +5734,8 @@ function girisEkrani(){
       </div>
     </div>
 
-    <button class="btn wide" onclick="ogrPaketTalep()">WhatsApp'tan paket iste</button>
-    <div class="hint" style="margin-top:10px">
-      <b>Nasıl işliyor:</b> WhatsApp'tan yazarsın → paketin kısa sürede tanımlanır →
-      iletilen IBAN'a ödemeni yaparsın → panelin açılır.
-      Kredi kartı istenmez, otomatik yenileme yoktur.
-    </div>
-    <button class="btn ghost wide" style="margin-top:10px" onclick="sbCikis();SOLO=false;GMOD='giris';GHATA='';render()">Çıkış yap</button>
+    ${odemeKutusu()}
+    <button class="btn ghost wide" style="margin-top:10px" onclick="sbCikis();odemeSifirla();SOLO=false;GMOD='giris';GHATA='';render()">Çıkış yap</button>
   </div></div>`;
 
   /* SIRA (4 Eyl 2026): "Öğretmenim yok" kartı ÜSTTE.
