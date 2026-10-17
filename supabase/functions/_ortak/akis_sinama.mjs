@@ -310,6 +310,13 @@ let A;
   tamam('Yeni anahtarlar: yalnız apikey başlığı, Bearer yok');
 }
 
+// ── günlük ──
+{
+  const metin = gunluk.join('\n');
+  for (const yasak of ['tok-', GIZLI, API, SERVIS, ANON, 'jwt-', '55287900', '0008', 'ayse@ornek.com', '0532'])
+    assert.ok(!metin.includes(yasak), 'günlükte geçmemeli: ' + yasak);
+  tamam(`Günlükte jeton, anahtar, kart, e-posta yok (${gunluk.length} satır)`);
+}
 // ── deneme modu kilidi ──
 {
   process.env.ODEME_SINAMA_HESAPLARI = K2;
@@ -323,11 +330,4 @@ let A;
   tamam('Deneme modu: listede olmayan hesap ödeme başlatamaz, canlıda kilit kalkar');
 }
 
-// ── günlük ──
-{
-  const metin = gunluk.join('\n');
-  for (const yasak of ['tok-', GIZLI, API, SERVIS, ANON, 'jwt-', '55287900', '0008', 'ayse@ornek.com', '0532'])
-    assert.ok(!metin.includes(yasak), 'günlükte geçmemeli: ' + yasak);
-  tamam(`Günlükte jeton, anahtar, kart, e-posta yok (${gunluk.length} satır)`);
-}
 console.info('\nAKIS SINAMASI: TAMAM\n--- örnek günlük ---\n' + gunluk.slice(0, 8).join('\n'));
