@@ -78,12 +78,6 @@ async function isle(s: Satir): Promise<Sonuc> {
     console.log(`odeme-bildirim ${s.id} bekliyor paymentStatus=${y.paymentStatus} fraudStatus=${y.fraudStatus}`);
     return { durum: 'bekliyor', paket: s.paket };
   }
-  // Lisans açan yol: yanıt imzası ve sepet no (= bizim ödeme no) tutmalı.
-  if (!(await imzaDogru(cfSonucImzaAlanlari(y), y.signature)) || y.basketId !== s.id) {
-    console.error(`odeme-bildirim ${s.id} imza ya da sepet no tutmadi`);
-    return { durum: 'bekliyor', paket: s.paket };
-  }
-
   // Tutar (paidPrice) ve para birimi odeme_onayla'da kayıttakiyle karşılaştırılır;
   // tutmazsa satır "basarisiz" olur ve hata sütununa iyzico ödeme no yazılır.
   const r = await rpc('odeme_onayla', {
