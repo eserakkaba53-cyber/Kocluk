@@ -32,7 +32,8 @@
 -- Genel varsayılanı değiştirmedik: panelden kurulacak eklentilerin
 -- fonksiyonlarını da kilitlerdi. Kural: her yeni fonksiyonun ardına
 --   revoke execute on function ... from public, anon;
--- yaz (girişsiz çağrılması gerekiyorsa yazma). Denetim: aşağıdaki sorgu 17.
+-- yaz (girişsiz çağrılması gerekiyorsa yazma). Denetim: aşağıdaki sorgu 18
+-- (2 Eki 2026: hata_yaz eklendi, giriş sayfalarındaki hataları da yazar).
 -- =====================================================================
 
 do $$
@@ -103,5 +104,5 @@ end $$;
 --        count(*) filter (where has_function_privilege('authenticated', p.oid, 'execute')) as giris_acik
 -- from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 -- where n.nspname = 'public' and p.prokind = 'f';
--- Beklenen: anon_acik = 17, giris_acik öncekiyle aynı.
+-- Beklenen: anon_acik = 18 (17 + hata_yaz), giris_acik öncekiyle aynı.
 -- ---------------------------------------------------------------------

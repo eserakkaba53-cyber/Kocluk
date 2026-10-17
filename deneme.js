@@ -54,8 +54,9 @@ window.SINAVANALIZ = (function(){
       Object.keys(konuBazli).forEach(function(k){
         var t = konuBazli[k], x = agg[k];
         if(!x) x = agg[k] = {sub:t.sub, unite:t.unite, konu:t.konu,
-                             ss:0, y:0, b:0, denler:{}, kac:0};
+                             ss:0, y:0, b:0, oy:0, ob:0, denler:{}, kac:0};
         x.ss += t.ss; x.y += t.y; x.b += t.b;
+        if(t.ss){ x.oy += t.y; x.ob += t.b; }   // oran için: soru sayısı girilmemiş eski denemenin yanlışı oranı düşürmesin
         var did = e.id || ('_'+x.kac);
         if(!x.denler[did]){ x.denler[did] = 1; x.kac++; }
         if(!x.unite && t.unite) x.unite = t.unite;
@@ -66,7 +67,7 @@ window.SINAVANALIZ = (function(){
       var r = agg[k];
       /* Doğru = toplam soru − yanlış − boş. Karne bazen tutarsız gelir,
          negatife düşmesin diye 0'a kırpılır. */
-      var dogru = r.ss ? Math.max(0, r.ss - r.y - r.b) : null;
+      var dogru = r.ss ? Math.max(0, r.ss - r.oy - r.ob) : null;
       var oran  = r.ss ? dogru / r.ss : null;
       return { sub:r.sub, unite:r.unite, konu:r.konu,
                soru:r.ss, dogru:dogru, y:r.y, b:r.b,
@@ -207,9 +208,12 @@ window.SINAVANALIZ = (function(){
 
     return '<div class="card" style="border:1.5px solid #D7263D">' +
       '<h2><span class="sa-isik"></span>' +
-      esc(opts.baslik || 'Bitirdin ama tutmamış — ' + r.length + ' konu') +
-      '<small>Bu konuları işleniyor ya da bitti işaretledin, ama denemelerde doğru oranın ' +
-      '%' + Math.round(ZAYIF_ESIK*100) + '’nin altında. Haftalık ödeve ekleyip tekrar et.</small></h2>' +
+      esc(opts.baslik || (opts.koc ? 'Bitirdi ama tutmamış — ' : 'Bitirdin ama tutmamış — ') + r.length + ' konu') +
+      (opts.koc   // koç panelinde öğrenciden üçüncü kişiyle söz edilir
+        ? '<small>Öğrenci bu konuları işleniyor ya da bitti işaretlemiş, ama denemelerde doğru oranı ' +
+          '%' + Math.round(ZAYIF_ESIK*100) + '’nin altında. Haftalık ödeve ekleyip tekrar ettir.</small></h2>'
+        : '<small>Bu konuları işleniyor ya da bitti işaretledin, ama denemelerde doğru oranın ' +
+          '%' + Math.round(ZAYIF_ESIK*100) + '’nin altında. Haftalık ödeve ekleyip tekrar et.</small></h2>') +
       '<div class="body" style="padding:0;max-height:300px;overflow:auto"><table><tbody>' +
       satir + '</tbody></table></div></div>';
   }
