@@ -139,6 +139,11 @@ begin
   if not k.aktif then
     return json_build_object('ok', false, 'hata', 'Hesabın kapalı. Ödeme yapmadan önce bize yaz.');
   end if;
+  -- Süresiz hesap (yöneticinin hediyesi, özel ders öğrencisi) öderse bir yıllık
+  -- lisansa düşerdi; ödeme gerekmiyor, para alınmasın.
+  if k.lisans_bitis is null and k.deneme_bitis is null then
+    return json_build_object('ok', false, 'hata', 'Hesabın süresiz, ödeme yapman gerekmiyor.');
+  end if;
 
   -- Küçük pakete geçiş: süre geçerliyken paket küçülürse öğrenci kotası düşer.
   -- 'ogretmen' eski kayıtlarda 40 öğrencilik paketin adı, sinif ile aynı basamak.
