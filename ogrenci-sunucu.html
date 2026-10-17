@@ -2790,7 +2790,7 @@ function ekstraKart(){
 /* Solo mu? Öğrencinin koç kimliği kendi kullanıcı kimliğine eşitse koçu yok demektir. */
 function soloMu(){
   if(SOLO) return true;
-  try{ const u=(SB&&SB.tok)?JSON.parse(atob(SB.tok.split('.')[1])).sub:null;
+  try{ const u=(SB&&SB.tok)?JSON.parse(atob(SB.tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub:null;
        return !!(u && KOCID && KOCID===u); }catch(e){ return false; }
 }
 
