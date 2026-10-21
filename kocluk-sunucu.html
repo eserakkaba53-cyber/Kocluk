@@ -5643,10 +5643,10 @@ function vOdev(st){
   <div class="card"><h2>Rutin tanımı — tüm öğrenciler için geçerli<small>Konudan bağımsız, her hafta tekrar eden iş. Buradaki değişiklik bütün öğrencileri etkiler.</small></h2><div class="body" style="padding:0">
     <table><thead><tr><th>Adı</th><th>Ders</th><th class="num">Adet</th><th>Konu (isteğe bağlı)</th><th class="num">Dk/soru</th><th class="num">Süre</th><th></th></tr></thead><tbody>
     ${rutinler().map((r,i)=>`<tr>
-      <td><input type="text" value="${esc(r.ad)}" onchange="rutinDuzenle(${i},'ad',this.value)"></td>
-      <td><select onchange="rutinDuzenle(${i},'sub',this.value)">${list.map(([k,nm])=>`<option value="${k}" ${k===r.sub?'selected':''}>${nm}</option>`).join('')}</select></td>
+      <td style="min-width:110px"><input type="text" value="${esc(r.ad)}" onchange="rutinDuzenle(${i},'ad',this.value)"></td>
+      <td style="min-width:130px"><select onchange="rutinDuzenle(${i},'sub',this.value)">${list.map(([k,nm])=>`<option value="${k}" ${k===r.sub?'selected':''}>${nm}</option>`).join('')}</select></td>
       <td class="num" style="width:120px"><input type="number" min="0" value="${r.adet}" onchange="rutinDuzenle(${i},'adet',this.value)"></td>
-      <td><select onchange="rutinDuzenle(${i},'konu',this.value)">
+      <td style="min-width:120px"><select onchange="rutinDuzenle(${i},'konu',this.value)">
         <option value="">— konu seçme (serbest) —</option>
         ${(KONU[r.sub]||[]).map(([u,ks])=>`<optgroup label="${esc(u)}">${ks.map(t=>`<option value="${esc(t)}" ${t===r.konu?'selected':''}>${esc(t)}</option>`).join('')}</optgroup>`).join('')}
       </select></td>
@@ -5914,7 +5914,8 @@ function odevOzetler(st,wks){
     return `<div class="od-s">${dersIkon(k)}<span>${subName(k)} <span style="color:var(--ink-3)">· ${d.n}</span></span>
       <span class="od-c"><b style="width:${u||0}%;background:${renk(u)}"></b></span><em>${u===null?'—':'%'+u}</em></div>`; }).join('');
   const son=wks.slice(0,6).map(w=>({w,s:weekStats(st,w)}));
-  const ort=son.filter(x=>x.s.rate!==null);
+  const buWk=weekKey(today());   // bitmemiş hafta ortalamaya girmez (Kokpit ve Durum'daki kuralın aynısı)
+  const ort=son.filter(x=>x.s.rate!==null && x.w!==buWk);
   const ortU=ort.length?Math.round(ort.reduce((a,x)=>a+x.s.rate,0)/ort.length):null;
   return `<div class="grid2">
   <div class="card ozet-kutu ${ODEVACIK==='dokum'?'acik':''}" onclick="odevAc('dokum')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')odevAc('dokum')">
@@ -5932,9 +5933,9 @@ function odevOzetler(st,wks){
       <div class="ozet-ac">${ODEVACIK==='dokum'?'Ayrıntıyı kapat ▴':'Konu konu ayrıntı ▾'}</div>
     </div></div>
   <div class="card ozet-kutu ${ODEVACIK==='hafta'?'acik':''}" onclick="odevAc('hafta')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')odevAc('hafta')">
-    <h2>Geçmiş haftalar<small>son ${son.length} haftanın uyumu · toplam ${wks.length} hafta</small></h2>
+    <h2>Geçmiş haftalar<small>son ${son.length} haftanın uyumu · ortalamaya biten haftalar girer</small></h2>
     <div class="body"><div class="ozet-iki">
-      <div class="ozet-hafta">${son.map(x=>`<div>${halka([{d:x.s.rate||0,r:renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],80,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}<small>${x.s.done}/${x.s.total} ödev</small></div>`).join('')}</div>
+      <div class="ozet-hafta">${son.map(x=>{ const su=x.w===buWk; return `<div>${halka([{d:x.s.rate||0,r:su?renk(null):renk(x.s.rate)},{d:100-(x.s.rate||0),r:'var(--line-soft)'}],80,x.s.rate===null?'—':x.s.rate+'')}<br>${haftaGoster(x.w).slice(5)}<small>${su?'sürüyor · ':''}${x.s.done}/${x.s.total} ödev</small></div>`; }).join('')}</div>
       <div class="ozet-sag">
       ${halka([{d:ortU||0,r:renk(ortU)},{d:100-(ortU||0),r:'var(--line-soft)'}],150,ortU===null?'—':'%'+ortU,'ortalama')}
       </div></div>
