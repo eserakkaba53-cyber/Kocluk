@@ -735,11 +735,11 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 .card{border-color:var(--rail);border-width:3px !important;overflow:clip;border-radius:12px}
 @keyframes cerceveUyari{50%{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-bg)}}
 @keyframes cerceveTehlike{50%{border-color:var(--bad);box-shadow:0 0 0 2px var(--bad-bg)}}
-.card:has(.flag.warn){animation:cerceveUyari 2.4s ease-in-out infinite}
+.card:has(.flag.warn:not(.sabit)){animation:cerceveUyari 2.4s ease-in-out infinite}
 /* Devreden ödevler kutusu da Bitirdin ama tutmamış gibi kırmızı yanıp söner. */
 .card.yanip-kirmizi{border-color:var(--rail)}
 .card:has(.flag.bad),.card.yanip-kirmizi{animation:cerceveTehlike 1.8s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.card:has(.flag.warn){animation:none;border-color:var(--warn)}.card:has(.flag.bad),.card.yanip-kirmizi{animation:none;border-color:var(--bad)}}
+@media (prefers-reduced-motion:reduce){.card:has(.flag.warn:not(.sabit)){animation:none;border-color:var(--warn)}.card:has(.flag.bad),.card.yanip-kirmizi{animation:none;border-color:var(--bad)}}
 #view.gecis>*:nth-child(2){animation-delay:.05s}
 #view.gecis>*:nth-child(3){animation-delay:.1s}
 #view.gecis>*:nth-child(4){animation-delay:.15s}
@@ -5239,7 +5239,7 @@ function vDeneme(st){
   <div class="grid2">
   <div class="card"><h2>Karneden okut<small>Netleri karnenin net tablosundan, yanlış ve boş konuları konu analizi tablosundan okur.</small></h2><div class="body kz-govde">
     <div class="hint" style="margin:0 0 10px"><span class="yalniz-masa">Deneme karnesini aç → <b>Ctrl+A</b> → <b>Ctrl+C</b> → aşağıya yapıştır. </span><span class="yalniz-tel">Telefonda karne PDF'ini aç, metne uzun basıp tümünü seç, kopyala ve aşağıya yapıştır. </span>Sistem ders netlerini karnenin <b>net tablosundan</b>, yanlış ve boş bıraktığı konuları <b>konu analizi tablosundan</b> okur. Yayınevi fark etmez — AKBİM, Bilgi Sarmal, Krallar Karması ve İlk Adım karneleriyle test edildi.</div>
-    <div class="flag warn" style="margin-bottom:10px"><span class="ic">!</span><span>
+    <div class="flag warn sabit" style="margin-bottom:10px"><span class="ic">!</span><span>
       <b>Karne, metni seçilebilen bir PDF olmalı.</b> Fotoğraf ya da taranmış görüntüden okuma yapılamaz.
       Denemek için: PDF'i aç, bir kelimenin üstüne çift tıkla — <b>seçiliyorsa</b> okunur, seçilmiyorsa görüntüdür.<br>
       Yayınevinin öğrenci panelinden indirilen PDF genelde seçilebilir olur; WhatsApp'tan gelen ekran görüntüsü olmaz.</span></div>
