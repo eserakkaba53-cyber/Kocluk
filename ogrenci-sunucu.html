@@ -1848,7 +1848,30 @@ function karneOgrenciSayisi(text){
     say[b.kod]=(say[b.kod]||0)+1;
   });
   const v=Object.keys(say).map(k=>say[k]);
-  return v.length?Math.min.apply(null,v):1;
+  const kac=v.length?Math.min.apply(null,v):1;
+  /* ★ 5 Kas 2026 — TEK SAYFA "2 ÖĞRENCİ" SAYILIYORDU. Bazı yayınevlerinde
+     (3D) her ders adı bir sayfada iki-üç kez geçer: özet tablosu, "Derslere
+     göre analiz" bölümü ve grafik etiketleri. Sayaç bu yüzden tek karneye
+     "2 öğrenci" diyordu. Yalnız kendi soru sayısı ve neti tutan özet satırları
+     sayılınca her ders tek kez çıkıyorsa metin tek öğrencinindir. En az beş
+     ders doğrulanmalı: biçim doğrulanamıyorsa eski sayı kalır (güvenli duruş). */
+  if(kac>1){
+    const oz=karneOzetSayilari(text), ov=Object.keys(oz).map(k=>oz[k]);
+    if(ov.length>=5) return Math.min(kac, Math.max.apply(null,ov));   // çok sayfada da gerçek sayı (36 sayfaya 72 demesin)
+  }
+  return kac;
+}
+/* Ders başına, soru sayısı S, doğru D, yanlış Y ve net = D - Y/4 tutan özet satırı sayısı. */
+function karneOzetSayilari(text){
+  const bul=kDersleriBul(text), say={};
+  bul.forEach((b,i)=>{
+    if(!b.kod || b.kod==='__atla' || /_top$/.test(b.kod)) return;
+    const son=Math.min(i+1<bul.length?bul[i+1].hamBas:text.length, b.hamSon+120);
+    const nums=(text.slice(b.hamSon,son).match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(',','.')));
+    const r=kNetCoz(nums, subQ(b.kod));
+    if(r && r.p>=3) say[b.kod]=(say[b.kod]||0)+1;
+  });
+  return say;
 }
 function karneSayfalari(text){
   const sat=satirBirlestir(text);
