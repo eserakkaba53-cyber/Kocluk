@@ -3524,6 +3524,7 @@ const TABS_TEMEL=[['hafta','Haftalık'],['durum','Durum'],['deneme','Denemeler']
                   /* Kılavuz öğrenciden bağımsızdır — rayın altındaki "Hesap"
                      bölümünde durur (bkz. KOC_GENEL_SEKME). */
                   ['kilavuz','Kullanım kılavuzu']];
+var KOC_GENEL_SEKME=['ozel','davet','hesap','yonetim','kilavuz'];   // öğrenciden bağımsız sekmeler (sol rayın Hesap bölümü, üst başlık)
 function TABSAL(){ return (LISANS&&LISANS.yonetici) ? TABS_TEMEL.concat([['yonetim','Yönetim']]) : TABS_TEMEL; }
 const uid=()=>Math.random().toString(36).slice(2,9);
 const ORNEK_ID='ornek-ogrenci';                 // geriye donuk uyumluluk
@@ -3860,6 +3861,13 @@ function render(){
   document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()}${st.startedAt?' · BAŞLANGIÇ '+st.startedAt:''}`:'';
   document.getElementById('stGoal').innerHTML = st&&st.dept
     ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${esc(st.rank||'—')} · puan ${esc(st.score||'—')}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
+  /* Hesap düzeyindeki sekmeler öğrenciden bağımsız: üst başlıkta seçili öğrencinin adı ve hedefi görünmesin */
+  if(KOC_GENEL_SEKME.indexOf(TAB)>=0){
+    const _gs=TABSAL().find(t=>t[0]===TAB);
+    document.getElementById('stName').textContent=_gs?_gs[1]:'';
+    document.getElementById('stMeta').textContent='hesabın geneli · öğrenciden bağımsız';
+    document.getElementById('stGoal').innerHTML='';
+  }
   document.getElementById('tabs').innerHTML='';   // sekmeler artık sol rayda, öğrencinin altında
 
   const v=document.getElementById('view');
@@ -3919,11 +3927,11 @@ function render(){
     v.innerHTML=kaynakUyarisi()+vKocKilavuz();
     karsilamaKontrol(); return;
   }
-  if(!st && TAB!=='yonetim' && TAB!=='davet' && TAB!=='ozel'){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Menüdeki öğrenci listesinden bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';karsilamaKontrol();return;}
+  if(!st && KOC_GENEL_SEKME.indexOf(TAB)<0){v.innerHTML=kaynakUyarisi()+'<div class="card"><div class="empty">Menüdeki öğrenci listesinden bir öğrenci seç ya da yeni öğrenci ekle.</div></div>';karsilamaKontrol();return;}
   /* Veli onayı eksik olan öğrencide sunucu HİÇBİR kaydı kabul etmiyor.
      Uyarı yalnız "Öğrenci bilgileri" sekmesindeydi; koç ödev/haftalık
      sekmesinde çalışıp durmadan "kaydedilmedi" alıyor, sebebini görmüyordu. */
-  const uy=kaynakUyarisi()+((st && !st.ornek && TAB!=='ogrenci' && !onayTam(st)) ? onaySerit(st) : '');
+  const uy=kaynakUyarisi()+((st && !st.ornek && TAB!=='ogrenci' && KOC_GENEL_SEKME.indexOf(TAB)<0 && !onayTam(st)) ? onaySerit(st) : '');
   const _af=document.activeElement, _aid=_af&&_af.id;
   let _s=null,_e=null;
   try{ if(_af&&('selectionStart' in _af)){_s=_af.selectionStart;_e=_af.selectionEnd;} }catch(x){}
@@ -9906,7 +9914,6 @@ function kaynakUyarisi(){
    Üstteki sekme çubuğu kullanılmaz. Davet/Hesap/Yönetim öğrenciden
    bağımsız olduğundan rayın altında "Hesap" bölümünde durur. */
 var _RAYSEC=null;
-var KOC_GENEL_SEKME=['ozel','davet','hesap','yonetim','kilavuz'];
 
 function kocSek(id,t,ornek){
   YENIOGR=null; ABONE=false; KOKPIT=false;
