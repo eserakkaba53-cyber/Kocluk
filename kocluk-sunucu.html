@@ -6673,7 +6673,7 @@ function vOgrenciBilgi(st){
     <button class="btn ghost" onclick="saveMeta()">Güncelle</button>
   </div></div>
   <div class="card" style="border-color:var(--bad)"><h2>Öğrenciyi sil<small>Bu işlem geri alınamaz. Ödevleri, denemeleri, konu kayıtları ve notları da silinir.</small></h2><div class="body">
-    <div class="flag warn"><span class="ic">!</span><span>
+    <div class="flag warn sabit"><span class="ic">!</span><span>
       Öğrenci ayrıldıysa <b>silmek yerine düşünmen gereken bir şey var:</b> KVKK'ya göre gerekmeyen
       veriyi saklamamalısın, ama koçluk geçmişi de bir kayıttır.
       Önce <b>Verilerimi indir</b> ile arşivle, sonra sil.</span></div>
@@ -8887,13 +8887,15 @@ function onayTam(st){
   if(st.resit) return true;
   return (st.veliAd||'').trim().length>=3 && String(st.veliTel||'').replace(/\D/g,'').length>=10;
 }
+/* Onay anı UTC ISO olarak saklanır; ekranda Türkiye saatine göre gün gösterilir (gece 00-03 arası önceki gün çıkmasın) */
+function yerelGun(v){ const d=new Date(v); return isNaN(d)?String(v).slice(0,10):new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
 function onayKarti(st){
   const tam = onayTam(st);
   return `<div class="card" style="${tam?'':'border:2px solid var(--bad)'}"><h2>${tam?'Veri sorumluluğu':'⚠ Veli onayı eksik'}<small>${
     tam?'Bu kayıt için onay alınmış. Denetimde gösterilecek belge budur.'
        :'Bu öğrenci onay kaydı tamamlanmadan eklenmiş. Sunucu yeni değişiklikleri reddedecektir.'}</small></h2><div class="body">
     ${tam?`<div class="flag ok"><span class="ic">✓</span><span>
-        <b>${st.resit?'Öğrencinin kendi rızası':'Veli onayı'} alınmış</b> · ${esc(String(st.veliOnay).slice(0,10))}
+        <b>${st.resit?'Öğrencinin kendi rızası':'Veli onayı'} alınmış</b> · ${esc(yerelGun(st.veliOnay))}
         ${st.resit?'':`<br>Veli: <b>${esc(st.veliAd)}</b> · ${esc(st.veliTel)}`}
         ${st.veliOnayNotu?`<br><span style="color:var(--ink-2)">${esc(st.veliOnayNotu)}</span>`:''}</span></div>`
       :`<div class="flag bad"><span class="ic">!</span><span>
@@ -8913,7 +8915,7 @@ function onayKarti(st){
     <div class="fr"><div style="flex:1"><label class="f">Onay notu</label>
       <input type="text" value="${esc(st.veliOnayNotu||'')}" placeholder="ör. 13.08.2026 tarihli imzalı form elimde"
         onchange="cur().veliOnayNotu=this.value; if(onayTam(cur()))save();render()"></div></div>
-    <div class="hint">Onay tarihi: ${st.veliOnay?esc(String(st.veliOnay).slice(0,10)):'—'}
+    <div class="hint">Onay tarihi: ${st.veliOnay?esc(yerelGun(st.veliOnay)):'—'}
       ${tam?'':' · Alanları doldurunca tarih kendiliğinden yazılır.'}</div>
   </div></div>`;
 }
@@ -8987,7 +8989,7 @@ async function davetUret(){
   if(!onayTam(st)){
     alert(st.name+' için VELİ ONAYI KAYDI EKSİK.\n\n'+
       'Sunucu, onay kaydı olmayan öğrencide değişiklik yapılmasına izin vermiyor — davet kodu da üretilemiyor.\n\n'+
-      'Yapman gereken: bu sayfadaki "Veli onayı" kartını doldur (veli adı, telefonu ve onay kutusu), sonra tekrar dene.\n\n'+
+      'Yapman gereken: bu sayfadaki "Veli onayı" kartını doldur (veli adı ve telefonu), sonra tekrar dene.\n\n'+
       'Not: Tarayıcı sürümünden aktardığın öğrencilerde bu alan boş gelir; her biri için bir kez doldurman gerekiyor.');
     return;
   }
@@ -9057,7 +9059,7 @@ function davetKart(st){
         <button class="btn wide" onclick="davetUret()">Davet kodu üret</button>`
       :`<div class="flag bad"><span class="ic">!</span><span>
           <b>Önce veli onayı kartını doldur.</b> Onay kaydı olmadan sunucu bu öğrenciye kod yazmıyor.
-          Yukarıdaki kartta veli adı, telefonu ve onay kutusunu tamamla.</span></div>`}
+          Veli onayı kartında veli adını ve telefonunu tamamla.</span></div>`}
     ${DAVETDURUM?`<div class="flag ${DAVETDURUM.startsWith('HATA|')?'bad':'warn'}" style="margin-top:10px"><span class="ic">·</span><span>${esc(DAVETDURUM.replace('HATA|',''))}</span></div>`:''}
   </div></div>`;
 }
