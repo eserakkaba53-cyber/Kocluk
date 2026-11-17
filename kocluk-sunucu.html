@@ -4688,7 +4688,7 @@ function vVeli(st){
     <span><b style="color:var(--ink-3)">${G.ko.gor}</b> henüz görülmedi</span>
     <span style="color:var(--ink-3)">· toplam ${G.ko.t} konu</span></div>`;
   const trendFlag = V.d.trend===null
-    ? `<div class="flag warn"><span class="ic">i</span><span>Henüz iki deneme yok; gidişat karşılaştırması bir sonraki denemeden sonra gelir.</span></div>`
+    ? `<div class="flag warn sabit"><span class="ic">i</span><span>Henüz iki deneme yok; gidişat karşılaştırması bir sonraki denemeden sonra gelir.</span></div>`
     : V.d.trend>=0
     ? `<div class="flag ok"><span class="ic">✓</span><span><b>Deneme gidişatı olumlu.</b> Son deneme <b>${n1(V.d.net)} net</b> — bir önceki denemeye göre <b>+${n1(V.d.trend)}</b>.</span></div>`
     : `<div class="flag bad"><span class="ic">!</span><span><b>Son denemede gerileme.</b> Son deneme <b>${n1(V.d.net)} net</b> — bir öncekine göre <b>${n1(V.d.trend)}</b>. Bu hafta telafiye odaklanıyoruz.</span></div>`;
@@ -4715,7 +4715,7 @@ function vVeli(st){
       <div class="stats uc" style="margin:10px 0 4px">
         <div class="stat"><div class="k">Ödev uyumu</div><div class="v" style="color:${uyumRenk(uyum)}">${uyum==null?'—':'%'+uyum}</div><div class="n">bu hafta</div></div>
         <div class="stat"><div class="k">Çözülen soru</div><div class="v">${V.cozulen||0}</div><div class="n">bu hafta</div></div>
-        <div class="stat"><div class="k">Çalışma süresi</div><div class="v" style="font-size:21px">${V.sure?sa(V.sure):'—'}</div><div class="n">kayda geçen</div></div>
+        <div class="stat"><div class="k">Çalışma süresi</div><div class="v" style="font-size:clamp(16px,4.6vw,21px);white-space:nowrap">${V.sure?sa(V.sure):'—'}</div><div class="n">kayda geçen</div></div>
       </div>
       <div style="margin-top:12px">${trendFlag}</div>
       <div class="sec-h" style="margin-top:16px"><h3>Sınava hazırlık — genel durum</h3></div>
