@@ -740,6 +740,7 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 .card.yanip-kirmizi{border-color:var(--rail)}
 .card:has(.flag.bad),.card.yanip-kirmizi{animation:cerceveTehlike 1.8s ease-in-out infinite}
 #view.kilavuz-gorunum .card{animation:none!important}
+@media (prefers-reduced-motion:reduce){#view.kilavuz-gorunum .card{border-color:var(--rail)}}
 @media (prefers-reduced-motion:reduce){.card:has(.flag.warn:not(.sabit)){animation:none;border-color:var(--warn)}.card:has(.flag.bad),.card.yanip-kirmizi{animation:none;border-color:var(--bad)}}
 #view.gecis>*:nth-child(2){animation-delay:.05s}
 #view.gecis>*:nth-child(3){animation-delay:.1s}
@@ -3777,6 +3778,8 @@ function gcKayitSay(ad){ if(_gcSayildi[ad]) return; _gcSayildi[ad]=true; gcOlay(
    çalışırken tanımsız olurdu. */
 var KOC_KILAVUZ_TEK=false;
 function render(){
+  /* Kılavuzdaki örnek uyarı notları kartları yanıp söndürmesin (oturumlu ve oturumsuz kılavuz) */
+  document.getElementById('view').classList.toggle('kilavuz-gorunum', TAB==='kilavuz' || KOC_KILAVUZ_TEK);
   /* Telefondaki alt çubuk render hangi dönüşle biterse bitsin sonra eşitlenir. */
   if(typeof altCubukCiz==='function') queueMicrotask(altCubukCiz);
   /* Oturum yokken "+ Öğrenci ekle" hiçbir şey yapmıyordu (giriş ekranına düşüyor). */
@@ -3873,7 +3876,6 @@ function render(){
   document.getElementById('tabs').innerHTML='';   // sekmeler artık sol rayda, öğrencinin altında
 
   const v=document.getElementById('view');
-  v.classList.toggle('kilavuz-gorunum', TAB==='kilavuz');   // kılavuzdaki örnek uyarı notları kartları yanıp söndürmesin
   // İlk girişte: yeni koça DETAYLI karşılama rehberi (panel arkada normal açılır,
   // modal üstte gösterilir). Kapatılınca hem cihaza hem hesaba işaretlenir.
   if(DENEME && !DENEME.karsilama && LISANS && LISANS.kvkk_onay){

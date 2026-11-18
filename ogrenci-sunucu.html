@@ -548,6 +548,7 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 .card.yanip-kirmizi{border-color:#03182B}
 .card:has(.flag.bad),.card.yanip-kirmizi{animation:cerceveTehlike 1.8s ease-in-out infinite}
 #view.kilavuz-gorunum .card{animation:none!important}
+@media (prefers-reduced-motion:reduce){#view.kilavuz-gorunum .card{border-color:#03182B}}
 @media (prefers-reduced-motion:reduce){.card:has(.flag.warn:not(.sabit)){animation:none;border-color:var(--warn)}.card:has(.flag.bad),.card.yanip-kirmizi{animation:none;border-color:var(--bad)}}
 
 /* ---- istatistik değerleri hafifçe belirir ---- */
