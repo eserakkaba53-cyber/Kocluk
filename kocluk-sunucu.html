@@ -9926,7 +9926,7 @@ function railAgaci(liste){
   const tum=TABSAL();
   const ogrSek=tum.filter(x=>KOC_GENEL_SEKME.indexOf(x[0])<0);
   const genSek=tum.filter(x=>KOC_GENEL_SEKME.indexOf(x[0])>=0);
-  const acikId=(!KOKPIT&&!ABONE&&!YENIOGR)?DB.sel:null;
+  const acikId=(!KOKPIT&&!ABONE&&!YENIOGR&&KOC_GENEL_SEKME.indexOf(TAB)<0)?DB.sel:null;   // hesap düzeyi sekmede hiçbir öğrenci açık/vurgulu durmaz
   const yeni=(acikId!==_RAYSEC && acikId!==null); _RAYSEC=acikId;
 
   const kokpit='<button class="st-item '+(KOKPIT?'on':'')+'" style="border-bottom:1px solid rgba(255,255,255,.10)'+(KOKPIT?';border-left-color:#4FB3A9':'')+'" onclick="YENIOGR=null;ABONE=false;KOKPIT=true;render()">'+
@@ -9936,7 +9936,7 @@ function railAgaci(liste){
     const a=avgNets(s,3); let tot=0; for(const k in a.nets) tot+=a.nets[k];
     const acik=(s.id===acikId);
     const rozet=s.ornek?' <span style="font-size:9.5px;letter-spacing:.06em;background:#C6892E;color:#fff;font-weight:700;padding:1px 5px;border-radius:3px;vertical-align:2px">ÖRNEK</span>':'';
-    return '<button class="st-item '+(acik?'on':'')+'" onclick="YENIOGR=null;ABONE=false;KOKPIT=false;DB.sel=\''+s.id+'\';'+(s.ornek?'':'save();')+'render()"'+(s.ornek?' style="opacity:.78"':'')+'>'+
+    return '<button class="st-item '+(acik?'on':'')+'" onclick="YENIOGR=null;ABONE=false;KOKPIT=false;if(KOC_GENEL_SEKME.indexOf(TAB)>=0)TAB=\'hafta\';DB.sel=\''+s.id+'\';'+(s.ornek?'':'save();')+'render()"'+(s.ornek?' style="opacity:.78"':'')+'>'+
       '<div class="nm">'+esc(s.name)+rozet+'<span class="stok">▾</span></div>'+
       '<div class="sub">'+s.grade+'. sınıf · '+trLabel(s.track)+' · ort '+(a.count?n1(tot):'—')+'</div></button>'+
       '<div class="rag '+(acik?'acik':'')+' '+(acik&&yeni?'yeni':'')+'"><div>'+
