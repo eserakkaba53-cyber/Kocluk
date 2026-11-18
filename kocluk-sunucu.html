@@ -739,6 +739,7 @@ ol.km-steps li::before{content:counter(s);position:absolute;left:0;top:8px;width
 /* Devreden ödevler kutusu da Bitirdin ama tutmamış gibi kırmızı yanıp söner. */
 .card.yanip-kirmizi{border-color:var(--rail)}
 .card:has(.flag.bad),.card.yanip-kirmizi{animation:cerceveTehlike 1.8s ease-in-out infinite}
+#view.kilavuz-gorunum .card{animation:none!important}
 @media (prefers-reduced-motion:reduce){.card:has(.flag.warn:not(.sabit)){animation:none;border-color:var(--warn)}.card:has(.flag.bad),.card.yanip-kirmizi{animation:none;border-color:var(--bad)}}
 #view.gecis>*:nth-child(2){animation-delay:.05s}
 #view.gecis>*:nth-child(3){animation-delay:.1s}
@@ -3871,6 +3872,7 @@ function render(){
   document.getElementById('tabs').innerHTML='';   // sekmeler artık sol rayda, öğrencinin altında
 
   const v=document.getElementById('view');
+  v.classList.toggle('kilavuz-gorunum', TAB==='kilavuz');   // kılavuzdaki örnek uyarı notları kartları yanıp söndürmesin
   // İlk girişte: yeni koça DETAYLI karşılama rehberi (panel arkada normal açılır,
   // modal üstte gösterilir). Kapatılınca hem cihaza hem hesaba işaretlenir.
   if(DENEME && !DENEME.karsilama && LISANS && LISANS.kvkk_onay){
@@ -6288,7 +6290,7 @@ function karsilamaAc(){
           '<li><b>Haftalık program takvimi:</b> "Haftalık" sekmesinde ödevler haftanın günlerine 15 dakikalık dilimlerle bloklar hâlinde dağıtılır. Blokları sürükleyip taşırsın, "Yeniden dağıt" ile baştan kurarsın; elle taşıdıkların yerinde kalır. Öğrencinin kapattığı saatlere (okul, dershane) ödev konmaz.</li>'+
           '<li><b>Zayıf konu kartı:</b> Denemeler sekmesinde, doğru oranı <b>%50\'nin altında</b> kalan konular ayrı listelenir — her konudan kaç soru çıktığıyla birlikte. Ödev vermeden önce bakılacak yer burasıdır.</li>'+
           '<li><b>Senkron:</b> Öğrenci kendi panelinde ödev/deneme/konu işaretledikçe veriler sunucuya yazılır; sayfayı yenilediğinde sana yansır.</li>'+
-          '<li><b>Ortak ayarlar:</b> Konu süreleri ve sınav tarihi tüm öğrencilerde ortaktır — bir kez ayarlarsın, herkeste geçerli olur. Öğrenci panelinde sınav tarihi kutusu kapalı görünür.</li>'+
+          '<li><b>Ortak ayarlar:</b> Konu süreleri ve sınav tarihi tüm öğrencilerde ortaktır. Sınav tarihini Biyoser girer; konu sürelerini sen bir kez ayarlarsın, herkeste geçerli olur.</li>'+
           '<li><b>Yönetime mesaj:</b> "Hesap" sekmesinin üstündeki kutudan yazarsın; cevap gelince menüdeki Hesap sekmesinin yanında kırmızı bir sayı çıkar.</li>'+
           '<li><b>Kayıt uyarısı:</b> Bir değişiklik sunucuya yazılamazsa ekranı kaplayan bir pencere açılır ve "son işlem kayıt olmadı" der. <b>Tekrar dene</b>ye bas; kapatıp yenilersen o son değişiklik gider.</li>'+
         '</ul></div>'+
@@ -7629,8 +7631,8 @@ function vKocKilavuz(){
       ve ona süre ayırır. Öğrenci kendi panelinden işaretlemiyorsa ilk kayıtta
       <b>Konular</b> sekmesinden sen geç — 10 dakikalık iş, bütün hesabı düzeltir.</span></div>
     <div class="flag warn"><span class="ic">i</span><span>
-      <b>Sınav tarihi ve konu süreleri tüm öğrencilerde ortaktır.</b> Bir kez ayarlarsın, herkeste geçerli olur;
-      öğrenci panelinde tarih kutusu kapalı görünür.</span></div>
+      <b>Sınav tarihi ve konu süreleri tüm öğrencilerde ortaktır.</b> Sınav tarihini Biyoser girer, panelde tarih kutusu kapalı görünür;
+      konu sürelerini sen bir kez ayarlarsın, bütün öğrencilerinde geçerli olur.</span></div>
     <div class="flag warn"><span class="ic">i</span><span>
       <b>Adın ve WhatsApp numaran girilmeden</b> davet mesajları ve KVKK belgeleri eksik çıkar.
       <b>Hesap → İletişim bilgilerin</b>'den doldur.</span></div>
@@ -7720,7 +7722,7 @@ function vKocKilavuz(){
 
   <div class="card"><h2>Hedef sekmesi</h2><div class="body">
     <p style="margin:0 0 12px">YÖK verisinden hedef bölümü seçersin; taban puan, başarı sırası ve
-      <b>ders ders hedef netler</b> kendiliğinden dolar. Haftalık çalışma saatini (beyan) ve sınav tarihini de burada girersin; ikisi Konular sekmesindeki iki kutuyu besler:</p>
+      <b>ders ders hedef netler</b> kendiliğinden dolar. Haftalık çalışma saatini (beyan) de burada girersin; bu beyan, Biyoser'in girdiği ortak sınav tarihiyle birlikte Konular sekmesindeki iki kutuyu besler:</p>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Kalan süre</b> (Konular sekmesi) — iki ayrı sayı: yalnız konu çalışması, ve konu + soru çözümü</span></div>
     <div class="topic"><span class="dot t2"></span><span class="tn"><b>Yetişir mi</b> (Konular sekmesi) — üç tamponla: Öncelikli (tam denk), Güvenlik payı (%15), Genişleme (%30)</span></div>
     <div class="flag bad" style="margin-top:12px"><span class="ic">!</span><span>
