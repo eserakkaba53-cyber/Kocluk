@@ -3858,7 +3858,7 @@ function render(){
   if(yde){ yde.textContent=yd.metin; yde.style.color=yd.renk==='var(--ok)'?'#7FD1A8':yd.renk==='var(--warn)'?'#E8C77A':'#F0A79C'; }
   const st=cur();
   document.getElementById('stName').textContent = st?st.name:'Öğrenci seç';
-  document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toUpperCase()}${st.startedAt?' · BAŞLANGIÇ '+st.startedAt:''}`:'';
+  document.getElementById('stMeta').textContent = st?`${st.grade}. SINIF · ${trLabel(st.track).toLocaleUpperCase('tr-TR')}${st.startedAt?' · BAŞLANGIÇ '+st.startedAt:''}`:'';
   document.getElementById('stGoal').innerHTML = st&&st.dept
     ? `<div class="d">${esc(st.dept)}</div><div class="r">hedef sıralama ${esc(st.rank||'—')} · puan ${esc(st.score||'—')}${st.tabanPuan?` · taban ${esc(st.tabanPuan)} (${esc(st.tabanYil||'—')})`:''}</div>` : '';
   /* Hesap düzeyindeki sekmeler öğrenciden bağımsız: üst başlıkta seçili öğrencinin adı ve hedefi görünmesin */
@@ -9687,7 +9687,7 @@ function girisEkrani(){
           <input type="text" id="gTel" placeholder="05xx xxx xx xx" value="${esc(KAYIT.tel||'')}" oninput="KAYIT.tel=this.value;odKayitBekle()"></div></div>
           <div style="margin-bottom:12px"><label class="f">Branşların <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">(özel ders talepleri buna göre gelir; sonra değiştirilebilir)</span></label>
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:4px">
-            ${(typeof OD_BRANSLAR!=='undefined'?OD_BRANSLAR:[]).map(b=>`<span class="od-brozet tik ${(KAYIT.branslar||[]).indexOf(b)>=0?'sec':''}" onclick="odKayitBrans('${b.replace(/'/g,"\\'")}')">${(KAYIT.branslar||[]).indexOf(b)>=0?'✓ ':''}${b.toUpperCase()}</span>`).join('')}
+            ${(typeof OD_BRANSLAR!=='undefined'?OD_BRANSLAR:[]).map(b=>`<span class="od-brozet tik ${(KAYIT.branslar||[]).indexOf(b)>=0?'sec':''}" onclick="odKayitBrans('${b.replace(/'/g,"\\'")}')">${(KAYIT.branslar||[]).indexOf(b)>=0?'✓ ':''}${b.toLocaleUpperCase('tr-TR')}</span>`).join('')}
           </div></div>`:''}
         <div class="fr"><div style="flex:1"><label class="f">E-posta</label>
           <input type="email" id="gMail" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="ornek@eposta.com" value="${esc(KAYIT.mail||'')}" oninput="KAYIT.mail=this.value"></div></div>
@@ -10223,13 +10223,13 @@ function vOzelDersKoc(){
       <input value="${esc(OD_K.telForm||'')}" placeholder="05xx xxx xx xx" oninput="OD_K.telForm=this.value"></div>
       <div style="display:flex;align-items:flex-end"><button class="btn" onclick="odProfilKaydet()">Kaydet</button></div></div>`}
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      ${OD_BRANSLAR.map(b=>`<span class="od-brozet tik ${prof.branslar.indexOf(b)>=0?'sec':''}" onclick="odBransTog('${b.replace(/'/g,"\\'")}')">${prof.branslar.indexOf(b)>=0?'✓ ':''}${esc(b.toUpperCase())}</span>`).join('')}
+      ${OD_BRANSLAR.map(b=>`<span class="od-brozet tik ${prof.branslar.indexOf(b)>=0?'sec':''}" onclick="odBransTog('${b.replace(/'/g,"\\'")}')">${prof.branslar.indexOf(b)>=0?'✓ ':''}${esc(b.toLocaleUpperCase('tr-TR'))}</span>`).join('')}
     </div>
     ${prof.branslar.length?'':'<div class="hint" style="margin-top:9px">Henüz branş seçmedin — talepler görünmeyecek.</div>'}
   </div></div>`;
 
   const acikKart=(x)=>`<div class="od-talep">
-    <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+    <div class="ust"><span class="od-brozet">${esc((x.brans||'').toLocaleUpperCase('tr-TR'))}</span>
       <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
       <span class="od-durum acik">YENİ</span></div>
     <div class="konu">${esc(x.aciklama||'—')}${(x.ogr_sinif||x.ogr_alan)?` — <span class="hint">${esc(x.ogr_sinif?x.ogr_sinif+'. sınıf':'')}${x.ogr_alan?' · '+esc(typeof trLabel==='function'?trLabel(x.ogr_alan):x.ogr_alan):''}</span>`:''}</div>
@@ -10238,7 +10238,7 @@ function vOzelDersKoc(){
   </div>`;
 
   const benimKart=(x)=>`<div class="od-talep" style="border-color:var(--warn)">
-    <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+    <div class="ust"><span class="od-brozet">${esc((x.brans||'').toLocaleUpperCase('tr-TR'))}</span>
       <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
       <span class="od-durum kabul">SENDE</span></div>
     <div class="konu">${esc(x.aciklama||'—')} — <b>${esc(x.ogr_ad||'')}</b></div>
@@ -10252,13 +10252,13 @@ function vOzelDersKoc(){
 
   const gKart=(x)=>{
     if(x.durum==='gelmedi') return `<div class="od-talep">
-      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toLocaleUpperCase('tr-TR'))}</span>
         <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
         <span class="od-durum gelmedi">GELMEDİ</span></div>
       <div class="konu">${esc(x.aciklama||'—')} — öğrenci: <b>${esc(x.ogr_ad||'')}</b></div>
       <div class="alt"><span class="hint">“Derse gelmedi” olarak kapattın; öğrencinin geçmişine işlendi.</span></div></div>`;
     return `<div class="od-talep">
-      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toLocaleUpperCase('tr-TR'))}</span>
         <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
         <span class="od-durum bitti">TAMAMLANDI</span>
         ${x.itiraz?'<span class="od-durum itirazli">⚠ Öğrenci “ders yapılmadı” dedi</span>':''}</div>
@@ -10380,7 +10380,7 @@ function odAcikKart(){
 
   const satir=(t)=>`<div class="od-talep"${(+t.bekleme_sa||0)>=48?' style="border:2px solid var(--warn)"':''}>
     <div class="ust">
-      <span class="od-brozet">${esc((t.brans||'').toUpperCase())}</span>
+      <span class="od-brozet">${esc((t.brans||'').toLocaleUpperCase('tr-TR'))}</span>
       <span class="od-tarih">${odTarihYaz(t.tarih,t.saat)}</span>
       <span class="od-durum acik">${esc(bekleyenGun(t.bekleme_sa))} BEKLİYOR</span>
       ${!(+t.brans_koc)?'<span class="od-durum gelmedi">BU BRANŞTA KOÇ YOK</span>':''}

@@ -2267,7 +2267,7 @@ function render(){
   document.getElementById('hAd').textContent=D.ad;
   const hk=haftaKalan();
   document.getElementById('hMeta').textContent=
-    [D.grade+'. SINIF', D.dept?D.dept.toUpperCase():null, hk!==null?'SINAVA '+hk+' HAFTA':null].filter(Boolean).join(' · ');
+    [D.grade+'. SINIF', D.dept?D.dept.toLocaleUpperCase('tr-TR'):null, hk!==null?'SINAVA '+hk+' HAFTA':null].filter(Boolean).join(' · ');
   document.getElementById('tabs').innerHTML=(typeof sekmeAgaci==='function')?sekmeAgaci():'';
   const uy=kaynakUyarisi();
   const _af=document.activeElement, _aid=_af&&_af.id;
@@ -6280,7 +6280,7 @@ function vOzelDersOgr(){
   const kart=(x)=>{
     const silik=x.durum==='kabul';
     return `<div class="od-talep ${silik?'silik':''}">
-      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toLocaleUpperCase('tr-TR'))}</span>
         <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
         <span class="od-durum ${x.durum}">${x.durum==='acik'?'YAYINDA':'ÖĞRETMEN BULUNDU'}</span></div>
       <div class="konu">${esc(x.aciklama||'—')}</div>
@@ -6295,13 +6295,13 @@ function vOzelDersOgr(){
   };
   const gKart=(x)=>{
     if(x.durum==='gelmedi') return `<div class="od-talep">
-      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toLocaleUpperCase('tr-TR'))}</span>
         <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
         <span class="od-durum gelmedi">GELMEDİN</span></div>
       <div class="konu">${esc(x.aciklama||'—')} — <b>${esc(x.koc_ad||'')}</b></div>
       <div class="alt"><span class="hint">Öğretmen “derse gelmedi” işaretledi. Haksızsa ${odSorunForm(x.id)}</span></div></div>`;
     return `<div class="od-talep">
-      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toUpperCase())}</span>
+      <div class="ust"><span class="od-brozet">${esc((x.brans||'').toLocaleUpperCase('tr-TR'))}</span>
         <span class="od-tarih">${odTarihYaz(x.tarih,x.saat)}</span>
         <span class="od-durum bitti">TAMAMLANDI</span>
         ${x.itiraz?'<span class="od-durum itirazli">⚠ İTİRAZLI</span>':''}</div>
