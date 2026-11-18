@@ -6852,7 +6852,7 @@ function vHesap(st){
   </div></div>
 
   <div class="card"><h2>KVKK belgeleri<small>Öğrenci kaydı açmadan önce velilerden imzalı onay alman gerekir. Belgeler burada.</small></h2><div class="body">
-    <div class="flag warn"><span class="ic">!</span><span>
+    <div class="flag warn sabit"><span class="ic">!</span><span>
       <b>18 yaş altı her öğrenci için velinin yazılı onayı zorunludur.</b>
       Panel onay kaydını tutar ama imzalı kâğıdı sen saklarsın.</span></div>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
@@ -8896,7 +8896,8 @@ function onayTam(st){
   return (st.veliAd||'').trim().length>=3 && String(st.veliTel||'').replace(/\D/g,'').length>=10;
 }
 /* Onay anı UTC ISO olarak saklanır; ekranda Türkiye saatine göre gün gösterilir (gece 00-03 arası önceki gün çıkmasın) */
-function yerelGun(v){ const d=new Date(v); return isNaN(d)?String(v).slice(0,10):new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function yerelZaman(v){ const d=new Date(v); return (v===''||isNaN(d))?String(v).slice(0,16).replace('T',' '):new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16).replace('T',' '); }
+function yerelGun(v){ return yerelZaman(v).slice(0,10); }
 function onayKarti(st){
   const tam = onayTam(st);
   return `<div class="card" style="${tam?'':'border:2px solid var(--bad)'}"><h2>${tam?'Veri sorumluluğu':'⚠ Veli onayı eksik'}<small>${
@@ -8967,10 +8968,10 @@ function hesapKarti(){
     ${CIHAZHATA?`<div class="flag bad"><span class="ic">!</span><span>${esc(CIHAZHATA)}</span></div>`:''}
     ${CIHAZLAR.length?`<table><thead><tr><th>Cihaz</th><th>Son giriş</th><th></th></tr></thead><tbody>
       ${CIHAZLAR.map(c=>`<tr><td>${esc(c.ad||'Cihaz')}${c.parmak_izi===bu?' <span class="pill s1" style="font-size:10px">şu an buradasın</span>':''}</td>
-        <td class="num" style="color:var(--ink-3);font-size:12px">${(c.son_giris||'').slice(0,16).replace('T',' ')}</td>
+        <td class="num" style="color:var(--ink-3);font-size:12px">${esc(yerelZaman(c.son_giris||''))}</td>
         <td style="width:56px">${c.parmak_izi===bu?'':`<button class="btn ghost mini" onclick="cihazSil('${c.id}')">sil</button>`}</td></tr>`).join('')}
     </tbody></table>`:'<div class="empty">Cihaz kaydı yok.</div>'}
-    <div class="hint" style="margin-top:10px">Yeni bir bilgisayardan girmek istersen önce kullanmadığın bir cihazı sil. Şu an kullandığın cihaz silinemez.</div>
+    <div class="hint" style="margin-top:10px">Cihaz sayısında sınır yok; kullanmadığın bir cihazı listeden silebilirsin. Şu an kullandığın cihaz silinemez.</div>
     <button class="btn ghost wide" style="margin-top:12px" onclick="sifremiDegistir()">Şifremi değiştir</button>
   </div></div>`;
 }
