@@ -3577,6 +3577,7 @@ function addStudent(){
     alert(`ÖĞRENCİ SINIRINA ULAŞTIN\n\nPaketin: ${LISANS.paket_adi} (${LISANS.ogrenci_limiti} öğrenci)\nMevcut: ${LISANS.ogrenci_sayisi}\n\nYeni öğrenci eklemek için:\n· Ayrılan bir öğrenciyi sil (önce Verilerimi indir ile yedek al), ya da\n· Paketini yükselt\n\nKoç 10 · Sınıf 40 · Okul 200 öğrenci`);
     return;
   }
+  ABONE=false; KOKPIT=false;   // form Kokpit ya da Abonelik ekranından da açılabilmeli
   YENIOGR={ad:'',track:'SAY',grade:'11',tel:'',eposta:'',resit:false,veliAd:'',veliTel:'',onay:false,not:''};
   render();
 }
@@ -3621,7 +3622,7 @@ function yoKaydet(){
     refNets:{},exams:[],tasks:[],topics:{},startedAt:today()});
   const yeniSt=DB.students[DB.students.length-1];
   DB.sel=yeniSt.id;
-  YENIOGR=null; TAB='ogrenci'; render();
+  YENIOGR=null; KOKPIT=false; ABONE=false; TAB='ogrenci'; render();
   if(sbOturum()){
     YAZDURUM='yaziliyor'; rayDurum();
     ogrenciYaz(yeniSt)
@@ -3661,9 +3662,9 @@ function yeniOgrenciEkrani(){
           <input type="checkbox" ${y.resit?'checked':''} onchange="yoAlan('resit',this.checked)" style="width:auto;margin-top:3px">
           <span>Öğrenci <b>18 yaşını doldurdu</b> — kendi rızasını verebilir</span></label>
 
-        ${!y.resit?`<div class="flag warn"><span class="ic">!</span><span>
+        ${!y.resit?`<div class="flag warn sabit"><span class="ic">!</span><span>
             18 yaş altı öğrenciler için <b>velinin yazılı onayı zorunludur</b>.
-            Onay formunu imzalatmadan kayıt açma — <b>kvkk-metinleri.txt</b> dosyasında hazır form var.</span></div>
+            Onay formunu imzalatmadan kayıt açma; adınla hazır form <b>Hesap → KVKK belgeleri</b> kartında.</span></div>
           <div class="fr" style="margin-top:12px">
             <div><label class="f">Veli adı soyadı</label>
               <input type="text" value="${esc(y.veliAd)}" onchange="yoAlan('veliAd',this.value)" placeholder="Velinin adı soyadı"></div>
@@ -3905,6 +3906,7 @@ function render(){
     document.getElementById('tabs').innerHTML='';
     document.getElementById('stName').textContent='Yeni öğrenci';
     document.getElementById('stMeta').textContent='';
+    document.getElementById('stGoal').innerHTML='';
     v.innerHTML=yeniOgrenciEkrani();
     if(_i0){ const _e1=document.getElementById(_i0);
       if(_e1){ try{ _e1.focus({preventScroll:true}); if(_s0!==null&&('setSelectionRange' in _e1)) _e1.setSelectionRange(_s0,_e0); }catch(x){} } }
@@ -8773,7 +8775,7 @@ function kvkkEkrani(){
       <div class="topic"><span class="dot t2"></span><span class="tn">Belirli bir ölçeği aşarsan <b>VERBİS kaydı</b> gerekebilir</span></div>
 
       <div class="flag ok" style="margin-top:14px"><span class="ic">i</span><span>
-        Hazır aydınlatma ve veli onay metinleri <b>kvkk-metinleri.txt</b> dosyasında.
+        Hazır aydınlatma metni ve veli onay formu, girişten sonra <b>Hesap → KVKK belgeleri</b> kartında.
         Bunlar taslaktır; <b>kendi durumuna göre bir avukata kontrol ettirmelisin.</b></span></div>
 
       <p style="margin:16px 0 0;font-size:13px;color:var(--ink-2)">Sistemi kullanmaya devam ederek bu
