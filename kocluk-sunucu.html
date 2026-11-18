@@ -6951,7 +6951,7 @@ function vHedef(st){
     <button class="btn" onclick="saveGoal()">Hedefi kaydet</button>
     <button class="btn ghost" style="margin-left:8px" onclick="openAtlas()">YÖK Atlas ana sayfa</button>
 
-    <div class="hint">Taban puan ve başarı sırasını YÖK Atlas'tan kopyalayıp buraya yapıştır. Otomatik çekim yapılmıyor: panel internetsiz çalışsın diye dış bağlantı yok, ayrıca YÖK Atlas'ın gayriresmî erişim yolları her site güncellemesinde kırılıyor.
+    <div class="hint">Bölümü yukarıdaki listeden seçince taban puan, başarı sırası ve hedef netler kendiliğinden dolar. Listede olmayan bir program için bu değerleri YÖK Atlas'tan bakıp elle girebilirsin.
     <br><b>Site açılmıyorsa:</b> YÖK Atlas tercih dönemlerinde yoğunluktan sık sık erişilemez oluyor. Farklı tarayıcı/cihaz dene, mobil veriye geç ya da birkaç saat sonra tekrar dene.</div>
   </div></div>
 
@@ -6962,7 +6962,7 @@ function vHedef(st){
         <td class="num" style="width:110px"><input type="number" step="0.25" min="0" max="${q}" id="r_${k}" value="${esc(st.refNets[k]??'')}" placeholder="—"></td></tr>`).join('')}
     </tbody></table></div>`:''; }).join('')}</div>
     <div style="margin-top:14px"><button class="btn" onclick="saveRef()">Referans netleri kaydet</button></div>
-    <div class="hint">Bu değerleri ÖSYM/YÖK Atlas verisinden ya da hedef sıralamaya karşılık gelen net dağılımından elle gireceksin. Durum sekmesindeki tüm karşılaştırma bu satırlara dayanır.</div>
+    <div class="hint">Bölüm seçtiğinde bu satırlar YÖK Atlas verisiyle dolar; öğrenciye göre elle düzeltebilirsin. Durum sekmesindeki tüm karşılaştırma bu satırlara dayanır.</div>
   </div></div>
 
   ${lisansUyarisi()}

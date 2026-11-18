@@ -4278,9 +4278,9 @@ function vHedef(){
          iletilir" yalnız paket modunda doğru. Eskiden ikisinde de bu yazıyordu. */
       ((typeof sbOturum==='function') && sbOturum() && OGRID)
       ? `<div class="flag ok" style="margin-top:12px"><span class="ic">✓</span><span>Buradaki değişiklikler <b>anında kaydedilir</b>${(typeof soloMu==='function'&&soloMu())?'':' ve öğretmenine yansır'}. Ayrıca rapor göndermene gerek yok.</span></div>
-         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> yukarıdaki karşılaştırma ve <b>Konularım</b> sekmesindeki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`
+         <div class="flag warn sabit" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> yukarıdaki karşılaştırma ve <b>Konularım</b> sekmesindeki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`
       : `<div class="flag warn" style="margin-top:12px"><span class="ic">i</span><span>Burada yaptığın değişiklikler <b>rapor gönderdiğinde</b> öğretmenine iletilir. O onaylayınca onun sisteminde de güncellenir.</span></div>
-         <div class="flag warn" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> yukarıdaki karşılaştırma ve <b>Konularım</b> sekmesindeki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`}
+         <div class="flag warn sabit" style="margin-top:8px"><span class="ic">!</span><span><b>Haftalık çalışma süreni girmezsen</b> yukarıdaki karşılaştırma ve <b>Konularım</b> sekmesindeki "yetişir mi" kutuları <b>"—"</b> kalır.</span></div>`}
   </div></div>
 
   ${yetisKart}
